@@ -1,0 +1,169 @@
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  🚨 AMBIGUOUS SYMBOL ERRORS - QUICK FIX REFERENCE CARD  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+╔═══════════════════════════════════════════════════════════╗
+║  STEP 1: Add New Files to Xcode                          ║
+╚═══════════════════════════════════════════════════════════╝
+
+  1. Drag these files into Xcode project navigator:
+     • ColorExtensions.swift
+     • CommonExtensions.swift
+  
+  2. Check "Copy items if needed"
+  3. Select your app target
+
+╔═══════════════════════════════════════════════════════════╗
+║  STEP 2: Find Duplicates                                 ║
+╚═══════════════════════════════════════════════════════════╝
+
+  In Terminal:
+  
+  cd "/Users/kitagawatatsuki/Desktop/Later 再度"
+  chmod +x find_duplicates.sh
+  ./find_duplicates.sh
+
+╔═══════════════════════════════════════════════════════════╗
+║  STEP 3: Delete These Patterns (Keep Only in New Files) ║
+╚═══════════════════════════════════════════════════════════╝
+
+  ❌ DELETE from all files except ColorExtensions.swift:
+  
+     extension Color {
+         init(hex: String) { ... }
+     }
+     
+     static let brandBlack = ...
+     static let brandDarkGray = ...
+     static let neonGreen = ...
+     static let limeGreen = ...
+
+  ❌ DELETE from all files except CommonExtensions.swift:
+  
+     func swipeFeedback() { ... }
+     func lightHaptic() { ... }
+     
+     extension Array {
+         subscript(safe index: Index) { ... }
+     }
+     
+     extension UIImage {
+         func downsampled(to:) { ... }
+     }
+
+╔═══════════════════════════════════════════════════════════╗
+║  STEP 4: Fix Specific Errors                             ║
+╚═══════════════════════════════════════════════════════════╝
+
+  📁 CalendarArchiveView.swift
+  
+     Error: "Invalid redeclaration of 'CalendarArchiveView'"
+     Fix:   Delete ONE of the two struct definitions
+     
+     Search for: struct CalendarArchiveView
+     Keep: Only ONE definition
+  
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  
+  📁 Multiple files with toolbar errors
+  
+     Error: "Ambiguous use of 'toolbar(content:)'"
+     Fix:   Add placement parameter
+     
+     Before:
+     .toolbar {
+         Button("Done") { }
+     }
+     
+     After:
+     .toolbar {
+         ToolbarItem(placement: .navigationBarTrailing) {
+             Button("Done") { }
+         }
+     }
+  
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  
+  📁 HomeView.swift (lines 18, 19)
+  
+     Error: "Ambiguous use of 'shared'"
+     Fix:   Fully qualify the type
+     
+     Before:
+     let cache = shared
+     
+     After:
+     let cache = ImageCacheManager.shared
+  
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  
+  📁 Multiple files with opacity errors
+  
+     Error: "Ambiguous use of 'opacity'"
+     Fix:   Delete duplicate View extension with opacity method
+
+╔═══════════════════════════════════════════════════════════╗
+║  STEP 5: Clean Build (Do This LAST!)                     ║
+╚═══════════════════════════════════════════════════════════╝
+
+  1. ⛔️ Close Xcode completely
+  
+  2. 🧹 In Terminal, run:
+     rm -rf ~/Library/Developer/Xcode/DerivedData
+  
+  3. ▶️  Reopen Xcode
+  
+  4. 🧹 Clean Build Folder (Cmd+Shift+K)
+  
+  5. 🔨 Build (Cmd+B)
+
+╔═══════════════════════════════════════════════════════════╗
+║  SEARCH PATTERNS (Use Cmd+Shift+F in Xcode)             ║
+╚═══════════════════════════════════════════════════════════╝
+
+  To find duplicates, search for:
+  
+  • init(hex: String)
+  • brandBlack
+  • brandDarkGray  
+  • swipeFeedback
+  • subscript(safe index:
+  • func downsampled
+  • struct CalendarArchiveView
+
+  For each search:
+  ✓ You should see ONLY 1 result
+  ✗ If you see 2+ results → delete the duplicates
+
+╔═══════════════════════════════════════════════════════════╗
+║  VERIFICATION                                            ║
+╚═══════════════════════════════════════════════════════════╝
+
+  After fixes, verify:
+  
+  ✅ ColorExtensions.swift has:
+     - init(hex:)
+     - brandBlack, brandDarkGray
+     - neonGreen, limeGreen
+  
+  ✅ CommonExtensions.swift has:
+     - swipeFeedback()
+     - Array safe subscript
+     - UIImage downsampled
+  
+  ✅ NO other files have these definitions
+  
+  ✅ Build succeeds (Cmd+B)
+
+╔═══════════════════════════════════════════════════════════╗
+║  NEED HELP?                                              ║
+╚═══════════════════════════════════════════════════════════╝
+
+  Read detailed guides:
+  • FIX_SUMMARY.md - Complete overview
+  • AMBIGUITY_FIX_GUIDE.md - Step-by-step instructions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Pro Tip: Start with the script (find_duplicates.sh) to see
+  exactly which files have duplicates. This saves time!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
