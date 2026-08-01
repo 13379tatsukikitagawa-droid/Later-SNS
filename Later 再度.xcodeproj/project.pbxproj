@@ -30,7 +30,6 @@
 		A327418F2FC2A40200EE7181 /* AdvancedEffectsSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A327418E2FC2A40200EE7181 /* AdvancedEffectsSystem.swift */; };
 		A32741932FC2A76300EE7181 /* MissingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32741922FC2A76300EE7181 /* MissingComponents.swift */; };
 		A32963822FBC4A46006F2E49 /* ProfileCreationFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32963812FBC4A46006F2E49 /* ProfileCreationFlowView.swift */; };
-		A32963842FBC9EC9006F2E49 /* ProfileView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32963832FBC9EC9006F2E49 /* ProfileView 2.swift */; };
 		A3348F8B2FC5AAC2006568EE /* ColorExtensions 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3348F8A2FC5AAC2006568EE /* ColorExtensions 2.swift */; };
 		A3348F8D2FC5AAEA006568EE /* CaptionInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3348F8C2FC5AAEA006568EE /* CaptionInputView.swift */; };
 		A3348F932FC67613006568EE /* VotingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3348F922FC67613006568EE /* VotingManager.swift */; };
@@ -71,17 +70,12 @@
 		A34DCDD72FBEF6B6003A334D /* CustomStampEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A34DCDD62FBEF6B6003A334D /* CustomStampEditor.swift */; };
 		A34DCDD92FBEF6DE003A334D /* RatingSystemDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A34DCDD82FBEF6DE003A334D /* RatingSystemDemo.swift */; };
 		A35877152FE60D9400568346 /* find_duplicate_files.sh in Resources */ = {isa = PBXBuildFile; fileRef = A35877142FE60D9400568346 /* find_duplicate_files.sh */; };
-		A36B187A2FE3AB5300E30A17 /* Color+Neon 5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36B18792FE3AB5300E30A17 /* Color+Neon 5.swift */; };
-		A36B187C2FE3AB5600E30A17 /* AppIconPickerView 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36B187B2FE3AB5600E30A17 /* AppIconPickerView 3.swift */; };
 		A36F46972FD8F95500935607 /* LaterPhotoExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */; };
 		A36F469F2FD91AD800935607 /* CommonExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F469E2FD91AD800935607 /* CommonExtensions.swift */; };
 		A36F46A32FD91B1300935607 /* find_duplicates 2.sh in Resources */ = {isa = PBXBuildFile; fileRef = A36F46A22FD91B1300935607 /* find_duplicates 2.sh */; };
 		A36F46A72FD91B5600935607 /* QUICK_FIX_CARD.txt in Resources */ = {isa = PBXBuildFile; fileRef = A36F46A62FD91B5600935607 /* QUICK_FIX_CARD.txt */; };
 		A36F46AB2FD93B9800935607 /* find_duplicates 3.sh in Resources */ = {isa = PBXBuildFile; fileRef = A36F46AA2FD93B9800935607 /* find_duplicates 3.sh */; };
-		A36F46AF2FDA345300935607 /* VotingManager 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46AE2FDA345300935607 /* VotingManager 3.swift */; };
 		A36F46B32FDA349A00935607 /* cleanup_xcode.sh in Resources */ = {isa = PBXBuildFile; fileRef = A36F46B22FDA349A00935607 /* cleanup_xcode.sh */; };
-		A36F46BD2FDA3BAE00935607 /* ConnectionView 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46BC2FDA3BAE00935607 /* ConnectionView 3.swift */; };
-		A36F46C12FDA3BBA00935607 /* ProfileView 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46C02FDA3BBA00935607 /* ProfileView 3.swift */; };
 		A36F46C72FDA3BE300935607 /* CountdownBanner 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46C62FDA3BE300935607 /* CountdownBanner 2.swift */; };
 		A36F46CF2FDA3C5200935607 /* PhotoUnlockCelebration 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46CE2FDA3C5100935607 /* PhotoUnlockCelebration 2.swift */; };
 		A36F46D32FDA3C7D00935607 /* PhotoUnlockUtilities 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46D22FDA3C7D00935607 /* PhotoUnlockUtilities 2.swift */; };
@@ -90,10 +84,8 @@
 		A377CEF72FC2FFD600C181AB /* LiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CEF62FC2FFD600C181AB /* LiquidBackgroundView.swift */; };
 		A377CEF92FC2FFF300C181AB /* CalendarArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CEF82FC2FFF300C181AB /* CalendarArchiveView.swift */; };
 		A377CEFB2FC3003500C181AB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CEFA2FC3003500C181AB /* HomeView.swift */; };
-		A377CEFF2FC32B8900C181AB /* ConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CEFE2FC32B8900C181AB /* ConnectionView.swift */; };
 		A377CF012FC32B9700C181AB /* FollowingManager 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CF002FC32B9700C181AB /* FollowingManager 2.swift */; };
 		A377CF0D2FC32D0100C181AB /* SharedUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CF0C2FC32D0100C181AB /* SharedUtilities.swift */; };
-		A377CF0F2FC32D1F00C181AB /* CalendarArchiveView_Fixed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CF0E2FC32D1F00C181AB /* CalendarArchiveView_Fixed.swift */; };
 		A377CF112FC32D5200C181AB /* ConnectionView_Fixed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CF102FC32D5200C181AB /* ConnectionView_Fixed.swift */; };
 		A38EEAA02FC84AF400D23F0C /* CircleManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38EEA9F2FC84AF400D23F0C /* CircleManagementView.swift */; };
 		A38EEAA42FC84B5300D23F0C /* LaterGroup_Updated.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38EEAA32FC84B5300D23F0C /* LaterGroup_Updated.swift */; };
@@ -104,9 +96,7 @@
 		A38EEABC2FC8530400D23F0C /* ProfileViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38EEABB2FC8530400D23F0C /* ProfileViewExtensions.swift */; };
 		A38EEAC22FC857D900D23F0C /* DisposableCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38EEAC12FC857D900D23F0C /* DisposableCameraView.swift */; };
 		A38EEAC42FC8580800D23F0C /* ArcDialGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38EEAC32FC8580800D23F0C /* ArcDialGalleryView.swift */; };
-		A38EEACA2FC8586D00D23F0C /* ColorExtensions 4.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38EEAC92FC8586D00D23F0C /* ColorExtensions 4.swift */; };
 		A38EEACE2FC85B0800D23F0C /* MultiGroupGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38EEACD2FC85B0800D23F0C /* MultiGroupGalleryView.swift */; };
-		A398797F2FD47C99008A3615 /* ColorExtensions 9.swift in Sources */ = {isa = PBXBuildFile; fileRef = A398797E2FD47C99008A3615 /* ColorExtensions 9.swift */; };
 		A39EF5C12FBE856C00A7A965 /* OnboardingView_Complete.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39EF5C02FBE856C00A7A965 /* OnboardingView_Complete.swift */; };
 		A39EF5C32FBE8AB600A7A965 /* AppStorageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39EF5C22FBE8AB600A7A965 /* AppStorageData.swift */; };
 		A3B65AD22FBFD72D00ADFC09 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B65AD12FBFD72D00ADFC09 /* AppColors.swift */; };
@@ -117,12 +107,8 @@
 		A3C2D9B22FC59B4200BB731B /* ButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C2D9B12FC59B4200BB731B /* ButtonStyles.swift */; };
 		A3C8C5342FC3352700746F73 /* HapticsManager 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C5332FC3352700746F73 /* HapticsManager 2.swift */; };
 		A3C8C5362FC3352A00746F73 /* HapticsManager 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C5352FC3352A00746F73 /* HapticsManager 3.swift */; };
-		A3C8C5382FC3352D00746F73 /* CalendarArchiveView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C5372FC3352D00746F73 /* CalendarArchiveView 2.swift */; };
-		A3C8C53A2FC3353000746F73 /* CalendarArchiveView_Fixed 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C5392FC3353000746F73 /* CalendarArchiveView_Fixed 2.swift */; };
-		A3C8C53C2FC3353300746F73 /* ConnectionView_Fixed 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C53B2FC3353300746F73 /* ConnectionView_Fixed 2.swift */; };
 		A3C8C53E2FC3353500746F73 /* LiquidBackgroundView 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C53D2FC3353500746F73 /* LiquidBackgroundView 3.swift */; };
 		A3C8C5422FC33BFC00746F73 /* LiquidBackgroundView 4.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C5412FC33BFC00746F73 /* LiquidBackgroundView 4.swift */; };
-		A3C8C5442FC33C2400746F73 /* CalendarArchiveView 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C8C5432FC33C2400746F73 /* CalendarArchiveView 3.swift */; };
 		A3C8C54C2FC53B3800746F73 /* fix_duplicates.sh in Resources */ = {isa = PBXBuildFile; fileRef = A3C8C54B2FC53B3800746F73 /* fix_duplicates.sh */; };
 		A3CEC6382FBDDDC7001F650B /* ColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CEC6372FBDDDC7001F650B /* ColorExtensions.swift */; };
 		A3CEC63A2FBDDFD4001F650B /* PhotoUnlockUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CEC6392FBDDFD4001F650B /* PhotoUnlockUtilities.swift */; };
@@ -135,27 +121,20 @@
 		A3CF27BD2FBD623A00DA8913 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CF27BC2FBD623A00DA8913 /* OnboardingView.swift */; };
 		A3D53C4A2FC882CE00D675AE /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C492FC882CE00D675AE /* Color+Brand.swift */; };
 		A3D53C4C2FC88DB800D675AE /* Color+Neon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C4B2FC88DB800D675AE /* Color+Neon.swift */; };
-		A3D53C4E2FC93E9900D675AE /* Color+Neon 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C4D2FC93E9900D675AE /* Color+Neon 2.swift */; };
-		A3D53C502FC955DC00D675AE /* Color+Neon 3.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C4F2FC955DC00D675AE /* Color+Neon 3.swift */; };
 		A3D53C602FC98E3600D675AE /* EnhancedCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C5F2FC98E3600D675AE /* EnhancedCameraView.swift */; };
 		A3D53C622FC98E8A00D675AE /* ImprovedConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C612FC98E8A00D675AE /* ImprovedConnectionView.swift */; };
 		A3D53C662FC98F1C00D675AE /* SupportingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C652FC98F1C00D675AE /* SupportingComponents.swift */; };
-		A3D53C6E2FC9942100D675AE /* ColorExtensions 5.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C6D2FC9942100D675AE /* ColorExtensions 5.swift */; };
 		A3D639B72FC5A04E0020EF04 /* PhotoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D639B62FC5A04E0020EF04 /* PhotoManager.swift */; };
 		A3D639BB2FC5A21F0020EF04 /* SettingsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D639BA2FC5A21F0020EF04 /* SettingsMenuView.swift */; };
-		A3DD74DD2FCA7A21004AD0C1 /* ConnectionView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DD74DC2FCA7A21004AD0C1 /* ConnectionView 2.swift */; };
-		A3DD74DF2FCA7A45004AD0C1 /* TodayView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DD74DE2FCA7A45004AD0C1 /* TodayView 2.swift */; };
 		A3DD74E12FCA7A6E004AD0C1 /* MultiGroupGalleryView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DD74E02FCA7A6E004AD0C1 /* MultiGroupGalleryView 2.swift */; };
 		A3DD74E32FCA7A7F004AD0C1 /* MinimalSplashView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DD74E22FCA7A7F004AD0C1 /* MinimalSplashView 2.swift */; };
 		A3E9BE7A2FD2AA6D005A5FE8 /* ColorExtensions 8.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E9BE792FD2AA6D005A5FE8 /* ColorExtensions 8.swift */; };
-		A3F24EBF2FDBCB16000B01A7 /* ColorExtensions 6.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F24EBE2FDBCB16000B01A7 /* ColorExtensions 6.swift */; };
 		A3F299B32FBEF05E00F905B8 /* DailyGoalSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F299B22FBEF05E00F905B8 /* DailyGoalSelector.swift */; };
 		A3F299B72FBEF0DD00F905B8 /* GoalProgressBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F299B62FBEF0DD00F905B8 /* GoalProgressBadge.swift */; };
 		A3F299B92FBEF0F100F905B8 /* MissionAccomplishedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F299B82FBEF0F100F905B8 /* MissionAccomplishedView.swift */; };
 		A3F548CB2FBFEB95008288F9 /* MyQRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F548CA2FBFEB95008288F9 /* MyQRCodeView.swift */; };
 		A3F548CD2FBFF07C008288F9 /* QRCodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F548CC2FBFF07C008288F9 /* QRCodeScannerView.swift */; };
 		A3F548D12FBFF0E7008288F9 /* QRCodeDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F548D02FBFF0E7008288F9 /* QRCodeDemoView.swift */; };
-		A3F548DB2FC298D1008288F9 /* LaterApp 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F548DA2FC298D1008288F9 /* LaterApp 2.swift */; };
 		A3F548DD2FC29A32008288F9 /* FloatingTabContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F548DC2FC29A32008288F9 /* FloatingTabContainer.swift */; };
 		A3FBC8682FAAD6000020FAF9 /* DevelopingPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FBC8672FAAD5F90020FAF9 /* DevelopingPhotoView.swift */; };
 		A3FBC86C2FAADC120020FAF9 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FBC86B2FAADC0A0020FAF9 /* ProfileView.swift */; };
@@ -195,7 +174,6 @@
 		A327418E2FC2A40200EE7181 /* AdvancedEffectsSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedEffectsSystem.swift; sourceTree = "<group>"; };
 		A32741922FC2A76300EE7181 /* MissingComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissingComponents.swift; sourceTree = "<group>"; };
 		A32963812FBC4A46006F2E49 /* ProfileCreationFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCreationFlowView.swift; sourceTree = "<group>"; };
-		A32963832FBC9EC9006F2E49 /* ProfileView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProfileView 2.swift"; sourceTree = "<group>"; };
 		A3348F8A2FC5AAC2006568EE /* ColorExtensions 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColorExtensions 2.swift"; sourceTree = "<group>"; };
 		A3348F8C2FC5AAEA006568EE /* CaptionInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionInputView.swift; sourceTree = "<group>"; };
 		A3348F922FC67613006568EE /* VotingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VotingManager.swift; sourceTree = "<group>"; };
@@ -237,17 +215,12 @@
 		A34DCDD62FBEF6B6003A334D /* CustomStampEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomStampEditor.swift; sourceTree = "<group>"; };
 		A34DCDD82FBEF6DE003A334D /* RatingSystemDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatingSystemDemo.swift; sourceTree = "<group>"; };
 		A35877142FE60D9400568346 /* find_duplicate_files.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = find_duplicate_files.sh; sourceTree = "<group>"; };
-		A36B18792FE3AB5300E30A17 /* Color+Neon 5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Neon 5.swift"; sourceTree = "<group>"; };
-		A36B187B2FE3AB5600E30A17 /* AppIconPickerView 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppIconPickerView 3.swift"; sourceTree = "<group>"; };
 		A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterPhotoExtensions.swift; sourceTree = "<group>"; };
 		A36F469E2FD91AD800935607 /* CommonExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonExtensions.swift; sourceTree = "<group>"; };
 		A36F46A22FD91B1300935607 /* find_duplicates 2.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "find_duplicates 2.sh"; sourceTree = "<group>"; };
 		A36F46A62FD91B5600935607 /* QUICK_FIX_CARD.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = QUICK_FIX_CARD.txt; sourceTree = "<group>"; };
 		A36F46AA2FD93B9800935607 /* find_duplicates 3.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "find_duplicates 3.sh"; sourceTree = "<group>"; };
-		A36F46AE2FDA345300935607 /* VotingManager 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VotingManager 3.swift"; sourceTree = "<group>"; };
 		A36F46B22FDA349A00935607 /* cleanup_xcode.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = cleanup_xcode.sh; sourceTree = "<group>"; };
-		A36F46BC2FDA3BAE00935607 /* ConnectionView 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConnectionView 3.swift"; sourceTree = "<group>"; };
-		A36F46C02FDA3BBA00935607 /* ProfileView 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProfileView 3.swift"; sourceTree = "<group>"; };
 		A36F46C62FDA3BE300935607 /* CountdownBanner 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CountdownBanner 2.swift"; sourceTree = "<group>"; };
 		A36F46CE2FDA3C5100935607 /* PhotoUnlockCelebration 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PhotoUnlockCelebration 2.swift"; sourceTree = "<group>"; };
 		A36F46D22FDA3C7D00935607 /* PhotoUnlockUtilities 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PhotoUnlockUtilities 2.swift"; sourceTree = "<group>"; };
@@ -256,10 +229,8 @@
 		A377CEF62FC2FFD600C181AB /* LiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidBackgroundView.swift; sourceTree = "<group>"; };
 		A377CEF82FC2FFF300C181AB /* CalendarArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarArchiveView.swift; sourceTree = "<group>"; };
 		A377CEFA2FC3003500C181AB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		A377CEFE2FC32B8900C181AB /* ConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionView.swift; sourceTree = "<group>"; };
 		A377CF002FC32B9700C181AB /* FollowingManager 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FollowingManager 2.swift"; sourceTree = "<group>"; };
 		A377CF0C2FC32D0100C181AB /* SharedUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUtilities.swift; sourceTree = "<group>"; };
-		A377CF0E2FC32D1F00C181AB /* CalendarArchiveView_Fixed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarArchiveView_Fixed.swift; sourceTree = "<group>"; };
 		A377CF102FC32D5200C181AB /* ConnectionView_Fixed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionView_Fixed.swift; sourceTree = "<group>"; };
 		A38EEA9F2FC84AF400D23F0C /* CircleManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleManagementView.swift; sourceTree = "<group>"; };
 		A38EEAA32FC84B5300D23F0C /* LaterGroup_Updated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterGroup_Updated.swift; sourceTree = "<group>"; };
@@ -270,9 +241,7 @@
 		A38EEABB2FC8530400D23F0C /* ProfileViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewExtensions.swift; sourceTree = "<group>"; };
 		A38EEAC12FC857D900D23F0C /* DisposableCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisposableCameraView.swift; sourceTree = "<group>"; };
 		A38EEAC32FC8580800D23F0C /* ArcDialGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcDialGalleryView.swift; sourceTree = "<group>"; };
-		A38EEAC92FC8586D00D23F0C /* ColorExtensions 4.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColorExtensions 4.swift"; sourceTree = "<group>"; };
 		A38EEACD2FC85B0800D23F0C /* MultiGroupGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiGroupGalleryView.swift; sourceTree = "<group>"; };
-		A398797E2FD47C99008A3615 /* ColorExtensions 9.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColorExtensions 9.swift"; sourceTree = "<group>"; };
 		A39EF5C02FBE856C00A7A965 /* OnboardingView_Complete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView_Complete.swift; sourceTree = "<group>"; };
 		A39EF5C22FBE8AB600A7A965 /* AppStorageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageData.swift; sourceTree = "<group>"; };
 		A3B65AD12FBFD72D00ADFC09 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
@@ -283,12 +252,8 @@
 		A3C2D9B12FC59B4200BB731B /* ButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyles.swift; sourceTree = "<group>"; };
 		A3C8C5332FC3352700746F73 /* HapticsManager 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HapticsManager 2.swift"; sourceTree = "<group>"; };
 		A3C8C5352FC3352A00746F73 /* HapticsManager 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HapticsManager 3.swift"; sourceTree = "<group>"; };
-		A3C8C5372FC3352D00746F73 /* CalendarArchiveView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CalendarArchiveView 2.swift"; sourceTree = "<group>"; };
-		A3C8C5392FC3353000746F73 /* CalendarArchiveView_Fixed 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CalendarArchiveView_Fixed 2.swift"; sourceTree = "<group>"; };
-		A3C8C53B2FC3353300746F73 /* ConnectionView_Fixed 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConnectionView_Fixed 2.swift"; sourceTree = "<group>"; };
 		A3C8C53D2FC3353500746F73 /* LiquidBackgroundView 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LiquidBackgroundView 3.swift"; sourceTree = "<group>"; };
 		A3C8C5412FC33BFC00746F73 /* LiquidBackgroundView 4.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LiquidBackgroundView 4.swift"; sourceTree = "<group>"; };
-		A3C8C5432FC33C2400746F73 /* CalendarArchiveView 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CalendarArchiveView 3.swift"; sourceTree = "<group>"; };
 		A3C8C54B2FC53B3800746F73 /* fix_duplicates.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = fix_duplicates.sh; sourceTree = "<group>"; };
 		A3CEC6372FBDDDC7001F650B /* ColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensions.swift; sourceTree = "<group>"; };
 		A3CEC6392FBDDFD4001F650B /* PhotoUnlockUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoUnlockUtilities.swift; sourceTree = "<group>"; };
@@ -301,27 +266,20 @@
 		A3CF27BC2FBD623A00DA8913 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A3D53C492FC882CE00D675AE /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
 		A3D53C4B2FC88DB800D675AE /* Color+Neon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Neon.swift"; sourceTree = "<group>"; };
-		A3D53C4D2FC93E9900D675AE /* Color+Neon 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Neon 2.swift"; sourceTree = "<group>"; };
-		A3D53C4F2FC955DC00D675AE /* Color+Neon 3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Neon 3.swift"; sourceTree = "<group>"; };
 		A3D53C5F2FC98E3600D675AE /* EnhancedCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedCameraView.swift; sourceTree = "<group>"; };
 		A3D53C612FC98E8A00D675AE /* ImprovedConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImprovedConnectionView.swift; sourceTree = "<group>"; };
 		A3D53C652FC98F1C00D675AE /* SupportingComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportingComponents.swift; sourceTree = "<group>"; };
-		A3D53C6D2FC9942100D675AE /* ColorExtensions 5.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColorExtensions 5.swift"; sourceTree = "<group>"; };
 		A3D639B62FC5A04E0020EF04 /* PhotoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoManager.swift; sourceTree = "<group>"; };
 		A3D639BA2FC5A21F0020EF04 /* SettingsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMenuView.swift; sourceTree = "<group>"; };
-		A3DD74DC2FCA7A21004AD0C1 /* ConnectionView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConnectionView 2.swift"; sourceTree = "<group>"; };
-		A3DD74DE2FCA7A45004AD0C1 /* TodayView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TodayView 2.swift"; sourceTree = "<group>"; };
 		A3DD74E02FCA7A6E004AD0C1 /* MultiGroupGalleryView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MultiGroupGalleryView 2.swift"; sourceTree = "<group>"; };
 		A3DD74E22FCA7A7F004AD0C1 /* MinimalSplashView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MinimalSplashView 2.swift"; sourceTree = "<group>"; };
 		A3E9BE792FD2AA6D005A5FE8 /* ColorExtensions 8.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColorExtensions 8.swift"; sourceTree = "<group>"; };
-		A3F24EBE2FDBCB16000B01A7 /* ColorExtensions 6.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColorExtensions 6.swift"; sourceTree = "<group>"; };
 		A3F299B22FBEF05E00F905B8 /* DailyGoalSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyGoalSelector.swift; sourceTree = "<group>"; };
 		A3F299B62FBEF0DD00F905B8 /* GoalProgressBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalProgressBadge.swift; sourceTree = "<group>"; };
 		A3F299B82FBEF0F100F905B8 /* MissionAccomplishedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionAccomplishedView.swift; sourceTree = "<group>"; };
 		A3F548CA2FBFEB95008288F9 /* MyQRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyQRCodeView.swift; sourceTree = "<group>"; };
 		A3F548CC2FBFF07C008288F9 /* QRCodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeScannerView.swift; sourceTree = "<group>"; };
 		A3F548D02FBFF0E7008288F9 /* QRCodeDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeDemoView.swift; sourceTree = "<group>"; };
-		A3F548DA2FC298D1008288F9 /* LaterApp 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LaterApp 2.swift"; sourceTree = "<group>"; };
 		A3F548DC2FC29A32008288F9 /* FloatingTabContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingTabContainer.swift; sourceTree = "<group>"; };
 		A3FBC8672FAAD5F90020FAF9 /* DevelopingPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopingPhotoView.swift; sourceTree = "<group>"; };
 		A3FBC86B2FAADC0A0020FAF9 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -366,7 +324,6 @@
 				A3FDAEF42FB72447001484F7 /* GoalDeclarationView.swift */,
 				A3FDAEF62FB74E0F001484F7 /* OnboardingFlowView.swift */,
 				A32963812FBC4A46006F2E49 /* ProfileCreationFlowView.swift */,
-				A32963832FBC9EC9006F2E49 /* ProfileView 2.swift */,
 				A3CF27BC2FBD623A00DA8913 /* OnboardingView.swift */,
 				A31F9CC42FBDD0D0003CEAB8 /* NotificationModels.swift */,
 				A31F9CC62FBDD0E6003CEAB8 /* NotificationsView.swift */,
@@ -407,7 +364,6 @@
 				A3F548CA2FBFEB95008288F9 /* MyQRCodeView.swift */,
 				A3F548CC2FBFF07C008288F9 /* QRCodeScannerView.swift */,
 				A3F548D02FBFF0E7008288F9 /* QRCodeDemoView.swift */,
-				A3F548DA2FC298D1008288F9 /* LaterApp 2.swift */,
 				A3F548DC2FC29A32008288F9 /* FloatingTabContainer.swift */,
 				A327416E2FC29D7000EE7181 /* DevelopingView.swift */,
 				A32741702FC29DE700EE7181 /* HapticsManager.swift */,
@@ -427,19 +383,13 @@
 				A377CEF62FC2FFD600C181AB /* LiquidBackgroundView.swift */,
 				A377CEF82FC2FFF300C181AB /* CalendarArchiveView.swift */,
 				A377CEFA2FC3003500C181AB /* HomeView.swift */,
-				A377CEFE2FC32B8900C181AB /* ConnectionView.swift */,
 				A377CF002FC32B9700C181AB /* FollowingManager 2.swift */,
 				A377CF0C2FC32D0100C181AB /* SharedUtilities.swift */,
-				A377CF0E2FC32D1F00C181AB /* CalendarArchiveView_Fixed.swift */,
 				A377CF102FC32D5200C181AB /* ConnectionView_Fixed.swift */,
 				A3C8C5332FC3352700746F73 /* HapticsManager 2.swift */,
 				A3C8C5352FC3352A00746F73 /* HapticsManager 3.swift */,
-				A3C8C5372FC3352D00746F73 /* CalendarArchiveView 2.swift */,
-				A3C8C5392FC3353000746F73 /* CalendarArchiveView_Fixed 2.swift */,
-				A3C8C53B2FC3353300746F73 /* ConnectionView_Fixed 2.swift */,
 				A3C8C53D2FC3353500746F73 /* LiquidBackgroundView 3.swift */,
 				A3C8C5412FC33BFC00746F73 /* LiquidBackgroundView 4.swift */,
-				A3C8C5432FC33C2400746F73 /* CalendarArchiveView 3.swift */,
 				A3C8C54B2FC53B3800746F73 /* fix_duplicates.sh */,
 				A3C2D9A92FC5981E00BB731B /* ModernUserSearchView.swift */,
 				A3C2D9B12FC59B4200BB731B /* ButtonStyles.swift */,
@@ -473,39 +423,26 @@
 				A38EEABB2FC8530400D23F0C /* ProfileViewExtensions.swift */,
 				A38EEAC12FC857D900D23F0C /* DisposableCameraView.swift */,
 				A38EEAC32FC8580800D23F0C /* ArcDialGalleryView.swift */,
-				A38EEAC92FC8586D00D23F0C /* ColorExtensions 4.swift */,
 				A38EEACD2FC85B0800D23F0C /* MultiGroupGalleryView.swift */,
 				A3D53C492FC882CE00D675AE /* Color+Brand.swift */,
 				A3D53C4B2FC88DB800D675AE /* Color+Neon.swift */,
-				A3D53C4D2FC93E9900D675AE /* Color+Neon 2.swift */,
-				A3D53C4F2FC955DC00D675AE /* Color+Neon 3.swift */,
 				A3D53C5F2FC98E3600D675AE /* EnhancedCameraView.swift */,
 				A3D53C612FC98E8A00D675AE /* ImprovedConnectionView.swift */,
 				A3D53C652FC98F1C00D675AE /* SupportingComponents.swift */,
-				A3D53C6D2FC9942100D675AE /* ColorExtensions 5.swift */,
 				A3BBE1792FC996190092EEB3 /* find_duplicates.sh */,
-				A3DD74DC2FCA7A21004AD0C1 /* ConnectionView 2.swift */,
-				A3DD74DE2FCA7A45004AD0C1 /* TodayView 2.swift */,
 				A3DD74E02FCA7A6E004AD0C1 /* MultiGroupGalleryView 2.swift */,
 				A3DD74E22FCA7A7F004AD0C1 /* MinimalSplashView 2.swift */,
 				A3E9BE792FD2AA6D005A5FE8 /* ColorExtensions 8.swift */,
-				A398797E2FD47C99008A3615 /* ColorExtensions 9.swift */,
 				A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */,
 				A36F469E2FD91AD800935607 /* CommonExtensions.swift */,
 				A36F46A22FD91B1300935607 /* find_duplicates 2.sh */,
 				A36F46A62FD91B5600935607 /* QUICK_FIX_CARD.txt */,
 				A36F46AA2FD93B9800935607 /* find_duplicates 3.sh */,
-				A36F46AE2FDA345300935607 /* VotingManager 3.swift */,
 				A36F46B22FDA349A00935607 /* cleanup_xcode.sh */,
-				A36F46BC2FDA3BAE00935607 /* ConnectionView 3.swift */,
-				A36F46C02FDA3BBA00935607 /* ProfileView 3.swift */,
 				A36F46C62FDA3BE300935607 /* CountdownBanner 2.swift */,
 				A36F46CE2FDA3C5100935607 /* PhotoUnlockCelebration 2.swift */,
 				A36F46D22FDA3C7D00935607 /* PhotoUnlockUtilities 2.swift */,
-				A3F24EBE2FDBCB16000B01A7 /* ColorExtensions 6.swift */,
 				A3455F9F2FE0032300AD4A08 /* AlternativeCaptionInputView.swift */,
-				A36B18792FE3AB5300E30A17 /* Color+Neon 5.swift */,
-				A36B187B2FE3AB5600E30A17 /* AppIconPickerView 3.swift */,
 				A35877142FE60D9400568346 /* find_duplicate_files.sh */,
 				A33835192FEE9DCE009F718B /* AppIconPickerView.swift */,
 				A338351B2FEE9DD7009F718B /* AppearanceSettingsView.swift */,
@@ -540,8 +477,6 @@
 			dependencies = (
 			);
 			name = "Later 再度";
-			packageProductDependencies = (
-			);
 			productName = "Later 再度";
 			productReference = A341E8092FA9DD1100E03515 /* Later 再度.app */;
 			productType = "com.apple.product-type.application";
@@ -607,7 +542,6 @@
 				A3CEC6382FBDDDC7001F650B /* ColorExtensions.swift in Sources */,
 				A3FE0C762FBEFC1B009437FC /* DailyGoalLockOverlay.swift in Sources */,
 				A32963822FBC4A46006F2E49 /* ProfileCreationFlowView.swift in Sources */,
-				A36F46AF2FDA345300935607 /* VotingManager 3.swift in Sources */,
 				A3E9BE7A2FD2AA6D005A5FE8 /* ColorExtensions 8.swift in Sources */,
 				A377CF0D2FC32D0100C181AB /* SharedUtilities.swift in Sources */,
 				A377CF012FC32B9700C181AB /* FollowingManager 2.swift in Sources */,
@@ -625,8 +559,6 @@
 				A3348FB12FC69B2F006568EE /* CircleView.swift in Sources */,
 				A327418B2FC2A39D00EE7181 /* ModernCalendarView.swift in Sources */,
 				A32741932FC2A76300EE7181 /* MissingComponents.swift in Sources */,
-				A3F548DB2FC298D1008288F9 /* LaterApp 2.swift in Sources */,
-				A3DD74DF2FCA7A45004AD0C1 /* TodayView 2.swift in Sources */,
 				A3CF27BD2FBD623A00DA8913 /* OnboardingView.swift in Sources */,
 				A3CEC64C2FBDF4CB001F650B /* FollowingComponents 2.swift in Sources */,
 				A3F299B92FBEF0F100F905B8 /* MissionAccomplishedView.swift in Sources */,
@@ -643,20 +575,15 @@
 				A3CEC6402FBDE324001F650B /* AppTheme.swift in Sources */,
 				A3348F8B2FC5AAC2006568EE /* ColorExtensions 2.swift in Sources */,
 				A3C8C5362FC3352A00746F73 /* HapticsManager 3.swift in Sources */,
-				A3D53C4E2FC93E9900D675AE /* Color+Neon 2.swift in Sources */,
 				A3348F8D2FC5AAEA006568EE /* CaptionInputView.swift in Sources */,
-				A3C8C5442FC33C2400746F73 /* CalendarArchiveView 3.swift in Sources */,
 				A3B65AD22FBFD72D00ADFC09 /* AppColors.swift in Sources */,
-				A36B187C2FE3AB5600E30A17 /* AppIconPickerView 3.swift in Sources */,
 				A3348F9B2FC6770B006568EE /* GroupManagementView.swift in Sources */,
 				A3FBC86C2FAADC120020FAF9 /* ProfileView.swift in Sources */,
 				A3F548D12FBFF0E7008288F9 /* QRCodeDemoView.swift in Sources */,
-				A36F46BD2FDA3BAE00935607 /* ConnectionView 3.swift in Sources */,
 				A341E8342FAA126E00E03515 /* GalleryView.swift in Sources */,
 				A341E82C2FAA11E200E03515 /* LaterApp.swift in Sources */,
 				A34DCDCB2FBEF5C7003A334D /* UnlockTimeManager.swift in Sources */,
 				A3FBC8682FAAD6000020FAF9 /* DevelopingPhotoView.swift in Sources */,
-				A377CF0F2FC32D1F00C181AB /* CalendarArchiveView_Fixed.swift in Sources */,
 				A39EF5C32FBE8AB600A7A965 /* AppStorageData.swift in Sources */,
 				A304A8EB2FBDD435009B7CA9 /* FollowingComponents.swift in Sources */,
 				A31F9CC72FBDD0E6003CEAB8 /* NotificationsView.swift in Sources */,
@@ -683,7 +610,6 @@
 				A3348FA92FC69671006568EE /* MyQRCodeView 2.swift in Sources */,
 				A3348F992FC6768A006568EE /* VotingResultsView.swift in Sources */,
 				A38EEAB82FC852BF00D23F0C /* MessageInboxView.swift in Sources */,
-				A3D53C502FC955DC00D675AE /* Color+Neon 3.swift in Sources */,
 				A34DCDD52FBEF693003A334D /* RatingStatsCard.swift in Sources */,
 				A34DCDD12FBEF647003A334D /* PhotoRating.swift in Sources */,
 				A3FBC86E2FAB1FDB0020FAF9 /* UserProfile.swift in Sources */,
@@ -692,34 +618,24 @@
 				A341E8362FAA128100E03515 /* TodayView.swift in Sources */,
 				A3DD74E32FCA7A7F004AD0C1 /* MinimalSplashView 2.swift in Sources */,
 				A3D639B72FC5A04E0020EF04 /* PhotoManager.swift in Sources */,
-				A32963842FBC9EC9006F2E49 /* ProfileView 2.swift in Sources */,
 				A341E82A2FAA11D400E03515 /* LaterModels.swift in Sources */,
-				A3C8C53C2FC3353300746F73 /* ConnectionView_Fixed 2.swift in Sources */,
-				A377CEFF2FC32B8900C181AB /* ConnectionView.swift in Sources */,
 				A377CEF72FC2FFD600C181AB /* LiquidBackgroundView.swift in Sources */,
-				A3D53C6E2FC9942100D675AE /* ColorExtensions 5.swift in Sources */,
 				A3C8C53E2FC3353500746F73 /* LiquidBackgroundView 3.swift in Sources */,
-				A3DD74DD2FCA7A21004AD0C1 /* ConnectionView 2.swift in Sources */,
 				A32741892FC2A37D00EE7181 /* ModernHomeView.swift in Sources */,
 				A3D639BB2FC5A21F0020EF04 /* SettingsMenuView.swift in Sources */,
 				A327417F2FC2A16400EE7181 /* GlobalSecretFeedView.swift in Sources */,
 				A327416F2FC29D7000EE7181 /* DevelopingView.swift in Sources */,
-				A36F46C12FDA3BBA00935607 /* ProfileView 3.swift in Sources */,
 				A33835222FEE9DE7009F718B /* PrivacyPolicyView.swift in Sources */,
-				A3C8C5382FC3352D00746F73 /* CalendarArchiveView 2.swift in Sources */,
 				A3D53C602FC98E3600D675AE /* EnhancedCameraView.swift in Sources */,
 				A3348FAB2FC69693006568EE /* QRScanResultView.swift in Sources */,
 				A3F548CD2FBFF07C008288F9 /* QRCodeScannerView.swift in Sources */,
 				A3CEC63A2FBDDFD4001F650B /* PhotoUnlockUtilities.swift in Sources */,
 				A38EEAA42FC84B5300D23F0C /* LaterGroup_Updated.swift in Sources */,
-				A36B187A2FE3AB5300E30A17 /* Color+Neon 5.swift in Sources */,
 				A32741712FC29DE700EE7181 /* HapticsManager.swift in Sources */,
 				A3348F972FC6765A006568EE /* AnonymousVotingFeedView.swift in Sources */,
 				A39EF5C12FBE856C00A7A965 /* OnboardingView_Complete.swift in Sources */,
 				A341E8302FAA11FE00E03515 /* ConnectionsView.swift in Sources */,
 				A3348F932FC67613006568EE /* VotingManager.swift in Sources */,
-				A3F24EBF2FDBCB16000B01A7 /* ColorExtensions 6.swift in Sources */,
-				A3C8C53A2FC3353000746F73 /* CalendarArchiveView_Fixed 2.swift in Sources */,
 				A3348FAD2FC696D7006568EE /* ConnectionsViewComplete.swift in Sources */,
 				A3DD74E12FCA7A6E004AD0C1 /* MultiGroupGalleryView 2.swift in Sources */,
 				A3D53C4A2FC882CE00D675AE /* Color+Brand.swift in Sources */,
@@ -733,10 +649,8 @@
 				A3348F9D2FC67742006568EE /* VotingAutomationManager.swift in Sources */,
 				A33835202FEE9DE1009F718B /* HelpAndSupportView.swift in Sources */,
 				A38EEACE2FC85B0800D23F0C /* MultiGroupGalleryView.swift in Sources */,
-				A398797F2FD47C99008A3615 /* ColorExtensions 9.swift in Sources */,
 				A327417D2FC2A12C00EE7181 /* GlobalSecretRevealDemoView.swift in Sources */,
 				A38EEAC42FC8580800D23F0C /* ArcDialGalleryView.swift in Sources */,
-				A38EEACA2FC8586D00D23F0C /* ColorExtensions 4.swift in Sources */,
 				A3F299B72FBEF0DD00F905B8 /* GoalProgressBadge.swift in Sources */,
 				A3FDAEF32FB72048001484F7 /* ShareSheet.swift in Sources */,
 				A3F548CB2FBFEB95008288F9 /* MyQRCodeView.swift in Sources */,
