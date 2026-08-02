@@ -166,6 +166,42 @@ final class CloudKitManager: NSObject {
             applyDeletion(recordID: deletion.recordID, recordType: deletion.recordType)
         }
         try? modelContext.save()
+        evaluateGroupUnlockConditions()
+    }
+
+    /// グループごとに早期解禁の条件(今日中・全員撮影済み・目標枚数到達)を判定し、
+    /// 揃っていれば当日のLaterPhotoをローカルで解禁状態にする。自分が撮影した写真については
+    /// 画像入りで再送する(他人の写真の実データはこの端末に存在しないため再送できない —
+    /// その人自身の端末が、同じ判定を独立に行って自分の写真を送信する)。
+    /// リモート通知によるfetch後、および自分の撮影直後の両方から呼ばれる。
+    func evaluateGroupUnlockConditions() {
+        guard let groups = try? modelContext.fetch(FetchDescriptor<LaterGroup>()) else { return }
+        guard let allPhotos = try? modelContext.fetch(FetchDescriptor<LaterPhoto>()) else { return }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var didChange = false
+
+        for group in groups {
+            let groupID = group.id
+            let memberIDs = Set(group.members.map(\.id))
+            let todaysPhotos = allPhotos.filter { $0.groupID == groupID && $0.captureDate >= today }
+            let todaysAuthorIDs = todaysPhotos.compactMap { $0.owner?.id }
+
+            guard GroupUnlockPolicy.shouldUnlock(memberIDs: memberIDs, todaysPhotoAuthorIDs: todaysAuthorIDs) else { continue }
+
+            for photo in todaysPhotos where !photo.isUnlocked {
+                photo.isUnlocked = true
+                didChange = true
+                if photo.authorCloudKitUserRecordName == currentUserRecordName {
+                    markForUpload(photo: photo, in: group)
+                }
+            }
+        }
+
+        if didChange {
+            try? modelContext.save()
+        }
     }
 
     private func apply(record: CKRecord) {

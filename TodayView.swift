@@ -359,7 +359,11 @@ struct TodayView: View {
 
         // 自動アンロック
         autoUnlockPhotos()
-        
+
+        // 自分の撮影で早期解禁の条件が揃う(=自分が最後の1人だった)可能性があるため、
+        // プッシュ通知の往復を待たずにこの場でも判定しておく。
+        CloudKitManager.current?.evaluateGroupUnlockConditions()
+
         // 成功メッセージ表示
         withAnimation(.spring()) {
             showSuccessMessage = true

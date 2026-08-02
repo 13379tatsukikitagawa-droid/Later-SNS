@@ -12,6 +12,7 @@
 		7B2B451E280BFE3372DED15F /* CloudKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15C54A1DF7CA538AE122F15 /* CloudKitManager.swift */; };
 		83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */; };
 		8664DB665FE742D318C43FED /* CaptionEntryPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */; };
+		8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512B00F2AAA89453E3C98FD5 /* GroupUnlockPolicy.swift */; };
 		A304A8E92FBDD3EF009B7CA9 /* FollowingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A304A8E82FBDD3EF009B7CA9 /* FollowingManager.swift */; };
 		A304A8EB2FBDD435009B7CA9 /* FollowingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A304A8EA2FBDD435009B7CA9 /* FollowingComponents.swift */; };
 		A304A8EF2FBDD4D9009B7CA9 /* ModernFollowButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A304A8EE2FBDD4D9009B7CA9 /* ModernFollowButton.swift */; };
@@ -158,6 +159,7 @@
 
 /* Begin PBXFileReference section */
 		279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareInviteInbox.swift; sourceTree = "<group>"; };
+		512B00F2AAA89453E3C98FD5 /* GroupUnlockPolicy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupUnlockPolicy.swift; sourceTree = "<group>"; };
 		6C61911DB4CF172CE8BAA8EE /* GroupSharingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupSharingService.swift; sourceTree = "<group>"; };
 		9BD678D0F33848FED35DBA5D /* AppleSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSignInView.swift; sourceTree = "<group>"; };
 		A15C54A1DF7CA538AE122F15 /* CloudKitManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudKitManager.swift; sourceTree = "<group>"; };
@@ -471,6 +473,7 @@
 				279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */,
 				BA74312F8635A2490D14152A /* AppDelegate.swift */,
 				D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */,
+				512B00F2AAA89453E3C98FD5 /* GroupUnlockPolicy.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -698,6 +701,7 @@
 				83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */,
 				0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */,
 				8664DB665FE742D318C43FED /* CaptionEntryPromptView.swift in Sources */,
+				8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
