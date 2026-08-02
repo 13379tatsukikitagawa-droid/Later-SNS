@@ -12,9 +12,16 @@ struct SettingsMenuView: View {
     @State private var showingHelp = false
     @State private var showingPrivacy = false
     @State private var showingThemeColorPicker = false
-    
+    @State private var showingSignOutConfirm = false
+
     // テーマカラー
     @AppStorage("themeColor") private var themeColorName: String = "green"
+
+    // サインアウト用
+    @AppStorage("appleUserID") private var appleUserID: String = ""
+    @AppStorage("appleFullName") private var appleFullName: String = ""
+    @AppStorage("currentProfileID") private var currentProfileID: String = ""
+    @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
     
     private var themeColor: Color {
         switch themeColorName {
@@ -179,7 +186,7 @@ struct SettingsMenuView: View {
                     showingHelp = true
                 }
                 
-                MenuRow(
+    MenuRow(
                     icon: "lock.shield.fill",
                     iconColor: .green,
                     title: "プライバシーとポリシー",
@@ -189,8 +196,40 @@ struct SettingsMenuView: View {
                 }
             }
             .padding(.top, 8)
+
+            // アカウントセクション
+            VStack(spacing: 12) {
+                sectionTitle("アカウント")
+
+                MenuRow(
+                    icon: "apple.logo",
+                    iconColor: .white,
+                    title: "サインアウト",
+                    subtitle: "Apple IDでサインイン中"
+                ) {
+                    showingSignOutConfirm = true
+                }
+            }
+            .padding(.top, 8)
         }
         .padding(.horizontal, 20)
+        .alert("サインアウト", isPresented: $showingSignOutConfirm) {
+            Button("キャンセル", role: .cancel) {}
+            Button("サインアウト", role: .destructive) {
+                signOut()
+            }
+        } message: {
+            Text("サインアウトしてもよろしいですか？")
+        }
+    }
+
+    private func signOut() {
+        appleUserID = ""
+        appleFullName = ""
+        currentProfileID = ""
+        isSetupCompleted = false
+        dismiss()
+        isShowing = false
     }
     
     // MARK: - App Info Section

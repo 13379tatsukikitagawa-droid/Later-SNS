@@ -1017,7 +1017,9 @@ struct ProfileView: View {
 // MARK: - 🎯 プロフィール編集画面（@AppStorageと完全同期）
 struct ProfileEditView: View {
     @Environment(\.dismiss) private var dismiss
-    
+    @Environment(\.modelContext) private var modelContext
+    @Query private var profiles: [UserProfile]
+
     // 🎯 オンボーディングと共通の@AppStorageキー
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("userID") private var userID: String = ""
@@ -1188,11 +1190,26 @@ struct ProfileEditView: View {
         userID = inputUserID
         userBio = inputBio
         profileImageData = inputImageData
-        
+
+        // 実際のUserProfile(SwiftData)にも反映し、参加中の全グループへ再同期する。
+        if let user = UserProfile.current(from: profiles) {
+            user.name = inputName
+            user.username = inputUserID
+            user.bio = inputBio
+            user.profileImageData = inputImageData
+            try? modelContext.save()
+
+            if let cloudKitManager = CloudKitManager.current {
+                for group in user.groups {
+                    cloudKitManager.markForUpload(userProfile: user, in: group)
+                }
+            }
+        }
+
         // 成功のHaptic
         let successFeedback = UINotificationFeedbackGenerator()
         successFeedback.notificationOccurred(.success)
-        
+
         dismiss()
     }
 }
