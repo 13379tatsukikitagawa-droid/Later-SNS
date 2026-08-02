@@ -12,7 +12,10 @@ final class UserProfile {
     var profileImageData: Data?
     var inviteCode: String = ""
     var dailyGoal: Int = 3 // 🌟 目標枚数（初期値3）
-    
+    /// Sign in with Appleのユーザー識別子。同じApple IDで再サインインした際に
+    /// 同じUserProfileを再利用するためのキー。
+    var appleUserID: String?
+
     // フォロー中のユーザー
     @Relationship
     var following: [UserProfile] = []

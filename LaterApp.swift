@@ -23,6 +23,8 @@ struct RootView: View {
 
     // 🎯 メインのセットアップ完了フラグ（初期値：false）
     @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
+    // Sign in with Apple 済みかどうか
+    @AppStorage("appleUserID") private var appleUserID: String = ""
 
     private func resetIfNeeded() {
         let formatter = DateFormatter()
@@ -61,7 +63,9 @@ struct RootView: View {
             } else {
                 // メインコンテンツ
                 Group {
-                    if !isSetupCompleted {
+                    if appleUserID.isEmpty {
+                        AppleSignInView()
+                    } else if !isSetupCompleted {
                         OnboardingView()
                     } else {
                         MainTabView()

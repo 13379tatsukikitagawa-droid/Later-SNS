@@ -147,9 +147,11 @@
 		A3FE0C762FBEFC1B009437FC /* DailyGoalLockOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FE0C752FBEFC1B009437FC /* DailyGoalLockOverlay.swift */; };
 		A3FE0C782FBEFCB6009437FC /* GoalProgressBadge 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FE0C772FBEFCB6009437FC /* GoalProgressBadge 2.swift */; };
 		A3FE0C802FBEFD73009437FC /* DailyGoalLockSystemDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FE0C7F2FBEFD73009437FC /* DailyGoalLockSystemDemo.swift */; };
+		D64957E75D653DB410948C03 /* AppleSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BD678D0F33848FED35DBA5D /* AppleSignInView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9BD678D0F33848FED35DBA5D /* AppleSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSignInView.swift; sourceTree = "<group>"; };
 		A304A8E82FBDD3EF009B7CA9 /* FollowingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowingManager.swift; sourceTree = "<group>"; };
 		A304A8EA2FBDD435009B7CA9 /* FollowingComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowingComponents.swift; sourceTree = "<group>"; };
 		A304A8EE2FBDD4D9009B7CA9 /* ModernFollowButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernFollowButton.swift; sourceTree = "<group>"; };
@@ -450,6 +452,7 @@
 				A338351F2FEE9DE1009F718B /* HelpAndSupportView.swift */,
 				A33835212FEE9DE7009F718B /* PrivacyPolicyView.swift */,
 				A33835232FEE9E03009F718B /* ThemeColorPickerView.swift */,
+				9BD678D0F33848FED35DBA5D /* AppleSignInView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -670,6 +673,7 @@
 				A36F46972FD8F95500935607 /* LaterPhotoExtensions.swift in Sources */,
 				A3348FA32FC691D9006568EE /* MinimalSplashView.swift in Sources */,
 				A38EEAA02FC84AF400D23F0C /* CircleManagementView.swift in Sources */,
+				D64957E75D653DB410948C03 /* AppleSignInView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

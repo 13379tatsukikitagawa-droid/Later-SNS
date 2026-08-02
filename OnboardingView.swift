@@ -17,6 +17,8 @@ struct OnboardingView: View {
     // レガシー対応（既存のキー）
     @AppStorage("currentProfileID") private var currentProfileID: String = ""
     @AppStorage("isProfileSetupCompleted") private var isProfileSetupCompleted: Bool = false
+    @AppStorage("appleUserID") private var appleUserID: String = ""
+    @AppStorage("appleFullName") private var appleFullName: String = ""
     
     // 入力用の一時State
     @State private var inputName: String = ""
@@ -94,6 +96,9 @@ struct OnboardingView: View {
             // 既存のデータがあれば読み込む
             if !userName.isEmpty {
                 inputName = userName
+            } else if !appleFullName.isEmpty {
+                // Sign in with Appleで取得した氏名を初期値にする
+                inputName = appleFullName
             }
             if !userID.isEmpty {
                 inputUserID = userID
@@ -551,32 +556,15 @@ struct OnboardingView: View {
     }
     
     private func saveToSwiftData(name: String, username: String, bio: String, imageData: Data?) {
-        // SwiftDataへの保存（既存システムとの互換性維持）
-        // Note: UserProfile model must be defined in the same target
-        // If UserProfile is not found, ensure LaterModels.swift is included in your target
-        
-        #if DEBUG
-        print("💾 Attempting to save to SwiftData for legacy support")
-        #endif
-        
-        // This code requires UserProfile to be accessible
-        // If you're getting compilation errors, you can either:
-        // 1. Ensure LaterModels.swift is in your target, or
-        // 2. Remove this legacy support method if no longer needed
-        
-        // Commented out to prevent compilation errors
-        // Uncomment when UserProfile is available in scope
-        
-        /*
         let profile: UserProfile
-        
+
         if let existingID = UUID(uuidString: currentProfileID) {
             let descriptor = FetchDescriptor<UserProfile>(
                 predicate: #Predicate<UserProfile> { userProfile in
                     userProfile.id == existingID
                 }
             )
-            
+
             if let existingProfile = try? context.fetch(descriptor).first {
                 profile = existingProfile
             } else {
@@ -587,19 +575,21 @@ struct OnboardingView: View {
             profile = UserProfile(name: name, username: username)
             context.insert(profile)
         }
-        
+
         profile.name = name
         profile.username = username
         profile.bio = bio
         profile.profileImageData = imageData
-        
+        if !appleUserID.isEmpty {
+            profile.appleUserID = appleUserID
+        }
+
         do {
             try context.save()
             currentProfileID = profile.id.uuidString
         } catch {
             print("❌ SwiftData保存エラー: \(error)")
         }
-        */
     }
 }
 
