@@ -9,6 +9,8 @@ struct TodayView: View {
     @State private var showMissionAccomplished = false
     @State private var showDailyGoalLock = false
     @State private var justCompletedGoal = false
+    @State private var pendingImageData: Data?
+    @State private var showCaptionPrompt = false
     
     private let photoManager = PhotoManager.shared
 
@@ -68,9 +70,24 @@ struct TodayView: View {
             }
             .fullScreenCover(isPresented: $showingCamera) {
                 TrueBlindCameraView { imageData in
-                    savePhoto(imageData)
+                    pendingImageData = imageData
+                    showingCamera = false
                 }
                 .ignoresSafeArea()
+            }
+            .onChange(of: showingCamera) { _, isShowing in
+                if !isShowing, pendingImageData != nil {
+                    showCaptionPrompt = true
+                }
+            }
+            .fullScreenCover(isPresented: $showCaptionPrompt) {
+                CaptionEntryPromptView { caption in
+                    if let imageData = pendingImageData {
+                        savePhoto(imageData, caption: caption)
+                    }
+                    pendingImageData = nil
+                    showCaptionPrompt = false
+                }
             }
             .overlay {
                 if showSuccessMessage {
@@ -299,30 +316,47 @@ struct TodayView: View {
     }
     
     // MARK: - 写真保存処理
-    private func savePhoto(_ imageData: Data) {
+    /// 撮影直後は必ずisUnlocked=falseで保存する。CKRecordConvertibleはisUnlockedが
+    /// falseの間、画像フィールドを一切CKRecordに設定しないため、CloudKit上には
+    /// メタデータ(キャプション含む)だけが「現像中」レコードとして存在し、
+    /// 自分を含めどのユーザーの端末にも画像本体は届かない。
+    private func savePhoto(_ imageData: Data, caption: String? = nil) {
         let calendar = Calendar.current
         let now = Date()
-        
-        // 翌日0時を基点に、1〜4日後にランダムで解禁
+
+        // 翌日0時を基点に、1〜4日後にランダムで解禁(グループ全員の条件が揃えば
+        // GroupUnlockPolicy側の判定でこれより早く解禁されることもある)
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) ?? now
         let startOfTomorrow = calendar.startOfDay(for: tomorrow)
         let randomOffsetDays = Int.random(in: 1...4)
         let unlock = calendar.date(byAdding: .day, value: randomOffsetDays, to: startOfTomorrow) ?? startOfTomorrow
-        
+
+        let user = UserProfile.current(from: profiles)
+        let trimmedCaption = caption?.trimmingCharacters(in: .whitespacesAndNewlines)
+
         let newPhoto = LaterPhoto(
             imageData: imageData,
             captureDate: now,
             unlockDate: unlock,
-            owner: UserProfile.current(from: profiles)
+            owner: user,
+            caption: (trimmedCaption?.isEmpty ?? true) ? nil : trimmedCaption
         )
-        context.insert(newPhoto)
-        
-        // 保存
-        try? context.save()
-        
+        newPhoto.authorCloudKitUserRecordName = CloudKitManager.current?.currentUserRecordName
+        newPhoto.authorNameCache = user?.name
+
+        if let group = user?.groups.first {
+            newPhoto.groupID = group.id
+            context.insert(newPhoto)
+            try? context.save()
+            CloudKitManager.current?.markForUpload(photo: newPhoto, in: group)
+        } else {
+            context.insert(newPhoto)
+            try? context.save()
+        }
+
         // 📸 PhotoManagerのカウントを更新
         photoManager.incrementPhotoCount()
-        
+
         // 自動アンロック
         autoUnlockPhotos()
         
@@ -345,13 +379,22 @@ struct TodayView: View {
     // 実際の削除は後で行います
     
     // MARK: - 自動アンロック処理
+    /// ロック中だった写真をローカルで解禁するとともに、自分が撮影した写真については
+    /// 画像入りでCKRecordを再送する(他人の写真は自分の端末に実データを持っていないため
+    /// 再送できないし、しない。その人自身の端末が同じ処理を行う)。
     private func autoUnlockPhotos() {
         do {
             let descriptor = FetchDescriptor<LaterPhoto>()
             let all = try context.fetch(descriptor)
             let nowDate = Date()
+            let myRecordName = CloudKitManager.current?.currentUserRecordName
             for p in all where p.unlockDate <= nowDate && p.isUnlocked == false {
                 p.isUnlocked = true
+                if let myRecordName, p.authorCloudKitUserRecordName == myRecordName,
+                   let groupID = p.groupID,
+                   let group = try? context.fetch(FetchDescriptor<LaterGroup>()).first(where: { $0.id == groupID }) {
+                    CloudKitManager.current?.markForUpload(photo: p, in: group)
+                }
             }
             try? context.save()
         } catch {

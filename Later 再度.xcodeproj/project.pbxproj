@@ -11,6 +11,7 @@
 		13AB85698114C6E0851F5F04 /* CKRecordConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */; };
 		7B2B451E280BFE3372DED15F /* CloudKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15C54A1DF7CA538AE122F15 /* CloudKitManager.swift */; };
 		83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */; };
+		8664DB665FE742D318C43FED /* CaptionEntryPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */; };
 		A304A8E92FBDD3EF009B7CA9 /* FollowingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A304A8E82FBDD3EF009B7CA9 /* FollowingManager.swift */; };
 		A304A8EB2FBDD435009B7CA9 /* FollowingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A304A8EA2FBDD435009B7CA9 /* FollowingComponents.swift */; };
 		A304A8EF2FBDD4D9009B7CA9 /* ModernFollowButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A304A8EE2FBDD4D9009B7CA9 /* ModernFollowButton.swift */; };
@@ -303,6 +304,7 @@
 		A3FE0C772FBEFCB6009437FC /* GoalProgressBadge 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GoalProgressBadge 2.swift"; sourceTree = "<group>"; };
 		A3FE0C7F2FBEFD73009437FC /* DailyGoalLockSystemDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyGoalLockSystemDemo.swift; sourceTree = "<group>"; };
 		BA74312F8635A2490D14152A /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaptionEntryPromptView.swift; sourceTree = "<group>"; };
 		FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CKRecordConvertible.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -468,6 +470,7 @@
 				6C61911DB4CF172CE8BAA8EE /* GroupSharingService.swift */,
 				279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */,
 				BA74312F8635A2490D14152A /* AppDelegate.swift */,
+				D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -694,6 +697,7 @@
 				A419A8BAE368E5D357C25703 /* GroupSharingService.swift in Sources */,
 				83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */,
 				0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */,
+				8664DB665FE742D318C43FED /* CaptionEntryPromptView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
