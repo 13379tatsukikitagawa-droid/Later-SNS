@@ -167,6 +167,22 @@ final class CloudKitManager: NSObject {
         }
         try? modelContext.save()
         evaluateGroupUnlockConditions()
+        evaluateVotingClosure()
+    }
+
+    /// 各グループについて、直近7日分の投票締切条件(資格者全員投票 or 一定時間経過)を
+    /// チェックし、揃っていればベストショットを確定する。票数自体はここでも一切公開しない。
+    private func evaluateVotingClosure() {
+        guard let groups = try? modelContext.fetch(FetchDescriptor<LaterGroup>()) else { return }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        for group in groups {
+            for daysAgo in 0..<7 {
+                guard let date = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { continue }
+                _ = VotingManager.shared.closeVotingIfReady(for: group, date: date, context: modelContext)
+            }
+        }
     }
 
     /// グループごとに早期解禁の条件(今日中・全員撮影済み・目標枚数到達)を判定し、

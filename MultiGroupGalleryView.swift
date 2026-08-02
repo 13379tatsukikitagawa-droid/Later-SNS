@@ -368,18 +368,49 @@ struct MultiGroupGalleryView: View {
         }
     }
     
+    // 投票対象(解禁済み・本日・まだベストショット未確定)の写真があるか
+    private var hasVotableCandidates: Bool {
+        guard let group = selectedGroup else { return false }
+        let calendar = Calendar.current
+        let todaysPhotos = group.photos.filter { calendar.isDate($0.captureDate, inSameDayAs: selectedDate) }
+        guard todaysPhotos.contains(where: { $0.isUnlocked }) else { return false }
+        return !todaysPhotos.contains(where: { $0.isGroupBestShot })
+    }
+
+    @State private var showVotingSheet = false
+
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: displayMode == .group ? "person.3.slash" : "photo.on.rectangle.angled")
                 .font(.system(size: 60))
                 .foregroundStyle(.gray)
-            
+
             if displayMode == .group, let groupName = selectedGroup?.name {
                 Text("No active photo for this day in \(groupName)")
                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
+
+                if hasVotableCandidates {
+                    Button {
+                        showVotingSheet = true
+                    } label: {
+                        Label("今日の一枚に投票する", systemImage: "hand.thumbsup.fill")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(Color.black)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.brandGreen)
+                            .clipShape(Capsule())
+                    }
+                    .padding(.top, 8)
+                    .sheet(isPresented: $showVotingSheet) {
+                        if let group = selectedGroup {
+                            GroupVotingView(group: group, date: selectedDate)
+                        }
+                    }
+                }
             } else {
                 Text("この日の写真はまだありません")
                     .font(.system(size: 18, weight: .medium, design: .serif))

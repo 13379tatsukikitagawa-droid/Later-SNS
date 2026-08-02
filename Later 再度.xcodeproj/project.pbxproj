@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA74312F8635A2490D14152A /* AppDelegate.swift */; };
 		13AB85698114C6E0851F5F04 /* CKRecordConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */; };
+		22B166912A941E706B1CE63C /* GroupVotingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0F091190FDB6E3D7E24D76 /* GroupVotingView.swift */; };
 		7B2B451E280BFE3372DED15F /* CloudKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15C54A1DF7CA538AE122F15 /* CloudKitManager.swift */; };
 		83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */; };
 		8664DB665FE742D318C43FED /* CaptionEntryPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */; };
@@ -307,6 +308,7 @@
 		A3FE0C7F2FBEFD73009437FC /* DailyGoalLockSystemDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyGoalLockSystemDemo.swift; sourceTree = "<group>"; };
 		BA74312F8635A2490D14152A /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaptionEntryPromptView.swift; sourceTree = "<group>"; };
+		DC0F091190FDB6E3D7E24D76 /* GroupVotingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupVotingView.swift; sourceTree = "<group>"; };
 		FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CKRecordConvertible.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -474,6 +476,7 @@
 				BA74312F8635A2490D14152A /* AppDelegate.swift */,
 				D5BD00BA9DF0214D76F4A4E8 /* CaptionEntryPromptView.swift */,
 				512B00F2AAA89453E3C98FD5 /* GroupUnlockPolicy.swift */,
+				DC0F091190FDB6E3D7E24D76 /* GroupVotingView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -702,6 +705,7 @@
 				0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */,
 				8664DB665FE742D318C43FED /* CaptionEntryPromptView.swift in Sources */,
 				8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */,
+				22B166912A941E706B1CE63C /* GroupVotingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
