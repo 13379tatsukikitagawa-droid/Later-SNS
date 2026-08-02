@@ -27,7 +27,16 @@ class LaterGroup {
     var isPrivate: Bool = true // プライバシー設定（true: 招待のみ, false: 検索可能）
     var currentDailyMission: String? // 今日のミッション
     var missionGeneratedDate: Date? // ミッション生成日
-    
+
+    // CloudKit同期メタデータ(このグループはCKShareのルートレコード)
+    var ownerCloudKitUserRecordName: String?
+    var ckRecordName: String?
+    var ckZoneName: String?
+    var ckZoneOwnerName: String?
+    var ckRecordChangeTag: String?
+    /// CKShare.url(招待コード経路の解決結果をキャッシュ)
+    var ckShareURL: String?
+
     private static func generateGroupCode(length: Int = 6) -> String {
         let chars = Array("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
         return String((0..<length).map { _ in chars.randomElement()! })

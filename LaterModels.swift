@@ -16,6 +16,14 @@ final class UserProfile {
     /// 同じUserProfileを再利用するためのキー。
     var appleUserID: String?
 
+    // CloudKit同期メタデータ
+    /// CKContainer.userRecordID.recordName — CloudKit上のこのユーザーの識別子
+    var cloudKitUserRecordName: String?
+    var ckRecordName: String?
+    var ckZoneName: String?
+    var ckZoneOwnerName: String?
+    var ckRecordChangeTag: String?
+
     // フォロー中のユーザー
     @Relationship
     var following: [UserProfile] = []
@@ -61,15 +69,27 @@ final class LaterPhoto {
     // 撮影者（所有者）
     @Relationship
     var owner: UserProfile?
-    
+    /// ownerのCloudKit識別子。ownerはローカルのリレーションシップなので、他端末が
+    /// このレコードを受信した際に「誰が撮影したか」を判定できる唯一の手がかりとして使う。
+    var authorCloudKitUserRecordName: String?
+    /// 撮影者名のキャッシュ(owner解決前でも表示に使えるように)
+    var authorNameCache: String?
+    var groupID: UUID?
+
     // 🏆 グループ投票関連
     var voteCount: Int = 0
     var isGroupBestShot: Bool = false // その日のグループベストに選ばれたか
     var votingClosedAt: Date? // 投票締切時刻
-    
+
     // 🎭 匿名性管理
     var votingPhaseActive: Bool = false // 投票フェーズ中はtrue
-    
+
+    // CloudKit同期メタデータ
+    var ckRecordName: String?
+    var ckZoneName: String?
+    var ckZoneOwnerName: String?
+    var ckRecordChangeTag: String?
+
     init(imageData: Data, captureDate: Date = Date(), unlockDate: Date, owner: UserProfile? = nil, caption: String? = nil) {
         self.id = UUID()
         self.imageData = imageData
@@ -88,7 +108,20 @@ final class PhotoVote {
     var voter: UserProfile?
     var votedAt: Date
     var reactionSpeed: TimeInterval // 解禁からの投票速度（秒）
-    
+
+    /// photo/voterのローカルUUIDだけでなく、CloudKit上で解決するための識別子
+    var photoID: UUID?
+    var groupID: UUID?
+    var voterCloudKitUserRecordName: String?
+    /// 通常投票=1、同票による決選投票=2以降
+    var roundNumber: Int = 1
+
+    // CloudKit同期メタデータ
+    var ckRecordName: String?
+    var ckZoneName: String?
+    var ckZoneOwnerName: String?
+    var ckRecordChangeTag: String?
+
     init(photo: LaterPhoto, voter: UserProfile, reactionSpeed: TimeInterval = 0) {
         self.id = UUID()
         self.photo = photo

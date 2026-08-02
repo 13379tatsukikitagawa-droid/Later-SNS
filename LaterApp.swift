@@ -3,12 +3,24 @@ import SwiftData
 
 @main
 struct LaterApp: App {
+    // SwiftData自身のCloudKit自動同期は使わない(CloudKitManagerでCKRecord/CKShareを
+    // 直接扱っているため)。entitlementsにiCloudコンテナがあると、指定しない限り
+    // SwiftDataが自動でCloudKitミラーリングを有効化しようとし、起動時にクラッシュしうる。
+    static let sharedModelContainer: ModelContainer = {
+        let schema = Schema([LaterPhoto.self, LaterGroup.self, UserProfile.self, PhotoVote.self])
+        let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
+        do {
+            return try ModelContainer(for: schema, configurations: [configuration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
+
     var body: some Scene {
         WindowGroup {
             RootView()
         }
-        // 🌟 ここで3つのデータを全て登録します
-        .modelContainer(for: [LaterPhoto.self, LaterGroup.self, UserProfile.self])
+        .modelContainer(Self.sharedModelContainer)
     } // ← Scene を閉じるカッコ
 } // ← App を閉じるカッコ
 
@@ -16,10 +28,12 @@ struct LaterApp: App {
 struct RootView: View {
     @State private var isSplashActive = true
     @State private var showGreenTransition = false
+    @State private var cloudKitManager: CloudKitManager?
 
     @AppStorage("photosTaken") private var photosTaken: Int = 0
     @AppStorage("photosTakenLastResetDate") private var lastResetDate: String = ""
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var modelContext
 
     // 🎯 メインのセットアップ完了フラグ（初期値：false）
     @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
@@ -98,9 +112,20 @@ struct RootView: View {
         .onAppear { resetIfNeeded() }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .active { resetIfNeeded() }
+            if newPhase == .active, !appleUserID.isEmpty {
+                Task { await cloudKitManager?.handleRemoteNotification() }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             resetIfNeeded()
+        }
+        .task(id: appleUserID) {
+            // Sign in with Apple完了後に一度だけCloudKitManagerを起動する。
+            guard !appleUserID.isEmpty else { return }
+            if cloudKitManager == nil {
+                cloudKitManager = CloudKitManager(modelContext: modelContext)
+            }
+            await cloudKitManager?.start()
         }
     }
 }
