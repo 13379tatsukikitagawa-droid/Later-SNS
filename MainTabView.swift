@@ -11,9 +11,9 @@ struct MainTabView: View {
     @State private var circleNotificationCount = 0
     
     private var currentUser: UserProfile? {
-        profiles.first
+        UserProfile.current(from: profiles)
     }
-    
+
     private var userGroups: [LaterGroup] {
         guard let user = currentUser else { return [] }
         return groups.filter { $0.members.contains(where: { $0.id == user.id }) }

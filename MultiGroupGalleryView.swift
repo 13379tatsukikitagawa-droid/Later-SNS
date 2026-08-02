@@ -33,9 +33,9 @@ struct MultiGroupGalleryView: View {
     }
     
     private var currentUser: UserProfile? {
-        profiles.first
+        UserProfile.current(from: profiles)
     }
-    
+
     // User's groups
     private var userGroups: [LaterGroup] {
         guard let user = currentUser else { return [] }

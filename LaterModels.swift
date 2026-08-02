@@ -54,6 +54,20 @@ final class UserProfile {
     }
 }
 
+extension UserProfile {
+    /// 「自分」を安全に解決する。CloudKit同期でグループメンバーの
+    /// UserProfileがローカルに増えると`profiles.first`は他人を指しうるため、
+    /// 必ずこちらを使うこと。
+    static func current(from profiles: [UserProfile]) -> UserProfile? {
+        if let idString = UserDefaults.standard.string(forKey: "currentProfileID"),
+           let id = UUID(uuidString: idString),
+           let match = profiles.first(where: { $0.id == id }) {
+            return match
+        }
+        return profiles.first
+    }
+}
+
 // MARK: - 撮影した写真 (思い出の封印データ)
 @Model
 final class LaterPhoto {

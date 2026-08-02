@@ -126,7 +126,7 @@ struct TodayView: View {
                 }
             }
             .onAppear {
-                photoManager.syncDailyLimit(from: profiles.first)
+                photoManager.syncDailyLimit(from: UserProfile.current(from: profiles))
                 photoManager.resetIfNewDay()
             }
         }
@@ -313,7 +313,7 @@ struct TodayView: View {
             imageData: imageData,
             captureDate: now,
             unlockDate: unlock,
-            owner: profiles.first
+            owner: UserProfile.current(from: profiles)
         )
         context.insert(newPhoto)
         

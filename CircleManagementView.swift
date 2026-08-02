@@ -15,9 +15,9 @@ struct CircleManagementView: View {
     @State private var showingQRResult = false
     
     private var currentUser: UserProfile? {
-        profiles.first
+        UserProfile.current(from: profiles)
     }
-    
+
     private var userGroups: [LaterGroup] {
         guard let user = currentUser else { return [] }
         return groups.filter { $0.members.contains(where: { $0.id == user.id }) }
@@ -419,13 +419,16 @@ struct CircleCreateGroupView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
-    
+
     @State private var groupName: String = ""
     @State private var wordPass: String = ""
     @State private var showingSuccess = false
-    
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+    @State private var createdShareURL: URL?
+
     private var currentUser: UserProfile? {
-        profiles.first
+        UserProfile.current(from: profiles)
     }
     
     var body: some View {
@@ -500,9 +503,16 @@ struct CircleCreateGroupView: View {
                         
                         Spacer(minLength: 40)
                         
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .padding(.horizontal)
+                        }
+
                         // 作成ボタン
                         Button(action: {
-                            createGroup()
+                            Task { await createGroup() }
                         }) {
                             Text("グループを作成")
                                 .font(.headline)
@@ -519,10 +529,14 @@ struct CircleCreateGroupView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .shadow(color: Color.brandGreen.opacity(0.4), radius: 12, x: 0, y: 6)
                         }
-                        .disabled(groupName.isEmpty || wordPass.isEmpty)
+                        .disabled(groupName.isEmpty || wordPass.isEmpty || isSaving)
                         .opacity((groupName.isEmpty || wordPass.isEmpty) ? 0.5 : 1.0)
                         .padding(.horizontal)
                     }
+                }
+
+                if isSaving {
+                    ProgressView()
                 }
             }
             .navigationTitle("グループ作成")
@@ -538,18 +552,31 @@ struct CircleCreateGroupView: View {
                 }
             }
             .alert("グループ作成完了", isPresented: $showingSuccess) {
+                if let createdShareURL {
+                    ShareLink(item: createdShareURL) {
+                        Text("招待リンクを送る")
+                    }
+                }
                 Button("OK") {
                     dismiss()
                 }
             } message: {
-                Text("グループ「\(groupName)」を作成しました。\n合言葉を友達に共有してください。")
+                Text("グループ「\(groupName)」を作成しました。\n招待リンクまたは合言葉「\(wordPass)」を友達に共有してください。")
             }
         }
     }
-    
-    private func createGroup() {
+
+    private func createGroup() async {
         guard let user = currentUser else { return }
-        
+        guard let cloudKitManager = CloudKitManager.current else {
+            errorMessage = "iCloudへの接続が完了していません。しばらくしてから再度お試しください。"
+            return
+        }
+
+        isSaving = true
+        errorMessage = nil
+        defer { isSaving = false }
+
         // 新しいグループを作成
         let newGroup = LaterGroup(
             name: groupName,
@@ -557,20 +584,32 @@ struct CircleCreateGroupView: View {
             autoGenerateMission: false,
             isPrivate: true
         )
-        
+
         // ホストとして自分を追加
         let _ = newGroup.addMember(user)
-        
-        // 合言葉を招待コードとして設定（またはカスタムプロパティを追加する必要があります）
-        // Note: LaterGroupモデルにwordPassプロパティが必要な場合は追加してください
+
+        // 合言葉を招待コードとして設定
         newGroup.inviteCode = wordPass
-        
+
         // データベースに保存
         modelContext.insert(newGroup)
-        
+
+        let sharingService = GroupSharingService(container: cloudKitManager.container, modelContext: modelContext, cloudKitManager: cloudKitManager)
+        do {
+            try await sharingService.createGroup(newGroup, hostProfile: user)
+        } catch {
+            modelContext.delete(newGroup)
+            errorMessage = error.localizedDescription
+            return
+        }
+
+        if let shareURLString = newGroup.ckShareURL {
+            createdShareURL = URL(string: shareURLString)
+        }
+
         HapticsManager.unlockSuccess()
         showingSuccess = true
-        
+
         print("✅ グループ作成: \(groupName), 合言葉: \(wordPass)")
     }
 }
@@ -587,9 +626,10 @@ struct JoinWithWordPassView: View {
     @State private var showingResult = false
     @State private var resultMessage: String = ""
     @State private var isSuccess: Bool = false
-    
+    @State private var isJoining = false
+
     private var currentUser: UserProfile? {
-        profiles.first
+        UserProfile.current(from: profiles)
     }
     
     var body: some View {
@@ -632,7 +672,7 @@ struct JoinWithWordPassView: View {
                     
                     // 参加ボタン
                     Button(action: {
-                        joinGroupWithPass()
+                        Task { await joinGroupWithPass() }
                     }) {
                         Text("グループに参加")
                             .font(.headline)
@@ -649,10 +689,14 @@ struct JoinWithWordPassView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .shadow(color: Color.brandGreen.opacity(0.4), radius: 12, x: 0, y: 6)
                     }
-                    .disabled(wordPass.isEmpty)
+                    .disabled(wordPass.isEmpty || isJoining)
                     .opacity(wordPass.isEmpty ? 0.5 : 1.0)
                     .padding(.horizontal)
                     .padding(.bottom, 40)
+                }
+
+                if isJoining {
+                    ProgressView()
                 }
             }
             .navigationTitle("グループ参加")
@@ -679,43 +723,78 @@ struct JoinWithWordPassView: View {
         }
     }
     
-    private func joinGroupWithPass() {
+    private func joinGroupWithPass() async {
         guard let user = currentUser else {
             resultMessage = "ユーザー情報が見つかりません"
             isSuccess = false
             showingResult = true
             return
         }
-        
-        // 合言葉（inviteCode）が一致するグループを検索
+
+        isJoining = true
+        defer { isJoining = false }
+
+        // まずローカルに既にあるかチェック(招待リンクを先にタップして
+        // 既に同期済みだった場合など)。無ければCloudKit経由で解決する。
         if let matchingGroup = groups.first(where: { $0.inviteCode == wordPass }) {
-            // すでにメンバーかチェック
-            if matchingGroup.isMember(userID: user.id) {
-                resultMessage = "すでにこのグループに参加しています"
-                isSuccess = false
-                showingResult = true
+            finishJoining(group: matchingGroup, user: user)
+            return
+        }
+
+        guard let cloudKitManager = CloudKitManager.current else {
+            resultMessage = "iCloudへの接続が完了していません。しばらくしてから再度お試しください。"
+            isSuccess = false
+            showingResult = true
+            return
+        }
+
+        let sharingService = GroupSharingService(container: cloudKitManager.container, modelContext: modelContext, cloudKitManager: cloudKitManager)
+        do {
+            try await sharingService.joinGroup(wordPass: wordPass)
+        } catch {
+            HapticsManager.errorFeedback()
+            resultMessage = error.localizedDescription
+            isSuccess = false
+            showingResult = true
+            return
+        }
+
+        // Shared DBからの反映は非同期のため、短時間ポーリングしてローカルに現れるのを待つ
+        for _ in 0..<10 {
+            if let matchingGroup = (try? modelContext.fetch(FetchDescriptor<LaterGroup>()))?.first(where: { $0.inviteCode == wordPass }) {
+                finishJoining(group: matchingGroup, user: user, sharingService: sharingService)
                 return
             }
-            
-            // グループに参加
-            let added = matchingGroup.addMember(user)
-            
-            if added {
-                HapticsManager.unlockSuccess()
-                resultMessage = "グループ「\(matchingGroup.name)」に参加しました！"
-                isSuccess = true
-                showingResult = true
-                
-                print("✅ グループ参加: \(matchingGroup.name)")
-            } else {
-                HapticsManager.errorFeedback()
-                resultMessage = "グループへの参加に失敗しました"
-                isSuccess = false
-                showingResult = true
+            try? await Task.sleep(nanoseconds: 500_000_000)
+        }
+
+        HapticsManager.errorFeedback()
+        resultMessage = "グループへの参加に時間がかかっています。少し待ってから確認してください。"
+        isSuccess = false
+        showingResult = true
+    }
+
+    private func finishJoining(group: LaterGroup, user: UserProfile, sharingService: GroupSharingService? = nil) {
+        if group.isMember(userID: user.id) {
+            resultMessage = "すでにこのグループに参加しています"
+            isSuccess = false
+            showingResult = true
+            return
+        }
+
+        let added = group.addMember(user)
+
+        if added {
+            if let sharingService {
+                sharingService.uploadOwnProfile(user, to: group)
             }
+            HapticsManager.unlockSuccess()
+            resultMessage = "グループ「\(group.name)」に参加しました！"
+            isSuccess = true
+            showingResult = true
         } else {
             HapticsManager.errorFeedback()
-            resultMessage = "合言葉が一致するグループが見つかりませんでした"
+            resultMessage = "グループへの参加に失敗しました"
             isSuccess = false
             showingResult = true
         }

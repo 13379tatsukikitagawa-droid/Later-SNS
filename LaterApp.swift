@@ -1,8 +1,11 @@
 import SwiftUI
 import SwiftData
+import CloudKit
 
 @main
 struct LaterApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     // SwiftData自身のCloudKit自動同期は使わない(CloudKitManagerでCKRecord/CKShareを
     // 直接扱っているため)。entitlementsにiCloudコンテナがあると、指定しない限り
     // SwiftDataが自動でCloudKitミラーリングを有効化しようとし、起動時にクラッシュしうる。
@@ -34,6 +37,7 @@ struct RootView: View {
     @AppStorage("photosTakenLastResetDate") private var lastResetDate: String = ""
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
+    @Query private var profiles: [UserProfile]
 
     // 🎯 メインのセットアップ完了フラグ（初期値：false）
     @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
@@ -126,6 +130,39 @@ struct RootView: View {
                 cloudKitManager = CloudKitManager(modelContext: modelContext)
             }
             await cloudKitManager?.start()
+        }
+        .onReceive(ShareInviteInbox.shared.$pendingMetadata) { metadata in
+            guard let metadata else { return }
+            Task { await acceptSharedInvite(metadata: metadata) }
+        }
+    }
+
+    /// 招待リンクをタップして起動した際にAppDelegateが受け取ったCKShare.Metadataを受け入れる。
+    private func acceptSharedInvite(metadata: CKShare.Metadata) async {
+        guard let cloudKitManager else { return }
+        let sharingService = GroupSharingService(container: cloudKitManager.container, modelContext: modelContext, cloudKitManager: cloudKitManager)
+        do {
+            try await sharingService.acceptShare(metadata: metadata)
+        } catch {
+            print("RootView: failed to accept share: \(error)")
+            ShareInviteInbox.shared.pendingMetadata = nil
+            return
+        }
+        ShareInviteInbox.shared.pendingMetadata = nil
+
+        guard let rootRecordName = metadata.hierarchicalRootRecordID?.recordName else { return }
+
+        // 反映されたグループ(=このShareのルートレコード)に、自分のUserProfileをアップロードする。
+        for _ in 0..<10 {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            if let user = UserProfile.current(from: profiles),
+               let group = (try? modelContext.fetch(FetchDescriptor<LaterGroup>()))?.first(where: { $0.ckRecordName == rootRecordName }) {
+                if !group.isMember(userID: user.id) {
+                    _ = group.addMember(user)
+                }
+                sharingService.uploadOwnProfile(user, to: group)
+                break
+            }
         }
     }
 }
