@@ -56,4 +56,35 @@ enum FirebaseAuthService {
         UserDefaults.standard.removeObject(forKey: pendingEmailKey)
         return (result.user.uid, result.user.email)
     }
+
+    /// FIRAuthErrorDomainの内部エラーコードを、エンドユーザー向けの分かりやすい
+    /// 日本語メッセージへ変換する。Firebaseの生のエラー文言(例: "FIRAuthErrorDomain
+    /// code=17006 The given sign-in provider is disabled...")をそのまま画面に
+    /// 出さないようにするための変換テーブル。未知のコードは汎用メッセージにフォールバックする。
+    static func friendlyErrorMessage(for error: Error) -> String {
+        let nsError = error as NSError
+        guard nsError.domain == AuthErrorDomain, let code = AuthErrorCode(rawValue: nsError.code) else {
+            return "送信できませんでした。時間を置いてもう一度お試しください。"
+        }
+        switch code {
+        case .invalidEmail:
+            return "メールアドレスの形式が正しくありません。ご確認のうえもう一度お試しください。"
+        case .operationNotAllowed:
+            // = code 17006。Firebase Console側で「メールリンク(パスワードレスでログイン)」
+            // プロバイダが無効になっている場合に発生する(このアプリのコード側の問題ではない)。
+            return "現在この方法でのサインインをご利用いただけません。しばらくしてからもう一度お試しください。"
+        case .tooManyRequests:
+            return "しばらく時間を置いてから、もう一度お試しください。"
+        case .networkError:
+            return "通信エラーが発生しました。ネットワーク環境をご確認のうえ、もう一度お試しください。"
+        case .expiredActionCode:
+            return "リンクの有効期限が切れています。もう一度サインインリンクを送信してください。"
+        case .invalidActionCode:
+            return "リンクが無効です。コピーしたURLが正しいか確認するか、もう一度リンクを送信してください。"
+        case .userDisabled:
+            return "このアカウントは現在ご利用いただけません。"
+        default:
+            return "送信できませんでした。時間を置いてもう一度お試しください。"
+        }
+    }
 }
