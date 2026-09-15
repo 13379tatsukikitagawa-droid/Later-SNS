@@ -247,10 +247,12 @@ struct MultiGroupGalleryView: View {
                 photoStage
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                if !selectedDayVideos.isEmpty {
-                    videoShelf
-                        .padding(.bottom, 8)
-                }
+                // 2026/9: 動画機能はUI導線のみ一時非表示(コードは残す、
+                // CameraCaptureView.modeToggle非表示化と同じ方針)。
+                // if !selectedDayVideos.isEmpty {
+                //     videoShelf
+                //         .padding(.bottom, 8)
+                // }
 
                 // 日付スクロール(写真カードとは重ならない、写真下の独立領域)。
                 // 高さ・下部余白は固定値(GeometryReaderで中身のサイズは変わらない)にして

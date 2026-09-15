@@ -18,7 +18,7 @@ enum ModerationService {
 
     enum ReportTargetType: String {
         case worldPost
-        case circlePhoto
+        case groupPhoto
         case user
     }
 

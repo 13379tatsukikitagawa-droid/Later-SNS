@@ -15,24 +15,22 @@ extension EnvironmentValues {
     }
 }
 
-/// TabViewの選択値。ホーム/プロフィールの2つは実際にコンテンツを持つ通常のタブ。
-/// cameraだけは特殊枠で、選択されても画面は切り替わらず
-/// (MainTabView.tabSelectionのsetterがselectedTabを更新しない)、代わりに
-/// 撮影可否に応じたアクション(撮影画面を開く/ロック案内を出す)だけが起こる。
-/// つながり・ギャラリーはタブから削除し、ProfileView右上のヘッダー行から
-/// 開く導線に変更した(ProfileView.topBar参照)。
+/// TabViewの選択値。ホームだけが実際にコンテンツを持つ通常のタブ。cameraは特殊枠で、
+/// 選択されても画面は切り替わらず、代わりに撮影可否に応じたアクション
+/// (撮影画面を開く/ロック案内を出す)だけが起こる。
+///
+/// 2026/9: Profileタブは廃止した。マイページへの導線は、Homeタブ内部の各画面
+/// (BrandHeaderRow等)のヘッダー右端にあるアバターアイコンから開く
+/// (Profile/Views/MyPageView.swift参照)。
 private enum MainTabSelection: Hashable {
-    case home, camera, profile
+    case home, camera
 
     init(contentIndex: Int) {
-        switch contentIndex {
-        case 1: self = .profile
-        default: self = .home
-        }
+        self = .home
     }
 }
 
-/// メインナビゲーション - Home / 撮影 / Profile の3項目のタブバー
+/// メインナビゲーション - Home / 撮影 の2項目のタブバー
 /// (ネイティブTabView、iOS 26のLiquid Glass対応版)。
 /// 「タブバー上をなぞって最寄りのタブへスナップする」独自ドラッグ操作は、
 /// ネイティブのタブバーには存在しない挙動のため、タップのみの標準的な切り替えになる。
@@ -83,8 +81,9 @@ struct MainTabView: View {
     /// 依存を無くし、複数グループへの一括投稿を成立させるため)。MEのみ参加、または
     /// MEを含むいずれかのグループでまだ撮影可能なら、撮影可能なグループが1つでも
     /// 残っている限りロックしない。
-    /// 時間帯制限の撤廃に伴い、GroupDailyStateは常に.shootingか.unlockedのどちらか
-    /// (クールダウン・終了は存在しない)。参加グループが1つでもあれば、常に撮影可能。
+    /// 撮影自体には時刻制限が無い(解禁だけが翌朝9:00固定)。参加グループが1つでも
+    /// あれば、GroupDailyStateが.shooting/.waitingForUnlockTime/.unlockedのいずれでも
+    /// 常に撮影可能。
     private var captureAvailability: CaptureAvailability {
         guard !userGroups.isEmpty else {
             return .blocked(message: "グループに参加すると撮影できます")
@@ -92,34 +91,8 @@ struct MainTabView: View {
         return .available
     }
 
-    /// プロフィール画像(UserProfile.profileImageData)を円形にクリップして表示する
-    /// オーバーレイ本体。デコードはCachedPhotoImage/PhotoImageCache(前回のパフォーマンス
-    /// 改善で導入した共有NSCache)を再利用するため、タブバー再描画のたびに再デコード
-    /// されることはない。撮影ボタンと同じ理由(ネイティブのタブ項目は写真のような
-    /// 非テンプレート画像を正しく扱えず、実機のLiquid Glass選択ハイライト処理と衝突して
-    /// 崩れた表示になる)で、Tab自身のラベルには入れず独立したオーバーレイにしている。
-    /// 未設定ならSF Symbolsのフォールバックを表示する。
-    private var profilePhotoOverlay: some View {
-        CachedPhotoImage(imageData: currentUser?.profileImageData, cacheKey: "avatar_\(currentUser?.id.uuidString ?? "me")") { uiImage in
-            Image(uiImage: uiImage)
-                .renderingMode(.original)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 24, height: 24)
-                .clipShape(Circle())
-                .overlay(
-                    Circle().strokeBorder(
-                        selectedTab == 1 ? Self.neonGreen : Color.white.opacity(0.3),
-                        lineWidth: 1.5
-                    )
-                )
-        } placeholder: {
-            EmptyView()
-        }
-    }
-
     /// TabViewのselectionはMainTabSelectionで受けるが、実体(コンテンツの表示切り替え)は
-    /// 既存のselectedTab(Int, 0=ホーム/1=プロフィール)のまま。cameraタブ自体は
+    /// 既存のselectedTab(Int、Profileタブ廃止後は常に0=ホーム)のまま。cameraタブ自体は
     /// タップされない前提(下のcameraTab参照)のため、setter側にはcameraの分岐を
     /// 残していない(万一何らかの経路で.cameraが渡ってきても無視して現状維持する)。
     private var tabSelection: Binding<MainTabSelection> {
@@ -131,8 +104,6 @@ struct MainTabView: View {
                     break
                 case .home:
                     selectedTab = 0
-                case .profile:
-                    selectedTab = 1
                 }
             }
         )
@@ -163,13 +134,6 @@ struct MainTabView: View {
                 Color.clear
             }
             .disabled(true)
-
-            Tab(value: MainTabSelection.profile) {
-                ProfileView()
-            } label: {
-                Label("プロフィール", systemImage: selectedTab == 1 ? "person.crop.circle.fill" : "person.crop.circle")
-                    .font(.system(size: 22))
-            }
         }
         // 文字ラベルは非表示にし、アイコンのみにする(直前までのアイコンオンリー表示を
         // 踏襲。VoiceOver用のラベル文字列自体はLabel(タイトル, systemImage:)に
@@ -193,24 +157,6 @@ struct MainTabView: View {
                 CameraApertureButton(isLocked: captureAvailability != .available, action: handleCaptureTap)
                     .offset(y: 8)
             }
-        }
-        .overlay(alignment: .bottom) {
-            // プロフィール写真本体。3タブ均等配置を前提に、3等分した右端の列の中央へ
-            // 重ねる(タブ自身のアイコンの真上)。カメラボタンと同じくタップは受け取らず、
-            // 下にある本来のprofileタブ自身のタップに委ねる。こちらも同じ理由で
-            // tabBarVisibility.isHiddenに連動して隠す。
-            HStack(spacing: 0) {
-                Color.clear.frame(maxWidth: .infinity)
-                Color.clear.frame(maxWidth: .infinity)
-                if !tabBarVisibility.isHidden {
-                    profilePhotoOverlay
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Color.clear.frame(maxWidth: .infinity)
-                }
-            }
-            .allowsHitTesting(false)
-            .offset(y: 8)
         }
         .overlay {
             NeonScreenFrame()

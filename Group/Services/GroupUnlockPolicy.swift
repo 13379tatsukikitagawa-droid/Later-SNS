@@ -4,11 +4,13 @@ import Foundation
 /// 実際にisUnlockedを立てたり画像を再送したりする処理は呼び出し側
 /// (CloudKitManager/TodayView)が行う。
 ///
-/// ■ 解禁方式(時間帯制限撤廃後)
-/// 「その日の好きなタイミングで撮影できる」という設計に合わせ、解禁時刻の
-/// ランダム決定・クールダウン・撮影締切といった時間帯制限は撤廃した。
-/// 解禁条件は「グループ全員が基本撮影枠(1枚)を達成し、かつグループ全体が
-/// 目標枚数(メンバー数)に到達していること」だけになり、達成した瞬間に解禁される。
+/// ■ 解禁方式(2026/9 固定9:00解禁の再導入)
+/// 「その日の好きなタイミングで撮影できる」という撮影側の自由度は維持するが、
+/// 解禁(閲覧可能になるタイミング)は「撮影日の翌朝9:00」で全ユーザー共通に固定する。
+/// 撮影時刻はランダムでよいが、解禁時刻はいつも9:00、という構造。
+/// 解禁条件は「グループ全員が基本撮影枠(1枚)を達成していること」と「9:00に到達していること」の
+/// 両方が揃うことになった(isAllMembersShotCompleted/shouldUnlockと、
+/// isUnlockTimeReachedをAND)。全員揃っていても9:00前なら非公開のままになる。
 /// 「サイクル」の境界(=いつからいつまでの写真を今回の目標達成としてカウントするか)は、
 /// 日付からの計算ではなく、LaterGroup.lastUnlockAt(直近に実際に解禁が起きた瞬間、
 /// 全メンバー間で同期される)になった。LaterGroup.currentCyclePhotos/
@@ -56,8 +58,9 @@ enum GroupUnlockPolicy {
     }
 
     /// 条件(全メンバーが基本撮影枠を達成・グループ全体が目標枚数に到達)が揃っているか
-    /// どうかを判定する。時間帯制限の撤廃に伴い、達成した瞬間に解禁してよい
-    /// (以前あった「解禁時刻に到達するまで解禁しない」というゲートは無くなった)。
+    /// どうかを判定する。**これは「撮影が完了しているか」だけの判定であり、
+    /// 実際に解禁してよいかどうかにはisUnlockTimeReached()もANDする必要がある**
+    /// (呼び出し側のCloudKitManager.evaluateGroupUnlockConditions参照)。
     ///
     /// - Parameters:
     ///   - currentCyclePhotoCountsByAuthor: 現在進行中サイクル(LaterGroup.
@@ -78,8 +81,22 @@ enum GroupUnlockPolicy {
     /// 個人スペース(ME)向けの解禁判定。共同投票が無いため「全員が基本枠を達成し、
     /// グループ全体が目標枚数に到達する」という条件(shouldUnlock)は適用せず、代わりに
     /// 「その日ユーザー自身が設定した目標撮影枚数(targetCount)に到達しているか」だけを見る。
-    /// 時間帯制限の撤廃に伴い、目標枚数に到達した瞬間に解禁してよい。
+    /// これも「撮影が完了しているか」だけの判定であり、isUnlockTimeReached()を別途ANDする。
     static func shouldUnlockPersonalSpace(shotCount: Int, targetCount: Int) -> Bool {
         shotCount >= max(individualMinimumPhotoCount, targetCount)
+    }
+
+    /// 撮影日の翌朝9:00(ローカルタイムゾーン基準)を返す。この時刻が実際の解禁時刻
+    /// (unlockAt)になる。撮影時刻がいつであっても「翌朝9:00」に揃う。
+    static func nextUnlockThreshold(after captureDate: Date, calendar: Calendar = .current) -> Date {
+        let nextDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: captureDate)) ?? captureDate
+        return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: nextDay) ?? nextDay
+    }
+
+    /// 「時刻ゲート」が開いているか(=now >= unlockAt)。shouldUnlock/shouldUnlockPersonalSpaceの
+    /// 撮影完了判定と別にANDして使う。unlockAtは通常、サイクル内の各写真/動画が既に
+    /// 持っているunlockDate(nextUnlockThresholdで撮影時に確定済み)の最大値を渡す。
+    static func isUnlockTimeReached(unlockAt: Date, now: Date = Date()) -> Bool {
+        now >= unlockAt
     }
 }

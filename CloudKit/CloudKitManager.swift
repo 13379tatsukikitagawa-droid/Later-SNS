@@ -608,6 +608,12 @@ final class CloudKitManager: NSObject {
     /// 画像入りで再送する(他人の写真の実データはこの端末に存在しないため再送できない —
     /// その人自身の端末が、同じ判定を独立に行って自分の写真を送信する)。
     /// リモート通知によるfetch後、および自分の撮影直後の両方から呼ばれる。
+    ///
+    /// 2026/9〜: 「撮影完了」条件に加えて「翌朝9:00(GroupUnlockPolicy.
+    /// nextUnlockThreshold)に到達しているか」もANDで満たす必要がある。このメソッドは
+    /// CloudKitの変更を検知した時(dirtyGroupIDs)だけ動くため、時計が9:00を過ぎた
+    /// だけのタイミングでは呼ばれない。その穴は evaluateLocallyPendingTimeGatedUnlocks()
+    /// (dirty判定を経由しないローカル専用の再チェック、3秒ポーリング等から呼ぶ)で埋める。
     func evaluateGroupUnlockConditions() async {
         guard let groups = try? modelContext.fetch(FetchDescriptor<LaterGroup>()) else { return }
 
@@ -630,6 +636,23 @@ final class CloudKitManager: NSObject {
             targetGroups = groups
             print("[GroupSync] evaluateGroupUnlockConditions: 初回のため全\(groups.count)件を評価")
         }
+
+        await runUnlockEvaluation(for: targetGroups)
+    }
+
+    /// dirtyGroupIDsを経由せず、ローカルのSwiftDataだけを見て「撮影条件は揃っているが
+    /// 9:00の時刻ゲートで待たされている」写真/動画を再チェックする。CloudKitフェッチは
+    /// 発生させない(ネットワークアクセス無し)ため、既存の3秒ポーリングloopや
+    /// アプリのフォアグラウンド復帰時に軽量に呼んでよい。
+    func evaluateLocallyPendingTimeGatedUnlocks() async {
+        guard let groups = try? modelContext.fetch(FetchDescriptor<LaterGroup>()) else { return }
+        await runUnlockEvaluation(for: groups)
+    }
+
+    /// evaluateGroupUnlockConditions/evaluateLocallyPendingTimeGatedUnlocksが共有する
+    /// 実処理本体。
+    private func runUnlockEvaluation(for targetGroups: [LaterGroup]) async {
+        guard !targetGroups.isEmpty else { return }
 
         let now = Date()
         var didChange = false
@@ -664,13 +687,14 @@ final class CloudKitManager: NSObject {
             let boundary = group.lastUnlockAt ?? group.creationDate
             let currentCyclePhotos = (recentPhotosByGroupID[groupID] ?? []).filter { $0.captureDate > boundary }
             let currentCycleVideos = (recentVideosByGroupID[groupID] ?? []).filter { $0.captureDate > boundary }
+            guard !currentCyclePhotos.isEmpty || !currentCycleVideos.isEmpty else { continue }
 
-            let shouldUnlockNow: Bool
+            let shotConditionMet: Bool
             if group.isPersonalSpace {
                 // MEには「全員達成」という概念が無いため、ユーザー自身が設定した当日の
                 // 目標枚数(personalDailyTargetCount)以上撮っていれば解禁する
                 // (GroupUnlockPolicy.shouldUnlockは使わない)。
-                shouldUnlockNow = GroupUnlockPolicy.shouldUnlockPersonalSpace(
+                shotConditionMet = GroupUnlockPolicy.shouldUnlockPersonalSpace(
                     shotCount: currentCyclePhotos.count + currentCycleVideos.count,
                     targetCount: group.personalDailyTargetCount
                 )
@@ -685,22 +709,29 @@ final class CloudKitManager: NSObject {
                     guard let authorID = video.owner?.id else { continue }
                     countsByAuthor[authorID, default: 0] += 1
                 }
-                shouldUnlockNow = GroupUnlockPolicy.shouldUnlock(
+                shotConditionMet = GroupUnlockPolicy.shouldUnlock(
                     memberIDs: memberIDs,
                     currentCyclePhotoCountsByAuthor: countsByAuthor
                 )
             }
 
-            guard shouldUnlockNow else { continue }
+            guard shotConditionMet else { continue }
 
             // 解禁が起きた瞬間の識別子。壁時計時刻(Date())を使うと、各メンバーの端末が
             // 独立に判定・書き込みを行うため端末ごとにわずかに異なる値になり、
             // LaterGroup.lastUnlockAtとLaterPhoto.unlockDateが端末間で一致しなくなる
             // (LaterGroup.mostRecentCyclePhotosのunlockDate一致判定が壊れる)。
-            // 代わりに「このサイクルに属する写真/動画の最新captureDate」という、
-            // 既に全メンバー間で同期済みのデータだけから決まる値を使うことで、
-            // どの端末で計算しても同じ結果になるようにする。
-            let unlockInstant = (currentCyclePhotos.map(\.captureDate) + currentCycleVideos.map(\.captureDate)).max() ?? now
+            // 代わりに「このサイクルに属する写真/動画が撮影時に既に確定させている
+            // unlockDate(翌朝9:00)」という、既に全メンバー間で同期済みのデータだけから
+            // 決まる値を使うことで、どの端末で計算しても同じ結果になるようにする。
+            // 異なる日に撮影したメンバーが混在する場合は、もっとも遅い9:00まで全体が待つ。
+            let unlockInstant = (currentCyclePhotos.map(\.unlockDate) + currentCycleVideos.map(\.unlockDate)).max() ?? now
+
+            // 時刻ゲート: 撮影条件が揃っていても、翌朝9:00に到達していなければ
+            // まだ解禁しない(全員撮影完了済み・時刻待ちの状態はGroupStatusPresenter.
+            // GroupDailyState.waitingForUnlockTimeがUI側で表現する)。
+            guard GroupUnlockPolicy.isUnlockTimeReached(unlockAt: unlockInstant, now: now) else { continue }
+
             group.lastUnlockAt = unlockInstant
             markForUpload(group: group)
 

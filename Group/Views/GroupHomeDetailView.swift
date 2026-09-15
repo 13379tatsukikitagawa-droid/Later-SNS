@@ -86,6 +86,11 @@ struct GroupHomeDetailView: View {
             return
         }
         await cloudKitManager.fetchAndApplyZoneImmediately(zoneID: zoneID)
+        // fetchAndApplyZoneImmediatelyはCloudKit側に新規変更が無ければ内部で早期returnし、
+        // evaluateGroupUnlockConditions()を呼ばない。そのため「全員撮影完了済みで、
+        // 時計が9:00を過ぎるのを待っているだけ」のケースは、ここで別途ローカル専用の
+        // 時刻チェックを毎ポーリングで行う(ネットワークアクセス無し、コスト無視できる)。
+        await cloudKitManager.evaluateLocallyPendingTimeGatedUnlocks()
         await ensureOwnMembershipIsSynced(cloudKitManager: cloudKitManager)
         // 画像再送の保険(resendOwnUnlockedPhotosIfNeeded)を、アプリのフォアグラウンド
         // 復帰時だけでなくこの画面ポーリングからも呼べるようにし、撮影者本人がアプリを
@@ -144,11 +149,7 @@ struct GroupHomeDetailView: View {
     /// 画面を開いた時点で既に達成済みだった場合はoldとnewが同じ状態のままなので
     /// (.onChangeは初回描画では発火しない)、再演出はしない。
     private func checkGoalJustReached(old: GroupDailyState, new: GroupDailyState) {
-        guard case .shooting(_, _, _, let oldTotal, let oldTarget) = old,
-              case .shooting(_, _, _, let newTotal, let newTarget) = new else { return }
-        let wasAchieved = oldTarget > 0 && oldTotal >= oldTarget
-        let isAchieved = newTarget > 0 && newTotal >= newTarget
-        guard !wasAchieved, isAchieved else { return }
+        guard !old.isShotGoalMet, new.isShotGoalMet else { return }
         HapticsManager.unlockSuccess()
         showGoalReachedAnimation = true
         NotificationCenter.default.post(name: .neonFramePulseRequested, object: nil)
@@ -257,6 +258,8 @@ struct GroupHomeDetailView: View {
         switch state {
         case .shooting(_, let achievedCount, let memberCount, let groupTotal, let groupTarget):
             shootingContent(achievedCount: achievedCount, memberCount: memberCount, groupTotal: groupTotal, groupTarget: groupTarget)
+        case .waitingForUnlockTime(let achievedCount, let memberCount, let unlockAt):
+            waitingForUnlockTimeContent(achievedCount: achievedCount, memberCount: memberCount, unlockAt: unlockAt)
         case .unlocked:
             unlockedContent
         }
@@ -277,6 +280,86 @@ struct GroupHomeDetailView: View {
 
             captureButton
         }
+    }
+
+    // MARK: - 全員撮影完了・時刻待ち(「予告編」待機画面)
+
+    /// 全員の撮影は完了しているが翌朝9:00にまだ到達していない状態。各メンバーの
+    /// スロットを「PHOTO 01」のように匿名で並べ、撮影済みメンバーは地域・時刻・
+    /// キャプションだけを見せて写真本体は🔒にする(GroupStatusPresenter.
+    /// GroupDailyState.waitingForUnlockTime)。
+    private func waitingForUnlockTimeContent(achievedCount: Int, memberCount: Int, unlockAt: Date) -> some View {
+        VStack(spacing: 0) {
+            AdaptiveCountdownBadge(state: state)
+                .padding(.top, 28)
+
+            photoSlotGrid
+                .padding(.top, 32)
+
+            Spacer(minLength: 24)
+        }
+    }
+
+    private var photoSlotGrid: some View {
+        let columns = [GridItem(.adaptive(minimum: 100), spacing: 14)]
+        return LazyVGrid(columns: columns, spacing: 14) {
+            ForEach(Array(group.members.enumerated()), id: \.element.id) { index, member in
+                photoSlotCard(index: index + 1, member: member)
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+
+    private func photoSlotCard(index: Int, member: UserProfile) -> some View {
+        let photo = memberCurrentCyclePhoto(member)
+        return VStack(spacing: 8) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(photo != nil ? 0.08 : 0.03))
+                Image(systemName: photo != nil ? "lock.fill" : "camera")
+                    .font(.system(size: photo != nil ? 20 : 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(photo != nil ? 0.4 : 0.15))
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(photo != nil ? Color.brandGreen.opacity(0.4) : Color.white.opacity(0.08), lineWidth: 1)
+            )
+
+            Text(String(format: "PHOTO %02d", index))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white.opacity(0.5))
+                .kerning(1.2)
+
+            if let photo {
+                VStack(spacing: 2) {
+                    if let locationName = photo.locationName, !locationName.isEmpty {
+                        Label(locationName, systemImage: "mappin")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.55))
+                            .lineLimit(1)
+                    }
+                    Text(photo.captureDate.formatted(date: .omitted, time: .shortened))
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.4))
+                    if let caption = photo.caption, !caption.isEmpty {
+                        Text(caption)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
+                }
+            } else {
+                Text("未撮影")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+        }
+        .frame(width: 104)
+    }
+
+    private func memberCurrentCyclePhoto(_ member: UserProfile) -> LaterPhoto? {
+        group.currentCyclePhotos().first { $0.owner?.id == member.id }
     }
 
     private func progressRing(total: Int, target: Int) -> some View {
@@ -410,9 +493,12 @@ struct GroupHomeDetailView: View {
 
             photoGallery(todaysUnlockedPhotos, topPadding: 24)
 
-            if !todaysUnlockedVideos.isEmpty {
-                videoGallery(todaysUnlockedVideos)
-            }
+            // 2026/9: 動画機能はUI導線のみ一時非表示(コードは残す、上のmodeToggle
+            // 非表示化と同じ方針)。todaysUnlockedVideos自体は今後もisEmptyでない
+            // 可能性がある(過去に動画機能が有効だった時の投稿)ため、表示だけ止める。
+            // if !todaysUnlockedVideos.isEmpty {
+            //     videoGallery(todaysUnlockedVideos)
+            // }
         }
         .sheet(item: $selectedVideoForPlayback) { video in
             VideoDetailPlayerView(video: video)
@@ -453,7 +539,7 @@ struct GroupHomeDetailView: View {
         .padding(.top, topPadding)
         .padding(.bottom, 40)
         .sheet(item: $reportTargetPhoto) { photo in
-            ReportSheet(targetType: .circlePhoto, targetID: photo.ckRecordName ?? photo.id.uuidString)
+            ReportSheet(targetType: .groupPhoto, targetID: photo.ckRecordName ?? photo.id.uuidString)
         }
     }
 

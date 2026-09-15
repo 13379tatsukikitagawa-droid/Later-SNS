@@ -202,6 +202,10 @@ struct RootView: View {
             if newPhase == .active, isSignedIn {
                 Task { await cloudKitManager?.handleRemoteNotification() }
                 Task { await cloudKitManager?.resendOwnUnlockedPhotosIfNeeded() }
+                // 一晩アプリを開かなかった場合でも、フォアグラウンド復帰時に一度
+                // ローカルの時刻ゲートだけを再チェックし、9:00をまたいで解禁済みに
+                // なっているはずの写真/動画を反映する(ネットワークアクセス無し)。
+                Task { await cloudKitManager?.evaluateLocallyPendingTimeGatedUnlocks() }
                 ensurePersonalSpaceForCurrentUser()
             }
         }

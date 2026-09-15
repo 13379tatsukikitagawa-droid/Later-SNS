@@ -304,14 +304,13 @@ struct VideoPostFlowView: View {
         for group in targets {
             guard isSelectable(group) else { continue }
 
-            // unlockDateは実際に解禁された瞬間にCloudKitManager.evaluateGroupUnlockConditionsが
-            // 上書きする(LaterPhoto.imageCacheKey参照と同じ方針)。撮影直後はまだ解禁されて
-            // いないため、ここでは単に現在時刻を入れておくだけでよい。
+            // unlockDateは「撮影日の翌朝9:00」で撮影直後に確定する(LaterPhotoと同じ方針、
+            // GroupUnlockPolicy.nextUnlockThreshold参照)。
             let newVideo = LaterVideo(
                 thumbnailData: thumbnailData,
                 durationSeconds: durationSeconds,
                 captureDate: now,
-                unlockDate: now,
+                unlockDate: GroupUnlockPolicy.nextUnlockThreshold(after: now),
                 owner: user,
                 caption: trimmedCaption.isEmpty ? nil : trimmedCaption
             )

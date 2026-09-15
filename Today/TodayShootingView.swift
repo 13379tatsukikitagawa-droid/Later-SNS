@@ -20,8 +20,13 @@ struct TodayShootingView: View {
     @State private var showingMemoryViewer = false
     @State private var showingDevelopingProgress = false
     @State private var showingCreateGroup = false
+    @State private var showingMyPage = false
 
     private static let neonGreen = Color.brandGreen
+
+    private var currentUser: UserProfile? {
+        UserProfile.current(from: profiles)
+    }
 
     /// GroupSwitcherHeaderで選択されたグループを優先し、未選択なら先頭のグループにする。
     /// (GroupHomeDetailViewを開くとそのグループのIDに更新されるため、Home画面の
@@ -88,9 +93,13 @@ struct TodayShootingView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
-                BrandHeaderRow(developingPhotoCount: developingPhotoCount) {
-                    showingDevelopingProgress = true
-                }
+                BrandHeaderRow(
+                    developingPhotoCount: developingPhotoCount,
+                    onTapDeveloping: { showingDevelopingProgress = true },
+                    avatarImageData: currentUser?.profileImageData,
+                    avatarCacheKey: "avatar_header_\(currentUser?.id.uuidString ?? "me")",
+                    onTapAvatar: { showingMyPage = true }
+                )
 
                 if groups.isEmpty {
                     noGroupGuide
@@ -159,10 +168,13 @@ struct TodayShootingView: View {
             }
         }
         .sheet(isPresented: $showingCreateGroup) {
-            CircleCreateGroupView()
+            CreateGroupView()
         }
         .sheet(isPresented: $showingDevelopingProgress) {
             DevelopingProgressView(photos: myTodaysPhotos)
+        }
+        .fullScreenCover(isPresented: $showingMyPage) {
+            MyPageView()
         }
     }
 
@@ -222,6 +234,8 @@ struct TodayShootingView: View {
         switch GroupStatusPresenter.state(for: group) {
         case .shooting(_, _, _, let groupTotal, let groupTarget):
             return "\(groupTotal)/\(groupTarget)枚 撮影済み"
+        case .waitingForUnlockTime:
+            return "翌朝9:00に解禁"
         case .unlocked:
             return "解禁中"
         }
@@ -337,6 +351,8 @@ private struct GroupCardRow: View {
             }
             if !hasStarted { return "未スタート" }
             return "\(achievedCount)/\(memberCount)人 撮影済み・\(groupTotal)/\(groupTarget)枚"
+        case .waitingForUnlockTime:
+            return isPersonalSpace ? "翌朝9:00に解禁" : "全員撮影済み・翌朝9:00に解禁"
         case .unlocked:
             return "解禁中"
         }

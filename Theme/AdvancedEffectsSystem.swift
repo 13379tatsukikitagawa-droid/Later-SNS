@@ -2,79 +2,6 @@ import SwiftUI
 import UIKit
 internal import Combine
 
-// MARK: - Heartbeat Haptics Manager
-/// 解禁1時間前に心臓の鼓動のようなハプティクスを発生させる
-
-class HeartbeatHapticsManager: ObservableObject {
-    static let shared = HeartbeatHapticsManager()
-    
-    @Published var isHeartbeatActive: Bool = false
-    private var heartbeatTimer: Timer?
-    private let generator = UIImpactFeedbackGenerator(style: .medium)
-    
-    private init() {
-        generator.prepare()
-    }
-    
-    // MARK: - Public Methods
-    
-    /// 心音ハプティクスを開始
-    func startHeartbeat() {
-        guard !isHeartbeatActive else { return }
-        isHeartbeatActive = true
-        
-        scheduleHeartbeat()
-    }
-    
-    /// 心音ハプティクスを停止
-    func stopHeartbeat() {
-        isHeartbeatActive = false
-        heartbeatTimer?.invalidate()
-        heartbeatTimer = nil
-    }
-    
-    /// 解禁時刻までの時間をチェックして自動開始
-    func checkAndStartIfNeeded() {
-        let manager = GlobalSecretRevealManager.shared
-        
-        guard !manager.isGloballyRevealed,
-              let secondsUntilReveal = manager.secondsUntilNextReveal() else {
-            stopHeartbeat()
-            return
-        }
-        
-        // 1時間前（3600秒）になったら心音開始
-        if secondsUntilReveal <= 3600 && secondsUntilReveal > 0 {
-            startHeartbeat()
-        } else {
-            stopHeartbeat()
-        }
-    }
-    
-    // MARK: - Private Methods
-    
-    private func scheduleHeartbeat() {
-        heartbeatTimer?.invalidate()
-        
-        // 心臓の鼓動パターン: ドクン、ドクン（0.8秒間隔）
-        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
-            self?.performHeartbeat()
-        }
-    }
-    
-    private func performHeartbeat() {
-        guard isHeartbeatActive else { return }
-        
-        // 第1拍（強め）
-        generator.impactOccurred(intensity: 0.6)
-        
-        // 第2拍（弱め）- 0.15秒後
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            self?.generator.impactOccurred(intensity: 0.3)
-        }
-    }
-}
-
 // MARK: - Darkroom Transition Modifier
 /// 暗室で写真を手で分けるような奥行きのあるトランジション
 
@@ -331,31 +258,6 @@ extension View {
     
     func developingProgress(_ progress: Double) -> some View {
         modifier(DevelopingProgressModifier(progress: progress))
-    }
-}
-
-// MARK: - Heartbeat Monitor View Modifier
-
-struct HeartbeatMonitorModifier: ViewModifier {
-    @StateObject private var hapticsManager = HeartbeatHapticsManager.shared
-    
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                hapticsManager.checkAndStartIfNeeded()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                hapticsManager.checkAndStartIfNeeded()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-                hapticsManager.stopHeartbeat()
-            }
-    }
-}
-
-extension View {
-    func monitorHeartbeat() -> some View {
-        modifier(HeartbeatMonitorModifier())
     }
 }
 
