@@ -12,7 +12,6 @@ struct PersonalTodayView: View {
 
     @Query private var profiles: [UserProfile]
     @State private var showingDevelopingProgress = false
-    @State private var showingMyPage = false
 
     private static let neonGreen = Color.brandGreen
     /// 過去の記録グリッドを一度に表示する上限枚数。データは既にSwiftDataでローカルに
@@ -72,15 +71,10 @@ struct PersonalTodayView: View {
 
     var body: some View {
         ScrollView {
+            // 2026/9: ヘッダー(ロゴ+モードセレクター+アバター)はTodayView側で
+            // World/Personal/Community共通の1段に統合したため、ここではもう描画しない
+            // (BrandHeaderRowはPersonal/Community専用のヘッダーとしては廃止)。
             VStack(alignment: .leading, spacing: 22) {
-                BrandHeaderRow(
-                    developingPhotoCount: developingPhotoCount,
-                    onTapDeveloping: { showingDevelopingProgress = true },
-                    avatarImageData: currentUser?.profileImageData,
-                    avatarCacheKey: "avatar_header_\(currentUser?.id.uuidString ?? "me")",
-                    onTapAvatar: { showingMyPage = true }
-                )
-
                 if hasAnyRecord {
                     todayCard
                         .padding(.top, 6)
@@ -102,9 +96,6 @@ struct PersonalTodayView: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .sheet(isPresented: $showingDevelopingProgress) {
             DevelopingProgressView(photos: todaysPhotos)
-        }
-        .fullScreenCover(isPresented: $showingMyPage) {
-            MyPageView()
         }
     }
 

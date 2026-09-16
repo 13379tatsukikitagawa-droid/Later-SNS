@@ -107,7 +107,7 @@ struct EmailSignInView: View {
                     .multilineTextAlignment(.center)
             }
 
-            fieldCard(label: "メールアドレス") {
+            DarkFieldCard(label: "メールアドレス") {
                 TextField("you@example.com", text: $email)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
@@ -161,7 +161,7 @@ struct EmailSignInView: View {
                     .multilineTextAlignment(.center)
             }
 
-            fieldCard(label: "リンクのURL") {
+            DarkFieldCard(label: "リンクのURL") {
                 TextField("https://...", text: $pastedLink)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -207,26 +207,6 @@ struct EmailSignInView: View {
     }
 
     // MARK: - 共通パーツ
-
-    /// ダークパネル(#2c2116)カードの中にラベル+入力欄を配置し、下線を緑にする。
-    private func fieldCard(label: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(Color.corkboardTabInactiveText)
-
-            content()
-                .font(.system(size: 16, weight: .medium))
-                .padding(.bottom, 8)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(Color.brandGreen.opacity(0.7))
-                        .frame(height: 1.5)
-                }
-        }
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.corkboardTabActive))
-    }
 
     private func errorPanel(_ message: String) -> some View {
         HStack(alignment: .top, spacing: 10) {

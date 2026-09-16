@@ -18,15 +18,9 @@ struct TodayShootingView: View {
 
     @State private var memoryMatch: MemoryMatch?
     @State private var showingMemoryViewer = false
-    @State private var showingDevelopingProgress = false
     @State private var showingCreateGroup = false
-    @State private var showingMyPage = false
-
+    @State private var showingJoinByLink = false
     private static let neonGreen = Color.brandGreen
-
-    private var currentUser: UserProfile? {
-        UserProfile.current(from: profiles)
-    }
 
     /// GroupSwitcherHeaderで選択されたグループを優先し、未選択なら先頭のグループにする。
     /// (GroupHomeDetailViewを開くとそのグループのIDに更新されるため、Home画面の
@@ -92,15 +86,9 @@ struct TodayShootingView: View {
 
     var body: some View {
         ScrollView {
+            // 2026/9: ヘッダー(ロゴ+モードセレクター+アバター)はTodayView側で
+            // World/Personal/Community共通の1段に統合したため、ここではもう描画しない。
             VStack(spacing: 22) {
-                BrandHeaderRow(
-                    developingPhotoCount: developingPhotoCount,
-                    onTapDeveloping: { showingDevelopingProgress = true },
-                    avatarImageData: currentUser?.profileImageData,
-                    avatarCacheKey: "avatar_header_\(currentUser?.id.uuidString ?? "me")",
-                    onTapAvatar: { showingMyPage = true }
-                )
-
                 if groups.isEmpty {
                     noGroupGuide
                         .padding(.top, 44)
@@ -170,11 +158,8 @@ struct TodayShootingView: View {
         .sheet(isPresented: $showingCreateGroup) {
             CreateGroupView()
         }
-        .sheet(isPresented: $showingDevelopingProgress) {
-            DevelopingProgressView(photos: myTodaysPhotos)
-        }
-        .fullScreenCover(isPresented: $showingMyPage) {
-            MyPageView()
+        .sheet(isPresented: $showingJoinByLink) {
+            JoinGroupByLinkView()
         }
     }
 
@@ -291,13 +276,21 @@ struct TodayShootingView: View {
     // MARK: - 未参加時の案内(groups自体が1件も無い、ME未作成の稀なケース用フォールバック)
 
     /// コルクボードにピン留めされたポラロイド風の空状態カード(PolaroidPromptCard)。
-    /// 中身のテキスト・タップ時の挙動(showingCreateGroup = true)は以前のガイドと同じで、
-    /// 見た目だけをコルクボードのデザインに合わせて差し替えている。
+    /// 2026/9 MVP再設計: 空の状態はまっすぐの方が落ち着いて見えるため、isFlat: true
+    /// (傾き無し・簡略化したプレースホルダー・質感アップグレード済みCTA)を使う。
+    /// 主CTA(グループを作る)に加え、副導線(招待コードで参加する)を追加した
+    /// (以前「合言葉/QRコードでの参加は廃止」した設計判断があるため、新しい
+    /// コード検索バックエンドは作らず、既存の共有リンク受諾ロジックへ橋渡しする
+    /// JoinGroupByLinkViewを開くだけにしている)。
     private var noGroupGuide: some View {
         PolaroidPromptCard(
             heading: "誰かと一緒に、\n始めよう",
             caption: "グループに入ると、みんなで撮った記録も残せます",
-            ctaTitle: "＋ グループを作る"
+            ctaTitle: "＋ グループを作る",
+            isFlat: true,
+            pinSize: 13,
+            secondaryLinkTitle: "招待コードで参加する",
+            secondaryAction: { showingJoinByLink = true }
         ) {
             showingCreateGroup = true
         }
