@@ -184,26 +184,8 @@ struct EmailSignInView: View {
             .padding(.vertical, 14)
             .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.brandGreen))
             .disabled(pastedLink.isEmpty || isCompleting)
-
-            resendButton
         }
         .frame(maxWidth: .infinity)
-    }
-
-    /// メールが届かない場合に、同じアドレスへもう一度送信し直すためのボタン。
-    private var resendButton: some View {
-        Button {
-            Task { await sendLink() }
-        } label: {
-            if isSending {
-                ProgressView().tint(Color.brandGreen)
-            } else {
-                Text("リンクを再送する")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.brandGreen)
-            }
-        }
-        .disabled(isSending)
     }
 
     // MARK: - 共通パーツ
