@@ -20,30 +20,15 @@ struct TodayView: View {
     @State private var pendingVideoThumbnail: UIImage?
     @State private var pendingVideoDuration: Double = 0
     @State private var showingVideoPostFlow = false
-    @State private var showingMyPage = false
 
     @Query private var profiles: [UserProfile]
     @Query private var groups: [LaterGroup]
     @Bindable private var groupSelection = GroupSelectionStore.shared
     @Bindable private var captureRequest = CaptureRequestStore.shared
-    @Bindable private var homeNavigation = HomeNavigationStore.shared
-
-    private var currentUser: UserProfile? {
-        UserProfile.current(from: profiles)
-    }
 
     private var userGroups: [LaterGroup] {
-        guard let user = currentUser else { return [] }
+        guard let user = UserProfile.current(from: profiles) else { return [] }
         return groups.filter { $0.members.contains(where: { $0.id == user.id }) }
-    }
-
-    /// ヘッダーのアバターに緑ドットバッジを出すかどうか。自分が撮影した、まだ解禁
-    /// されていない(=現像中の)写真が所属グループのどこかに1枚でもあれば表示する。
-    private var hasDevelopingPhotos: Bool {
-        guard let user = currentUser else { return false }
-        return userGroups.contains { group in
-            group.photos.contains { $0.owner?.id == user.id && !$0.isUnlocked }
-        }
     }
 
     /// GroupSwitcherHeaderで選択されたグループを優先し、未選択ならME優先の並び順で
@@ -91,10 +76,9 @@ struct TodayView: View {
                 CorkboardBackground()
 
                 VStack(spacing: 0) {
-                    unifiedHeader
+                    homeModeSelector
                         .padding(.top, 12)
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
 
                     Group {
                         switch selectedMode {
@@ -212,11 +196,6 @@ struct TodayView: View {
                 showingCamera = true
                 captureRequest.pendingRequestID = nil
             }
-            .onChange(of: homeNavigation.popToRootRequestID) { _, newValue in
-                guard newValue != nil else { return }
-                navigationPath = NavigationPath()
-                homeNavigation.popToRootRequestID = nil
-            }
         }
     }
 
@@ -248,38 +227,15 @@ struct TodayView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
-    // MARK: - 統合ヘッダー(ロゴ+World/Personal/Communityセレクター+アバター)
+    // MARK: - World / Personal / Community セレクター
 
-    /// 2026/9 MVP再設計: 以前は「タブ行(このセレクター)」と「ロゴ+現像中ボタン+
-    /// アバターのヘッダー行(BrandHeaderRow)」の2段構成で、アクティブの合図も
-    /// タブの背景色分け+上端の緑線の2重になっていた。これを1段に統合し、
-    /// アクティブの合図も「白いカプセル」1つだけにする。「現像中」の専用ボタンは
-    /// 廃止し、アバター右上の緑ドットバッジ(現像中の写真が実際にある時だけ表示)に
-    /// 置き換える。BrandHeaderRowはPersonalTodayView/TodayShootingView側でも
-    /// もう使わない(このヘッダーが3モード共通で常に上に乗るため)。
-    private var unifiedHeader: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "camera.aperture")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Color.brandGreen)
-
-            Spacer(minLength: 8)
-
-            modeSegmentedControl
-
-            Spacer(minLength: 8)
-
-            avatarButton
-        }
-        .fullScreenCover(isPresented: $showingMyPage) {
-            MyPageView()
-        }
-    }
-
-    /// 1つの丸型セグメントコントロール。アクティブな項目だけに白〜クリームの
-    /// カプセルを敷き、非アクティブは背景無し。インジケーターはこれ1種類だけ。
-    private var modeSegmentedControl: some View {
-        HStack(spacing: 2) {
+    /// 「フォルダのインデックスタブ」風のWorld/Personal/Communityセレクター。
+    /// 選択中のタブだけをコンテンツ面(corkboardTabActive)と同色にして数px持ち上げ、
+    /// 上端に#4ade6cの太線を乗せることで「奥のフォルダから手前のタブが1枚だけ
+    /// 手前に出ている」ように見せる。選択状態そのものの管理(selectedMode)は
+    /// 変更していない。
+    private var homeModeSelector: some View {
+        HStack(alignment: .bottom, spacing: 6) {
             ForEach(HomeSelectorMode.allCases, id: \.self) { mode in
                 let isActive = selectedMode == mode
                 Button {
@@ -288,79 +244,34 @@ struct TodayView: View {
                     }
                 } label: {
                     Text(mode.rawValue.uppercased())
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .tracking(0.3)
-                        .lineLimit(1)
-                        .fixedSize()
-                        .foregroundStyle(isActive ? Color(hex: "17110c") : Color(hex: "6b5f50"))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background {
-                            if isActive {
-                                Capsule()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color(hex: "fffdf9"), Color(hex: "ece5d5")],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .tracking(0.5)
+                        .foregroundStyle(isActive ? Color.corkboardTabActiveText : Color.corkboardTabInactiveText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, isActive ? 10 : 14)
+                        .padding(.bottom, 12)
+                        .background(
+                            UnevenRoundedRectangle(
+                                topLeadingRadius: 10,
+                                bottomLeadingRadius: 0,
+                                bottomTrailingRadius: 0,
+                                topTrailingRadius: 10,
+                                style: .continuous
+                            )
+                            .fill(isActive ? Color.corkboardTabActive : Color.corkboardTabInactive)
+                            .overlay(alignment: .top) {
+                                if isActive {
+                                    Rectangle()
+                                        .fill(Color.brandGreen)
+                                        .frame(height: 3)
+                                }
                             }
-                        }
+                        )
+                        .offset(y: isActive ? -4 : 0)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(3)
-        .background(
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [Color(hex: "241a12"), Color(hex: "1c1712")],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .overlay(Capsule().strokeBorder(Color.black.opacity(0.3), lineWidth: 1))
-        )
-    }
-
-    /// ペルソナアバター。現像中の写真が実際にある時だけ、右上に緑のグロー付き
-    /// ドットバッジを表示する(常時点灯にはしない)。タップでマイページを開く
-    /// (旧「現像中」専用ボタンの導線もマイページ内に統合済み)。
-    private var avatarButton: some View {
-        Button {
-            showingMyPage = true
-        } label: {
-            ZStack(alignment: .topTrailing) {
-                CachedPhotoImage(
-                    imageData: currentUser?.profileImageData,
-                    cacheKey: "avatar_header_\(currentUser?.id.uuidString ?? "me")"
-                ) { uiImage in
-                    Image(uiImage: uiImage)
-                        .renderingMode(.original)
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 26))
-                        .foregroundStyle(Color.brandGreen.opacity(0.6))
-                }
-                .frame(width: 30, height: 30)
-                .clipShape(Circle())
-                .overlay(Circle().strokeBorder(Color.brandGreen.opacity(0.4), lineWidth: 1.2))
-
-                if hasDevelopingPhotos {
-                    Circle()
-                        .fill(Color.brandGreen)
-                        .frame(width: 11, height: 11)
-                        .shadow(color: Color.brandGreen.opacity(0.8), radius: 4)
-                        .overlay(Circle().strokeBorder(Color.corkboardBackground, lineWidth: 1.5))
-                        .offset(x: 3, y: -3)
-                }
-            }
-        }
-        .buttonStyle(.plain)
     }
 }
 

@@ -11,7 +11,6 @@ struct MyPageView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
-    @Query private var groups: [LaterGroup]
 
     @State private var showingNameEdit = false
     @State private var showingIconEdit = false
@@ -20,7 +19,6 @@ struct MyPageView: View {
     @State private var showingHelp = false
     @State private var showingCalendar = false
     @State private var showingGallery = false
-    @State private var showingDevelopingProgress = false
     @State private var showingAccountDeletion = false
     @State private var showingSignOutConfirm = false
 
@@ -31,21 +29,6 @@ struct MyPageView: View {
 
     private var currentUser: UserProfile? {
         UserProfile.current(from: profiles)
-    }
-
-    private var userGroups: [LaterGroup] {
-        guard let user = currentUser else { return [] }
-        return groups.filter { $0.members.contains(where: { $0.id == user.id }) }
-    }
-
-    /// 「現像中」導線の統合先。以前はHome画面ヘッダーの専用ボタンから開いていたが、
-    /// MVP再設計でヘッダーから廃止したため、ここ(マイページ)に集約する。
-    /// 単一グループに限らず、自分が撮影した未解禁の写真を全グループから集めて渡す。
-    private var developingPhotos: [LaterPhoto] {
-        guard let user = currentUser else { return [] }
-        return userGroups.flatMap { group in
-            group.photos.filter { $0.owner?.id == user.id && !$0.isUnlocked }
-        }
     }
 
     var body: some View {
@@ -91,9 +74,6 @@ struct MyPageView: View {
             }
             .fullScreenCover(isPresented: $showingGallery) {
                 MultiGroupGalleryView()
-            }
-            .sheet(isPresented: $showingDevelopingProgress) {
-                DevelopingProgressView(photos: developingPhotos)
             }
             .fullScreenCover(isPresented: $showingAccountDeletion) {
                 AccountDeletionView()
@@ -181,9 +161,6 @@ struct MyPageView: View {
             }
             MenuRow(icon: "photo.stack.fill", iconColor: .brandGreen, title: "ギャラリー", subtitle: "グループごとの解禁済み写真") {
                 showingGallery = true
-            }
-            MenuRow(icon: "flask.fill", iconColor: .brandGreen, title: "現像中", subtitle: developingPhotos.isEmpty ? "現像中の写真はありません" : "\(developingPhotos.count)枚 現像中") {
-                showingDevelopingProgress = true
             }
         }
         .padding(.horizontal, 20)

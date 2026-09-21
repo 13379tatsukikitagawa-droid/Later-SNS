@@ -49,7 +49,6 @@ struct RootView: View {
     @State private var showingGroupJoinAlert = false
     @State private var isProcessingGroupJoin = false
     @State private var lastJoinedGroupName = ""
-    @Bindable private var groupJoinRequest = GroupJoinRequestStore.shared
 
     @AppStorage("photosTaken") private var photosTaken: Int = 0
     @AppStorage("photosTakenLastResetDate") private var lastResetDate: String = ""
@@ -287,17 +286,6 @@ struct RootView: View {
         .sheet(isPresented: $showingSharedProfile) {
             if let sharedProfile {
                 UserDetailView(user: sharedProfile)
-            }
-        }
-        .onChange(of: groupJoinRequest.pendingURL) { _, newValue in
-            // JoinGroupByLinkView(招待コードで参加する)からの貼り付けリンク。
-            // onOpenURLと同じ判定・処理経路(handleGroupJoinLink)へそのまま合流させる。
-            guard let url = newValue else { return }
-            groupJoinRequest.pendingURL = nil
-            if let shareURL = GroupJoinLink.extractShareURL(from: url) {
-                handleGroupJoinLink(shareURL: shareURL)
-            } else {
-                handleGroupJoinLink(shareURL: url)
             }
         }
         .alert(groupJoinAlertTitle, isPresented: $showingGroupJoinAlert) {

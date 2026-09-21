@@ -5,11 +5,17 @@ import SwiftData
 /// 特定できる情報なしに一覧表示する。タップすると詳細(Today's Laterへの選出・通報)へ進む。
 struct WorldLaterFeedView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var profiles: [UserProfile]
     @Query(sort: \TodaysLaterSelection.selectedDate, order: .reverse) private var mySelections: [TodaysLaterSelection]
 
     @State private var posts: [WorldPost] = []
     @State private var isLoading = false
     @State private var selectedPost: WorldPost?
+    @State private var showingMyPage = false
+
+    private var currentUser: UserProfile? {
+        UserProfile.current(from: profiles)
+    }
 
     private static let neonGreen = Color.brandGreen
     /// 「LATEST」に表示する枚数。posts自体が既にWorldLaterService.fetchRecentPosts
@@ -46,9 +52,9 @@ struct WorldLaterFeedView: View {
 
     var body: some View {
         ScrollView {
-            // 2026/9: ヘッダー(ロゴ+モードセレクター+アバター)はTodayView側で
-            // World/Personal/Community共通の1段に統合したため、ここではもう描画しない。
             VStack(alignment: .leading, spacing: 22) {
+                worldHeader
+
                 if visiblePosts.isEmpty {
                     mapEmptyState
                         .padding(.top, 44)
@@ -68,6 +74,38 @@ struct WorldLaterFeedView: View {
             WorldPostDetailView(post: post, hasSelectedToday: hasSelectedToday) {
                 posts.removeAll { $0.id == post.id }
             }
+        }
+        .fullScreenCover(isPresented: $showingMyPage) {
+            MyPageView()
+        }
+    }
+
+    /// Worldタブには元々共通ヘッダー(BrandHeaderRow)が無いため、マイページ導線
+    /// (アバターアイコン)だけを見せる最小限のヘッダー行を追加する。
+    private var worldHeader: some View {
+        HStack {
+            Spacer()
+            Button {
+                showingMyPage = true
+            } label: {
+                CachedPhotoImage(
+                    imageData: currentUser?.profileImageData,
+                    cacheKey: "avatar_header_\(currentUser?.id.uuidString ?? "me")"
+                ) { uiImage in
+                    Image(uiImage: uiImage)
+                        .renderingMode(.original)
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 26))
+                        .foregroundStyle(Self.neonGreen.opacity(0.6))
+                }
+                .frame(width: 30, height: 30)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(Self.neonGreen.opacity(0.4), lineWidth: 1.2))
+            }
+            .buttonStyle(.plain)
         }
     }
 
