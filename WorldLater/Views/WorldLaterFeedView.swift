@@ -11,11 +11,6 @@ struct WorldLaterFeedView: View {
     @State private var posts: [WorldPost] = []
     @State private var isLoading = false
     @State private var selectedPost: WorldPost?
-    @State private var showingMyPage = false
-
-    private var currentUser: UserProfile? {
-        UserProfile.current(from: profiles)
-    }
 
     private static let neonGreen = Color.brandGreen
     /// 「LATEST」に表示する枚数。posts自体が既にWorldLaterService.fetchRecentPosts
@@ -53,8 +48,6 @@ struct WorldLaterFeedView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                worldHeader
-
                 if visiblePosts.isEmpty {
                     mapEmptyState
                         .padding(.top, 44)
@@ -74,38 +67,6 @@ struct WorldLaterFeedView: View {
             WorldPostDetailView(post: post, hasSelectedToday: hasSelectedToday) {
                 posts.removeAll { $0.id == post.id }
             }
-        }
-        .fullScreenCover(isPresented: $showingMyPage) {
-            MyPageView()
-        }
-    }
-
-    /// Worldタブには元々共通ヘッダー(BrandHeaderRow)が無いため、マイページ導線
-    /// (アバターアイコン)だけを見せる最小限のヘッダー行を追加する。
-    private var worldHeader: some View {
-        HStack {
-            Spacer()
-            Button {
-                showingMyPage = true
-            } label: {
-                CachedPhotoImage(
-                    imageData: currentUser?.profileImageData,
-                    cacheKey: "avatar_header_\(currentUser?.id.uuidString ?? "me")"
-                ) { uiImage in
-                    Image(uiImage: uiImage)
-                        .renderingMode(.original)
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 26))
-                        .foregroundStyle(Self.neonGreen.opacity(0.6))
-                }
-                .frame(width: 30, height: 30)
-                .clipShape(Circle())
-                .overlay(Circle().strokeBorder(Self.neonGreen.opacity(0.4), lineWidth: 1.2))
-            }
-            .buttonStyle(.plain)
         }
     }
 
@@ -222,37 +183,22 @@ private struct WorldPostDetailView: View {
     @State private var isSubmittingSelection = false
     @State private var isDeleting = false
 
-    /// post.isUnlockedはfetch時点のスナップショットのため、翌朝9:00をまたいで
-    /// この画面を開き続けているケースでも正しく判定できるよう、都度Date()と比較する。
-    private var isUnlocked: Bool {
-        Date() >= post.unlockDate
-    }
-
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.brandBlack.ignoresSafeArea()
                 VStack(spacing: 20) {
-                    if isUnlocked {
-                        CachedPhotoImage(imageData: post.imageData, cacheKey: post.imageCacheKey) { uiImage in
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            Color.white.opacity(0.05)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .padding(.horizontal, 20)
-                    } else {
-                        lockedPlaceholder
-                            .padding(.horizontal, 20)
+                    CachedPhotoImage(imageData: post.imageData, cacheKey: post.imageCacheKey) { uiImage in
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    } placeholder: {
+                        Color.white.opacity(0.05)
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal, 20)
 
-                    if !isUnlocked {
-                        Text("翌朝9:00に解禁されます")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.5))
-                    } else if post.isOwnPost {
+                    if post.isOwnPost {
                         Text("あなたの投稿です")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.brandGreen)
@@ -262,7 +208,7 @@ private struct WorldPostDetailView: View {
 
                     Spacer()
 
-                    if isUnlocked, post.isOwnPost {
+                    if post.isOwnPost {
                         Button(role: .destructive) {
                             Task { await deleteOwnPost() }
                         } label: {
@@ -273,7 +219,7 @@ private struct WorldPostDetailView: View {
                             }
                         }
                         .disabled(isDeleting)
-                    } else if isUnlocked {
+                    } else {
                         Button {
                             showingReportSheet = true
                         } label: {
@@ -306,39 +252,6 @@ private struct WorldPostDetailView: View {
                 Button("OK") { dismiss() }
             } message: {
                 Text("今日のLaterとして選びました。")
-            }
-        }
-    }
-
-    /// 解禁(翌朝9:00)前の表示。画像本体は見せず、地域名・時刻・キャプションだけを見せる。
-    private var lockedPlaceholder: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.05))
-                .aspectRatio(1, contentMode: .fit)
-
-            VStack(spacing: 14) {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 32, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.4))
-
-                VStack(spacing: 6) {
-                    if let locationRegion = post.locationRegion, !locationRegion.isEmpty {
-                        Label(locationRegion, systemImage: "mappin")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                    Text(post.captureDate.formatted(date: .omitted, time: .shortened))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.5))
-                    if let caption = post.caption, !caption.isEmpty {
-                        Text(caption)
-                            .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.85))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                    }
-                }
             }
         }
     }

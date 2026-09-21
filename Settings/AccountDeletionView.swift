@@ -33,7 +33,7 @@ struct AccountDeletionView: View {
                         .foregroundStyle(.white)
 
                     VStack(alignment: .leading, spacing: 10) {
-                        bulletRow("参加している全てのGroup・MEのデータ")
+                        bulletRow("参加している全てのCircle・MEのデータ")
                         bulletRow("World Laterへの自分の投稿")
                         bulletRow("プロフィール・撮影履歴のすべて")
                     }

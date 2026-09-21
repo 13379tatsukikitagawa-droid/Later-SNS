@@ -20,66 +20,21 @@ enum WorldLaterService {
 
     // MARK: - 投稿
 
-    /// World Laterへ1枚投稿する。撮影者情報は一切添付しない。位置情報は区市町村レベルの
-    /// 地名(locationRegion)のみ、緯度経度は送らない。unlockDateは撮影日の翌朝9:00
-    /// (GroupUnlockPolicy.nextUnlockThreshold)で、解禁までは他ユーザー側でも画像本体を
-    /// 表示しない(WorldLaterFeedView側の判定)。
+    /// World Laterへ1枚投稿する。撮影者情報は一切添付しない。
     @discardableResult
-    static func submitPost(
-        imageData: Data,
-        captureDate: Date,
-        locationRegion: String? = nil,
-        caption: String? = nil
-    ) async throws -> WorldPost {
-        let unlockDate = GroupUnlockPolicy.nextUnlockThreshold(after: captureDate)
+    static func submitPost(imageData: Data, captureDate: Date) async throws -> WorldPost {
         let record = CKRecord(recordType: AppRecordType.worldPost)
         record["captureDate"] = captureDate
         record["postedAt"] = Date()
-        record["unlockDate"] = unlockDate
-        record["locationRegion"] = locationRegion
-        record["caption"] = caption
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).jpg")
         try imageData.write(to: tempURL)
         record["image"] = CKAsset(fileURL: tempURL)
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
         let saved = try await container.publicCloudDatabase.save(record)
-        let post = WorldPost(
-            imageData: imageData,
-            captureDate: captureDate,
-            unlockDate: unlockDate,
-            isUnlocked: Date() >= unlockDate,
-            locationRegion: locationRegion,
-            caption: caption,
-            isOwnPost: true
-        )
+        let post = WorldPost(imageData: imageData, captureDate: captureDate, isOwnPost: true)
         post.ckRecordName = saved.recordID.recordName
         post.ckRecordChangeTag = saved.recordChangeTag
-        return post
-    }
-
-    /// recordNameを指定して1件だけ取得する(カレンダー機能でTodaysLaterSelection.
-    /// targetPostRecordNameから元のWorldPostを引くために使う)。fetchRecentPostsの
-    /// 直近件数の範囲外でも取得できるよう、直接IDでフェッチする。
-    static func fetchPost(recordName: String, currentUserRecordName: String?) async -> WorldPost? {
-        guard let record = try? await container.publicCloudDatabase.record(for: CKRecord.ID(recordName: recordName)),
-              let asset = record["image"] as? CKAsset,
-              let fileURL = asset.fileURL,
-              let data = try? Data(contentsOf: fileURL) else { return nil }
-        let captureDate = record["captureDate"] as? Date ?? Date()
-        let unlockDate = record["unlockDate"] as? Date ?? GroupUnlockPolicy.nextUnlockThreshold(after: captureDate)
-        let isOwnPost = currentUserRecordName != nil && record.creatorUserRecordID?.recordName == currentUserRecordName
-        let post = WorldPost(
-            imageData: data,
-            captureDate: captureDate,
-            unlockDate: unlockDate,
-            isUnlocked: Date() >= unlockDate,
-            locationRegion: record["locationRegion"] as? String,
-            caption: record["caption"] as? String,
-            isOwnPost: isOwnPost
-        )
-        post.ckRecordName = recordName
-        post.ckRecordChangeTag = record.recordChangeTag
         return post
     }
 
@@ -104,17 +59,8 @@ enum WorldLaterService {
                   let fileURL = asset.fileURL,
                   let data = try? Data(contentsOf: fileURL) else { return nil }
             let captureDate = record["captureDate"] as? Date ?? Date()
-            let unlockDate = record["unlockDate"] as? Date ?? GroupUnlockPolicy.nextUnlockThreshold(after: captureDate)
             let isOwnPost = currentUserRecordName != nil && record.creatorUserRecordID?.recordName == currentUserRecordName
-            let post = WorldPost(
-                imageData: data,
-                captureDate: captureDate,
-                unlockDate: unlockDate,
-                isUnlocked: Date() >= unlockDate,
-                locationRegion: record["locationRegion"] as? String,
-                caption: record["caption"] as? String,
-                isOwnPost: isOwnPost
-            )
+            let post = WorldPost(imageData: data, captureDate: captureDate, isOwnPost: isOwnPost)
             post.ckRecordName = recordID.recordName
             post.ckRecordChangeTag = record.recordChangeTag
             return post

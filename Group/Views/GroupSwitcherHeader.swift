@@ -44,11 +44,7 @@ struct GroupSwitcherHeader: View {
             }
         }
         .sheet(isPresented: $showingMembers) {
-            // 旧CircleManagementView(グループ一覧画面)は死コードとして削除済み。
-            // このGroupSwitcherHeader自体もどこからもインスタンス化されていない
-            // (画面のどこからも到達しない)ため、実害は無いがビルドを通すために
-            // 最も近い意味のMultiGroupGalleryViewに差し替えておく。
-            MultiGroupGalleryView()
+            CircleManagementView()
         }
         .alert("準備中", isPresented: $showingComingSoonAlert) {
             Button("OK", role: .cancel) {}
@@ -201,8 +197,6 @@ struct GroupSwitcherHeader: View {
         switch GroupStatusPresenter.state(for: group) {
         case .unlocked:
             return "解禁中"
-        case .waitingForUnlockTime:
-            return "翌朝9:00に解禁"
         case .shooting(let hasStarted, let achievedCount, let memberCount, _, _):
             if !hasStarted { return "未スタート" }
             return "\(achievedCount)/\(memberCount)人 撮影済み"

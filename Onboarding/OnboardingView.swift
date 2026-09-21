@@ -1,20 +1,17 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 import Foundation
 
-/// プロフィール設定を2ステップのウィザード形式で行う画面。
-/// ステップ1: ペルソナ確認(名前・アイコンをランダム割り当て、シャッフル可) →
-/// ステップ2: ウェルカム(完了)。
-///
-/// 2026/9: 匿名性・ルッキズム対策のため、実名・実写を入力させる旧フロー
-/// (名前自由入力+ユーザーID+アバター写真アップロード)を廃止した。ログインは
-/// 実アカウント(Apple ID)で行うが、Later内で使う名前・アイコンはPersonaGeneratorが
-/// 割り当てるLater内だけの別人格になる。保存先(@AppStorage/SwiftData)や
-/// 公開ディレクトリへの発行ロジックは、以前の単一画面版からそのまま踏襲している。
+/// プロフィール設定を3ステップのウィザード形式で行う画面。
+/// ステップ1: 名前 → ステップ2: ユーザーID+自由記入(任意) → ステップ3: ウェルカム(完了)。
+/// 保存先(@AppStorage/SwiftData)や公開ディレクトリへの発行ロジックは、以前の単一画面版から
+/// そのまま踏襲している(写真設定だけは、この3ステップの仕様に含まれないため、
+/// オンボーディングの必須項目からは外し、後からProfileView側で設定できるようにした)。
 struct OnboardingView: View {
     @Environment(\.modelContext) private var context
 
-    // 🎯 共通の@AppStorageキー(MyPageViewと完全に同期)
+    // 🎯 共通の@AppStorageキー(ProfileViewと完全に同期)
     @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("userID") private var userID: String = ""
@@ -25,22 +22,53 @@ struct OnboardingView: View {
     @AppStorage("isProfileSetupCompleted") private var isProfileSetupCompleted: Bool = false
     @AppStorage("appleUserID") private var appleUserID: String = ""
     @AppStorage("appleFullName") private var appleFullName: String = ""
-    @AppStorageData("profileImageData") private var profileImageData: Data?
 
-    /// この端末で今回のオンボーディング中に割り当てられたペルソナ。
-    @State private var persona: PersonaGenerator.Persona = PersonaGenerator.generate()
-    @State private var personaIconData: Data?
+    // 入力用の一時State(ステップをまたいで保持する)
+    @State private var inputName: String = ""
+    @State private var inputUserID: String = ""
+    @State private var inputBio: String = ""
+    @AppStorageData("profileImageData") private var profileImageData: Data?
+    @State private var inputImageData: Data?
+    @State private var selectedPhotoItem: PhotosPickerItem?
 
     // ウィザードの進行状態
     private enum Step: Int, CaseIterable {
-        case persona, welcome
+        case name, userID, welcome
     }
-    @State private var step: Step = .persona
+    @State private var step: Step = .name
+
+    private enum Field {
+        case name, userID, bio
+    }
+    @FocusState private var focusedField: Field?
 
     // UI状態
     @State private var isSaving: Bool = false
 
     private static let accentGreen = Color.brandGreen
+
+    // MARK: - バリデーション
+
+    private var trimmedName: String {
+        inputName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedUserID: String {
+        inputUserID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isNameStepValid: Bool {
+        !trimmedName.isEmpty
+    }
+
+    private var isUserIDStepValid: Bool {
+        trimmedUserID.count >= 3 && isValidUserID(trimmedUserID)
+    }
+
+    private func isValidUserID(_ id: String) -> Bool {
+        let pattern = "^[a-zA-Z0-9_]+$"
+        return id.range(of: pattern, options: .regularExpression) != nil
+    }
 
     var body: some View {
         ZStack {
@@ -53,8 +81,10 @@ struct OnboardingView: View {
 
                 Group {
                     switch step {
-                    case .persona:
-                        personaStep
+                    case .name:
+                        nameStep
+                    case .userID:
+                        userIDStep
                     case .welcome:
                         welcomeStep
                     }
@@ -69,23 +99,38 @@ struct OnboardingView: View {
             }
         }
         .onAppear {
-            // 既に割り当て済みのペルソナがあれば(編集し直しの場合など)そのまま使う。
-            if !userName.isEmpty, !userID.isEmpty {
-                persona = PersonaGenerator.Persona(
-                    name: userName,
-                    shortID: "@\(userID)",
-                    iconSymbol: persona.iconSymbol,
-                    iconColor: persona.iconColor
-                )
-                personaIconData = profileImageData
-            } else {
-                regenerateIcon()
+            // 既存のデータがあれば読み込む(編集し直しの場合など)
+            if !userName.isEmpty {
+                inputName = userName
+            } else if !appleFullName.isEmpty {
+                // Sign in with Appleで取得した氏名を初期値にする
+                inputName = appleFullName
+            }
+            if !userID.isEmpty {
+                inputUserID = userID
+            }
+            if !userBio.isEmpty {
+                inputBio = userBio
+            }
+            if let profileImageData {
+                inputImageData = profileImageData
+            }
+            focusedField = .name
+        }
+        .onChange(of: selectedPhotoItem) { _, newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                    // プロフィール画像は選び直した瞬間にだけ発生する一回きりの操作のため、
+                    // ここで焼き込んでおく(表示のたびに毎回加工していた以前の設計を統一する)。
+                    let baked = await ChekiColorGrade.bakedData(from: data) ?? data
+                    await MainActor.run {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            inputImageData = baked
+                        }
+                    }
+                }
             }
         }
-    }
-
-    private func regenerateIcon() {
-        personaIconData = PersonaGenerator.renderIconImageData(for: persona)
     }
 
     // MARK: - 背景
@@ -125,7 +170,7 @@ struct OnboardingView: View {
 
     private var header: some View {
         HStack {
-            if step != .persona {
+            if step != .name {
                 Button {
                     goToPreviousStep()
                 } label: {
@@ -164,67 +209,40 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: - ステップ1: ペルソナ確認
+    // MARK: - ステップ1: 名前
 
-    private var personaStep: some View {
+    private var nameStep: some View {
         VStack(alignment: .leading, spacing: 28) {
-            VStack(spacing: 16) {
-                ZStack {
-                    if let personaIconData, let uiImage = UIImage(data: personaIconData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                    } else {
-                        persona.iconColor
-                        Image(systemName: persona.iconSymbol)
-                            .font(.system(size: 40, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.95))
-                    }
-                }
-                .frame(width: 96, height: 96)
-                .clipShape(Circle())
-                .overlay(Circle().strokeBorder(Self.accentGreen.opacity(0.4), lineWidth: 1.5))
-                .shadow(color: Self.accentGreen.opacity(0.25), radius: 16, x: 0, y: 6)
-
-                VStack(spacing: 4) {
-                    Text(persona.name)
-                        .font(.custom("Caveat-Bold", size: 30))
-                        .foregroundStyle(.white)
-                    Text(persona.shortID)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
-                }
-
-                Button {
-                    HapticsManager.tick()
-                    persona = PersonaGenerator.generate()
-                    regenerateIcon()
-                } label: {
-                    Label("シャッフルする", systemImage: "shuffle")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 9)
-                        .background(Capsule().fill(Color.white.opacity(0.1)))
-                }
-            }
-            .frame(maxWidth: .infinity)
+            avatarPicker
+                .frame(maxWidth: .infinity)
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("これがあなたのペルソナです")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                Text("名前を教えてください")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
 
-                Text("実際のあなたとは別の、Laterの中だけの名前とアイコンです。\nグループのメンバーにはこの名前で表示されます。")
-                    .font(.system(size: 14, weight: .medium))
+                Text("グループのメンバーに表示される名前です")
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white.opacity(0.6))
             }
 
+            stepTextField(
+                icon: "person.circle.fill",
+                placeholder: "例: 山田太郎",
+                text: $inputName,
+                prefix: nil,
+                autocapitalization: .words,
+                isFocused: focusedField == .name
+            )
+            .focused($focusedField, equals: .name)
+            .submitLabel(.next)
+            .onSubmit { goToNextStepIfPossible() }
+
             Spacer(minLength: 0)
 
-            nextButton(isEnabled: true) {
+            nextButton(isEnabled: isNameStepValid) {
                 goToNextStepIfPossible()
             }
         }
@@ -232,7 +250,142 @@ struct OnboardingView: View {
         .padding(.top, 40)
     }
 
-    // MARK: - ステップ2: ウェルカム(完了)
+    // MARK: - アバターアイコン設定(ステップ1のタイトル直上)
+
+    private var avatarPicker: some View {
+        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+            ZStack(alignment: .bottomTrailing) {
+                avatarImageContent
+                    .frame(width: 84, height: 84)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .strokeBorder(Self.accentGreen.opacity(0.4), lineWidth: 1.5)
+                    )
+                    .shadow(color: Self.accentGreen.opacity(0.25), radius: 16, x: 0, y: 6)
+
+                ZStack {
+                    Circle()
+                        .fill(Self.accentGreen)
+                        .frame(width: 28, height: 28)
+                        .shadow(color: Self.accentGreen.opacity(0.5), radius: 6, x: 0, y: 2)
+
+                    Image(systemName: inputImageData == nil ? "plus" : "camera.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.black)
+                }
+                .offset(x: 4, y: 4)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var avatarImageContent: some View {
+        if let inputImageData, let uiImage = UIImage(data: inputImageData) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+        } else {
+            ZStack {
+                Circle().fill(Color.white.opacity(0.08))
+                Image(systemName: "person.fill")
+                    .font(.system(size: 32, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+        }
+    }
+
+    // MARK: - ステップ2: ユーザーID + 自由記入(任意)
+
+    private var userIDStep: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("ユーザーIDを設定してください")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
+
+                Text("英数字とアンダースコアのみ、3文字以上")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                stepTextField(
+                    icon: nil,
+                    placeholder: "例: yamada_taro",
+                    text: $inputUserID,
+                    prefix: "@",
+                    autocapitalization: .never,
+                    isFocused: focusedField == .userID,
+                    keyboardType: .asciiCapable
+                )
+                .focused($focusedField, equals: .userID)
+                .submitLabel(.next)
+                .onChange(of: inputUserID) { _, newValue in
+                    inputUserID = newValue.filter { $0.isLetter || $0.isNumber || $0 == "_" }
+                }
+                .onSubmit { focusedField = .bio }
+
+                if !inputUserID.isEmpty && !isUserIDStepValid {
+                    Text("3文字以上の英数字・アンダースコアのみ使用可能です")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red.opacity(0.8))
+                        .padding(.leading, 4)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("自由記入")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.leading, 4)
+
+                bioTextField
+            }
+
+            Spacer(minLength: 0)
+
+            nextButton(isEnabled: isUserIDStepValid) {
+                goToNextStepIfPossible()
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 40)
+    }
+
+    private var bioTextField: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "text.quote")
+                .font(.system(size: 20))
+                .foregroundStyle(Self.accentGreen)
+                .padding(.top, 2)
+
+            TextField("自由に書いてください(任意)", text: $inputBio, axis: .vertical)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.white)
+                .lineLimit(3...5)
+                .submitLabel(.done)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(
+                            focusedField == .bio ? Self.accentGreen.opacity(0.5) : Color.white.opacity(0.1),
+                            lineWidth: 1.5
+                        )
+                )
+        )
+        .focused($focusedField, equals: .bio)
+    }
+
+    // MARK: - ステップ3: ウェルカム(完了)
 
     private var welcomeStep: some View {
         VStack(spacing: 36) {
@@ -255,6 +408,48 @@ struct OnboardingView: View {
     }
 
     // MARK: - 共通パーツ
+
+    private func stepTextField(
+        icon: String?,
+        placeholder: String,
+        text: Binding<String>,
+        prefix: String?,
+        autocapitalization: TextInputAutocapitalization,
+        isFocused: Bool,
+        keyboardType: UIKeyboardType = .default
+    ) -> some View {
+        HStack(spacing: 12) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(Self.accentGreen)
+            } else if let prefix {
+                Text(prefix)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Self.accentGreen)
+            }
+
+            TextField(placeholder, text: text)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.white)
+                .textInputAutocapitalization(autocapitalization)
+                .disableAutocorrection(true)
+                .keyboardType(keyboardType)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(
+                            isFocused ? Self.accentGreen.opacity(0.5) : Color.white.opacity(0.1),
+                            lineWidth: 1.5
+                        )
+                )
+        )
+    }
 
     private func nextButton(isEnabled: Bool, title: String = "次へ", action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -300,11 +495,20 @@ struct OnboardingView: View {
 
     private func goToNextStepIfPossible() {
         switch step {
-        case .persona:
+        case .name:
+            guard isNameStepValid else { return }
+            HapticsManager.tick()
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                step = .userID
+            }
+            focusedField = .userID
+        case .userID:
+            guard isUserIDStepValid else { return }
             HapticsManager.tick()
             withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                 step = .welcome
             }
+            focusedField = nil
         case .welcome:
             break
         }
@@ -314,8 +518,9 @@ struct OnboardingView: View {
         HapticsManager.swipeFeedback()
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
             switch step {
-            case .persona: break
-            case .welcome: step = .persona
+            case .name: break
+            case .userID: step = .name
+            case .welcome: step = .userID
             }
         }
     }
@@ -323,23 +528,24 @@ struct OnboardingView: View {
     // MARK: - Helper Methods
 
     private func completeSetup() {
+        guard isNameStepValid, isUserIDStepValid else { return }
+
         // 🎉 成功のHaptic
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
 
+        let bio = inputBio.trimmingCharacters(in: .whitespacesAndNewlines)
+
         isSaving = true
 
-        let name = persona.name
-        let username = String(persona.shortID.dropFirst()) // "@"を取り除く
-        let iconData = personaIconData ?? PersonaGenerator.renderIconImageData(for: persona)
-
-        // 🎯 @AppStorageに保存(MyPageViewと自動同期)
-        userName = name
-        userID = username
-        profileImageData = iconData
+        // 🎯 @AppStorageに保存(ProfileViewと自動同期)
+        userName = trimmedName
+        userID = trimmedUserID
+        userBio = bio
+        profileImageData = inputImageData
 
         // レガシーサポート: SwiftDataにも保存
-        saveToSwiftData(name: name, username: username, bio: "", imageData: iconData)
+        saveToSwiftData(name: trimmedName, username: trimmedUserID, bio: bio, imageData: inputImageData)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             let successFeedback = UINotificationFeedbackGenerator()

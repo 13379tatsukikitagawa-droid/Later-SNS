@@ -273,7 +273,7 @@ final class GroupSharingService {
             // atomicバッチ全体が(個々のsaveResultsではなく)呼び出し自体としてthrowした場合。
             // ここでも同じ形式でuserInfo[CKPartialErrorsByItemIDKey]を展開し、
             // どのレコードが真因だったかをログへ残す。
-            _ = error.loggedDescription(context: "CreateGroupView.createGroup modifyRecords")
+            _ = error.loggedDescription(context: "CircleCreateGroupView.createGroup modifyRecords")
             error.logPartialItemErrors()
             if includeImages, error.asQuotaExceededCKError != nil {
                 throw QuotaExceededDuringImageUpload()

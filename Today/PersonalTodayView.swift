@@ -12,7 +12,6 @@ struct PersonalTodayView: View {
 
     @Query private var profiles: [UserProfile]
     @State private var showingDevelopingProgress = false
-    @State private var showingMyPage = false
 
     private static let neonGreen = Color.brandGreen
     /// 過去の記録グリッドを一度に表示する上限枚数。データは既にSwiftDataでローカルに
@@ -22,12 +21,8 @@ struct PersonalTodayView: View {
 
     @State private var showingAllPastPhotos = false
 
-    private var currentUser: UserProfile? {
-        UserProfile.current(from: profiles)
-    }
-
     private var myID: UUID? {
-        currentUser?.id
+        UserProfile.current(from: profiles)?.id
     }
 
     /// 自分がMEスペースに撮影した写真の全件(今日・過去問わず)。1件でもあれば
@@ -73,13 +68,9 @@ struct PersonalTodayView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                BrandHeaderRow(
-                    developingPhotoCount: developingPhotoCount,
-                    onTapDeveloping: { showingDevelopingProgress = true },
-                    avatarImageData: currentUser?.profileImageData,
-                    avatarCacheKey: "avatar_header_\(currentUser?.id.uuidString ?? "me")",
-                    onTapAvatar: { showingMyPage = true }
-                )
+                BrandHeaderRow(developingPhotoCount: developingPhotoCount) {
+                    showingDevelopingProgress = true
+                }
 
                 if hasAnyRecord {
                     todayCard
@@ -102,9 +93,6 @@ struct PersonalTodayView: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .sheet(isPresented: $showingDevelopingProgress) {
             DevelopingProgressView(photos: todaysPhotos)
-        }
-        .fullScreenCover(isPresented: $showingMyPage) {
-            MyPageView()
         }
     }
 

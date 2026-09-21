@@ -11,17 +11,6 @@ final class WorldPost {
     @Attribute(.unique) var id: UUID = UUID()
     @Attribute(.externalStorage) var imageData: Data
     var captureDate: Date
-    /// 解禁時刻(撮影日の翌朝9:00、GroupUnlockPolicy.nextUnlockThreshold参照)。
-    /// これに到達するまでは画像本体を表示せず、地域名・時刻・キャプションのみ見せる。
-    var unlockDate: Date = Date()
-    /// 実際に解禁済みかどうかのローカルキャッシュ表示用フラグ。真の判定は都度
-    /// `Date() >= unlockDate` で行ってよいが、フェッチ直後の表示分岐を簡単にするため保持する。
-    var isUnlocked: Bool = false
-    /// 区市町村レベルまで丸めた撮影地の地名(CameraLocationNameProvider参照)。
-    /// 緯度経度などの精密な位置情報は一切保持しない。
-    var locationRegion: String?
-    /// 撮影時に添えた一言キャプション。
-    var caption: String?
     /// このpostが自分自身の投稿かどうか(削除ボタンの表示可否にのみ使う、完全ローカルの判定)。
     var isOwnPost: Bool = false
     /// Today's Laterで選ばれた回数のローカルキャッシュ(表示のみ、集計の正はCloudKit側)。
@@ -36,21 +25,9 @@ final class WorldPost {
     var ckRecordName: String?
     var ckRecordChangeTag: String?
 
-    init(
-        imageData: Data,
-        captureDate: Date = Date(),
-        unlockDate: Date = Date(),
-        isUnlocked: Bool = false,
-        locationRegion: String? = nil,
-        caption: String? = nil,
-        isOwnPost: Bool = false
-    ) {
+    init(imageData: Data, captureDate: Date = Date(), isOwnPost: Bool = false) {
         self.imageData = imageData
         self.captureDate = captureDate
-        self.unlockDate = unlockDate
-        self.isUnlocked = isUnlocked
-        self.locationRegion = locationRegion
-        self.caption = caption
         self.isOwnPost = isOwnPost
     }
 

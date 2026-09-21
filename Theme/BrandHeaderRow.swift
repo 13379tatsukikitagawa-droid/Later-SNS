@@ -7,11 +7,6 @@ import SwiftUI
 struct BrandHeaderRow: View {
     let developingPhotoCount: Int
     let onTapDeveloping: () -> Void
-    /// マイページ導線用のペルソナアイコン(実写ではなくプリセットイラスト、
-    /// PersonaGenerator参照)。nilなら未設定時のプレースホルダーを表示する。
-    var avatarImageData: Data? = nil
-    var avatarCacheKey: String = "avatar_header"
-    var onTapAvatar: (() -> Void)? = nil
 
     @Environment(\.openURL) private var openURL
     @State private var developingPulse = false
@@ -40,33 +35,8 @@ struct BrandHeaderRow: View {
             Spacer()
 
             developingButton
-
-            if let onTapAvatar {
-                avatarButton(action: onTapAvatar)
-            }
         }
         .padding(.top, 8)
-    }
-
-    // MARK: - マイページ導線(アバターアイコン)
-
-    private func avatarButton(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            CachedPhotoImage(imageData: avatarImageData, cacheKey: avatarCacheKey) { uiImage in
-                Image(uiImage: uiImage)
-                    .renderingMode(.original)
-                    .resizable()
-                    .scaledToFill()
-            } placeholder: {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 26))
-                    .foregroundStyle(Self.neonGreen.opacity(0.6))
-            }
-            .frame(width: 30, height: 30)
-            .clipShape(Circle())
-            .overlay(Circle().strokeBorder(Self.neonGreen.opacity(0.4), lineWidth: 1.2))
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - 現像中ボタン

@@ -397,12 +397,7 @@ struct TrueBlindCameraView: View {
 
                 Spacer()
 
-                // 2026/9: 動画機能は一時的にUI導線のみ非表示にする(撮影・保存・表示の
-                // コード自体は残す、Later設計アップデート第0章の確認結果)。captureMode
-                // はデフォルトの.photoから変更する手段が無くなるため、動画撮影経路
-                // (isRecordingVideo/startVideoRecording等)は自然に到達不能になる。
-                // 復活させる場合はこのコメントとmodeToggleの呼び出しを元に戻すだけでよい。
-                // modeToggle
+                modeToggle
             }
             .padding(.horizontal, 24)
 

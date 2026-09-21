@@ -395,13 +395,15 @@ struct PostTargetGroupSelectionView: View {
             // (MEもisSelectable(_:)で同じ基準により判定する)。
             guard isSelectable(group) else { continue }
 
-            // unlockDateは「撮影日の翌朝9:00」で撮影直後に確定する(GroupUnlockPolicy.
-            // nextUnlockThreshold参照)。全員の撮影が完了していても、この時刻に到達する
-            // までCloudKitManager.evaluateGroupUnlockConditionsはisUnlockedを立てない。
+            // unlockDateは実際に解禁された瞬間にCloudKitManager.evaluateGroupUnlockConditionsが
+            // 上書きする(LaterPhoto.imageCacheKey/LaterGroup.mostRecentCyclePhotos参照)。
+            // 撮影直後はまだ解禁されていないため、ここでは単に現在時刻を入れておくだけでよい
+            // (以前あった「1〜4日後のランダムな未来日時」という旧設計の計算値は、
+            // 時間帯制限撤廃・全員撮影ゲート方式への移行で意味を持たなくなった)。
             let newPhoto = LaterPhoto(
                 imageData: imageData,
                 captureDate: now,
-                unlockDate: GroupUnlockPolicy.nextUnlockThreshold(after: now),
+                unlockDate: now,
                 owner: user,
                 caption: trimmedCaption.isEmpty ? nil : trimmedCaption
             )
@@ -438,12 +440,7 @@ struct PostTargetGroupSelectionView: View {
         if postToWorldLater {
             Task {
                 do {
-                    try await WorldLaterService.submitPost(
-                        imageData: imageData,
-                        captureDate: now,
-                        locationRegion: locationName,
-                        caption: trimmedCaption.isEmpty ? nil : trimmedCaption
-                    )
+                    try await WorldLaterService.submitPost(imageData: imageData, captureDate: now)
                 } catch {
                     print("[WorldLater] submitPost failed: \(error)")
                 }

@@ -1,240 +1,630 @@
 import SwiftUI
 import SwiftData
-import CloudKit
-import PhotosUI
+import Photos
 
-/// グループ作成画面。参加は共有リンク(later://join?shareUrl=...)を受け取ってタップするのみで、
-/// この画面から能動的に「参加する」操作はしない(合言葉/QRコードでの参加は廃止した)。
-///
-/// 呼称統一(2026/9): 以前は「Circle」という呼称だったが、仕様変更に合わせて
-/// 「Group」に統一した(旧CircleCreateGroupView)。合わせて、どこからも呼ばれていなかった
-/// 旧CircleManagementView(グループ一覧画面)とGroupCardは死コードとして削除した。
+/// グループ作成フロー
 struct CreateGroupView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
-
-    @State private var groupName: String = ""
-    @State private var showingSuccess = false
-    @State private var isSaving = false
-    @State private var errorMessage: String?
-    @State private var createdShareURL: URL?
-    @State private var selectedIconItem: PhotosPickerItem?
-    @State private var iconImageData: Data?
-    /// CKError.quotaExceeded(iCloud容量不足)で画像を除いて再試行し、グループ自体は
-    /// 作成できた場合に、成功シート(GroupCreatedShareView)内へ表示する注意文言。
-    @State private var successWarningMessage: String?
-
+    
+    let onComplete: (LaterGroup) -> Void
+    
+    @State private var groupName = ""
+    @State private var missionText = ""
+    @State private var autoGenerateMission = false
+    @State private var isPrivate = true
+    @State private var currentStep = 1
+    @State private var createdGroup: LaterGroup?
+    @State private var showingQRCode = false
+    @State private var showingShareSheet = false
+    @State private var shareItems: [Any] = []
+    @State private var isCreatingGroup = false
+    @State private var showSuccessAnimation = false
+    @State private var isSavingToPhotos = false
+    
     private var currentUser: UserProfile? {
-        UserProfile.current(from: profiles)
+        profiles.first
     }
-
+    
+    private var isStepValid: Bool {
+        switch currentStep {
+        case 1:
+            return !groupName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case 2:
+            return true // Mission is optional
+        case 3:
+            return true // Settings are always valid
+        default:
+            return false
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.brandBlack.ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // アイコン(タップして写真を選択)
-                        PhotosPicker(selection: $selectedIconItem, matching: .images) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.brandGreen.opacity(0.12))
-                                    .frame(width: 88, height: 88)
-
-                                if let iconImageData, let uiImage = UIImage(data: iconImageData) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 88, height: 88)
-                                        .clipShape(Circle())
-                                } else {
-                                    Image(systemName: "camera.fill")
-                                        .font(.system(size: 26))
-                                        .foregroundStyle(Color.brandGreen)
-                                }
-
-                                Circle()
-                                    .strokeBorder(Color.brandGreen.opacity(0.4), lineWidth: 1.5)
-                                    .frame(width: 88, height: 88)
-                            }
-                        }
+                
+                VStack(spacing: 0) {
+                    // Progress Indicator
+                    progressIndicator
                         .padding(.top, 20)
-                        .onChange(of: selectedIconItem) { _, newItem in
-                            Task {
-                                guard let newItem, let data = try? await newItem.loadTransferable(type: Data.self) else { return }
-                                iconImageData = data
+                        .padding(.horizontal, 20)
+                    
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            switch currentStep {
+                            case 1:
+                                groupNameStep
+                            case 2:
+                                missionStep
+                            case 3:
+                                settingsStep
+                            case 4:
+                                qrCodeStep
+                            default:
+                                EmptyView()
                             }
                         }
-
-                        VStack(spacing: 20) {
-                            // グループ名入力
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("グループ名")
-                                    .font(.headline)
-                                    .foregroundStyle(Color.white)
-
-                                TextField("例: 親友グループ", text: $groupName)
-                                    .textFieldStyle(CustomTextFieldStyle())
-                            }
-
-                        }
-                        .padding(.horizontal)
-
-                        Spacer(minLength: 40)
-
-                        if let errorMessage {
-                            Text(errorMessage)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                                .padding(.horizontal)
-                        }
-
-                        // 作成ボタン
-                        Button(action: {
-                            Task { await createGroup() }
-                        }) {
-                            Text("グループを作成")
-                                .font(.headline)
-                                .foregroundStyle(Color.black)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color.brandGreen, Color.brandGreen.opacity(0.9)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .shadow(color: Color.brandGreen.opacity(0.4), radius: 12, x: 0, y: 6)
-                        }
-                        .disabled(groupName.isEmpty || isSaving)
-                        .opacity(groupName.isEmpty ? 0.5 : 1.0)
-                        .padding(.horizontal)
+                        .padding(24)
                     }
-                }
-
-                if isSaving {
-                    ProgressView()
+                    
+                    // Bottom Actions
+                    bottomActions
+                        .padding(20)
                 }
             }
-            .navigationTitle("グループ作成")
+            .navigationTitle("Create Group")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
                         dismiss()
-                    }) {
-                        Text("キャンセル")
-                            .foregroundStyle(Color.brandGreen)
                     }
+                    .foregroundStyle(.secondary)
                 }
-            }
-            // ネイティブ.alert()はカスタムデザイン(ダーク背景・角丸カード・コピー導線)を
-            // 持てないため、ブランドトーンのカードUIを持つ専用シートに置き換えている。
-            // シートを閉じる操作(ボタン/スワイプ)は一つに絞り、onDismissでこの作成画面自体も
-            // 一緒に閉じることで、画面遷移導線がバッティングしないようにしている。
-            .sheet(isPresented: $showingSuccess, onDismiss: { dismiss() }) {
-                GroupCreatedShareView(groupName: groupName, shareURL: createdShareURL, warningMessage: successWarningMessage)
             }
         }
     }
-
+    
+    // MARK: - Progress Indicator
+    
+    private var progressIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(1...4, id: \.self) { step in
+                if step <= currentStep {
+                    Circle()
+                        .fill(Color.brandGreen)
+                        .frame(width: 8, height: 8)
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Step 1: Group Name
+    
+    private var groupNameStep: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 12) {
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.brandGreen, .brandGreen.opacity(0.6)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                Text("Name Your Circle")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                
+                Text("Choose a name that represents\nyour group's vibe")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 40)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Group Name")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.secondary)
+                
+                TextField("e.g., Weekend Warriors", text: $groupName)
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.brandDarkGray)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(
+                                groupName.isEmpty ? Color.white.opacity(0.1) : Color.brandGreen,
+                                lineWidth: 1
+                            )
+                    )
+                
+                Text("\(groupName.count)/30 characters")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 20)
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Step 2: Mission
+    
+    private var missionStep: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 12) {
+                Image(systemName: "target")
+                    .font(.system(size: 60))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.brandGreen, .brandGreen.opacity(0.6)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                Text("Set Daily Mission")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                
+                Text("Optional: Set a daily theme\nfor your group to follow")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 40)
+            
+            // Auto-generate toggle
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Auto-generate Daily Themes")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    
+                    Text("System will suggest creative themes")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                Toggle("", isOn: $autoGenerateMission)
+                    .tint(.brandGreen)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.brandDarkGray)
+            )
+            
+            if !autoGenerateMission {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Custom Mission (Optional)")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("e.g., Capture something blue", text: $missionText)
+                        .font(.body)
+                        .foregroundStyle(.white)
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.brandDarkGray)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                }
+            }
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Step 3: Settings
+    
+    private var settingsStep: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 12) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.brandGreen, .brandGreen.opacity(0.6)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                Text("Privacy Settings")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                
+                Text("Choose who can find and\njoin your group")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 40)
+            
+            VStack(spacing: 12) {
+                // Private option
+                PrivacyOptionCard(
+                    icon: "lock.fill",
+                    title: "Invite Only",
+                    description: "Members can only join via QR code",
+                    isSelected: isPrivate
+                ) {
+                    isPrivate = true
+                }
+                
+                // Public option
+                PrivacyOptionCard(
+                    icon: "magnifyingglass",
+                    title: "Discoverable",
+                    description: "Anyone can search and request to join",
+                    isSelected: !isPrivate
+                ) {
+                    isPrivate = false
+                }
+            }
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Step 4: QR Code
+    
+    private var qrCodeStep: some View {
+        VStack(spacing: 24) {
+            // Success Animation
+            ZStack {
+                if showSuccessAnimation {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundStyle(.brandGreen)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .frame(height: showSuccessAnimation ? 80 : 0)
+            .animation(.spring(response: 0.6, dampingFraction: 0.7), value: showSuccessAnimation)
+            
+            VStack(spacing: 12) {
+                Text("✨ Circle Created!")
+                    .font(.title.bold())
+                    .foregroundStyle(.white)
+                
+                Text("招待リンクをシェアしてメンバーを招待しましょう")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, showSuccessAnimation ? 0 : 40)
+            
+            if let group = createdGroup {
+                VStack(spacing: 20) {
+                    // QR Code
+                    if let qrImage = generateQRCode(for: group) {
+                        Image(uiImage: qrImage)
+                            .interpolation(.none)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 250, height: 250)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: .brandGreen.opacity(0.3), radius: 20)
+                    }
+                    
+                    // Group info
+                    VStack(spacing: 8) {
+                        Text(group.name)
+                            .font(.title3.bold())
+                            .foregroundStyle(.white)
+                        
+                        HStack(spacing: 8) {
+                            Text("合言葉:")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(group.inviteCode)
+                                .font(.caption.bold())
+                                .foregroundStyle(.brandGreen)
+                        }
+                        .fontDesign(.monospaced)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.brandDarkGray)
+                        )
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            // Action buttons
+            VStack(spacing: 12) {
+                // Share button
+                Button(action: shareInvite) {
+                    Label("Share Invite", systemImage: "square.and.arrow.up")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.brandGreen)
+                        )
+                }
+                
+                // Save to Photos button
+                Button(action: saveQRCodeToPhotos) {
+                    HStack {
+                        if isSavingToPhotos {
+                            ProgressView()
+                                .tint(.brandGreen)
+                        } else {
+                            Label("Save Image", systemImage: "arrow.down.circle")
+                        }
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.brandGreen)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.brandGreen, lineWidth: 1.5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(Color.brandGreen.opacity(0.1))
+                            )
+                    )
+                }
+                .disabled(isSavingToPhotos)
+            }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if !shareItems.isEmpty {
+                ShareSheet(activityItems: shareItems)
+            }
+        }
+    }
+    
+    // MARK: - Bottom Actions
+    
+    private var bottomActions: some View {
+        HStack(spacing: 12) {
+            if currentStep > 1 && currentStep < 4 {
+                Button(action: {
+                    withAnimation {
+                        currentStep -= 1
+                    }
+                }) {
+                    Text("Back")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.brandDarkGray)
+                        )
+                }
+            }
+            
+            Button(action: handleNext) {
+                HStack {
+                    if isCreatingGroup {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text(currentStep == 4 ? "Done" : "Next")
+                    }
+                }
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(isStepValid && !isCreatingGroup ? Color.brandGreen : Color.gray.opacity(0.3))
+                )
+            }
+            .disabled(!isStepValid || isCreatingGroup)
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private func handleNext() {
+        HapticsManager.swipeFeedback()
+        
+        if currentStep < 3 {
+            withAnimation {
+                currentStep += 1
+            }
+        } else if currentStep == 3 {
+            // Create the group with loading state
+            Task {
+                await createGroup()
+            }
+        } else {
+            // Done - 画面を閉じる
+            if let group = createdGroup {
+                onComplete(group)
+            }
+            dismiss()
+        }
+    }
+    
     private func createGroup() async {
         guard let user = currentUser else { return }
-        guard let cloudKitManager = CloudKitManager.current else {
-            errorMessage = "iCloudへの接続が完了していません。しばらくしてから再度お試しください。"
-            return
+        
+        // Loading state開始
+        await MainActor.run {
+            isCreatingGroup = true
         }
-
-        // 所属グループ数の上限チェック(個人用「ME」は数えない)。newGroupを作る/
-        // addMemberする前に確認することで、上限超過時にローカルへ何も残さず
-        // 即座にエラー表示だけで済ませる。
-        let joinedGroupCount = user.groups.filter { !$0.isPersonalSpace }.count
-        guard joinedGroupCount < GroupMembershipPolicy.maxGroupsPerUser else {
-            errorMessage = GroupSharingError.tooManyGroups.errorDescription
-            return
-        }
-
-        isSaving = true
-        errorMessage = nil
-        defer { isSaving = false }
-
-        // 新しいグループを作成
-        let newGroup = LaterGroup(
+        
+        // グループを作成
+        let group = LaterGroup(
             name: groupName,
             host: user,
-            autoGenerateMission: false,
-            isPrivate: true
+            autoGenerateMission: autoGenerateMission,
+            isPrivate: isPrivate
         )
-        newGroup.iconImageData = iconImageData
-
-        // ホストとして自分を追加
-        let _ = newGroup.addMember(user)
-
-        // データベースに保存
-        modelContext.insert(newGroup)
-
-        let sharingService = GroupSharingService(container: cloudKitManager.container, modelContext: modelContext, cloudKitManager: cloudKitManager)
-        do {
-            try await sharingService.createGroup(newGroup, hostProfile: user)
-        } catch GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true) {
-            // iCloudの容量不足で画像だけ除いて再試行し、グループ自体(名前・共有リンク含む)は
-            // 既に作成できている。newGroupを削除せず、通常の成功フローへ進みつつ
-            // 成功シート内に注意文言を表示する(名前等まで道連れで失敗させないための対応)。
-            successWarningMessage = GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true).errorDescription
-        } catch {
-            modelContext.delete(newGroup)
-            // グループ本体の保存自体が失敗したのか、共有リンクの発行だけが失敗したのかを
-            // メッセージ・ログの両方で切り分けられるようにする。
-            switch error {
-            case GroupSharingError.groupCreationFailed(let underlying, let detail):
-                _ = underlying.loggedDescription(context: "CreateGroupView.createGroup(グループ本体の保存)")
-                // underlying単体は「巻き添え」のCKError 22(Atomic failure)なだけで詳細が無いことが
-                // 多いため、detail(atomicバッチ内の本当の原因レコード)が取れていればそちらを
-                // 画面に表示する。TestFlightなどXcodeコンソールを見られない環境向けの対応。
-                errorMessage = GroupSharingError.groupCreationFailed(underlying: underlying, detail: detail).errorDescription
-            case GroupSharingError.shareCreationFailed(let underlying, let detail):
-                _ = underlying.loggedDescription(context: "CreateGroupView.createGroup(グループ本体は保存できたが共有リンクの発行)")
-                errorMessage = GroupSharingError.shareCreationFailed(underlying: underlying, detail: detail).errorDescription
-            case GroupSharingError.quotaExceeded:
-                // groupCreatedWithoutImages: falseのケース(画像を除いても容量超過だった等)。
-                errorMessage = (error as? GroupSharingError)?.errorDescription
-            default:
-                errorMessage = error.loggedDescription(context: "CreateGroupView.createGroup")
+        
+        // カスタムミッションがある場合は設定
+        if !missionText.isEmpty {
+            group.currentDailyMission = missionText
+            group.missionGeneratedDate = Date()
+        }
+        
+        // ホストをメンバーとして追加
+        group.members.append(user)
+        
+        // SwiftDataに保存
+        await MainActor.run {
+            modelContext.insert(group)
+            do {
+                try modelContext.save()
+                createdGroup = group
+                
+                // Success animation
+                withAnimation {
+                    showSuccessAnimation = true
+                }
+                
+                HapticsManager.unlockSuccess()
+                
+                // アニメーション後にステップ4へ
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation {
+                        currentStep = 4
+                        isCreatingGroup = false
+                    }
+                }
+            } catch {
+                print("Error saving group: \(error)")
+                isCreatingGroup = false
             }
-            return
         }
-
-        if let shareURLString = newGroup.ckShareURL {
-            createdShareURL = URL(string: shareURLString)
+    }
+    
+    private func generateQRCode(for group: LaterGroup) -> UIImage? {
+        let qrData = QRCodeGenerator.createGroupQRData(
+            groupID: group.id.uuidString,
+            groupName: group.name
+        )
+        return QRCodeGenerator.generateStyledQRCode(from: qrData, size: 512)
+    }
+    
+    private func shareInvite() {
+        guard let group = createdGroup else { return }
+        
+        HapticsManager.swipeFeedback()
+        
+        // QRコード画像を生成
+        guard let qrImage = generateQRCode(for: group) else { return }
+        
+        // シェアメッセージを作成
+        let message = "laterで新しいサークル「\(group.name)」を作りました。合言葉は『\(group.inviteCode)』です。一緒に現像しましょう！"
+        
+        // シェアアイテムを設定
+        shareItems = [message, qrImage]
+        showingShareSheet = true
+    }
+    
+    private func saveQRCodeToPhotos() {
+        guard let group = createdGroup,
+              let qrImage = generateQRCode(for: group) else { return }
+        
+        HapticsManager.swipeFeedback()
+        isSavingToPhotos = true
+        
+        // カメラロールに保存
+        Task {
+            do {
+                try await PHPhotoLibrary.shared().performChanges {
+                    PHAssetChangeRequest.creationRequestForAsset(from: qrImage)
+                }
+                await MainActor.run {
+                    isSavingToPhotos = false
+                    HapticsManager.unlockSuccess()
+                }
+            } catch {
+                await MainActor.run {
+                    isSavingToPhotos = false
+                    print("Error saving image: \(error.localizedDescription)")
+                    HapticsManager.errorFeedback()
+                }
+            }
         }
-
-        HapticsManager.unlockSuccess()
-        showingSuccess = true
-
-        print("✅ グループ作成: \(groupName)")
     }
 }
 
-// MARK: - Custom Text Field Style
+// MARK: - Privacy Option Card
 
-struct CustomTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding()
+struct PrivacyOptionCard: View {
+    let icon: String
+    let title: String
+    let description: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundStyle(isSelected ? .brandGreen : .secondary)
+                    .frame(width: 40)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.brandGreen)
+                }
+            }
+            .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.1))
+                    .fill(isSelected ? Color.brandGreen.opacity(0.1) : Color.brandDarkGray)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color.brandGreen.opacity(0.3), lineWidth: 1.5)
+                    .strokeBorder(
+                        isSelected ? Color.brandGreen : Color.white.opacity(0.1),
+                        lineWidth: isSelected ? 2 : 1
+                    )
             )
-            .foregroundStyle(Color.white)
-            .font(.system(size: 17, weight: .medium))
+        }
     }
 }
 
@@ -242,11 +632,10 @@ struct CustomTextFieldStyle: TextFieldStyle {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(
-        for: LaterGroup.self, UserProfile.self, LaterPhoto.self,
-        configurations: config
-    )
-
-    CreateGroupView()
-        .modelContainer(container)
+    let container = try! ModelContainer(for: UserProfile.self, LaterGroup.self, configurations: config)
+    
+    CreateGroupView { group in
+        print("Created group: \(group.name)")
+    }
+    .modelContainer(container)
 }
