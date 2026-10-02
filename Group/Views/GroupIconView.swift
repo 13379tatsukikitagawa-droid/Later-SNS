@@ -7,6 +7,11 @@ struct GroupIconView: View {
     let iconImageData: Data?
     let groupName: String
     var size: CGFloat = 40
+    /// グループ作成時にカラーステッカーで選んだアクセント色(LaterGroup.accentColorHex)。
+    /// 指定があればプレースホルダーの塗り・文字色、および外周のリングに使う。
+    var ringColor: Color? = nil
+
+    private var tint: Color { ringColor ?? Color.brandGreen }
 
     var body: some View {
         Group {
@@ -16,20 +21,23 @@ struct GroupIconView: View {
                     .aspectRatio(contentMode: .fill)
             } else {
                 ZStack {
-                    Color.brandGreen.opacity(0.12)
+                    tint.opacity(0.12)
                     if let firstCharacter = groupName.trimmingCharacters(in: .whitespacesAndNewlines).first {
                         Text(String(firstCharacter))
                             .font(.system(size: size * 0.42, weight: .bold))
-                            .foregroundStyle(Color.brandGreen)
+                            .foregroundStyle(tint)
                     } else {
                         Image(systemName: "person.2.fill")
                             .font(.system(size: size * 0.4))
-                            .foregroundStyle(Color.brandGreen)
+                            .foregroundStyle(tint)
                     }
                 }
             }
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
+        .overlay(
+            Circle().strokeBorder(ringColor ?? Color.clear, lineWidth: ringColor != nil ? 2 : 0)
+        )
     }
 }

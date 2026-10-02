@@ -20,33 +20,57 @@ struct ProfileChekiCard: View {
     let bio: String
     /// ユーザーが自分で設定したプロフィール画像。無ければセピア系の既定色にする。
     let profileImageData: Data?
-    /// 連続撮影達成回数。0でも"×0"としてそのまま表示する。
-    let streak: Int
     /// プロフィールの最終更新日時。未編集ならnil。
     let updatedAt: Date?
     /// 光のにじみの位置を決める安定した種。プロフィールが無い場合は呼び出し側が固定値を渡す。
     let seed: UUID
-    /// falseの場合、QR/シェア/編集ボタンを一切表示せず、写真タップでの編集導線も無効化する
-    /// (他人のプロフィールを閲覧専用で表示する場合に使う)。
+    /// falseの場合、写真タップ・右下の編集バッジのどちらの編集導線も無効化する
+    /// (他人のプロフィールを閲覧専用で表示する場合に使う)。QR/シェア機能は
+    /// 設定画面へ統合する想定のため、このカードには含めない。
     var isEditable: Bool = true
-    var onQRCode: () -> Void = {}
-    var onShare: () -> Void = {}
     var onEdit: () -> Void = {}
 
-    private let frameColor = Color(red: 0.969, green: 0.961, blue: 0.933) // #f7f5ee
+    private let frameColor = Color(hex: "F3ECD9")
+    private let captionColor = Color(hex: "8a7550")
+    private let nameColor = Color(hex: "FBF6E9")
     private let fallbackPhotoColor = Color(red: 0.53, green: 0.49, blue: 0.44) // セピア寄りグレー(未選出時)
 
-    var body: some View {
-        VStack(spacing: 0) {
-            photoContent
+    /// カード本体の固定幅。以前はアスペクト比(.aspectRatio(_, contentMode: .fit))だけで
+    /// 写真枠のサイズを決めており、呼び出し側(ScrollView内のVStack)から実効幅が
+    /// 曖昧に伝播すると、選んだ写真によっては枠の外まで引き伸ばされてしまう不具合が
+    /// あった。写真枠のサイズを毎回レイアウト計算に頼らず固定値で確定させる。
+    private static let cardWidth: CGFloat = 320
+    private static let photoHorizontalInset: CGFloat = 14
+    private static let photoTopInset: CGFloat = 14
+    private static let photoBottomInset: CGFloat = 18
+    private static var photoWidth: CGFloat { cardWidth - photoHorizontalInset * 2 }
+    private static var photoHeight: CGFloat { photoWidth * 5 / 4 }
 
+    var body: some View {
+        photoContent
+        .frame(width: Self.cardWidth)
+        .background(frameColor)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 10)
+        .overlay(alignment: .bottomTrailing) {
             if isEditable {
-                actionRow
+                editBadge
+                    .padding(10)
             }
         }
-        .background(frameColor)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 10)
+    }
+
+    /// カード右下に重ねる、小さな編集ボタン(QR/シェア/編集の3ボタン行を廃止した代替)。
+    private var editBadge: some View {
+        Button(action: onEdit) {
+            Image(systemName: "pencil")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(.black.opacity(0.4), in: Circle())
+                .background(.ultraThinMaterial, in: Circle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var photoContent: some View {
@@ -64,33 +88,26 @@ struct ProfileChekiCard: View {
                     photoArea
                 }
             }
-            .padding(10)
+            .padding(.top, Self.photoTopInset)
+            .padding(.horizontal, Self.photoHorizontalInset)
+            .padding(.bottom, Self.photoBottomInset)
 
-            dateRow
+            bioRow
 
             Rectangle()
                 .fill(Color.black.opacity(0.08))
                 .frame(height: 0.5)
                 .padding(.horizontal, 16)
-                .padding(.top, 10)
+                .padding(.top, 4)
+
+            dateRow
         }
     }
 
-    // MARK: - 写真部分(1:1、写真が無くても必ずこの枠自体は表示される)
-
-    /// このカードはProfileView側でScrollViewの中に置かれており、GeometryReaderを
-    /// .aspectRatio(1, .fit)と組み合わせると、ScrollViewが縦方向に無限大の高さを
-    /// 提案するせいで正方形化が破綻する(既知のSwiftUIの落とし穴)。そのため
-    /// GeometryReaderには頼らず、画面幅から一辺の長さを直接算出する
-    /// (呼び出し側のProfileView.padding(.horizontal, 20)+このカード内側の
-    /// .padding(10)を差し引いたもの)。
-    private var photoSide: CGFloat {
-        UIScreen.main.bounds.width - 40 - 20
-    }
+    // MARK: - 写真部分(aspect-ratio 4:5、写真が無くても必ずこの枠自体は表示される)
 
     private var photoArea: some View {
-        let side = photoSide
-        return ZStack(alignment: .topLeading) {
+        ZStack(alignment: .topLeading) {
             // プロフィール画像は、選び直された時点(ProfileView/OnboardingViewの
             // ピッカーのonChange)で既にChekiColorGrade.bakedData(from:)により
             // 焼き込み済みのバイト列になっている。写真(ChekiPhotoFrame)の解禁済み表示と
@@ -100,25 +117,29 @@ struct ProfileChekiCard: View {
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: side, height: side)
-                        .clipped()
+                        .frame(width: Self.photoWidth, height: Self.photoHeight)
                 } placeholder: {
                     fallbackPhotoColor
                 }
             } else {
                 fallbackPhotoColor
+                Image(systemName: "person.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+
+            // 下から上への暗転グラデーション(名前ブロックの可読性確保用)。
+            LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .bottom, endPoint: .center)
 
             nameBlock
                 .padding(14)
-
-            streakBadge
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-
-            bioOverlay
         }
-        .frame(width: side, height: side)
+        // 縦横比の異なる写真を選んでも必ずこのサイズに収まるよう、.aspectRatio(_, .fit)による
+        // 曖昧なレイアウト伝播ではなく明示的な固定フレームで確定させ、object-fit: cover相当
+        // (.aspectRatio(contentMode: .fill)+.frame+.clipped)で中央クロップ表示する。
+        .frame(width: Self.photoWidth, height: Self.photoHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
     }
 
     private var nameBlock: some View {
@@ -126,63 +147,48 @@ struct ProfileChekiCard: View {
             Text(name)
                 .font(.custom("Snell Roundhand", size: 26))
                 .italic()
-                .foregroundStyle(.white)
+                .foregroundStyle(nameColor)
                 .shadow(color: .black.opacity(0.55), radius: 4)
                 .rotationEffect(.degrees(-4))
 
             Text("@\(username)")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(nameColor.opacity(0.85))
                 .shadow(color: .black.opacity(0.5), radius: 3)
         }
+        .frame(maxHeight: .infinity, alignment: .bottom)
     }
 
-    private var streakBadge: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "camera.fill")
-                .font(.system(size: 10, weight: .bold))
-            Text("×\(streak)")
-                .font(.system(size: 13, weight: .bold))
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Capsule().fill(Color.black.opacity(0.35)))
-        .rotationEffect(.degrees(5))
-    }
+    // MARK: - 写真下(鉛筆+自己紹介・区切り線・日付スタンプ)
 
-    /// 自己紹介が空でもプレースホルダー文言を表示し、この行自体は必ず存在させる。
-    private var bioOverlay: some View {
-        VStack {
-            Spacer()
+    private var bioRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "pencil")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(captionColor.opacity(0.8))
+
             Text(bio.isEmpty ? "自己紹介を書く" : bio)
-                .font(.custom("Snell Roundhand", size: 17))
+                .font(.system(size: 13))
                 .italic()
-                .foregroundStyle(bio.isEmpty ? .white.opacity(0.55) : .white)
-                .shadow(color: .black.opacity(0.6), radius: 4)
+                .foregroundStyle(captionColor)
+                .lineLimit(2)
                 .multilineTextAlignment(.leading)
-                .lineLimit(3)
-                .rotationEffect(.degrees(-1.5))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .padding(.top, 30)
-                .background(
-                    LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                )
-        }
-    }
 
-    // MARK: - 写真下の余白
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+    }
 
     private var dateRow: some View {
         HStack {
             Text(dateString)
-                .font(.system(size: 10, design: .monospaced))
+                .font(.custom("Courier New", size: 11))
             Spacer()
         }
-        .foregroundStyle(.black.opacity(0.45))
+        .foregroundStyle(captionColor.opacity(0.8))
         .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 4)
     }
 
     private var dateString: String {
@@ -193,36 +199,4 @@ struct ProfileChekiCard: View {
         return formatter.string(from: updatedAt)
     }
 
-    private var actionRow: some View {
-        HStack(spacing: 0) {
-            actionButton(icon: "qrcode", label: "QRコード", action: onQRCode)
-            actionDivider
-            actionButton(icon: "square.and.arrow.up", label: "シェア", action: onShare)
-            actionDivider
-            actionButton(icon: "pencil", label: "編集", action: onEdit)
-        }
-        .frame(height: 56)
-    }
-
-    private var actionDivider: some View {
-        Rectangle()
-            .fill(Color.black.opacity(0.1))
-            .frame(width: 0.5)
-            .padding(.vertical, 12)
-    }
-
-    private func actionButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                Text(label)
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .foregroundStyle(.black.opacity(0.7))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
 }

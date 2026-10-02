@@ -93,4 +93,8 @@ extension Notification.Name {
     /// これを監視してHomeタブへ切り替える。GroupSelectionStore.selectedGroupIDの更新は
     /// この通知より前に完了している。
     static let photoNotificationTapped = Notification.Name("photoNotificationTapped")
+    /// World画面(モーダル)のボトムナビでプロフィールアイコンをタップした時に発行される。
+    /// World自身はモーダルを閉じるだけで、MainTabViewがこれを監視してプロフィールタブへ
+    /// 切り替える(World側からは選択中タブの状態を直接操作できないため)。
+    static let switchToProfileTabRequested = Notification.Name("switchToProfileTabRequested")
 }

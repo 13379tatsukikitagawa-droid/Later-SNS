@@ -11,6 +11,11 @@ struct TodayView: View {
     /// 遷移先の画面に留まってしまう。撮影を開始する瞬間にこの経路を空にして
     /// ルート(グループ一覧)まで戻しておくことで、撮影後に必ずHomeが見える状態にする。
     @State private var navigationPath = NavigationPath()
+    @State private var showingCaptionEntry = false
+    @State private var pendingCaption: String = ""
+    /// showingCaptionEntryが閉じ切った直後に撮影画面を開くべきかどうかのフラグ
+    /// (キャンセル時はfalseのまま、次へ進む時だけtrueにする)。
+    @State private var shouldOpenCameraAfterCaption = false
     @State private var showingCamera = false
     @State private var showSuccessMessage = false
     @State private var pendingImageData: Data?
@@ -51,68 +56,54 @@ struct TodayView: View {
         UserProfile.current(from: profiles)?.currentStreak(personalSpaceGroupIDs: personalSpaceGroupIDs) ?? 0
     }
 
-    /// Home画面の3モード。World=匿名グローバルフィード、Personal=ME、
-    /// Community=Circle(既存の複数グループ表示)。TodayShootingViewは元々
-    /// isPersonalSpaceで分岐する作りになっているため、渡すgroups配列を絞り込むだけで
-    /// PersonalモードとCommunityモードを実現でき、TodayShootingView自体の変更は不要。
-    enum HomeSelectorMode: String, CaseIterable {
-        case world = "World"
-        case personal = "Personal"
-        case community = "Community"
-    }
-    @State private var selectedMode: HomeSelectorMode = .community
-
-    private var personalOnlyGroups: [LaterGroup] {
-        userGroups.filter(\.isPersonalSpace)
-    }
-
-    private var communityOnlyGroups: [LaterGroup] {
-        userGroups.filter { !$0.isPersonalSpace }
-    }
-
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            ZStack {
-                CorkboardBackground()
-
-                VStack(spacing: 0) {
-                    homeModeSelector
-                        .padding(.top, 12)
-                        .padding(.horizontal, 20)
-
-                    Group {
-                        switch selectedMode {
-                        case .world:
-                            WorldLaterFeedView()
-                        case .personal:
-                            PersonalTodayView(group: personalOnlyGroups.first)
-                        case .community:
-                            TodayShootingView(groups: communityOnlyGroups)
-                        }
+            TodayShootingView(groups: userGroups, streakCount: currentStreakCount)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // 以前はここに.navigationTitle("Today's Mission")があったが、
+            // TodayShootingView側で独自のヘッダー(ロゴ・ストリーク・通知ベル)を
+            // 組んでいるため、ネイティブのナビゲーションバー自体を非表示にして、
+            // その分の余白ごと詰める。NavigationStack自体はグループ一覧の
+            // NavigationLink(GroupHomeDetailViewへの遷移)に必要なため残す。
+            .toolbar(.hidden, for: .navigationBar)
+            // 2026/9 新デザイン仕様「②キャプション入力画面」: 撮影の前にキャプションを
+            // 書くステップ(STEP 1/2)を挟む。任意入力で、スキップしても「次へ」でも
+            // そのまま撮影画面(showingCamera)へ進む。入力した文字列はpendingCaptionに
+            // 保持し、投稿準備画面(PostTargetGroupSelectionView)まで引き継ぐ。
+            .fullScreenCover(isPresented: $showingCaptionEntry) {
+                CaptionEntryView(
+                    initialCaption: pendingCaption,
+                    onContinue: { caption in
+                        pendingCaption = caption
+                        shouldOpenCameraAfterCaption = true
+                        showingCaptionEntry = false
+                    },
+                    onCancel: {
+                        showingCaptionEntry = false
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.corkboardTabActive)
-                    .clipShape(
-                        .rect(
-                            topLeadingRadius: 0,
-                            bottomLeadingRadius: 18,
-                            bottomTrailingRadius: 18,
-                            topTrailingRadius: 0
-                        )
-                    )
+                )
+            }
+            // キャプション入力→撮影画面は別々のfullScreenCoverのため、同一トランザクション内で
+            // 片方をfalseにしつつもう片方をtrueにすると、前の画面がまだ閉じきっていない状態で
+            // 次のfullScreenCoverの提示が要求され、プレゼンテーションが競合してクラッシュする
+            // ことがある(実際に発生した不具合)。showingCaptionEntryが実際にfalseへ
+            // 反映されたのを見届けてから(onChange)、次のshowingCameraをtrueにする。
+            .onChange(of: showingCaptionEntry) { _, isShowing in
+                guard !isShowing, shouldOpenCameraAfterCaption else { return }
+                shouldOpenCameraAfterCaption = false
+                // dismissアニメーションが完全に終わってから次のfullScreenCoverを提示する
+                // (即座にtrueにすると、前の画面がまだ閉じきっていない状態で次の提示が
+                // 要求され、プレゼンテーションが競合してクラッシュすることがあった)。
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    showingCamera = true
                 }
             }
-            // 以前はここに.navigationTitle("Today's Mission")があったが、
-            // TodayShootingView側で独自のヘッダー(現像中ボタン・絞りアイコン・日付・
-            // カウントダウン)を組んでいるため、ネイティブのナビゲーションバー自体を
-            // 非表示にして、その分の余白ごと詰める。NavigationStack自体は
-            // グループ一覧のNavigationLink(GroupHomeDetailViewへの遷移)に必要なため残す。
-            .toolbar(.hidden, for: .navigationBar)
             .fullScreenCover(isPresented: $showingCamera) {
                 CheckiCameraEntryView(
                     currentCount: currentGroup.map { myTodayCount(in: $0) } ?? 0,
                     limit: currentGroup.map { GroupUnlockPolicy.individualMaximumPhotoCount(for: $0) } ?? GroupUnlockPolicy.individualMinimumPhotoCount,
-                    streakCount: currentStreakCount
+                    streakCount: currentStreakCount,
+                    caption: pendingCaption
                 ) { imageData, locationName in
                     pendingImageData = imageData
                     pendingLocationName = locationName
@@ -129,12 +120,24 @@ struct TodayView: View {
             // 撮影直後、キャプション入力は別画面に分けず投稿準備画面(写真プレビュー+
             // キャプション+投稿先選択を1画面にまとめたBeReal/setlog融合UI)へ直接進む。
             // 動画も同じ考え方で、動画専用の投稿準備画面(VideoPostFlowView)へ直接進む。
+            //
+            // showingCameraがfalseになった直後の同一トランザクション内で次のfullScreenCover
+            // (showingPostTargetSelection/showingVideoPostFlow)をtrueにすると、撮影画面が
+            // まだ閉じきっていない状態で次の提示が要求され、プレゼンテーションが競合して
+            // 投稿準備画面が正しく開かない(=写真が撮影されただけでどこにも投稿されない)
+            // 不具合があった。キャプション→撮影画面の遷移と同じく、閉じるアニメーションが
+            // 完了するのを少し待ってから次の画面を開く。
             .onChange(of: showingCamera) { _, isShowing in
-                if !isShowing, pendingImageData != nil {
-                    showingPostTargetSelection = true
+                guard !isShowing else { return }
+                if pendingImageData != nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showingPostTargetSelection = true
+                    }
                 }
-                if !isShowing, pendingVideoURL != nil {
-                    showingVideoPostFlow = true
+                if pendingVideoURL != nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showingVideoPostFlow = true
+                    }
                 }
             }
             .fullScreenCover(isPresented: $showingPostTargetSelection) {
@@ -142,10 +145,12 @@ struct TodayView: View {
                     PostTargetGroupSelectionView(
                         imageData: imageData,
                         locationName: pendingLocationName,
+                        initialCaption: pendingCaption,
                         onFinished: { success in
                             showingPostTargetSelection = false
                             pendingImageData = nil
                             pendingLocationName = nil
+                            pendingCaption = ""
                             guard success else { return }
                             withAnimation(.spring()) {
                                 showSuccessMessage = true
@@ -193,7 +198,8 @@ struct TodayView: View {
             .onChange(of: captureRequest.pendingRequestID) { _, newValue in
                 guard newValue != nil else { return }
                 navigationPath = NavigationPath()
-                showingCamera = true
+                pendingCaption = ""
+                showingCaptionEntry = true
                 captureRequest.pendingRequestID = nil
             }
         }
@@ -227,52 +233,6 @@ struct TodayView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
-    // MARK: - World / Personal / Community セレクター
-
-    /// 「フォルダのインデックスタブ」風のWorld/Personal/Communityセレクター。
-    /// 選択中のタブだけをコンテンツ面(corkboardTabActive)と同色にして数px持ち上げ、
-    /// 上端に#4ade6cの太線を乗せることで「奥のフォルダから手前のタブが1枚だけ
-    /// 手前に出ている」ように見せる。選択状態そのものの管理(selectedMode)は
-    /// 変更していない。
-    private var homeModeSelector: some View {
-        HStack(alignment: .bottom, spacing: 6) {
-            ForEach(HomeSelectorMode.allCases, id: \.self) { mode in
-                let isActive = selectedMode == mode
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedMode = mode
-                    }
-                } label: {
-                    Text(mode.rawValue.uppercased())
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .tracking(0.5)
-                        .foregroundStyle(isActive ? Color.corkboardTabActiveText : Color.corkboardTabInactiveText)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, isActive ? 10 : 14)
-                        .padding(.bottom, 12)
-                        .background(
-                            UnevenRoundedRectangle(
-                                topLeadingRadius: 10,
-                                bottomLeadingRadius: 0,
-                                bottomTrailingRadius: 0,
-                                topTrailingRadius: 10,
-                                style: .continuous
-                            )
-                            .fill(isActive ? Color.corkboardTabActive : Color.corkboardTabInactive)
-                            .overlay(alignment: .top) {
-                                if isActive {
-                                    Rectangle()
-                                        .fill(Color.brandGreen)
-                                        .frame(height: 3)
-                                }
-                            }
-                        )
-                        .offset(y: isActive ? -4 : 0)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
 }
 
 // MARK: - 画面状態

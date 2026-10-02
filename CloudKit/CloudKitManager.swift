@@ -168,12 +168,34 @@ final class CloudKitManager: NSObject {
         try? await privateEngine?.fetchChanges()
     }
 
+    /// sendPendingChangesNow()が呼ばれている最中かどうか。CKSyncEngine自身のデリゲート
+    /// コールバック(handleEvent→applyFetchedChanges→evaluateGroupUnlockConditions)の
+    /// await中に、撮影後の投稿処理(PostTargetGroupSelectionView.submitPost等)のような
+    /// 別のUI起点のTaskが独立にsendPendingChangesNow()を呼ぶと、syncEngine.sendChanges()が
+    /// 同時に2回走ることになり、CKSyncEngineの「デリゲートコールバック中の再帰呼び出しは
+    /// 保証できない」安全装置(___CKSyncEngine_cannot_guarantee_serial_delegate_callbacks_if_you_recurse___)
+    /// に触れてクラッシュする(実際に撮影直後のクラッシュとして発生した)。
+    /// このメソッド自体に再入防止を持たせることで、呼び出し元がどこであっても安全にする。
+    private var isSendingPendingChanges = false
+    /// 送信中に追加でリクエストが来た場合、取りこぼさず送信中のループが終わったら
+    /// もう一度送るためのフラグ。
+    private var hasQueuedSendRequestWhileSending = false
+
     /// markForUpload等でキューに入れた保留中のローカル変更を、CKSyncEngine自身の
     /// スケジューリングを待たずに即座に送信する。グループ参加直後、自分のプロフィール
     /// レコードをできるだけ早く他メンバーへ見せたい場合などに呼ぶ。
     func sendPendingChangesNow() async {
-        try? await privateEngine?.sendChanges()
-        try? await sharedEngine?.sendChanges()
+        guard !isSendingPendingChanges else {
+            hasQueuedSendRequestWhileSending = true
+            return
+        }
+        isSendingPendingChanges = true
+        defer { isSendingPendingChanges = false }
+        repeat {
+            hasQueuedSendRequestWhileSending = false
+            try? await privateEngine?.sendChanges()
+            try? await sharedEngine?.sendChanges()
+        } while hasQueuedSendRequestWhileSending
     }
 
     /// CKShare受諾の直後など、CKSyncEngineの通常の変更検知(イベント駆動・内部キュー経由)を

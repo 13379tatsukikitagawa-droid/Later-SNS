@@ -1,19 +1,19 @@
 import SwiftUI
 import SwiftData
 
-/// Homeタブの「Personal」タブ専用コンテンツ。ME(個人用スペース)の記録だけを表示し、
-/// Community(Circle)向けの文言・導線(「誰かと一緒に、始めよう」「グループを作る」)は
-/// 一切表示しない。以前はTodayShootingView(groups: personalOnlyGroups)を共用していたため
-/// Community向けの空状態がそのまま出てしまっていた不具合の修正として、Personal専用に
-/// 新規実装した(TodayView.HomeSelectorMode参照)。
+/// MainTabViewの「Personal」タブ(2026/9 新デザイン仕様「⑦Personal画面」)。
+/// ME(個人用スペース)の記録だけを表示し、Community(Circle)向けの文言・導線
+/// (「誰かと一緒に、始めよう」「グループを作る」)は一切表示しない。
 struct PersonalTodayView: View {
     /// 「ME」個人用スペース。オンボーディング未完了などでまだ存在しない場合はnil。
     let group: LaterGroup?
 
     @Query private var profiles: [UserProfile]
+    @Query(sort: \TodaysLaterSelection.selectedDate, order: .reverse) private var mySelections: [TodaysLaterSelection]
     @State private var showingDevelopingProgress = false
+    @State private var showingCalendar = false
 
-    private static let neonGreen = Color.brandGreen
+    private static let accent = Color.laterAccent
     /// 過去の記録グリッドを一度に表示する上限枚数。データは既にSwiftDataでローカルに
     /// 保持済み(新規CloudKitクエリ不要)なので、ここはあくまで描画コスト対策の
     /// クライアント側ページングであり、「もっと見る」で残りをまとめて表示する。
@@ -65,17 +65,25 @@ struct PersonalTodayView: View {
         showingAllPastPhotos ? pastPhotos : Array(pastPhotos.prefix(Self.initialPastPhotoLimit))
     }
 
+    /// 「Today's Laterに選ばれた日」の判定に使う、選択済みの暦日集合。
+    private var selectedDays: Set<DateComponents> {
+        let calendar = Calendar.current
+        return Set(mySelections.map { calendar.dateComponents([.year, .month, .day], from: $0.selectedDate) })
+    }
+
+    private func wasSelectedAsTodaysLater(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        return selectedDays.contains(calendar.dateComponents([.year, .month, .day], from: date))
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                BrandHeaderRow(developingPhotoCount: developingPhotoCount) {
-                    showingDevelopingProgress = true
-                }
+                header
 
                 if hasAnyRecord {
-                    todayCard
+                    statusCard
                         .padding(.top, 6)
-                        .frame(maxWidth: .infinity, alignment: .center)
 
                     if !pastPhotos.isEmpty {
                         pastRecordsGrid
@@ -91,8 +99,40 @@ struct PersonalTodayView: View {
             .padding(.bottom, 90)
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color.laterBackground.ignoresSafeArea())
         .sheet(isPresented: $showingDevelopingProgress) {
             DevelopingProgressView(photos: todaysPhotos)
+        }
+        .navigationDestination(isPresented: $showingCalendar) {
+            TodaysLaterCalendarView()
+        }
+    }
+
+    // MARK: - ①ヘッダー(見出し+カレンダーリンク)
+
+    private var header: some View {
+        HStack {
+            Text("あなたの記録")
+                .font(.system(size: 22, weight: .heavy))
+                .foregroundStyle(Color.laterText)
+
+            Spacer()
+
+            Button {
+                showingCalendar = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("カレンダー")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundStyle(Self.accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(Color.laterCard))
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -109,14 +149,14 @@ struct PersonalTodayView: View {
         }
     }
 
-    // MARK: - 状態B: 今日のカード
+    // MARK: - ②今日のステータスカード
 
-    private var todayCard: some View {
+    private var statusCard: some View {
         Button(action: handleTodayCardTap) {
-            VStack(spacing: 10) {
+            HStack(spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(Color.corkboardTodayPhotoArea)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.laterCard)
 
                     if let photo = todaysRepresentativePhoto, photo.isUnlocked {
                         CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
@@ -125,43 +165,51 @@ struct PersonalTodayView: View {
                                 .scaledToFill()
                         }
                         .clipped()
-                    } else if developingPhotoCount > 0 {
-                        Color.brandGreen.opacity(0.22)
-                        VStack(spacing: 6) {
-                            Image(systemName: "flask.fill")
-                                .font(.system(size: 22, weight: .semibold))
-                            Text("現像中")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        }
-                        .foregroundStyle(Self.neonGreen)
                     } else {
-                        Circle()
-                            .strokeBorder(Color.corkboardHeading.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                            .padding(30)
                         Image(systemName: "camera.fill")
-                            .font(.system(size: 30))
-                            .foregroundStyle(Color.corkboardHeading.opacity(0.25))
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.laterTextMuted)
                     }
                 }
-                .frame(width: 140, height: 140)
-                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-                Text(Self.todayDateLabel())
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(Color.corkboardTabInactiveText)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("今日の1枚：\(statusHeadline)")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.laterText)
+                    Text(statusSubline)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.laterTextMuted)
+                }
+
+                Spacer()
+
+                if developingPhotoCount > 0 {
+                    Text("現像中")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Self.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(Self.accent.opacity(0.15)))
+                }
             }
             .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color.corkboardCard)
-                    .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 6)
-            )
-            .overlay(alignment: .top) {
-                CorkboardPin(size: 20)
-                    .offset(y: -14)
-            }
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.laterCard))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.laterBorder, lineWidth: 1))
         }
         .buttonStyle(.plain)
+    }
+
+    private var statusHeadline: String {
+        if let photo = todaysRepresentativePhoto, photo.isUnlocked { return "解禁中" }
+        if developingPhotoCount > 0 { return "現像中" }
+        return "まだ撮影していません"
+    }
+
+    private var statusSubline: String {
+        guard let group else { return "" }
+        return "\(todaysPhotos.count)/\(GroupUnlockPolicy.individualMaximumPhotoCount(for: group))枚 撮影済み"
     }
 
     private func handleTodayCardTap() {
@@ -176,26 +224,21 @@ struct PersonalTodayView: View {
         CaptureRequestStore.shared.pendingRequestID = UUID()
     }
 
-    private static func todayDateLabel() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MM.dd"
-        return "TODAY・\(formatter.string(from: Date()))"
-    }
-
-    // MARK: - 過去の記録(コルクボードに増えていくポラロイドのグリッド)
+    // MARK: - ③これまでの記録(3列グリッド。Today's Laterに選ばれた日は★バッジ)
 
     private static let gridColumns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
+        GridItem(.flexible(), spacing: 3),
+        GridItem(.flexible(), spacing: 3),
+        GridItem(.flexible(), spacing: 3)
     ]
 
     private var pastRecordsGrid: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("過去の記録")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.5))
+            Text("これまでの記録")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color.laterText)
 
-            LazyVGrid(columns: Self.gridColumns, spacing: 22) {
+            LazyVGrid(columns: Self.gridColumns, spacing: 3) {
                 ForEach(visiblePastPhotos, id: \.id) { photo in
                     pastPhotoCard(photo)
                 }
@@ -206,8 +249,8 @@ struct PersonalTodayView: View {
                     showingAllPastPhotos = true
                 } label: {
                     Text("もっと見る")
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(Self.neonGreen)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Self.accent)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 6)
                 }
@@ -217,30 +260,37 @@ struct PersonalTodayView: View {
     }
 
     private func pastPhotoCard(_ photo: LaterPhoto) -> some View {
-        VStack(spacing: 8) {
-            CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-            } placeholder: {
-                Color.corkboardPhotoArea
-            }
-            .frame(width: 150, height: 150)
-            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        let isSelected = wasSelectedAsTodaysLater(photo.captureDate)
+        return ZStack(alignment: .topTrailing) {
+            VStack(spacing: 4) {
+                CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Color.laterCard
+                }
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(isSelected ? Self.accent : Color.clear, lineWidth: 2)
+                )
 
-            Text(Self.pastDateLabel(for: photo.captureDate))
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundStyle(Color.corkboardTabInactiveText)
+                Text(Self.pastDateLabel(for: photo.captureDate))
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Color.laterTextMuted)
+            }
+
+            if isSelected {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Self.accent)
+                    .padding(5)
+                    .background(Circle().fill(Color.laterBackground.opacity(0.85)))
+                    .offset(x: 4, y: -4)
+            }
         }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(Color.corkboardCard)
-                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 5)
-        )
-        // 決定論的な回転(DeterministicRotation参照)。写真ID基準なので、スクロールで
-        // 再描画されても・アプリを再起動しても同じ写真は常に同じ角度になる。
-        .rotationEffect(.degrees(DeterministicRotation.degrees(seed: photo.id)))
     }
 
     private static func pastDateLabel(for date: Date) -> String {

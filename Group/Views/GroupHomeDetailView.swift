@@ -28,6 +28,7 @@ struct GroupHomeDetailView: View {
     @State private var showGoalReachedAnimation = false
     @State private var reportTargetPhoto: LaterPhoto?
     @State private var selectedVideoForPlayback: LaterVideo?
+    @State private var selectedPhotoForViewing: LaterPhoto?
 
     private var currentUser: UserProfile? {
         UserProfile.current(from: profiles)
@@ -44,36 +45,6 @@ struct GroupHomeDetailView: View {
     private var myTodayCount: Int {
         guard let myID else { return 0 }
         return group.currentCyclePhotos().filter { $0.owner?.id == myID }.count
-    }
-
-    /// 直近に解禁時刻を迎えたサイクルの写真すべて(撮影者を問わない)。投票フェーズ撤去に
-    /// 伴い、選出を待たずグループ全員分をそのまま一覧表示する。暦日ではなくサイクル単位で
-    /// グルーピングするため、解禁が暦日をまたいでいても正しく同一サイクルとして扱われる。
-    /// ブロック済みユーザーの写真はここで除外する(ModerationService参照)。
-    private var todaysUnlockedPhotos: [LaterPhoto] {
-        let blockedIDs = Set(blockedUsers.map(\.blockedCloudKitUserRecordName))
-        return group.mostRecentCyclePhotos()
-            .filter(\.isUnlocked)
-            .filter { photo in
-                guard let authorID = photo.authorCloudKitUserRecordName else { return true }
-                return !blockedIDs.contains(authorID)
-            }
-            .sorted { $0.captureDate < $1.captureDate }
-    }
-
-    /// todaysUnlockedPhotosの動画版。以前はこの画面がLaterVideoを一切参照しておらず、
-    /// 撮影・フィルム加工・CloudKitアップロードまで正常に完了していても、解禁後に
-    /// どこにも表示されない(ユーザーからは「動画撮影ができない」ように見える)不具合の
-    /// 原因になっていた。
-    private var todaysUnlockedVideos: [LaterVideo] {
-        let blockedIDs = Set(blockedUsers.map(\.blockedCloudKitUserRecordName))
-        return group.mostRecentCycleVideos()
-            .filter(\.isUnlocked)
-            .filter { video in
-                guard let authorID = video.authorCloudKitUserRecordName else { return true }
-                return !blockedIDs.contains(authorID)
-            }
-            .sorted { $0.captureDate < $1.captureDate }
     }
 
     /// 画面表示時に、このグループのゾーンを直接フェッチして最新のメンバー構成/写真を
@@ -159,17 +130,21 @@ struct GroupHomeDetailView: View {
             VStack(spacing: 0) {
                 header
 
-                AdaptiveCountdownBadge(state: state)
-                    .padding(.top, 24)
-
                 ScrollView {
-                    content
+                    VStack(spacing: 0) {
+                        progressCard
+                            .padding(.top, 20)
+                            .padding(.horizontal, 20)
+
+                        pastUnlocksSection
+                            .padding(.top, 32)
+                    }
                 }
                 .refreshable {
                     await refreshGroupData()
                 }
             }
-            .background(Color.brandBlack.ignoresSafeArea())
+            .background(Color.laterBackground.ignoresSafeArea())
 
             if showGoalReachedAnimation {
                 GoalReachedAnimationView {
@@ -215,296 +190,47 @@ struct GroupHomeDetailView: View {
                 confirmDailyTarget(count)
             }
         }
-    }
-
-    // MARK: - ヘッダー
-
-    private var header: some View {
-        HStack {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
-            }
-
-            Spacer()
-
-            Text(group.name)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-
-            Spacer()
-
-            Button(action: { showingGroupInfo = true }) {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-    }
-
-    // MARK: - 状態別の中身
-
-    @ViewBuilder
-    private var content: some View {
-        switch state {
-        case .shooting(_, let achievedCount, let memberCount, let groupTotal, let groupTarget):
-            shootingContent(achievedCount: achievedCount, memberCount: memberCount, groupTotal: groupTotal, groupTarget: groupTarget)
-        case .unlocked:
-            unlockedContent
-        }
-    }
-
-    // MARK: - 撮影中
-
-    private func shootingContent(achievedCount: Int, memberCount: Int, groupTotal: Int, groupTarget: Int) -> some View {
-        VStack(spacing: 0) {
-            progressRing(total: groupTotal, target: groupTarget)
-                .padding(.top, 20)
-
-            memberSection(achievedCount: achievedCount, memberCount: memberCount)
-                .padding(.top, 32)
-
-            myCountFooter
-                .padding(.top, 32)
-
-            captureButton
-        }
-    }
-
-    private func progressRing(total: Int, target: Int) -> some View {
-        let progress = target > 0 ? min(1.0, Double(total) / Double(target)) : 0
-        return ZStack {
-            Circle()
-                .stroke(Color.white.opacity(0.1), lineWidth: 10)
-                .frame(width: 180, height: 180)
-
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(Color.brandGreen, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                .frame(width: 180, height: 180)
-                .rotationEffect(.degrees(-90))
-                .animation(.easeOut(duration: 0.6), value: progress)
-
-            VStack(spacing: 2) {
-                Text("\(total)")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text("/ \(target)")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.5))
-            }
-        }
-    }
-
-    private func memberSection(achievedCount: Int, memberCount: Int) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("メンバー（\(achievedCount)/\(memberCount)人 撮影済み）")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.6))
-                .padding(.horizontal, 24)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(group.members, id: \.id) { member in
-                        memberAvatar(member)
-                    }
-                }
-                .padding(.horizontal, 24)
-            }
-        }
-    }
-
-    private func memberAvatar(_ member: UserProfile) -> some View {
-        let achieved = memberAchievedToday(member)
-        return VStack(spacing: 6) {
-            ZStack(alignment: .bottomTrailing) {
-                CachedPhotoImage(imageData: member.profileImageData, cacheKey: "avatar_\(member.id.uuidString)") { uiImage in
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    ZStack {
-                        Color.white.opacity(0.08)
-                        Text(member.name.prefix(1))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(achieved ? Color.brandGreen : .white.opacity(0.4))
-                    }
-                }
-                .frame(width: 48, height: 48)
-                .clipShape(Circle())
-                .overlay(
-                    Circle().strokeBorder(achieved ? Color.brandGreen : Color.white.opacity(0.15), lineWidth: achieved ? 2 : 1)
-                )
-                .saturation(achieved ? 1 : 0.3)
-                .opacity(achieved ? 1 : 0.6)
-
-                if !achieved {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .padding(4)
-                        .background(Circle().fill(Color.black.opacity(0.75)))
-                }
-            }
-
-            Text(member.name)
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.6))
-                .lineLimit(1)
-                .frame(width: 56)
-        }
-    }
-
-    private func memberAchievedToday(_ member: UserProfile) -> Bool {
-        group.currentCyclePhotos().filter { $0.owner?.id == member.id }.count >= GroupUnlockPolicy.individualMinimumPhotoCount
-    }
-
-    private var myCountFooter: some View {
-        HStack(spacing: 6) {
-            Text("自分")
-                .font(.system(size: 13))
-                .foregroundStyle(.white.opacity(0.5))
-            Text("\(myTodayCount)/\(GroupUnlockPolicy.individualMaximumPhotoCount(for: group))")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.9))
-            Text("枚")
-                .font(.system(size: 13))
-                .foregroundStyle(.white.opacity(0.5))
-        }
-        .padding(.bottom, 14)
-    }
-
-    private var captureButton: some View {
-        Button {
-            CaptureRequestStore.shared.pendingRequestID = UUID()
-        } label: {
-            Text("撮影する")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.black)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.brandGreen)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 24)
-    }
-
-    // MARK: - 解禁中
-
-    /// 投票フェーズ撤去に伴い、選出を待たずその日解禁された写真をそのまま一覧表示する。
-    private var unlockedContent: some View {
-        VStack(spacing: 0) {
-            Text("解禁中・次の解禁まで見られます")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
-                .padding(.top, 24)
-
-            photoGallery(todaysUnlockedPhotos, topPadding: 24)
-
-            if !todaysUnlockedVideos.isEmpty {
-                videoGallery(todaysUnlockedVideos)
-            }
-        }
         .sheet(item: $selectedVideoForPlayback) { video in
             VideoDetailPlayerView(video: video)
         }
-    }
-
-
-    /// 解禁済みの写真を撮影者情報つきで縦に並べる共通レイアウト。解禁中(unlockedContent)・
-    /// 閲覧期間終了後(finishedContent、写真がある場合)の両方で共用する。投票フェーズ撤去に
-    /// 伴い、選出を待たず撮影者を常に明示する(以前のisAuthorRevealedによる匿名化は行わない)。
-    /// topPadding: unlockedContentは上に案内文があるため詰め、finishedContentは
-    /// 案内文が無いため広めに取る。
-    private func photoGallery(_ photos: [LaterPhoto], topPadding: CGFloat = 80) -> some View {
-        VStack(spacing: 28) {
-            ForEach(photos) { photo in
-                VStack(spacing: 12) {
-                    ChekiPhotoFrame(photo: photo)
-                        .frame(maxWidth: 240)
-                        .contextMenu {
-                            if photo.owner?.id != currentUser?.id {
-                                Button {
-                                    reportTargetPhoto = photo
-                                } label: {
-                                    Label("報告する", systemImage: "flag")
-                                }
-                            }
-                        }
-
-                    HStack(spacing: 6) {
-                        photoAuthorAvatar(photo.owner)
-                        Text(photo.owner?.name ?? photo.authorNameCache ?? "不明")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                }
-            }
-        }
-        .padding(.top, topPadding)
-        .padding(.bottom, 40)
         .sheet(item: $reportTargetPhoto) { photo in
             ReportSheet(targetType: .circlePhoto, targetID: photo.ckRecordName ?? photo.id.uuidString)
         }
+        .sheet(item: $selectedPhotoForViewing) { photo in
+            photoViewerSheet(photo)
+        }
     }
 
-    /// 解禁済みの動画を撮影者情報つきで縦に並べる、photoGalleryの動画版。一覧では
-    /// LaterVideo.thumbnailData(静止画1枚)だけを描画し、動画本体はタップ時に
-    /// VideoDetailPlayerView側でCloudKitManager.fetchVideoAsset(for:)経由で
-    /// 都度フェッチする(この一覧自体が動画本体を読み込むことは無い)。
-    private func videoGallery(_ videos: [LaterVideo]) -> some View {
-        VStack(spacing: 28) {
-            ForEach(videos) { video in
-                VStack(spacing: 12) {
-                    Button {
-                        selectedVideoForPlayback = video
-                    } label: {
-                        ZStack {
-                            CachedPhotoImage(imageData: video.thumbnailData, cacheKey: video.imageCacheKey) { uiImage in
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
+    /// グリッドをタップした写真の全画面ビューア。撮影者名+長押しで報告できる。
+    private func photoViewerSheet(_ photo: LaterPhoto) -> some View {
+        ZStack {
+            Color.laterBackground.ignoresSafeArea()
+            VStack(spacing: 16) {
+                ChekiPhotoFrame(photo: photo)
+                    .frame(maxWidth: 280)
+                    .contextMenu {
+                        if photo.owner?.id != currentUser?.id {
+                            Button {
+                                selectedPhotoForViewing = nil
+                                reportTargetPhoto = photo
+                            } label: {
+                                Label("報告する", systemImage: "flag")
                             }
-                            .frame(maxWidth: 240)
-                            .aspectRatio(3.0 / 4.0, contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
-                            )
-
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 40))
-                                .foregroundStyle(.white.opacity(0.9))
-                                .shadow(radius: 6)
                         }
                     }
-                    .buttonStyle(.plain)
 
-                    HStack(spacing: 6) {
-                        photoAuthorAvatar(video.owner)
-                        Text(video.owner?.name ?? video.authorNameCache ?? "不明")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
+                HStack(spacing: 6) {
+                    photoAuthorAvatar(photo.owner)
+                    Text(photo.owner?.name ?? photo.authorNameCache ?? "不明")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.laterTextMuted)
                 }
             }
         }
-        .padding(.top, 8)
-        .padding(.bottom, 40)
     }
 
-    /// 解禁済み写真の撮影者アバター(小さな丸アイコン)。
-    /// ownerがまだローカルに解決できていない場合はシルエットで代替する。
+    /// 撮影者アバター(小さな丸アイコン)。ownerがまだローカルに解決できていない場合は
+    /// シルエットで代替する。
     private func photoAuthorAvatar(_ owner: UserProfile?) -> some View {
         Group {
             if let data = owner?.profileImageData, let uiImage = UIImage(data: data) {
@@ -513,15 +239,277 @@ struct GroupHomeDetailView: View {
                     .aspectRatio(contentMode: .fill)
             } else {
                 Circle()
-                    .fill(Color.brandGreen.opacity(0.2))
+                    .fill(Self.accent.opacity(0.2))
                     .overlay(
                         Text((owner?.name ?? "?").prefix(1))
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color.brandGreen)
+                            .foregroundStyle(Self.accent)
                     )
             }
         }
         .frame(width: 22, height: 22)
         .clipShape(Circle())
+    }
+
+    // MARK: - ヘッダー(戻る+グループ名/メンバー数+メンバー一覧ボタン)
+
+    private var header: some View {
+        HStack {
+            Button(action: { dismiss() }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.laterText)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color.laterCard))
+            }
+
+            Spacer()
+
+            VStack(spacing: 2) {
+                Text(group.name)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.laterText)
+                    .lineLimit(1)
+                Text(group.isPersonalSpace ? "個人スペース" : "固定メンバー\(group.members.count)人・匿名で公開")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.laterTextMuted)
+            }
+
+            Spacer()
+
+            Button(action: { showingGroupInfo = true }) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.laterText)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(Color.laterCard))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    // MARK: - ②進捗カード(撮影の進み具合。状態(撮影中/解禁中)で文言だけ切り替える)
+
+    private static let accent = Color.laterAccent
+
+    private var progressCard: some View {
+        VStack(spacing: 20) {
+            Text("撮影の進み具合")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.laterTextMuted)
+
+            progressHeadline
+
+            memberRow
+
+            Text(progressFooterText)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.laterTextMuted)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+
+            if case .shooting = state, !group.isPersonalSpace || myTodayCount < GroupUnlockPolicy.individualMaximumPhotoCount(for: group) {
+                captureButton
+            }
+        }
+        .padding(.vertical, 24)
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.laterCard))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.laterBorder, lineWidth: 1.5))
+    }
+
+    @ViewBuilder
+    private var progressHeadline: some View {
+        switch state {
+        case .shooting(_, let achievedCount, let memberCount, _, _):
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("\(achievedCount)")
+                    .font(.system(size: 42, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Self.accent)
+                Text("/ \(memberCount) READY")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(Color.laterTextMuted)
+            }
+        case .unlocked:
+            Text("解禁中！")
+                .font(.system(size: 30, weight: .heavy))
+                .foregroundStyle(Self.accent)
+        }
+    }
+
+    private var progressFooterText: String {
+        switch state {
+        case .shooting(_, let achievedCount, let memberCount, _, _):
+            if group.isPersonalSpace {
+                return "目標枚数に到達すると、匿名で公開されます"
+            }
+            return achievedCount >= memberCount && memberCount > 0
+                ? "まもなく匿名で一斉公開されます"
+                : "全員が撮り終えると、匿名で一斉公開されます"
+        case .unlocked:
+            return "次の解禁まで見られます"
+        }
+    }
+
+    private var memberRow: some View {
+        HStack(spacing: 14) {
+            ForEach(group.members, id: \.id) { member in
+                memberAvatar(member)
+            }
+        }
+    }
+
+    /// 撮影済みはチェックマークバッジ、未撮影は透明度を落とすだけ(バッジ無し)。
+    private func memberAvatar(_ member: UserProfile) -> some View {
+        let achieved = memberAchievedToday(member)
+        return ZStack(alignment: .bottomTrailing) {
+            CachedPhotoImage(imageData: member.profileImageData, cacheKey: "avatar_\(member.id.uuidString)") { uiImage in
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                ZStack {
+                    Color.white.opacity(0.08)
+                    Text(member.name.prefix(1))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(achieved ? Self.accent : Color.laterTextMuted)
+                }
+            }
+            .frame(width: 44, height: 44)
+            .clipShape(Circle())
+            .overlay(Circle().strokeBorder(achieved ? Self.accent : Color.white.opacity(0.15), lineWidth: achieved ? 2 : 1))
+            .opacity(achieved ? 1 : 0.4)
+
+            if achieved {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Self.accent)
+                    .background(Circle().fill(Color.laterCard).frame(width: 14, height: 14))
+            }
+        }
+    }
+
+    private func memberAchievedToday(_ member: UserProfile) -> Bool {
+        group.currentCyclePhotos().filter { $0.owner?.id == member.id }.count >= GroupUnlockPolicy.individualMinimumPhotoCount
+    }
+
+    private var captureButton: some View {
+        Button {
+            CaptureRequestStore.shared.pendingRequestID = UUID()
+        } label: {
+            Text("撮影する（自分: \(myTodayCount)/\(GroupUnlockPolicy.individualMaximumPhotoCount(for: group))枚）")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color.laterBackground)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Capsule().fill(Self.accent))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
+    }
+
+    // MARK: - ③過去の公開(3列グリッド。写真・動画をまとめて撮影日の新しい順に並べる)
+
+    private enum UnlockedMediaItem: Identifiable {
+        case photo(LaterPhoto)
+        case video(LaterVideo)
+
+        var id: String {
+            switch self {
+            case .photo(let photo): return "photo_\(photo.id.uuidString)"
+            case .video(let video): return "video_\(video.id.uuidString)"
+            }
+        }
+
+        var captureDate: Date {
+            switch self {
+            case .photo(let photo): return photo.captureDate
+            case .video(let video): return video.captureDate
+            }
+        }
+    }
+
+    private var pastUnlockedItems: [UnlockedMediaItem] {
+        let blockedIDs = Set(blockedUsers.map(\.blockedCloudKitUserRecordName))
+        let photos = group.getUnlockedPhotos()
+            .filter { photo in
+                guard let authorID = photo.authorCloudKitUserRecordName else { return true }
+                return !blockedIDs.contains(authorID)
+            }
+            .map(UnlockedMediaItem.photo)
+        let videos = group.videos
+            .filter(\.isUnlocked)
+            .filter { video in
+                guard let authorID = video.authorCloudKitUserRecordName else { return true }
+                return !blockedIDs.contains(authorID)
+            }
+            .map(UnlockedMediaItem.video)
+        return (photos + videos).sorted { $0.captureDate > $1.captureDate }
+    }
+
+    private static let gridColumns = [GridItem(.flexible(), spacing: 3), GridItem(.flexible(), spacing: 3), GridItem(.flexible(), spacing: 3)]
+
+    @ViewBuilder
+    private var pastUnlocksSection: some View {
+        let items = pastUnlockedItems
+        VStack(alignment: .leading, spacing: 14) {
+            Text("過去の公開")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color.laterText)
+                .padding(.horizontal, 20)
+
+            if items.isEmpty {
+                Text("まだ公開された写真がありません")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.laterTextMuted)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
+            } else {
+                LazyVGrid(columns: Self.gridColumns, spacing: 3) {
+                    ForEach(items) { item in
+                        pastUnlockCell(item)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+
+    private func pastUnlockCell(_ item: UnlockedMediaItem) -> some View {
+        Button {
+            switch item {
+            case .photo(let photo):
+                selectedPhotoForViewing = photo
+            case .video(let video):
+                selectedVideoForPlayback = video
+            }
+        } label: {
+            ZStack {
+                switch item {
+                case .photo(let photo):
+                    CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
+                        Image(uiImage: uiImage).resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Color.laterCard
+                    }
+                case .video(let video):
+                    CachedPhotoImage(imageData: video.thumbnailData, cacheKey: video.imageCacheKey) { uiImage in
+                        Image(uiImage: uiImage).resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Color.laterCard
+                    }
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .shadow(radius: 4)
+                }
+            }
+            .aspectRatio(1, contentMode: .fill)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }

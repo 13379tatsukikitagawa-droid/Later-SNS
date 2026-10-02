@@ -67,4 +67,23 @@ public extension Color {
     static let corkboardHeading: Color = Color(hex: "26210f")
     /// マスキングテープ風CTAボタンの文字色(濃い緑)
     static let corkboardCTAText: Color = Color(hex: "1f6b3a")
+
+    // MARK: - Later (2026/9 新デザイン仕様)
+    //
+    // 「Later ― 画面別 実装プロンプト集」で指定された配色。Home画面から順に
+    // 各画面をこのパレットへ置き換えていく想定のため、既存のbrandBlack/brandGreenとは
+    // 別トークンとして追加し、未移行の画面には影響しないようにする。
+
+    /// 背景(ほぼ黒+微かなグリーン)
+    static let laterBackground: Color = Color(hex: "050F09")
+    /// アクセント(ネオングリーン)
+    static let laterAccent: Color = Color(hex: "22FF6E")
+    /// カード背景
+    static let laterCard: Color = Color(hex: "0D1F14")
+    /// カードのボーダー(rgba(34,255,110,0.3)相当)
+    static let laterBorder: Color = laterAccent.opacity(0.3)
+    /// 本文文字
+    static let laterText: Color = Color(hex: "F4FFF8")
+    /// 薄い文字
+    static let laterTextMuted: Color = Color(hex: "8FB49B")
 }

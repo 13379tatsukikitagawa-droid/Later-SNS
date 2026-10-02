@@ -1,50 +1,51 @@
 import SwiftUI
 
-/// Home画面最上部(スイッチャーヘッダーの下・カウントダウンの上)に表示する、控えめな記憶カード。
+/// Home画面のグループセクション直下に表示する、琥珀色グラデーションの振り返りバナー
+/// (2026/9 新デザイン仕様「1週間前の今日」振り返りバナー)。offsetLabelは
+/// MemorySurpriseManager.findMemoryが返す節目(1週間前/1ヶ月前/半年前...)をそのまま使う。
 struct MemorySurpriseCardView: View {
     let match: MemoryMatch
     let onTap: () -> Void
 
+    private static let textColor = Color(hex: "2B1B08")
+
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 14) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.white)
+                Image(systemName: "star.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color(hex: "FBF0DC"))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(match.offsetLabel)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 13.5, weight: .heavy))
+                        .foregroundStyle(Self.textColor)
                     Text("振り返る")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.75))
+                        .font(.system(size: 11))
+                        .foregroundStyle(Self.textColor.opacity(0.75))
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(Self.textColor)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color(red: 0.42, green: 0.30, blue: 0.08),
-                                Color(red: 0.70, green: 0.50, blue: 0.16)
-                            ],
+                            colors: [Color(hex: "E3A93B"), Color(hex: "C9862A")],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
+                    .shadow(color: Color(hex: "C9862A").opacity(0.3), radius: 12, x: 0, y: 6)
             )
         }
         .buttonStyle(ScaleButtonStyle())
-        .padding(.horizontal)
     }
 }
 

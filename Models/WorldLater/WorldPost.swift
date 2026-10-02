@@ -21,15 +21,48 @@ final class WorldPost {
     /// 代わりに、個々の投稿を自分の画面からだけ非表示にできるようにする。
     var isHidden: Bool = false
 
+    /// 市区町村レベルまで粗く丸めた地名(実位置情報ベース。CLGeocoderのlocality/
+    /// subLocalityをそのまま使う、装飾的な文字列ではない)。取得できなかった場合はnil。
+    var locationRegion: String?
+    /// 地図ピン配置用に、実際のGPS座標を小数点2桁(約1km四方)まで粗く丸めた値。
+    /// 同じ丸め座標を持つ投稿同士は、自然に同一ピンへクラスタリングされる。
+    var roundedLatitude: Double?
+    var roundedLongitude: Double?
+    /// 投稿に添えた一言キャプション。
+    var caption: String?
+    /// 翌朝9:00の解禁タイミング(captureDateの翌日9:00)。この時刻を過ぎるまで写真本体は
+    /// ロックされ、地域・時刻・キャプションだけが先出しで見える。
+    var unlockDate: Date = Date()
+    /// 投稿時にローカルで抽出した代表色(HEX文字列、2〜3色)。Home画面「現像中の写真の壁」で、
+    /// 画像データそのものをダウンロードせずに「何かが写っている気配」だけを見せるために使う。
+    var dominantColorHexes: [String] = []
+
     // CloudKit同期メタデータ(Public DB、WorldLaterService参照)
     var ckRecordName: String?
     var ckRecordChangeTag: String?
 
-    init(imageData: Data, captureDate: Date = Date(), isOwnPost: Bool = false) {
+    init(
+        imageData: Data,
+        captureDate: Date = Date(),
+        isOwnPost: Bool = false,
+        locationRegion: String? = nil,
+        roundedLatitude: Double? = nil,
+        roundedLongitude: Double? = nil,
+        caption: String? = nil,
+        unlockDate: Date = Date()
+    ) {
         self.imageData = imageData
         self.captureDate = captureDate
         self.isOwnPost = isOwnPost
+        self.locationRegion = locationRegion
+        self.roundedLatitude = roundedLatitude
+        self.roundedLongitude = roundedLongitude
+        self.caption = caption
+        self.unlockDate = unlockDate
     }
 
     var imageCacheKey: String { ckRecordName ?? id.uuidString }
+
+    /// 解禁済みかどうか(翌朝9:00の解禁タイミングを過ぎているか)。
+    var isUnlocked: Bool { Date() >= unlockDate }
 }

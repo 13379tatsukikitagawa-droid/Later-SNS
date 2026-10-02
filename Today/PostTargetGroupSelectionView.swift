@@ -29,7 +29,22 @@ struct PostTargetGroupSelectionView: View {
     @Query private var profiles: [UserProfile]
     @Query private var groups: [LaterGroup]
 
-    @State private var caption: String = ""
+    @State private var caption: String
+
+    /// 2026/9 新デザイン仕様「②キャプション入力画面」で、撮影の前にキャプションを
+    /// 書くフローになったため、そちらで入力済みの文字列をここへ引き継ぐ
+    /// (この画面で改めて入力し直す必要が無いよう、初期値として渡すだけ)。
+    init(
+        imageData: Data,
+        locationName: String? = nil,
+        initialCaption: String = "",
+        onFinished: @escaping (_ success: Bool) -> Void
+    ) {
+        self.imageData = imageData
+        self.locationName = locationName
+        self.onFinished = onFinished
+        _caption = State(initialValue: initialCaption)
+    }
     /// キャプションのボタン/入力欄どちらを表示するか(表示分岐用)。isCaptionFocusedとは
     /// 意図的に分離している(理由はcaptionOverlay内のコメント参照)。
     @State private var isEditingCaption = false
@@ -325,6 +340,14 @@ struct PostTargetGroupSelectionView: View {
 
     // MARK: - 送信ボタン
 
+    /// 投稿先が1つも無い(グループ未選択かつWorld Laterもオフ)かどうか。submitPost()の
+    /// ガード条件(!selectedGroupIDs.isEmpty || postToWorldLater)と必ず一致させること。
+    /// 以前はここがselectedGroupIDs.isEmptyだけを見ており、「グループは選ばずWorld
+    /// Laterだけに投稿したい」場合でもボタンが押せないままになる不具合があった。
+    private var hasNoDestination: Bool {
+        selectedGroupIDs.isEmpty && !postToWorldLater
+    }
+
     private var submitButton: some View {
         Button(action: submitPost) {
             Group {
@@ -335,13 +358,13 @@ struct PostTargetGroupSelectionView: View {
                 }
             }
             .font(.headline)
-            .foregroundStyle(selectedGroupIDs.isEmpty ? .white.opacity(0.4) : .black)
+            .foregroundStyle(hasNoDestination ? .white.opacity(0.4) : .black)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(selectedGroupIDs.isEmpty ? Color.white.opacity(0.08) : Color.brandGreen)
+            .background(hasNoDestination ? Color.white.opacity(0.08) : Color.brandGreen)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .disabled(selectedGroupIDs.isEmpty || isSubmitting)
+        .disabled(hasNoDestination || isSubmitting)
     }
 
     // MARK: - 選択状態の判定
@@ -440,7 +463,12 @@ struct PostTargetGroupSelectionView: View {
         if postToWorldLater {
             Task {
                 do {
-                    try await WorldLaterService.submitPost(imageData: imageData, captureDate: now)
+                    try await WorldLaterService.submitPost(
+                        imageData: imageData,
+                        captureDate: now,
+                        locationRegion: locationName,
+                        caption: trimmedCaption.isEmpty ? nil : trimmedCaption
+                    )
                 } catch {
                     print("[WorldLater] submitPost failed: \(error)")
                 }

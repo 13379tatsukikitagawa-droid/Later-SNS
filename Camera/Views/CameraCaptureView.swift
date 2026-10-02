@@ -4,11 +4,14 @@ import AudioToolbox
 import CoreLocation
 internal import Combine
 
-/// 上品でシンプルなフィルムカメラ風のUI。撮影処理(AVFoundation)・CloudKitへの保存・
-/// キャプション画面への遷移ロジックはTodayView.swift側にあり、ここでは一切変更しない。
-/// UIKitはAVCaptureSessionのプレビューレイヤーだけを担当し、それ以外の見た目は
-/// 全てSwiftUIで描画する。強いフィルムグレイン・ヴィネットはこの画面には適用しない
-/// (現像後の写真側への適用は別途対応する)。
+/// Daily Shot Camera(2026/9 再設計)。Apple標準カメラと同じく、ライブプレビューが
+/// 画面全体を占め、コントロールは上下のグラデーションスクリムに浮かぶガラス質の部品
+/// だけにする。配色は他画面と同じダークグリーン+アクセント(#22FF6E)に統一し、
+/// 暖色は焼き込み日付スタンプ(#FF6A2B)だけに限定する。
+///
+/// 撮影処理(AVFoundation)・CloudKitへの保存・キャプション画面への遷移ロジックは
+/// TodayView.swift側にあり、ここでは一切変更しない。UIKitはAVCaptureSessionの
+/// プレビューレイヤーだけを担当し、それ以外の見た目は全てSwiftUIで描画する。
 struct TrueBlindCameraView: View {
     /// 今日すでに撮影した枚数と、個人の撮影上限(「残り◯枚」表示・上限到達判定用)
     var currentCount: Int
@@ -20,12 +23,15 @@ struct TrueBlindCameraView: View {
     /// 動画(FilmEmulation加工済み.mp4のURL・サムネイル・長さ(秒)・撮影地の地名)の
     /// 撮影完了時に呼ぶ。
     var onCaptureVideo: (URL, UIImage?, Double, String?) -> Void
+    /// 撮影前のキャプション入力画面(CaptionEntryView)で入力された文字列。空文字なら
+    /// ピル自体を表示しない。撮影処理そのものには使わず、あくまでファインダー上の
+    /// 表示用(投稿時のキャプションはPostTargetGroupSelectionView.initialCaption経由で
+    /// 別途引き継がれる)。
+    var caption: String = ""
 
-    /// 呼び出し元(CheckiCameraEntryView、チェキ型入口画面)から共有される
-    /// AVCaptureSessionのコントローラー。入口の小窓プレビューと同じインスタンスを
-    /// 使い回すことで、カメラセッションが二重に起動しないようにする。
+    /// 呼び出し元(CheckiCameraEntryView)から共有されるAVCaptureSessionのコントローラー。
     @ObservedObject var camera: FilmCameraController
-    /// 入口画面での前面/背面カメラの選択(仕様上、入口は常にフロントカメラから始まる)を
+    /// 入口画面での前面/背面カメラの選択(仕様上、常にフロントカメラから始まる)を
     /// そのまま引き継ぐための初期値。
     private let initialCameraPosition: AVCaptureDevice.Position
     /// 入口画面のフラッシュ切り替えとこの画面のフラッシュ切り替えを同じ状態にする。
@@ -38,6 +44,7 @@ struct TrueBlindCameraView: View {
         currentCount: Int,
         limit: Int,
         streakCount: Int,
+        caption: String = "",
         onCapture: @escaping (Data, String?) -> Void,
         onCaptureVideo: @escaping (URL, UIImage?, Double, String?) -> Void
     ) {
@@ -47,6 +54,7 @@ struct TrueBlindCameraView: View {
         self.currentCount = currentCount
         self.limit = limit
         self.streakCount = streakCount
+        self.caption = caption
         self.onCapture = onCapture
         self.onCaptureVideo = onCaptureVideo
         _cameraPosition = State(initialValue: initialCameraPosition)
@@ -60,8 +68,7 @@ struct TrueBlindCameraView: View {
     /// シャッター押下時、フルスクリーンプレビューを一瞬縮める演出の状態。
     @State private var isShutterFrameAnimating = false
     @State private var lastCapturedThumbnail: UIImage?
-    /// 「今日のテーマ」バナーの表示状態。デフォルトはfalse(任意表示)。
-    @State private var showThemeBanner = false
+    @State private var isShowingThumbnailPreview = false
 
     // MARK: - Photo/Video モード切り替え、および動画撮影関連の状態
     enum CaptureMode {
@@ -74,6 +81,28 @@ struct TrueBlindCameraView: View {
     /// switchCameraButtonはこの値を更新した上で、両コントローラーへ明示的に伝える。
     @State private var cameraPosition: AVCaptureDevice.Position
     @State private var isPressingShutter = false
+    /// 動画モードでのシャッターの押し方。押した瞬間に録画を始め、長押し
+    /// (longPressThreshold以上)なら離した時点で停止、短いタップなら録画を続けて
+    /// 次のタップで停止する(Apple標準カメラと同じ操作感)。
+    private enum VideoPress {
+        case none
+        /// 録画していない状態で押し始めた(=この押下で録画を開始した)。
+        case starting(Date)
+        /// 録画中に押し始めた(=離したら停止する)。
+        case stopping
+    }
+    @State private var videoPress: VideoPress = .none
+    /// 停止操作が、AVFoundation側で実際に録画が始まるより前に行われた場合にtrue。
+    /// 録画が始まった瞬間(onChange(of: videoCamera.isRecording))に止める。
+    @State private var stopWhenRecordingStarts = false
+    /// 動画モード用のセッション(videoCamera)が稼働していて、押した瞬間に録画を
+    /// 始められる状態か。写真用・動画用の2つのセッションは同じ物理カメラを同時に
+    /// 使えないため、以前はシャッターを押してから切り替えていたが、その切り替えに
+    /// 1〜2秒かかり、長押しをすぐ離すと0秒の録画になって失敗していた。
+    /// 「動画」を選んだ時点で切り替えておく。
+    @State private var isVideoSessionReady = false
+    /// 写真用⇔動画用セッションの切り替え中。
+    @State private var isSwitchingSession = false
     @State private var isRecordingVideo = false
     @State private var isProcessingVideo = false
     /// 「録画自体の失敗」か「加工処理の失敗」かでアラートのタイトルを出し分けるため、
@@ -81,47 +110,101 @@ struct TrueBlindCameraView: View {
     @State private var videoProcessingErrorTitle: String?
     @State private var videoProcessingErrorMessage: String?
 
-    private static let shutterAccentGreen = Color(hex: "4ade6c")
+    // MARK: - セルフタイマー(写真モードのみ)
+    enum SelfTimer: Int, CaseIterable {
+        case off = 0, three = 3, ten = 10
+
+        var next: SelfTimer {
+            let all = SelfTimer.allCases
+            return all[(all.firstIndex(of: self)! + 1) % all.count]
+        }
+    }
+    @State private var selfTimer: SelfTimer = .off
+    /// カウントダウン中の残り秒数。nilならカウントダウンしていない。
+    @State private var countdownRemaining: Int?
+    @State private var countdownTask: Task<Void, Never>?
+
+    @State private var isPulsing = false
+    @State private var isPulsingDelayed = false
+    @State private var isStatusDotLit = false
+
     /// シャッターボタンのDragGesture(minimumDistance: 0)で、指の移動量がこの値未満なら
     /// 「タップ」とみなす閾値(pt)。
     private static let tapDistanceThreshold: CGFloat = 10
 
     private var isLimitReached: Bool { currentCount >= limit }
     private var remainingCount: Int { max(0, limit - currentCount) }
+    /// これから撮るのが今日の何枚目か(上限到達後は上限のまま)。
+    private var frameNumber: Int { min(currentCount + 1, max(limit, 1)) }
+    private var isCountingDown: Bool { countdownRemaining != nil }
+    /// 録画中・カウントダウン中は、モードやカメラ等の切り替えを受け付けない。
+    private var isBusy: Bool { isRecordingVideo || isCountingDown || isSwitchingSession }
+    /// 長押しとタップを分ける閾値(秒)。
+    private static let longPressThreshold: TimeInterval = 0.4
 
-    // MARK: - カラー(このカメラ画面専用。他画面のColor.brandGreen等には影響しない)
-    private let accentOrange = Color(red: 1.0, green: 0.541, blue: 0.239)      // #ff8a3d
-    /// チェキのフチを模したクリーム色。上部バー・下部の帯の背景に使う。
-    private static let filmCream = Color(hex: "f4efe4")
+    // MARK: - カラー(他画面のColor.later*と同じダークグリーンの世界観に揃える)
+
+    private static let accent = Color.laterAccent
+    private static let text = Color.laterText
+    private static let mutedText = Color.laterTextMuted
+    private static let softText = Color(hex: "CFE9D8")
+    /// ボタン類の半透明黒ガラスの地色。
+    private static let glassFill = Color(hex: "050F09")
+    private static let glassBorder = Color.white.opacity(0.12)
+    /// セグメントのアクティブ側など、アクセント色の上に載せる文字色。
+    private static let onAccent = Color(hex: "04170B")
+    /// 上下スクリムの地色(rgba(3,9,5,…))。
+    private static let scrimColor = Color(red: 3 / 255, green: 9 / 255, blue: 5 / 255)
+    /// カメラ未許可などでプレビューが映らない間に見える背景。
+    private static let backgroundGradient = LinearGradient(
+        colors: [Color(hex: "23301f"), Color(hex: "101b12"), Color(hex: "0a120c")],
+        startPoint: UnitPoint(x: 0.33, y: 0),
+        endPoint: UnitPoint(x: 0.67, y: 1)
+    )
+    /// 焼き込み日付スタンプの色。画面内で唯一の暖色で、他のボタン類には使わない。
+    private static let dateStampColor = Color(hex: "FF6A2B")
+    private static let recordingRed = Color(hex: "FF3B30")
+
+    // MARK: - レイアウト(セーフエリア基準。390×844のモックでは上118px/下300px相当)
+
+    /// 撮影可能エリア(コーナーブラケット)の上端。上部コントロールのすぐ下。
+    private static let viewfinderTopInset: CGFloat = 70
+    /// 撮影可能エリアの下端。下部コントロールのすぐ上。
+    private static let viewfinderBottomInset: CGFloat = 262
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 10)
-                .background(Self.filmCream)
+        ZStack {
+            Self.backgroundGradient
+                .ignoresSafeArea()
 
-            themeBanner
-                .padding(.top, 10)
+            previewFrame
+                .ignoresSafeArea()
 
-            ZStack {
-                previewFrame
-                guideText
+            filmGrainOverlay
+                .ignoresSafeArea()
+
+            vignetteOverlay
+                .ignoresSafeArea()
+
+            scrims
+
+            viewfinderDecorations
+
+            VStack(spacing: 0) {
+                topBar
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                Spacer(minLength: 0)
+                bottomControls
             }
-            .padding(.horizontal, 6)
-            .background(Self.filmCream)
-            .overlay(alignment: .bottom) {
-                locationTag
-                    .padding(.bottom, 10)
-            }
 
-            bottomFilmBand
+            if let countdownRemaining {
+                countdownOverlay(countdownRemaining)
+            }
         }
-        .background(Color.black.ignoresSafeArea())
+        .environment(\.colorScheme, .dark)
         .statusBarHidden()
-        // シャッター押下時の白フラッシュは画面全体を覆う演出のため、previewFrameの
-        // 内側だけでなく画面全体に重ねるオーバーレイとしてここに置く。
+        // シャッター押下時の白フラッシュは画面全体を覆う演出のため、全体に重ねる。
         .overlay {
             if showShutterFlash {
                 Color.white
@@ -129,18 +212,22 @@ struct TrueBlindCameraView: View {
                     .allowsHitTesting(false)
             }
         }
-        // 加工中(FilmEmulationVideoExporter実行中)は「読み込み中」系画面と同じ
-        // トーンのローディング表示にする(このステージでは仮の確認用UI)。
+        .overlay {
+            if isShowingThumbnailPreview, let lastCapturedThumbnail {
+                thumbnailPreview(lastCapturedThumbnail)
+            }
+        }
+        // 加工中(FilmEmulationVideoExporter実行中)のローディング表示。
         .overlay {
             if isProcessingVideo {
                 ZStack {
-                    Color.black.opacity(0.75).ignoresSafeArea()
+                    Self.glassFill.opacity(0.85).ignoresSafeArea()
                     VStack(spacing: 12) {
                         ProgressView()
-                            .tint(.white)
+                            .tint(Self.accent)
                         Text("動画を加工中です…")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.85))
+                            .foregroundStyle(Self.softText)
                     }
                 }
             }
@@ -149,6 +236,22 @@ struct TrueBlindCameraView: View {
             camera.configure()
             videoCamera.configure()
             locationProvider.requestPlaceName()
+            startPulseAnimations()
+        }
+        .onDisappear {
+            cancelCountdown()
+            // 動画モードのまま閉じた場合も、動画用セッション(カメラ・マイク)を確実に止める。
+            if isVideoSessionReady || captureMode == .video {
+                isVideoSessionReady = false
+                videoCamera.stopRunning()
+            }
+        }
+        // 停止操作が、録画が実際に始まる前に行われていた場合は、始まった瞬間に止める。
+        .onChange(of: videoCamera.isRecording) { _, isRecording in
+            if isRecording && stopWhenRecordingStarts {
+                stopWhenRecordingStarts = false
+                videoCamera.stopRecording()
+            }
         }
         .alert(videoProcessingErrorTitle ?? "動画の加工に失敗しました", isPresented: Binding(
             get: { videoProcessingErrorMessage != nil },
@@ -160,102 +263,463 @@ struct TrueBlindCameraView: View {
         }
     }
 
-    // MARK: - 上部バー(閉じる+「TODAY'S LATER・日付」ステータス+フラッシュ/カメラ切り替え)
-    // チェキのフチ(クリーム色の帯)の上に載るため、暗い背景を前提にしたスタイルではなく
-    // 濃い色のアイコン+薄い黒丸の組み合わせにする。
+    private func startPulseAnimations() {
+        withAnimation(.easeOut(duration: 2.2).repeatForever(autoreverses: false)) {
+            isPulsing = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+            withAnimation(.easeOut(duration: 2.2).repeatForever(autoreverses: false)) {
+                isPulsingDelayed = true
+            }
+        }
+        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+            isStatusDotLit = true
+        }
+    }
 
-    private static func todayLabel() -> String {
+    // MARK: - ガラス質の部品
+
+    /// 半透明黒ガラスのピル(ヒント・キャプション・現像ステータス)。
+    private func glassCapsule<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .background(Self.glassFill.opacity(0.55), in: Capsule())
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(Self.glassBorder, lineWidth: 1))
+    }
+
+    // MARK: - 上部オーバーレイ(閉じる・現像ステータス・フレームカウンター)
+
+    private var topBar: some View {
+        ZStack {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Self.text)
+                        .frame(width: 34, height: 34)
+                        .background(Self.glassFill.opacity(0.45), in: Circle())
+                        .background(.ultraThinMaterial, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+                }
+                .buttonStyle(CameraLightGlowButtonStyle())
+                .accessibilityLabel("閉じる")
+
+                Spacer()
+
+                frameCounterDial
+            }
+
+            developStatusPill
+        }
+    }
+
+    private var developStatus: (label: String, color: Color) {
+        if isRecordingVideo { return ("録画中", Self.recordingRed) }
+        if isLimitReached { return ("今日は撮影済み", Self.mutedText) }
+        if isCountingDown { return ("セルフタイマー", Self.accent) }
+        if isSwitchingSession { return ("カメラを準備中", Self.mutedText) }
+        return ("現像 準備OK", Self.accent)
+    }
+
+    /// フレーム番号の代わりに「今撮れる状態か」を知らせるステータス。
+    private var developStatusPill: some View {
+        let status = developStatus
+        return glassCapsule {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(status.color)
+                    .frame(width: 7, height: 7)
+                    .shadow(color: status.color.opacity(0.9), radius: isStatusDotLit ? 5 : 1)
+                    .opacity(isLimitReached ? 1 : (isStatusDotLit ? 1 : 0.45))
+                Text(status.label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Self.softText)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// 円形フレームカウンター(アクセント色の縁取り)。中心に今日の何枚目か。
+    private var frameCounterDial: some View {
+        VStack(spacing: -3) {
+            Text("\(frameNumber)")
+                .font(.system(size: 16, weight: .heavy, design: .rounded))
+            Text("枚目")
+                .font(.system(size: 8, weight: .semibold))
+        }
+        .foregroundStyle(Self.text)
+        .frame(width: 40, height: 40)
+        .background(Self.glassFill.opacity(0.45), in: Circle())
+        .overlay(Circle().strokeBorder(Self.accent, lineWidth: 1.5))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("今日の\(frameNumber)枚目")
+    }
+
+    // MARK: - プレビュー(フルブリードのライブプレビュー)
+
+    private var previewFrame: some View {
+        ZStack {
+            CameraPreviewRepresentable(session: camera.session)
+
+            // 動画モードの間は物理カメラを写真用セッションから動画用セッションへ明け渡す
+            // (同じカメラを2つのAVCaptureSessionが同時には使えないため)。写真用の
+            // プレビューは裏で一時停止中の最終フレームのまま止まっているだけなので、
+            // 動画用プレビューを上から重ねて隠す。
+            if isVideoSessionReady || isRecordingVideo {
+                CameraPreviewRepresentable(session: videoCamera.session)
+            }
+
+            if isLimitReached {
+                Self.glassFill.opacity(0.55)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        // シャッター押下時、プレビュー全体を一瞬だけ縮める演出。
+        .scaleEffect(isShutterFrameAnimating ? 0.97 : 1.0)
+        .animation(.easeOut(duration: 0.1), value: isShutterFrameAnimating)
+    }
+
+    // MARK: - フィルム粒子・ビネット・上下スクリム(装飾のみ、撮影処理には無関係)
+
+    /// フィルム粒子ノイズ。再描画のたびに粒の位置が変わってちらつかないよう、
+    /// 固定の種から決定的に生成する。
+    private var filmGrainOverlay: some View {
+        Canvas { context, size in
+            var seed: UInt64 = 0x9E3779B97F4A7C15
+            func next() -> Double {
+                seed = seed &* 6364136223846793005 &+ 1442695040888963407
+                return Double(seed >> 11) / Double(1 << 53)
+            }
+            for _ in 0..<520 {
+                let rect = CGRect(x: next() * size.width, y: next() * size.height, width: 1.2, height: 1.2)
+                context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(0.02 + next() * 0.06)))
+            }
+        }
+        .allowsHitTesting(false)
+        .opacity(0.5)
+    }
+
+    /// 周辺減光。黒のビネットに、うっすら緑の内側グロー
+    /// (box-shadow: inset 0 0 220px 70px rgba(34,255,110,0.07)相当)を重ねる。
+    private var vignetteOverlay: some View {
+        ZStack {
+            RadialGradient(
+                colors: [Color.clear, Color.black.opacity(0.45)],
+                center: .center,
+                startRadius: 140,
+                endRadius: 460
+            )
+            Rectangle()
+                .strokeBorder(Self.accent.opacity(0.12), lineWidth: 140)
+                .blur(radius: 110)
+        }
+        .clipped()
+        .allowsHitTesting(false)
+    }
+
+    /// 帯ではなく、プレビューの上に重ねるグラデーションスクリム。
+    private var scrims: some View {
+        VStack(spacing: 0) {
+            LinearGradient(
+                colors: [Self.scrimColor.opacity(0.65), Self.scrimColor.opacity(0)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 150)
+
+            Spacer(minLength: 0)
+
+            LinearGradient(
+                stops: [
+                    .init(color: Self.scrimColor.opacity(0.85), location: 0),
+                    .init(color: Self.scrimColor.opacity(0.85), location: 0.3),
+                    .init(color: Self.scrimColor.opacity(0), location: 1)
+                ],
+                startPoint: .bottom,
+                endPoint: .top
+            )
+            .frame(height: 280)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    // MARK: - ファインダー上の装飾(ブラケット・キャプション・日付・ヒント)
+
+    private var viewfinderDecorations: some View {
+        ZStack {
+            cornerBrackets
+
+            VStack(spacing: 0) {
+                HStack {
+                    captionPill
+                    Spacer()
+                }
+                Spacer()
+                HStack {
+                    Spacer()
+                    dateStamp
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 12)
+
+            hintPill
+        }
+        .padding(.top, Self.viewfinderTopInset)
+        .padding(.bottom, Self.viewfinderBottomInset)
+    }
+
+    private var cornerBrackets: some View {
+        GeometryReader { geometry in
+            let length: CGFloat = 24
+            let inset: CGFloat = 14
+            let w = geometry.size.width
+            let h = geometry.size.height
+            Path { path in
+                // 左上
+                path.move(to: CGPoint(x: inset, y: length))
+                path.addLine(to: CGPoint(x: inset, y: 0))
+                path.addLine(to: CGPoint(x: inset + length, y: 0))
+                // 右上
+                path.move(to: CGPoint(x: w - inset - length, y: 0))
+                path.addLine(to: CGPoint(x: w - inset, y: 0))
+                path.addLine(to: CGPoint(x: w - inset, y: length))
+                // 左下
+                path.move(to: CGPoint(x: inset, y: h - length))
+                path.addLine(to: CGPoint(x: inset, y: h))
+                path.addLine(to: CGPoint(x: inset + length, y: h))
+                // 右下
+                path.move(to: CGPoint(x: w - inset - length, y: h))
+                path.addLine(to: CGPoint(x: w - inset, y: h))
+                path.addLine(to: CGPoint(x: w - inset, y: h - length))
+            }
+            .stroke(Color.white.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// 前のステップ(CaptionEntryView)で入力されたキャプションを左上に小さく表示する。
+    @ViewBuilder
+    private var captionPill: some View {
+        if !caption.isEmpty {
+            glassCapsule {
+                Text(caption)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Self.text)
+                    .lineLimit(1)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+            }
+        }
+    }
+
+    /// 右下の焼き込み日付スタンプ('26 9 21のような表記)。
+    private var dateStamp: some View {
+        Text(Self.dateStampLabel())
+            .font(.custom("Courier New", size: 15).weight(.bold).italic())
+            .foregroundStyle(Self.dateStampColor)
+            .shadow(color: Self.dateStampColor.opacity(0.7), radius: 4)
+            .accessibilityHidden(true)
+    }
+
+    private static func dateStampLabel() -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "M/d"
+        formatter.dateFormat = "''yy M d"
         return formatter.string(from: Date())
     }
 
-    private var topBar: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.corkboardHeading.opacity(0.85))
-                    .frame(width: 34, height: 34)
-                    .background(Circle().fill(Color.black.opacity(0.06)))
+    @ViewBuilder
+    private var hintPill: some View {
+        if !isLimitReached && !isBusy {
+            glassCapsule {
+                Text("枠の中に、今日をおさめよう")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Self.softText)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
             }
-            .buttonStyle(CameraLightGlowButtonStyle())
-
-            Spacer()
-
-            VStack(spacing: 2) {
-                Text("TODAY'S LATER・\(Self.todayLabel())")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.corkboardHeading.opacity(0.75))
-                Text(isLimitReached ? "本日分は撮影済み" : "残り\(remainingCount)枚")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.corkboardTabInactiveText)
+            .allowsHitTesting(false)
+        } else if isLimitReached {
+            glassCapsule {
+                Text("今日のフィルムを使い切りました")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Self.text)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 9)
             }
-
-            Spacer()
-
-            HStack(spacing: 10) {
-                Button {
-                    isFlashOn.toggle()
-                } label: {
-                    Image(systemName: isFlashOn ? "bolt.fill" : "bolt.slash.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(isFlashOn ? accentOrange : Color.corkboardHeading.opacity(0.85))
-                        .frame(width: 34, height: 34)
-                        .background(Circle().fill(Color.black.opacity(0.06)))
-                }
-                .buttonStyle(CameraLightGlowButtonStyle())
-
-                switchCameraButton
-            }
+            .allowsHitTesting(false)
         }
     }
 
-    /// 「今日のテーマ」の表示有無を任意で切り替えるボタン。以前はtopBar右上にあったが、
-    /// 新しいtopBarはステータス表示+フラッシュ/カメラ切り替え専用にしたため、
-    /// 目立たない位置(bottomFilmBand)に移した。機能・見た目(緑発光)自体は変更なし。
-    private var themeBannerToggleButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showThemeBanner.toggle()
+    // MARK: - 下部オーバーレイ(モード行・シャッター行・マイクロコピー)
+
+    private var bottomControls: some View {
+        VStack(spacing: 0) {
+            modeRow
+                .padding(.horizontal, 28)
+                .padding(.bottom, 30)
+
+            shutterRow
+                .padding(.horizontal, 28)
+
+            Text(microcopy)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Self.mutedText)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+        }
+    }
+
+    private var microcopy: String {
+        if isLimitReached { return "今日の1枚は、もう撮り終えました" }
+        if isCountingDown { return "もう一度押すと、タイマーを止めます" }
+        if isRecordingVideo, case .none = videoPress { return "もう一度押すと、録画を止めます" }
+        switch captureMode {
+        case .photo: return "押すと、現像がはじまります"
+        case .video: return "長押しで録画・離すと現像がはじまります"
+        }
+    }
+
+    // MARK: モード行(フラッシュ・写真/動画・セルフタイマー)
+
+    private var modeRow: some View {
+        ZStack {
+            HStack {
+                flashButton
+                Spacer()
+                selfTimerButton
             }
+            modeToggle
+        }
+    }
+
+    private var flashButton: some View {
+        Button {
+            isFlashOn.toggle()
+            HapticsManager.tick()
         } label: {
-            Image(systemName: showThemeBanner ? "text.quote" : "quote.bubble")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(showThemeBanner ? Self.shutterAccentGreen : Color.corkboardTabInactiveText)
+            Image(systemName: isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(isFlashOn ? Self.accent : Self.text)
+                .frame(width: 32, height: 32)
+        }
+        .buttonStyle(CameraLightGlowButtonStyle())
+        .disabled(isBusy)
+        .opacity(isBusy ? 0.4 : 1.0)
+        .accessibilityLabel(isFlashOn ? "フラッシュ オン" : "フラッシュ オフ")
+    }
+
+    /// タップでオフ→3秒→10秒→オフと切り替える。写真モードでのみ有効。
+    private var selfTimerButton: some View {
+        let isAvailable = captureMode == .photo && !isBusy
+        return Button {
+            selfTimer = selfTimer.next
+            HapticsManager.tick()
+        } label: {
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: "timer")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(selfTimer == .off ? Self.text : Self.accent)
+                    .frame(width: 32, height: 32)
+                if selfTimer != .off {
+                    Text("\(selfTimer.rawValue)")
+                        .font(.custom("Courier New", size: 10).weight(.bold))
+                        .foregroundStyle(Self.onAccent)
+                        .padding(.horizontal, 3)
+                        .background(Capsule().fill(Self.accent))
+                        .offset(x: 4, y: 2)
+                }
+            }
+        }
+        .buttonStyle(CameraLightGlowButtonStyle())
+        .disabled(!isAvailable)
+        .opacity(isAvailable ? 1.0 : 0.4)
+        .accessibilityLabel(selfTimer == .off ? "セルフタイマー オフ" : "セルフタイマー \(selfTimer.rawValue)秒")
+    }
+
+    /// 写真/動画のセグメント。アクティブ側はアクセント色で塗りつぶす。録画中・
+    /// カウントダウン中はモードを変更できない。
+    private var modeToggle: some View {
+        HStack(spacing: 0) {
+            modeToggleButton(title: "写真", mode: .photo)
+            modeToggleButton(title: "動画", mode: .video)
+        }
+        .padding(3)
+        .background(Self.glassFill.opacity(0.45), in: Capsule())
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Self.glassBorder, lineWidth: 1))
+        .disabled(isBusy)
+        .opacity(isBusy ? 0.4 : 1.0)
+    }
+
+    private func modeToggleButton(title: String, mode: CaptureMode) -> some View {
+        Button {
+            switchCaptureMode(to: mode)
+        } label: {
+            Text(title)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(captureMode == mode ? Self.onAccent : Self.softText)
+                .frame(width: 58, height: 28)
+                .background(Capsule().fill(captureMode == mode ? Self.accent : Color.clear))
         }
         .buttonStyle(.plain)
+        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: captureMode)
+        .accessibilityAddTraits(captureMode == mode ? .isSelected : [])
     }
 
-    /// 任意表示の「今日のテーマ」バナー。撮影を妨げないよう、topBarの下に控えめに挟む
-    /// だけで、撮影可否や投稿内容には一切影響しない完全な演出。
-    @ViewBuilder
-    private var themeBanner: some View {
-        if showThemeBanner {
-            HStack(spacing: 8) {
-                Image(systemName: "quote.bubble.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Self.shutterAccentGreen)
-                Text(DailyThemeProvider.theme())
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.85))
-                    .lineLimit(1)
+    // MARK: シャッター行(サムネイル・シャッター・カメラ切替+残り枚数)
+
+    private var shutterRow: some View {
+        ZStack {
+            shutterButton
+
+            HStack(alignment: .center) {
+                thumbnailView
+                Spacer()
+                VStack(spacing: 6) {
+                    switchCameraButton
+                    Text(isLimitReached ? "撮影済み" : "残り\(remainingCount)枚")
+                        .font(.custom("Courier New", size: 11).weight(.bold))
+                        .foregroundStyle(Self.softText)
+                }
+                .frame(width: 64)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(
-                Capsule().fill(Color.black.opacity(0.5))
-            )
-            .overlay(
-                Capsule().strokeBorder(Self.shutterAccentGreen.opacity(0.3), lineWidth: 1)
-            )
-            .transition(.move(edge: .top).combined(with: .opacity))
         }
+        .frame(height: 120)
     }
 
-    // MARK: - カメラ切り替え(前面/背面)ボタン。右下(bottomRowの右端)に配置する。
+    private var thumbnailView: some View {
+        Button {
+            guard lastCapturedThumbnail != nil else { return }
+            isShowingThumbnailPreview = true
+        } label: {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Self.glassFill.opacity(0.35))
+                .frame(width: 44, height: 44)
+                .overlay {
+                    if let lastCapturedThumbnail {
+                        Image(uiImage: lastCapturedThumbnail)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
+                )
+        }
+        .buttonStyle(CameraLightGlowButtonStyle())
+        .disabled(lastCapturedThumbnail == nil)
+        .accessibilityLabel("直前の1枚")
+    }
 
     private var switchCameraButton: some View {
         Button {
@@ -264,249 +728,211 @@ struct TrueBlindCameraView: View {
             videoCamera.setCameraPosition(cameraPosition)
             HapticsManager.tick()
         } label: {
-            Image(systemName: "arrow.triangle.2.circlepath.camera")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.corkboardHeading.opacity(0.85))
-                .frame(width: 34, height: 34)
-                .background(Circle().fill(Color.black.opacity(0.06)))
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Self.text)
+                .frame(width: 40, height: 40)
+                .background(Self.glassFill.opacity(0.45), in: Circle())
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(Self.glassBorder, lineWidth: 1))
         }
         .buttonStyle(CameraLightGlowButtonStyle())
         // 録画中にカメラデバイスの入力を差し替えると、書き出し中のファイルが
         // 壊れる/録画が異常終了するおそれがあるため、録画中は切り替えを禁止する。
-        .disabled(isRecordingVideo)
-        .opacity(isRecordingVideo ? 0.4 : 1.0)
+        .disabled(isBusy)
+        .opacity(isBusy ? 0.4 : 1.0)
+        .accessibilityLabel("カメラを切り替え")
     }
 
-    // MARK: - プレビュー(フルスクリーンのライブプレビュー。チェキのフチはbody側の
-    // クリーム色の帯で表現するため、このView自体は枠や角丸を持たない)
+    // MARK: シャッターボタン
 
-    private var previewFrame: some View {
-        ZStack {
-            CameraPreviewRepresentable(session: camera.session)
-
-            // 動画撮影中は物理カメラを写真用セッションから動画用セッションへ明け渡す
-            // (同じカメラを2つのAVCaptureSessionが同時には使えないため)。写真用の
-            // プレビューは裏で一時停止中の最終フレームのまま止まっているだけなので、
-            // 動画用プレビューを上から重ねて隠す。
-            if isRecordingVideo {
-                CameraPreviewRepresentable(session: videoCamera.session)
-            }
-
-            if isLimitReached {
-                Color.black.opacity(0.55)
-                Text("今日のフィルムを使い切りました")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-        // シャッター押下時、プレビュー全体を一瞬だけ縮める演出(以前は枠の色替え+縮小
-        // だったが、フルスクリーン化に伴い枠が無くなったため縮小のみ引き継ぐ)。
-        .scaleEffect(isShutterFrameAnimating ? 0.97 : 1.0)
-        .animation(.easeOut(duration: 0.1), value: isShutterFrameAnimating)
+    private var shutterAccent: Color {
+        captureMode == .video ? Self.recordingRed : Self.accent
     }
 
-    /// プレビュー中央に薄く重ねるガイド文言。撮影の邪魔にならないよう控えめに。
-    private var guideText: some View {
-        Text("枠の中に、今日をおさめよう")
-            .font(.system(size: 12, weight: .medium, design: .monospaced))
-            .foregroundStyle(.white.opacity(0.85))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Capsule().fill(Color.black.opacity(0.35)))
-            .opacity(isLimitReached ? 0 : 1)
+    /// 上限到達時はロック表示付きで押せなくする。
+    private var isShutterDisabled: Bool { isLimitReached }
+    /// 動画用セッションの準備が終わるまで(切り替え中を含む)は押せない。
+    private var isShutterUnavailable: Bool {
+        isShutterDisabled || isSwitchingSession || (captureMode == .video && !isVideoSessionReady)
     }
 
-    // MARK: - 現在地タグ(取得できない/許可が無い場合はタグ自体を非表示にする)
-
-    private var locationTag: some View {
-        Group {
-            if let placeName = locationProvider.placeName {
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text(placeName)
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .foregroundStyle(.white.opacity(0.85))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(Color.black.opacity(0.45)))
-            }
-        }
-    }
-
-    // MARK: - Photo/Video 切り替え(セグメントコントロール)
-    // 「単押し=写真・長押し=動画」という単一ボタンでの暗黙の切り替えは廃止し、
-    // 明示的なモード切り替えに置き換える(要件)。切り替えに応じてシャッターボタンの
-    // 挙動自体も変わる(Photo=単押しで撮影、Video=タップで録画開始→再タップまたは
-    // 10秒経過で終了)。録画中はモードを変更できないようにする。
-    private var modeToggle: some View {
-        HStack(spacing: 0) {
-            modeToggleButton(title: "PHOTO", mode: .photo)
-            modeToggleButton(title: "VIDEO", mode: .video)
-        }
-        .padding(3)
-        .background(Capsule().fill(Color.black.opacity(0.06)))
-        .overlay(Capsule().strokeBorder(Color.corkboardHeading.opacity(0.2), lineWidth: 1))
-        .disabled(isRecordingVideo)
-        .opacity(isRecordingVideo ? 0.4 : 1.0)
-    }
-
-    private func modeToggleButton(title: String, mode: CaptureMode) -> some View {
-        Button {
-            guard captureMode != mode else { return }
-            captureMode = mode
-            HapticsManager.tick()
-        } label: {
-            Text(title)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(captureMode == mode ? .white : Color.corkboardHeading.opacity(0.6))
-                .frame(width: 72, height: 30)
-                .background(
-                    Capsule().fill(captureMode == mode ? Color.corkboardHeading.opacity(0.85) : Color.clear)
-                )
-        }
-        .buttonStyle(.plain)
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: captureMode)
-    }
-
-    // MARK: - チェキのフチを模した、太いクリーム色の下部帯
-    // 状態Bの主役であるシャッターボタンをここに置く。Dispoにあるような投稿先の
-    // 複数アイコン・ライブラリ切り替えは実装せず、ボタンは1つだけにする。
-
-    private var bottomFilmBand: some View {
-        VStack(spacing: 14) {
-            HStack {
-                themeBannerToggleButton
-
-                Spacer()
-
-                if streakCount > 0 {
-                    HStack(spacing: 5) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text("\(streakCount)")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(accentOrange)
-                }
-
-                Spacer()
-
-                modeToggle
-            }
-            .padding(.horizontal, 24)
-
-            bottomRow
-
-            Text("押すと、現像がはじまります")
-                .font(.custom("Caveat-Bold", size: 17))
-                .foregroundStyle(Color.corkboardHeading.opacity(0.75))
-        }
-        .padding(.top, 16)
-        .padding(.bottom, 30)
-        .background(Self.filmCream)
-    }
-
-    // MARK: - 下部(シャッターを中央に固定し、その左に直前の撮影サムネイルを配置)
-
-    private var bottomRow: some View {
-        ZStack {
-            shutterButton
-
-            HStack {
-                thumbnailView
-                Spacer()
-            }
-            .padding(.horizontal, 28)
-        }
-    }
-
-    private var thumbnailView: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.black.opacity(0.05))
-            .frame(width: 44, height: 44)
-            .overlay {
-                if let lastCapturedThumbnail {
-                    Image(uiImage: lastCapturedThumbnail)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 44, height: 44)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(Color.corkboardHeading.opacity(0.15), lineWidth: 1)
-            )
-    }
-
-    /// Photoモード: タップで即座に撮影。Videoモード: タップで録画開始、録画中に
-    /// もう一度タップすると停止(または10秒経過で自動停止)。いずれの終了方法でも
-    /// 終了と同時に投稿画面(動画専用キャプション画面)へ即座に遷移する
-    /// (processRecordedVideo → onCaptureVideo参照)。
+    /// Photoモード: タップで撮影(セルフタイマー設定時はカウントダウン後に撮影)。
+    /// Videoモード: 押した瞬間に録画開始。長押しなら離すと停止、短いタップなら次の
+    /// タップで停止(いずれも10秒経過で自動停止)。いずれも
+    /// 終了と同時に投稿画面へ遷移する(processRecordedVideo → onCaptureVideo参照)。
     private var shutterButton: some View {
         ZStack {
+            if !isShutterDisabled {
+                pulseRing(isActive: isPulsing)
+                pulseRing(isActive: isPulsingDelayed)
+            }
+
+            // 白いリング(4px)
             Circle()
-                .strokeBorder(Color.corkboardHeading.opacity(0.3), lineWidth: 1.5)
-                .frame(width: 72, height: 72)
+                .strokeBorder(Color.white, lineWidth: 4)
+                .frame(width: 84, height: 84)
+                .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
 
             if isRecordingVideo {
                 Circle()
                     .trim(from: 0, to: videoCamera.recordingProgress)
-                    .stroke(Color.red, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .stroke(Self.recordingRed, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 78, height: 78)
+                    .frame(width: 84, height: 84)
                     .animation(.linear(duration: 0.05), value: videoCamera.recordingProgress)
             }
 
-            Circle()
-                .fill(captureMode == .video ? Color.red : Color.white)
-                .frame(width: 64, height: 64)
+            shutterCore
 
-            if isRecordingVideo {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.white)
-                    .frame(width: 26, height: 26)
-            } else if isLimitReached && captureMode == .photo {
+            if isShutterDisabled {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.6))
+                    .foregroundStyle(Self.onAccent.opacity(0.7))
             }
         }
-        .opacity(isLimitReached && captureMode == .photo ? 0.5 : 1.0)
-        .scaleEffect(isPressingShutter ? 0.9 : 1.0)
+        .frame(width: 120, height: 120)
+        .opacity(isShutterUnavailable ? 0.5 : 1.0)
+        .scaleEffect(isPressingShutter ? 0.92 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressingShutter)
         .contentShape(Circle())
-        // 以前は.onTapGestureと.simultaneousGesture(DragGesture)を同じビューに
-        // 併用しており、2つのジェスチャー認識器が競合してタップが安定して発火しない
-        // 不具合があった。DragGesture(minimumDistance: 0)1つに統合し、onEndedで
-        // 「指がほぼ動いていなければタップとみなす」判定を行うことで、押下状態の表示
-        // (isPressingShutter)とタップ相当の操作を単一のジェスチャーで両立させる。
+        // タップ・長押しを1つのDragGesture(minimumDistance: 0)で扱う。.onTapGestureと
+        // DragGestureを併用すると認識器が競合してタップが安定しないため。
         .gesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressingShutter = true }
+                .onChanged { _ in
+                    if !isPressingShutter { isPressingShutter = true }
+                    guard captureMode == .video, case .none = videoPress else { return }
+                    if isRecordingVideo {
+                        videoPress = .stopping
+                    } else {
+                        videoPress = .starting(Date())
+                        startVideoRecording()
+                    }
+                }
                 .onEnded { value in
                     isPressingShutter = false
-                    let dragDistance = hypot(value.translation.width, value.translation.height)
-                    guard dragDistance < Self.tapDistanceThreshold else { return }
                     switch captureMode {
                     case .photo:
-                        capture()
+                        let dragDistance = hypot(value.translation.width, value.translation.height)
+                        guard dragDistance < Self.tapDistanceThreshold else { return }
+                        handlePhotoShutter()
                     case .video:
-                        if isRecordingVideo {
-                            videoCamera.stopRecording()
-                        } else {
-                            startVideoRecording()
+                        switch videoPress {
+                        case .stopping:
+                            stopVideoRecording()
+                        case .starting(let pressedAt):
+                            // 長押しなら離した時点で停止。短いタップなら録画を続ける。
+                            if Date().timeIntervalSince(pressedAt) >= Self.longPressThreshold {
+                                stopVideoRecording()
+                            }
+                        case .none:
+                            break
                         }
+                        videoPress = .none
                     }
                 }
         )
-        .disabled(isLimitReached && captureMode == .photo)
+        .disabled(isShutterUnavailable)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(captureMode == .photo ? "シャッター" : "録画ボタン")
+        .accessibilityHint(captureMode == .photo ? "押すと撮影します" : "長押しで録画して離すと停止、またはタップで開始と停止")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// 内側のディスク。写真: アクセント色の細い縁取りを持つ白い円。動画: 赤い角丸四角
+    /// (録画中はさらに小さくなる)。形状の変化はアニメーションでつなぐ。
+    private var shutterCore: some View {
+        let size: CGFloat
+        let cornerRadius: CGFloat
+        switch captureMode {
+        case .photo:
+            size = 68; cornerRadius = 34
+        case .video:
+            size = isRecordingVideo ? 28 : 36
+            cornerRadius = isRecordingVideo ? 6 : 9
+        }
+        return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(captureMode == .photo ? Color.white : Self.recordingRed)
+            .overlay {
+                if captureMode == .photo {
+                    Circle().strokeBorder(Self.accent, lineWidth: 2)
+                }
+            }
+            .frame(width: size, height: size)
+            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: captureMode)
+            .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isRecordingVideo)
+    }
+
+    private func pulseRing(isActive: Bool) -> some View {
+        Circle()
+            .strokeBorder(shutterAccent.opacity(0.55), lineWidth: 1.5)
+            .frame(width: 84, height: 84)
+            .scaleEffect(isActive ? 1.45 : 1)
+            .opacity(isActive ? 0 : 0.7)
+    }
+
+    // MARK: - セルフタイマーのカウントダウン
+
+    private func handlePhotoShutter() {
+        if isCountingDown {
+            cancelCountdown()
+            return
+        }
+        guard selfTimer != .off else {
+            capture()
+            return
+        }
+        let seconds = selfTimer.rawValue
+        countdownRemaining = seconds
+        HapticsManager.tick()
+        countdownTask = Task { @MainActor in
+            for remaining in stride(from: seconds - 1, through: 0, by: -1) {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                if remaining == 0 {
+                    countdownRemaining = nil
+                    countdownTask = nil
+                    capture()
+                } else {
+                    withAnimation(.easeOut(duration: 0.2)) { countdownRemaining = remaining }
+                    HapticsManager.tick()
+                }
+            }
+        }
+    }
+
+    private func cancelCountdown() {
+        countdownTask?.cancel()
+        countdownTask = nil
+        countdownRemaining = nil
+    }
+
+    private func countdownOverlay(_ remaining: Int) -> some View {
+        Text("\(remaining)")
+            .font(.custom("Courier New", size: 96).weight(.bold))
+            .foregroundStyle(Self.accent)
+            .shadow(color: Self.accent.opacity(0.6), radius: 16)
+            .contentTransition(.numericText(countsDown: true))
+            .allowsHitTesting(false)
+            .accessibilityLabel("あと\(remaining)秒")
+    }
+
+    // MARK: - 直前の1枚のプレビュー
+
+    private func thumbnailPreview(_ image: UIImage) -> some View {
+        ZStack {
+            Color.laterBackground.opacity(0.94).ignoresSafeArea()
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(24)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { isShowingThumbnailPreview = false }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel("直前の1枚。タップで閉じる")
     }
 
     // MARK: - 撮影処理(既存のonCaptureクロージャをそのまま呼ぶだけ)
@@ -559,45 +985,82 @@ struct TrueBlindCameraView: View {
 
     // MARK: - 動画撮影処理
 
-    /// 同じ物理カメラを2つのAVCaptureSessionが同時には使えないため、写真用の
-    /// セッションを完全に止めてから動画用セッションを動かす必要がある。以前は
-    /// camera.pauseForVideoRecording(写真用セッションの停止)の完了を待たずに
-    /// videoCamera.startRecording(movieOutput.startRecording)を同期的に呼んでおり、
-    /// 動画用セッションがまだstartRunning()し終わっていない状態で録画を開始しようと
-    /// してしまう非同期処理の順序不備があった(「見た目は録画中だが実際には録画が
-    /// 開始されない」不具合の原因)。ここではpauseForVideoRecording→
-    /// videoCamera.startRunningIfNeeded(completion:)と、両方の完了を確実に待ってから
-    /// videoCamera.startRecording(...)を呼ぶ形に直列化する。isRecordingVideoも、
-    /// この録画開始呼び出しの直前(実際に開始する寸前)に立てる。
-    private func startVideoRecording() {
-        guard !isLimitReached, !isRecordingVideo else { return }
-        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+    /// 写真/動画モードの切り替え。同じ物理カメラを2つのAVCaptureSessionが同時には
+    /// 使えないため、写真用セッションを完全に止めてから動画用セッションを動かす
+    /// (またはその逆)。以前はこの切り替えをシャッターを押してから行っていたため、
+    /// 録画が実際に始まるまで1〜2秒の無反応な時間ができ、長押しをすぐ離すと0秒の
+    /// 録画になって失敗していた。モードを選んだ時点で切り替えておくことで、
+    /// シャッターを押した瞬間に録画を始められるようにする。
+    private func switchCaptureMode(to mode: CaptureMode) {
+        guard captureMode != mode, !isBusy else { return }
+        captureMode = mode
+        HapticsManager.tick()
+        isSwitchingSession = true
 
-        camera.pauseForVideoRecording {
-            videoCamera.startRunningIfNeeded {
-                isRecordingVideo = true
-                videoCamera.startRecording { [self] rawURL, recordingError in
-                    DispatchQueue.main.async {
-                        isRecordingVideo = false
-                        // stopRunning()もバックグラウンドキューで実行され、完了後に
-                        // メインスレッドへ戻ってからcompletionが呼ばれる(同上)。
+        switch mode {
+        case .video:
+            camera.pauseForVideoRecording {
+                videoCamera.startRunningIfNeeded {
+                    isSwitchingSession = false
+                    guard videoCamera.session.isRunning else {
+                        // 権限の確認中/拒否などで動画用セッションを起動できなかった場合は、
+                        // 写真モードへ戻して原因を伝える。
+                        print("[VideoCapture] 動画用セッションを起動できませんでした")
+                        captureMode = .photo
                         videoCamera.stopRunning {
                             camera.resumeAfterVideoRecording()
-                            guard let rawURL else {
-                                print("[VideoCapture] 録画に失敗しました(rawURLがnil) error=\(String(describing: recordingError))")
-                                videoProcessingErrorTitle = "録画に失敗しました"
-                                if let recordingError {
-                                    videoProcessingErrorMessage = "録画に失敗しました(エラー: \(recordingError.localizedDescription))。もう一度お試しください。"
-                                } else {
-                                    videoProcessingErrorMessage = "録画に失敗しました。もう一度お試しください。"
-                                }
-                                return
-                            }
-                            processRecordedVideo(rawURL: rawURL)
                         }
+                        videoProcessingErrorTitle = "動画モードを開始できませんでした"
+                        videoProcessingErrorMessage = VideoCaptureError.sessionNotReady.localizedDescription
+                        return
                     }
+                    isVideoSessionReady = true
                 }
             }
+        case .photo:
+            isVideoSessionReady = false
+            videoCamera.stopRunning {
+                camera.resumeAfterVideoRecording()
+                isSwitchingSession = false
+            }
+        }
+    }
+
+    /// 動画用セッションは「動画」を選んだ時点で稼働済み(switchCaptureMode参照)なので、
+    /// ここでは録画だけを開始する。録画終了後もセッションは動画モードのまま動かしておき
+    /// (失敗時にすぐ撮り直せるように)、画面を閉じる時(onDisappear)に止める。
+    private func startVideoRecording() {
+        guard !isLimitReached, !isRecordingVideo, isVideoSessionReady else { return }
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        stopWhenRecordingStarts = false
+        isRecordingVideo = true
+        videoCamera.startRecording { [self] rawURL, recordingError in
+            DispatchQueue.main.async {
+                isRecordingVideo = false
+                stopWhenRecordingStarts = false
+                guard let rawURL else {
+                    print("[VideoCapture] 録画に失敗しました(rawURLがnil) error=\(String(describing: recordingError))")
+                    videoProcessingErrorTitle = "録画に失敗しました"
+                    if let recordingError {
+                        videoProcessingErrorMessage = "録画に失敗しました(エラー: \(recordingError.localizedDescription))。もう一度お試しください。"
+                    } else {
+                        videoProcessingErrorMessage = "録画に失敗しました。もう一度お試しください。"
+                    }
+                    return
+                }
+                processRecordedVideo(rawURL: rawURL)
+            }
+        }
+    }
+
+    /// 停止操作。AVFoundation側でまだ録画が始まっていなければ、始まった瞬間に止める
+    /// (onChange(of: videoCamera.isRecording)参照)。
+    private func stopVideoRecording() {
+        guard isRecordingVideo else { return }
+        if videoCamera.isRecording {
+            videoCamera.stopRecording()
+        } else {
+            stopWhenRecordingStarts = true
         }
     }
 
@@ -894,8 +1357,7 @@ struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
-/// クリーム色の帯(チェキのフチ)に載る、濃い色のアイコンボタン用のタップ演出
-/// (押している間だけ縮む)。状態Bのtop bar・switchCameraButtonで使う。
+/// 撮影画面のガラス質アイコンボタン用のタップ演出(押している間だけ縮む)。
 struct CameraLightGlowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

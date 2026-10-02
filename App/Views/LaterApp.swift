@@ -69,6 +69,9 @@ struct RootView: View {
     // メールのマジックリンク(Firebase Authentication)でサインイン済みかどうか。
     // Sign in with Appleとは独立した、もう一つのサインイン手段(EmailSignInView参照)。
     @AppStorage("firebaseUID") private var firebaseUID: String = ""
+    // 初回起動・ウェルカムオンボーディング(WelcomeOnboardingView)を見たかどうか。
+    // 事前アンケートゲート画面よりさらに前、アプリの一番最初に一度だけ表示する。
+    @AppStorage("hasSeenWelcomeOnboarding") private var hasSeenWelcomeOnboarding: Bool = false
     // 事前アンケートゲート画面への回答有無(自己申告制)。プロフィール設定画面より前に表示する。
     @AppStorage("hasCompletedSurvey") private var hasCompletedSurvey: Bool = false
     // プロフィール設定完了(OnboardingViewの「Laterをはじめる」)直後、Later紹介サイトへの
@@ -109,6 +112,13 @@ struct RootView: View {
     private func ensureSurveyCompletedForExistingUser() {
         guard isSetupCompleted, !hasCompletedSurvey else { return }
         hasCompletedSurvey = true
+    }
+
+    /// WelcomeOnboardingViewの追加より前からプロフィール設定が完了していた既存ユーザーには、
+    /// 次回起動時に突然この画面を出さない(ensureSurveyCompletedForExistingUserと同じ方針)。
+    private func ensureWelcomeSeenForExistingUser() {
+        guard isSetupCompleted, !hasSeenWelcomeOnboarding else { return }
+        hasSeenWelcomeOnboarding = true
     }
 
     /// LaterAboutIntroViewの追加より前からプロフィール設定が完了していた既存ユーザーには、
@@ -165,7 +175,9 @@ struct RootView: View {
             } else {
                 // メインコンテンツ
                 Group {
-                    if !hasCompletedSurvey {
+                    if !hasSeenWelcomeOnboarding {
+                        WelcomeOnboardingView()
+                    } else if !hasCompletedSurvey {
                         // Sign in with Apple(AppleSignInView)より前に、事前アンケートへの
                         // 回答を促すゲート画面を挟む。既存ユーザー(isSetupCompleted済み)は
                         // ensureSurveyCompletedForExistingUser()により自動的にtrue扱いに
@@ -194,6 +206,7 @@ struct RootView: View {
         .onAppear {
             resetIfNeeded()
             ensurePersonalSpaceForCurrentUser()
+            ensureWelcomeSeenForExistingUser()
             ensureSurveyCompletedForExistingUser()
             ensureAboutLaterIntroSeenForExistingUser()
         }

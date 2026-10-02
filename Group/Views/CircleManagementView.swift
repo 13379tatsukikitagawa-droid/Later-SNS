@@ -324,6 +324,8 @@ struct CircleCreateGroupView: View {
     @State private var createdShareURL: URL?
     @State private var selectedIconItem: PhotosPickerItem?
     @State private var iconImageData: Data?
+    @State private var selectedColorHex: String = CircleCreateGroupView.colorOptions.first!.hex
+    @FocusState private var isCaptionFocused: Bool
     /// CKError.quotaExceeded(iCloud容量不足)で画像を除いて再試行し、グループ自体は
     /// 作成できた場合に、成功シート(GroupCreatedShareView)内へ表示する注意文言。
     @State private var successWarningMessage: String?
@@ -331,108 +333,70 @@ struct CircleCreateGroupView: View {
     private var currentUser: UserProfile? {
         UserProfile.current(from: profiles)
     }
-    
+
+    // MARK: - チェキテーマ(2026/9 新デザイン仕様「グループ作成画面」)
+
+    private static let cream = Color(hex: "F3ECD9")
+    private static let handwriting = Color(hex: "3a2c14")
+    private static let placeholderColor = Color(hex: "a9906a")
+    private static let mustard = Color(hex: "EAB93E")
+    private static let accent = Color.laterAccent
+    /// カラーステッカー(色+貼り付け角度)。先頭のアクセント緑をデフォルト選択にする。
+    private static let colorOptions: [(hex: String, rotation: Double)] = [
+        ("22FF6E", -6), ("4FC3F7", 5), ("FF6A2B", -4), ("B388FF", 7), ("FFD166", -3), ("FF5C8A", 4)
+    ]
+
+    private var otherGroupCount: Int {
+        currentUser?.groups.filter { !$0.isPersonalSpace }.count ?? 0
+    }
+    private var remainingSlots: Int { max(0, GroupMembershipPolicy.maxGroupsPerUser - otherGroupCount) }
+    private var isNameValid: Bool { !groupName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color.brandBlack.ignoresSafeArea()
-                
+            ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // アイコン(タップして写真を選択)
-                        PhotosPicker(selection: $selectedIconItem, matching: .images) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.brandGreen.opacity(0.12))
-                                    .frame(width: 88, height: 88)
+                    VStack(spacing: 26) {
+                        header
 
-                                if let iconImageData, let uiImage = UIImage(data: iconImageData) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 88, height: 88)
-                                        .clipShape(Circle())
-                                } else {
-                                    Image(systemName: "camera.fill")
-                                        .font(.system(size: 26))
-                                        .foregroundStyle(Color.brandGreen)
-                                }
+                        chekiCardWithStickers
+                            .id("card")
+                            .padding(.top, 8)
 
-                                Circle()
-                                    .strokeBorder(Color.brandGreen.opacity(0.4), lineWidth: 1.5)
-                                    .frame(width: 88, height: 88)
-                            }
-                        }
-                        .padding(.top, 20)
-                        .onChange(of: selectedIconItem) { _, newItem in
-                            Task {
-                                guard let newItem, let data = try? await newItem.loadTransferable(type: Data.self) else { return }
-                                iconImageData = data
-                            }
-                        }
+                        Text("メンバー1人（あなた）から始まります")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Color(hex: "8FB49B"))
 
-                        VStack(spacing: 20) {
-                            // グループ名入力
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("グループ名")
-                                    .font(.headline)
-                                    .foregroundStyle(Color.white)
-                                
-                                TextField("例: 親友グループ", text: $groupName)
-                                    .textFieldStyle(CustomTextFieldStyle())
-                            }
-                            
-                        }
-                        .padding(.horizontal)
-                        
-                        Spacer(minLength: 40)
-                        
                         if let errorMessage {
                             Text(errorMessage)
                                 .font(.caption)
                                 .foregroundStyle(.red)
-                                .padding(.horizontal)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
                         }
 
-                        // 作成ボタン
-                        Button(action: {
-                            Task { await createGroup() }
-                        }) {
-                            Text("グループを作成")
-                                .font(.headline)
-                                .foregroundStyle(Color.black)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color.brandGreen, Color.brandGreen.opacity(0.9)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .shadow(color: Color.brandGreen.opacity(0.4), radius: 12, x: 0, y: 6)
-                        }
-                        .disabled(groupName.isEmpty || isSaving)
-                        .opacity(groupName.isEmpty ? 0.5 : 1.0)
-                        .padding(.horizontal)
+                        developButton
+                            .padding(.horizontal, 24)
+
+                        Text("あと\(remainingSlots)個作れます（\(otherGroupCount)/\(GroupMembershipPolicy.maxGroupsPerUser)）")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color(hex: "7FA88E"))
                     }
+                    .padding(.top, 8)
+                    .padding(.bottom, 40)
                 }
-
-                if isSaving {
-                    ProgressView()
+                .onChange(of: isCaptionFocused) { _, focused in
+                    guard focused else { return }
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        proxy.scrollTo("card", anchor: .center)
+                    }
                 }
             }
-            .navigationTitle("グループ作成")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Text("キャンセル")
-                            .foregroundStyle(Color.brandGreen)
-                    }
+            .background(Color.laterBackground.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .overlay {
+                if isSaving {
+                    developingOverlay
                 }
             }
             // ネイティブ.alert()はカスタムデザイン(ダーク背景・角丸カード・コピー導線)を
@@ -441,6 +405,207 @@ struct CircleCreateGroupView: View {
             // 一緒に閉じることで、画面遷移導線がバッティングしないようにしている。
             .sheet(isPresented: $showingSuccess, onDismiss: { dismiss() }) {
                 GroupCreatedShareView(groupName: groupName, shareURL: createdShareURL, warningMessage: successWarningMessage)
+            }
+        }
+    }
+
+    // MARK: - ①ヘッダー
+
+    private var header: some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Text("グループ作成")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.laterText)
+
+                HStack {
+                    Button("キャンセル") { dismiss() }
+                        .font(.system(size: 15))
+                        .foregroundStyle(Self.accent)
+                    Spacer()
+                }
+            }
+            Text("みんなの新しい一枚を、ここから始めよう")
+                .font(.system(size: 11.5))
+                .foregroundStyle(Color(hex: "7FA88E"))
+        }
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - ②チェキカード+③カラーステッカー
+
+    private var chekiCardWithStickers: some View {
+        ZStack(alignment: .bottomTrailing) {
+            chekiCard
+            stickerRow
+                .offset(x: 14, y: 16)
+        }
+    }
+
+    private var chekiCard: some View {
+        VStack(spacing: 0) {
+            photoArea
+            captionStrip
+        }
+        .padding(14)
+        .frame(width: 258)
+        .background(Self.cream)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: 12)
+        .rotationEffect(.degrees(-2))
+    }
+
+    private var photoArea: some View {
+        PhotosPicker(selection: $selectedIconItem, matching: .images) {
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    LinearGradient(
+                        colors: [Color(hex: "d6c9a2"), Color(hex: "93815a"), Color(hex: "6f6045")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    filmGrainOverlay
+
+                    if let iconImageData, let uiImage = UIImage(data: iconImageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 26))
+                                .foregroundStyle(Self.handwriting.opacity(0.65))
+                            Text("タップして撮る・選ぶ")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Self.handwriting.opacity(0.65))
+                        }
+                    }
+                }
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+
+                ZStack {
+                    Circle().fill(Self.mustard).frame(width: 30, height: 30)
+                    Circle().strokeBorder(Self.cream, lineWidth: 3).frame(width: 30, height: 30)
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Self.handwriting)
+                }
+                .offset(x: 6, y: 6)
+            }
+        }
+        .buttonStyle(.plain)
+        .onChange(of: selectedIconItem) { _, newItem in
+            Task {
+                guard let newItem, let data = try? await newItem.loadTransferable(type: Data.self) else { return }
+                iconImageData = data
+            }
+        }
+    }
+
+    /// 未現像のもやを表す、軽量な粒子ノイズ。
+    private var filmGrainOverlay: some View {
+        Canvas { context, size in
+            for _ in 0..<260 {
+                let x = CGFloat.random(in: 0...size.width)
+                let y = CGFloat.random(in: 0...size.height)
+                let opacity = Double.random(in: 0.02...0.08)
+                context.fill(
+                    Path(ellipseIn: CGRect(x: x, y: y, width: 1.1, height: 1.1)),
+                    with: .color(.black.opacity(opacity))
+                )
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private var captionStrip: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                if groupName.isEmpty {
+                    Text("グループ名を書く")
+                        .font(.custom("Snell Roundhand", size: 21))
+                        .foregroundStyle(Self.placeholderColor)
+                }
+                TextField("", text: $groupName)
+                    .font(.custom("Snell Roundhand", size: 21))
+                    .foregroundStyle(Self.handwriting)
+                    .multilineTextAlignment(.center)
+                    .focused($isCaptionFocused)
+            }
+
+            HStack(spacing: 3) {
+                ForEach(0..<22, id: \.self) { _ in
+                    Rectangle().fill(Self.placeholderColor.opacity(0.5)).frame(width: 4, height: 1)
+                }
+            }
+        }
+        .padding(.top, 16)
+        .padding(.horizontal, 6)
+        .frame(height: 74)
+    }
+
+    private var stickerRow: some View {
+        HStack(spacing: -6) {
+            ForEach(Self.colorOptions, id: \.hex) { option in
+                stickerButton(option)
+            }
+        }
+    }
+
+    private func stickerButton(_ option: (hex: String, rotation: Double)) -> some View {
+        let isSelected = selectedColorHex == option.hex
+        return Button {
+            HapticsManager.tick()
+            selectedColorHex = option.hex
+        } label: {
+            ZStack {
+                Circle().fill(Color(hex: option.hex)).frame(width: 22, height: 22)
+                Circle().strokeBorder(.white, lineWidth: 2).frame(width: 22, height: 22)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+            .rotationEffect(.degrees(option.rotation))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - ⑤CTA「現像する」
+
+    private var developButton: some View {
+        Button {
+            Task { await createGroup() }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("現像する")
+                    .font(.system(size: 16, weight: .bold))
+            }
+            .foregroundStyle(Color.laterBackground)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Capsule().fill(Self.accent))
+            .shadow(color: Self.accent.opacity(0.4), radius: 12, x: 0, y: 6)
+        }
+        .buttonStyle(.plain)
+        .disabled(!isNameValid || isSaving || remainingSlots <= 0)
+        .opacity((!isNameValid || remainingSlots <= 0) ? 0.5 : 1.0)
+    }
+
+    /// 「現像する」の比喩を完成させる、送信中のロード演出。
+    private var developingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.6).ignoresSafeArea()
+            VStack(spacing: 14) {
+                ProgressView().tint(Self.accent)
+                Text("現像中…")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white)
             }
         }
     }
@@ -473,6 +638,7 @@ struct CircleCreateGroupView: View {
             isPrivate: true
         )
         newGroup.iconImageData = iconImageData
+        newGroup.accentColorHex = selectedColorHex
 
         // ホストとして自分を追加
         let _ = newGroup.addMember(user)

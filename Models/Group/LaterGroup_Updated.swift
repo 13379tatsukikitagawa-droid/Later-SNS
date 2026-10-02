@@ -14,6 +14,10 @@ class LaterGroup {
     /// (EditGroupView参照)。未設定ならnilのままで、表示側がプレースホルダーに切り替える。
     var iconImageData: Data?
 
+    /// グループ作成時にカラーステッカーで選んだアクセント色(#RRGGBB、Color(hex:)で復元)。
+    /// グループ一覧画面などのアバターリング色に使う。未設定ならデフォルトのアクセント色。
+    var accentColorHex: String?
+
     // 🌟 グループに参加しているユーザーたち
     @Relationship(inverse: \UserProfile.groups)
     var members: [UserProfile] = []
