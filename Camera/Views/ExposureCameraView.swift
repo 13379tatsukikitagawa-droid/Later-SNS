@@ -498,8 +498,12 @@ private struct CornerBrackets: Shape {
 
 // MARK: - フィルムのグレイン
 
-/// 画面全体に薄く重ねる固定のグレイン(動かさない)。ノイズ画像は一度だけ作って使い回す。
-private struct FilmGrainOverlay: View {
+/// 画面全体に薄く重ねる固定のグレイン(動かさない)。ノイズ画像は一度だけ作って使い回し、
+/// リアルタイムにフィルターはかけない。撮影画面はoverlay合成・0.5、Homeは通常合成・0.05。
+struct FilmGrainOverlay: View {
+    var opacity: Double = 0.5
+    var blendMode: BlendMode = .overlay
+
     private static let noiseImage: UIImage = {
         let side = 160
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: {
@@ -522,8 +526,8 @@ private struct FilmGrainOverlay: View {
     var body: some View {
         Image(uiImage: Self.noiseImage)
             .resizable(resizingMode: .tile)
-            .blendMode(.overlay)
-            .opacity(0.5)
+            .blendMode(blendMode)
+            .opacity(opacity)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
     }

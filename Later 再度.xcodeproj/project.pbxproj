@@ -58,6 +58,9 @@
 		A341E82A2FAA11D400E03515 /* LaterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A341E8292FAA11CD00E03515 /* LaterModels.swift */; };
 		A341E82C2FAA11E200E03515 /* LaterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A341E82B2FAA11DA00E03515 /* LaterApp.swift */; };
 		A341E8362FAA128100E03515 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A341E8352FAA127400E03515 /* TodayView.swift */; };
+		63CBEAE3C375CA7A6E846D09 /* HomeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10933EEA9258ABBF7CF2220 /* HomeState.swift */; };
+		70286FE4765CA995ED823E60 /* HomeDotRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74ABDCBD81139B48C5410711 /* HomeDotRing.swift */; };
+		8F915A14BDB816AAB1E13C14 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B938792A0F07511106FF26 /* HomeView.swift */; };
 		A36F46972FD8F95500935607 /* LaterPhotoExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */; };
 		A36F469F2FD91AD800935607 /* CommonExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F469E2FD91AD800935607 /* CommonExtensions.swift */; };
 		A377CEF72FC2FFD600C181AB /* LiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CEF62FC2FFD600C181AB /* LiquidBackgroundView.swift */; };
@@ -167,6 +170,9 @@
 		A341E8292FAA11CD00E03515 /* LaterModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterModels.swift; sourceTree = "<group>"; };
 		A341E82B2FAA11DA00E03515 /* LaterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterApp.swift; sourceTree = "<group>"; };
 		A341E8352FAA127400E03515 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		F10933EEA9258ABBF7CF2220 /* HomeState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeState.swift; sourceTree = "<group>"; };
+		74ABDCBD81139B48C5410711 /* HomeDotRing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeDotRing.swift; sourceTree = "<group>"; };
+		60B938792A0F07511106FF26 /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterPhotoExtensions.swift; sourceTree = "<group>"; };
 		A36F469E2FD91AD800935607 /* CommonExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonExtensions.swift; sourceTree = "<group>"; };
 		A377CEF62FC2FFD600C181AB /* LiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidBackgroundView.swift; sourceTree = "<group>"; };
@@ -464,6 +470,9 @@
 			isa = PBXGroup;
 			children = (
 				A341E8352FAA127400E03515 /* TodayView.swift */,
+				F10933EEA9258ABBF7CF2220 /* HomeState.swift */,
+				74ABDCBD81139B48C5410711 /* HomeDotRing.swift */,
+				60B938792A0F07511106FF26 /* HomeView.swift */,
 				A4697CDAFB7CDF3538CDEA29 /* TodayShootingView.swift */,
 				A3FE0C752FBEFC1B009437FC /* DailyGoalLockOverlay.swift */,
 				A3B6284D302EF28D0010ACBB /* PostTargetGroupSelectionView.swift */,
@@ -779,6 +788,9 @@
 				A3B6284E302EF28D0010ACBB /* PostTargetGroupSelectionView.swift in Sources */,
 				85736E6A813B42A2B8F75FBF /* PostTargetSelectionSheet.swift in Sources */,
 				A341E8362FAA128100E03515 /* TodayView.swift in Sources */,
+				63CBEAE3C375CA7A6E846D09 /* HomeState.swift in Sources */,
+				70286FE4765CA995ED823E60 /* HomeDotRing.swift in Sources */,
+				8F915A14BDB816AAB1E13C14 /* HomeView.swift in Sources */,
 				A3B6283E302DBCA70010ACBB /* NeonScreenFrame.swift in Sources */,
 				A341E82A2FAA11D400E03515 /* LaterModels.swift in Sources */,
 				A377CEF72FC2FFD600C181AB /* LiquidBackgroundView.swift in Sources */,

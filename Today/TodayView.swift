@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Homeタブ(今日のミッション画面)。中身はTodayShootingViewに分離した薄いコンテナで、
-/// 撮影〜投稿の画面遷移(fullScreenCover)だけを受け持つ。
+/// Homeタブ。画面の中身はHomeView(再設計 Step 2)で、ここはデータの用意・
+/// CloudKitの定期同期・撮影画面などへの遷移(fullScreenCover)だけを受け持つ。
 struct TodayView: View {
     @Environment(\.modelContext) private var context
     /// グループ詳細(GroupHomeDetailView)など、Home内でさらに奥へ遷移した状態で
@@ -11,6 +11,12 @@ struct TodayView: View {
     /// ルート(グループ一覧)まで戻しておくことで、撮影後に必ずHomeが見える状態にする。
     @State private var navigationPath = NavigationPath()
     @State private var showingCamera = false
+    /// 「昨日を見る」の仮の画面(本当の画面はStep 3以降で作る)。
+    @State private var showingYesterday = false
+    /// Homeのボタンの位置から撮影画面が広がるzoom遷移に使う。
+    @Namespace private var homeTransition
+    @Environment(\.selectedMainTabIndex) private var selectedMainTabIndex
+    private static let homeTabIndex = 0
     /// 撮影画面(暗転したまま閉じる)から戻った直後に、Homeの上に一瞬だけ残す黒い幕。
     /// fullScreenCoverの閉じるアニメーション(下へスライド)を使わず、暗い画面のまま
     /// ゆっくりフェードしてHomeへ移るために使う。
@@ -34,15 +40,41 @@ struct TodayView: View {
         return DailyExposureRules.hasShot(on: Date(), by: user)
     }
 
+    private var myCaptureDates: [Date] {
+        currentUser?.photos.map(\.captureDate) ?? []
+    }
+
+    /// 件数だけを数える(昨日の写真の画像はHomeで取得しない)。ユーザー未確定の間は「—」。
+    private var yesterdayCount: Int? {
+        guard currentUser != nil else { return nil }
+        return HomeState.yesterdayPhotoCount(in: userGroups, now: Date())
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            TodayShootingView(groups: userGroups)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // TodayShootingView側で独自のヘッダー(ロゴ・通知ベル)を組んでいるため、
-            // ネイティブのナビゲーションバー自体を非表示にして、その分の余白ごと詰める。
-            // NavigationStack自体はグループ一覧のNavigationLink(GroupHomeDetailViewへの
-            // 遷移)に必要なため残す。
+            HomeView(
+                myCaptureDates: myCaptureDates,
+                yesterdayCount: yesterdayCount,
+                isCovered: showingCamera || showingYesterday,
+                transitionNamespace: homeTransition,
+                onShoot: { showingCamera = true },
+                onViewYesterday: { showingYesterday = true }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // HomeView側で独自のヘッダーを組んでいるため、ネイティブのナビゲーションバーは出さない。
             .toolbar(.hidden, for: .navigationBar)
+            .onAppear {
+                AppLaunchTiming.reportHomeDisplayedIfNeeded()
+            }
+            .task {
+                // MainTabViewは全タブをマウントし続けるため、Homeタブが選ばれている間だけ同期する。
+                while !Task.isCancelled {
+                    if selectedMainTabIndex == Self.homeTabIndex {
+                        await refreshAllGroups()
+                    }
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                }
+            }
             // 再設計 Step 1: 撮影の前のキャプション入力・撮影後の投稿準備画面(プレビュー)は
             // 挟まない。タグは撮影画面の中で選び、撮った瞬間に保存して暗転する。
             .fullScreenCover(isPresented: $showingCamera) {
@@ -52,6 +84,11 @@ struct TodayView: View {
                     onFinished: finishExposure,
                     onClose: { showingCamera = false }
                 )
+                .navigationTransition(.zoom(sourceID: HomeView.primaryActionTransitionID, in: homeTransition))
+            }
+            .fullScreenCover(isPresented: $showingYesterday) {
+                YesterdayPlaceholderView { showingYesterday = false }
+                    .navigationTransition(.zoom(sourceID: HomeView.primaryActionTransitionID, in: homeTransition))
             }
             .overlay {
                 if isShowingExposureVeil {
@@ -68,6 +105,14 @@ struct TodayView: View {
                 captureRequest.pendingRequestID = nil
             }
         }
+    }
+
+    /// 複数グループをまたぐ画面なので、Private/Shared両DBの変更をまとめて取り込む。
+    private func refreshAllGroups() async {
+        guard let cloudKitManager = CloudKitManager.current else { return }
+        await cloudKitManager.fetchSharedChangesNow()
+        await cloudKitManager.fetchPrivateChangesNow()
+        await cloudKitManager.resendOwnUnlockedPhotosIfNeeded()
     }
 
     // MARK: - 撮影した1枚の保存
@@ -103,6 +148,35 @@ struct TodayView: View {
         withAnimation(.easeOut(duration: 0.6).delay(0.05)) {
             isShowingExposureVeil = false
         }
+    }
+}
+
+/// 「昨日を見る」の仮の画面。本当の画面(昨日の写真を見る・Today's Later)は後のStepで作る。
+private struct YesterdayPlaceholderView: View {
+    let onClose: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 10) {
+                Text("昨日を見る")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+                Text("この画面は、後の Step で作ります。")
+                    .font(.system(size: 13))
+                    .foregroundStyle(HomePalette.subText)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(HomePalette.subText)
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("閉じる")
+            .padding(.leading, 8)
+        }
+        .preferredColorScheme(.dark)
     }
 }
 
