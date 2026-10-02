@@ -110,8 +110,12 @@ final class LaterPhoto {
     // 🌟 キャプション（記憶の封印）
     var caption: String?
 
+    /// 撮影前に選んだハッシュタグ(「#」なし、最大DailyExposureRules.maxTags個)。
+    /// 再設計でキャプションの代わりになった。
+    var tags: [String] = []
+
     /// 撮影地の地名(逆ジオコーディング結果、市区町村名程度)。位置情報の許可が無い/
-    /// 取得に失敗した場合はnil(TrueBlindCameraView.CameraLocationNameProvider参照)。
+    /// 取得に失敗した場合はnil(CameraLocationNameProvider参照)。
     var locationName: String?
 
     // 撮影者（所有者）

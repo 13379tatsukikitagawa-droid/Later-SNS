@@ -223,14 +223,14 @@ struct MainTabView: View {
 
     // MARK: - 撮影ボタンのタップ処理
 
-    /// 実際の撮影処理(枚数上限・CloudKit保存・キャプション遷移)はTodayView側に
+    /// 実際の撮影処理(1日1枚の判定・CloudKit保存)はTodayView/ExposureCameraView側に
     /// 閉じたまま — CaptureRequestStore経由で「開いて」のシグナルを送るだけにし、
     /// ロジックの複製を避ける。撮影不可の状態(上限到達・未参加)では遷移させず、
     /// .rigidハプティック+短いトーストでフィードバックする。
     private func handleCaptureTap() {
         switch captureAvailability {
         case .available:
-            HapticsManager.shutterClick()
+            // 触覚は撮影画面の中(長押し・撮影の瞬間)だけで使うため、ここでは振動させない。
             selectedTab = 0
             CaptureRequestStore.shared.pendingRequestID = UUID()
         case .blocked(let message):

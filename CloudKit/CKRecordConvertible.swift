@@ -276,6 +276,7 @@ extension LaterPhoto {
         record["unlockDate"] = unlockDate
         record["isUnlocked"] = isUnlocked
         record["caption"] = caption
+        record["tags"] = tags.isEmpty ? nil : tags
         record["locationName"] = locationName
         record["authorCloudKitUserRecordName"] = authorCloudKitUserRecordName
         record["authorNameCache"] = authorNameCache ?? owner?.name
@@ -315,6 +316,7 @@ extension LaterPhoto {
         unlockDate = record["unlockDate"] as? Date ?? unlockDate
         isUnlocked = record["isUnlocked"] as? Bool ?? isUnlocked
         caption = record["caption"] as? String
+        tags = record["tags"] as? [String] ?? []
         locationName = record["locationName"] as? String
         authorCloudKitUserRecordName = record["authorCloudKitUserRecordName"] as? String ?? authorCloudKitUserRecordName
         authorNameCache = record["authorNameCache"] as? String ?? authorNameCache
