@@ -710,6 +710,93 @@ struct PersonaIcon: View {
     }
 }
 
+// MARK: - 自分を表すタグを選ぶ(初回設定とプロフィールの編集で共有)
+
+/// 候補のチップ + 点線の「+ 自由に追加」。選んだチップは白く反転し、最大3つ。
+/// 3つ選んだら、ほかの候補は静かに暗くなって押せなくなる。右下に「2 / 3」。
+struct SelfTagPicker: View {
+    @Binding var selectedTags: [String]
+    /// 選んだ・外した時に呼ぶ(触覚を鳴らすため)。
+    var onChange: () -> Void = {}
+
+    @State private var isAddingCustomTag = false
+    @State private var customTagDraft = ""
+
+    var body: some View {
+        let isFull = selectedTags.count >= OnboardingRules.maxSelfTags
+        let customTags = selectedTags.filter { !OnboardingCopy.selfTagCandidates.contains($0) }
+        VStack(alignment: .trailing, spacing: 12) {
+            OnboardingFlowLayout(spacing: 8) {
+                ForEach(OnboardingCopy.selfTagCandidates + customTags, id: \.self) { tag in
+                    let isSelected = selectedTags.contains(tag)
+                    Button {
+                        toggle(tag)
+                    } label: {
+                        Text("#\(tag)")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(isSelected ? .black : .white)
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(isSelected ? Color.white : OnboardingPalette.surface))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!isSelected && isFull)
+                    .opacity(!isSelected && isFull ? 0.35 : 1)
+                    .animation(.easeInOut(duration: 0.25), value: isFull)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                }
+                if !isFull {
+                    Button {
+                        customTagDraft = ""
+                        isAddingCustomTag = true
+                    } label: {
+                        Text("+ 自由に追加")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(OnboardingPalette.subText)
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 8)
+                            .overlay(Capsule().strokeBorder(OnboardingPalette.subText.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("\(selectedTags.count) / \(OnboardingRules.maxSelfTags)")
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(OnboardingPalette.subText)
+                .accessibilityLabel("タグ \(selectedTags.count)個、最大\(OnboardingRules.maxSelfTags)個")
+        }
+        .alert("タグを追加", isPresented: $isAddingCustomTag) {
+            TextField("例:写真", text: $customTagDraft)
+            Button("追加") { addCustomTag() }
+            Button("キャンセル", role: .cancel) { customTagDraft = "" }
+        } message: {
+            Text("1〜12文字。空白は使えません。")
+        }
+    }
+
+    private func toggle(_ tag: String) {
+        if let index = selectedTags.firstIndex(of: tag) {
+            selectedTags.remove(at: index)
+        } else if selectedTags.count < OnboardingRules.maxSelfTags {
+            selectedTags.append(tag)
+        } else {
+            return
+        }
+        onChange()
+    }
+
+    private func addCustomTag() {
+        defer { customTagDraft = "" }
+        guard let tag = OnboardingRules.normalizedTag(customTagDraft),
+              !selectedTags.contains(tag),
+              selectedTags.count < OnboardingRules.maxSelfTags else { return }
+        selectedTags.append(tag)
+        onChange()
+    }
+}
+
 // MARK: - 折り返して並べる
 
 /// タグのチップなどを、横に並べて入りきらなければ折り返す。

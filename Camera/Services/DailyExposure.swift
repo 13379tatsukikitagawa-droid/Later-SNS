@@ -77,6 +77,8 @@ enum DailyExposureStore {
             for (photo, _) in inserted { context.delete(photo) }
             throw error
         }
+        // プロフィールの「預けた日々」用に、その日の記録(色・小さなサムネイル)を1度だけ作る。
+        ExposureDayStore.record(imageData: imageData, captureDate: captureDate, locationName: locationName, context: context)
 
         guard let cloudKitManager = CloudKitManager.current else { return }
         Task {

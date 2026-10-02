@@ -18,6 +18,8 @@ struct ExposureCameraView: View {
     let onFinished: () -> Void
     /// 撮影せずに閉じる。
     let onClose: () -> Void
+    /// 何を撮るか。プロフィール画像の撮り直しでも、同じ撮影(長押し・プレビューなし・暗転)を使う。
+    var purpose: ExposurePurpose = .daily
 
     private enum Phase: Equatable {
         case ready
@@ -104,7 +106,15 @@ struct ExposureCameraView: View {
     }
 
     private var canShootNow: Bool {
-        DailyExposureRules.canBeginExposure(at: Date(), hasShotToday: hasShotToday)
+        canBeginExposure(at: Date())
+    }
+
+    /// 今日の1枚は時間帯・1日1枚の判定に従う。プロフィール画像は呼び出し側が回数を判定する。
+    private func canBeginExposure(at date: Date) -> Bool {
+        switch purpose {
+        case .daily: return DailyExposureRules.canBeginExposure(at: date, hasShotToday: hasShotToday)
+        case .profilePhoto: return true
+        }
     }
 
     // MARK: - ①② 構える・露光
@@ -117,8 +127,8 @@ struct ExposureCameraView: View {
             viewfinder(progress: progress)
                 .frame(maxHeight: .infinity)
             tagRow
-                .opacity(fade)
-                .disabled(progress > 0)
+                .opacity(purpose == .daily ? fade : 0)
+                .disabled(progress > 0 || purpose != .daily)
             shutter(progress: progress)
                 .padding(.top, 4)
             hint(progress: progress)
@@ -149,7 +159,9 @@ struct ExposureCameraView: View {
 
             Spacer()
 
-            lightsOutCapsule
+            if purpose == .daily {
+                lightsOutCapsule
+            }
         }
     }
 
@@ -333,7 +345,7 @@ struct ExposureCameraView: View {
         guard pressStart == nil, phase == .ready else { return }
         // 24:00の判定は押し始めた時刻で行う。
         let start = Date()
-        guard DailyExposureRules.canBeginExposure(at: start, hasShotToday: hasShotToday) else { return }
+        guard canBeginExposure(at: start) else { return }
         restingProgress = 0
         pressStart = start
         haptics.beginHold(duration: DailyExposureRules.holdDuration)
@@ -402,9 +414,18 @@ struct ExposureCameraView: View {
     private var exposedLayout: some View {
         ExposedNoticeView(
             title: phase == .failed ? "預けられませんでした" : "預けました",
-            message: phase == .failed ? "今日の1枚は、まだ撮れます。\n少し時間をおいて、もう一度。" : "今日の1枚は、\n次にあなたが撮った瞬間に、ひらく。",
+            message: exposedMessage,
             footer: phase == .exposed ? exposureStart.map { Self.exposedLabel(for: $0) } : nil
         )
+    }
+
+    private var exposedMessage: String {
+        switch (purpose, phase == .failed) {
+        case (.daily, false): return "今日の1枚は、\n次にあなたが撮った瞬間に、ひらく。"
+        case (.daily, true): return "今日の1枚は、まだ撮れます。\n少し時間をおいて、もう一度。"
+        case (.profilePhoto, false): return "あなたの1枚は、\n次の 9:00 に現像されます。"
+        case (.profilePhoto, true): return "プロフィールの画像は、\nあとから撮り直せます。"
+        }
     }
 
     // MARK: - 日付の表記
@@ -429,6 +450,13 @@ struct ExposureCameraView: View {
     private static func exposedLabel(for date: Date) -> String {
         "EXPOSED · \(exposedDateFormatter.string(from: date)) · \(exposedTimeFormatter.string(from: date))"
     }
+}
+
+enum ExposurePurpose: Equatable {
+    /// 今日の1枚
+    case daily
+    /// プロフィール画像(次の9:00に現像される)
+    case profilePhoto
 }
 
 // MARK: - 暗転・預ける(撮影画面と初回設定で共有)

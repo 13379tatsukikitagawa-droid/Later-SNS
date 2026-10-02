@@ -66,8 +66,6 @@ struct OnboardingFlowView: View {
 
     // タグ
     @State private var selectedTags: [String] = []
-    @State private var isAddingCustomTag = false
-    @State private var customTagDraft = ""
 
     // アカウント
     @State private var isShowingEmailSignIn = false
@@ -139,13 +137,6 @@ struct OnboardingFlowView: View {
         }
         .sheet(isPresented: $isShowingEmailSignIn) {
             EmailSignInView()
-        }
-        .alert("タグを追加", isPresented: $isAddingCustomTag) {
-            TextField("例:写真", text: $customTagDraft)
-            Button("追加") { addCustomTag() }
-            Button("キャンセル", role: .cancel) { customTagDraft = "" }
-        } message: {
-            Text("1〜12文字。空白は使えません。")
         }
     }
 
@@ -352,49 +343,8 @@ struct OnboardingFlowView: View {
     }
 
     private var tagChips: some View {
-        let isFull = selectedTags.count >= OnboardingRules.maxSelfTags
-        let customTags = selectedTags.filter { !OnboardingCopy.selfTagCandidates.contains($0) }
-        return VStack(alignment: .trailing, spacing: 12) {
-            OnboardingFlowLayout(spacing: 8) {
-                ForEach(OnboardingCopy.selfTagCandidates + customTags, id: \.self) { tag in
-                    let isSelected = selectedTags.contains(tag)
-                    Button {
-                        toggleTag(tag)
-                    } label: {
-                        Text("#\(tag)")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(isSelected ? .black : .white)
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 8)
-                            .background(Capsule().fill(isSelected ? Color.white : OnboardingPalette.surface))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!isSelected && isFull)
-                    .opacity(!isSelected && isFull ? 0.35 : 1)
-                    .animation(.easeInOut(duration: 0.25), value: isFull)
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
-                }
-                if !isFull {
-                    Button {
-                        customTagDraft = ""
-                        isAddingCustomTag = true
-                    } label: {
-                        Text("+ 自由に追加")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(OnboardingPalette.subText)
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 8)
-                            .overlay(Capsule().strokeBorder(OnboardingPalette.subText.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text("\(selectedTags.count) / \(OnboardingRules.maxSelfTags)")
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(OnboardingPalette.subText)
-                .accessibilityLabel("タグ \(selectedTags.count)個、最大\(OnboardingRules.maxSelfTags)個")
+        SelfTagPicker(selectedTags: $selectedTags) {
+            haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
         }
         .padding(.top, 20)
     }
@@ -841,26 +791,6 @@ struct OnboardingFlowView: View {
 
     // MARK: - タグ
 
-    private func toggleTag(_ tag: String) {
-        if let index = selectedTags.firstIndex(of: tag) {
-            selectedTags.remove(at: index)
-        } else if selectedTags.count < OnboardingRules.maxSelfTags {
-            selectedTags.append(tag)
-        } else {
-            return
-        }
-        haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
-    }
-
-    private func addCustomTag() {
-        defer { customTagDraft = "" }
-        guard let tag = OnboardingRules.normalizedTag(customTagDraft),
-              !selectedTags.contains(tag),
-              selectedTags.count < OnboardingRules.maxSelfTags else { return }
-        selectedTags.append(tag)
-        haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
-    }
-
     private func saveTagsAndAdvance() {
         if let profile = UserProfile.current(from: profiles) {
             profile.selfTags = selectedTags
@@ -927,6 +857,9 @@ struct OnboardingFlowView: View {
         typingTask?.cancel()
         savedStep = ""
         onboardingCompleted = true
+        if UserDefaults.standard.object(forKey: "onboardingCompletedAt") == nil {
+            UserDefaults.standard.set(Date(), forKey: "onboardingCompletedAt")
+        }
         hasSeenWelcomeOnboarding = true
         hasCompletedSurvey = true
         hasSeenAboutLaterIntro = true

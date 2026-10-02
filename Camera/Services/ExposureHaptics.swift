@@ -132,8 +132,9 @@ final class ExposureHaptics {
         play(events: [Self.transientEvent(intensity: intensity, sharpness: sharpness)], curves: [], label: "単発")
     }
 
-    /// 弱い連続振動を、指定の強さまでゆっくり上げる(初回設定の開幕で絞りが開く時)。
-    func playRamp(from start: Float, to end: Float, sharpness: Float, duration: TimeInterval) {
+    /// 弱い連続振動を、指定の強さまでゆっくり上げる(初回設定の開幕で絞りが開く時・プロフィール画像の現像)。
+    /// sharpnessToを渡すと、鋭さもsharpnessからsharpnessToへ上げる。
+    func playRamp(from start: Float, to end: Float, sharpness: Float, sharpnessTo: Float? = nil, duration: TimeInterval) {
         let event = CHHapticEvent(
             eventType: .hapticContinuous,
             parameters: [
@@ -143,12 +144,19 @@ final class ExposureHaptics {
             relativeTime: 0,
             duration: duration
         )
-        let curve = CHHapticParameterCurve(
+        var curves = [CHHapticParameterCurve(
             parameterID: .hapticIntensityControl,
             controlPoints: [.init(relativeTime: 0, value: start), .init(relativeTime: duration, value: end)],
             relativeTime: 0
-        )
-        play(events: [event], curves: [curve], label: "上昇")
+        )]
+        if let sharpnessTo {
+            curves.append(CHHapticParameterCurve(
+                parameterID: .hapticSharpnessControl,
+                controlPoints: [.init(relativeTime: 0, value: 0), .init(relativeTime: duration, value: sharpnessTo - sharpness)],
+                relativeTime: 0
+            ))
+        }
+        play(events: [event], curves: curves, label: "上昇")
     }
 
     private static func transientEvent(intensity: Float, sharpness: Float) -> CHHapticEvent {

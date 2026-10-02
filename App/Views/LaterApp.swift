@@ -17,7 +17,7 @@ struct LaterApp: App {
     // SwiftDataが自動でCloudKitミラーリングを有効化しようとし、起動時にクラッシュしうる。
     static let sharedModelContainer: ModelContainer = {
         let token = PerformanceSignpost.begin("App.ModelContainerInit")
-        let schema = Schema([LaterPhoto.self, LaterGroup.self, UserProfile.self, PhotoVote.self, BlockedUser.self])
+        let schema = Schema([LaterPhoto.self, LaterGroup.self, UserProfile.self, PhotoVote.self, BlockedUser.self, ExposureDay.self])
         let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
@@ -91,6 +91,12 @@ struct RootView: View {
         ProfilePhotoDevelopment.promoteIfDue(user, context: modelContext)
     }
 
+    /// 写真は7日で削除されるため、削除される前に「預けた日々」の記録を作っておく。
+    private func backfillExposureDays() {
+        guard let user = UserProfile.current(from: profiles) else { return }
+        ExposureDayStore.backfill(for: user, context: modelContext)
+    }
+
     /// Sign in with Apple・メールのマジックリンクいずれかでサインイン済みかどうか。
     /// 以降のゲート判定(appleUserID.isEmptyだけを見ていた箇所)は全てこちらに揃える。
     private var isSignedIn: Bool {
@@ -147,6 +153,7 @@ struct RootView: View {
     private static let photoRetentionDays = 7
 
     private func pruneExpiredPhotos() {
+        backfillExposureDays()
         guard let cutoff = Calendar.current.date(byAdding: .day, value: -Self.photoRetentionDays, to: Date()) else { return }
         let descriptor = FetchDescriptor<LaterPhoto>(predicate: #Predicate<LaterPhoto> { $0.captureDate < cutoff })
         guard let expiredPhotos = try? modelContext.fetch(descriptor), !expiredPhotos.isEmpty else { return }
@@ -194,6 +201,7 @@ struct RootView: View {
             ensureSurveyCompletedForExistingUser()
             ensureAboutLaterIntroSeenForExistingUser()
             developProfilePhotoIfDue()
+            backfillExposureDays()
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .active {

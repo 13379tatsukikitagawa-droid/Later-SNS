@@ -321,10 +321,36 @@ enum ProfilePhotoDevelopment {
         return calendar.date(byAdding: .day, value: 1, to: todayOpening) ?? todayOpening
     }
 
+    /// プロフィール画像の撮り直しは、1日にこの回数まで(初回設定の1枚は含めない)。
+    static let maxRetakesPerDay = 1
+    /// 初めてプロフィール画像が現像され、まだその演出を見せていない(ProfileImmersiveViewで一度だけ再生する)。
+    static let revealPendingKey = "profilePhotoRevealPending"
+    private static let retakeDayKey = "profilePhotoRetakeDay"
+    private static let retakeCountKey = "profilePhotoRetakeCount"
+
+    static func canRetake(now: Date = Date()) -> Bool {
+        retakesToday(now: now) < maxRetakesPerDay
+    }
+
+    private static func retakesToday(now: Date) -> Int {
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: retakeDayKey) == ExposureDayStore.dayKey(for: now) else { return 0 }
+        return defaults.integer(forKey: retakeCountKey)
+    }
+
     static func store(_ imageData: Data, for profile: UserProfile, takenAt date: Date = Date(), context: ModelContext) {
         profile.pendingProfileImageData = imageData
         profile.pendingProfileImageRevealAt = revealDate(after: date)
         try? context.save()
+    }
+
+    /// 撮り直しの1枚を預ける(回数を数える)。
+    static func storeRetake(_ imageData: Data, for profile: UserProfile, takenAt date: Date = Date(), context: ModelContext) {
+        let defaults = UserDefaults.standard
+        let count = retakesToday(now: date)
+        defaults.set(ExposureDayStore.dayKey(for: date), forKey: retakeDayKey)
+        defaults.set(count + 1, forKey: retakeCountKey)
+        store(imageData, for: profile, takenAt: date, context: context)
     }
 
     /// 現像の時刻を過ぎていれば、プロフィール画像として反映し、参加中のグループへ同期する。
@@ -332,6 +358,9 @@ enum ProfilePhotoDevelopment {
         guard let data = profile.pendingProfileImageData,
               let revealAt = profile.pendingProfileImageRevealAt,
               now >= revealAt else { return }
+        if profile.profileImageData == nil {
+            UserDefaults.standard.set(true, forKey: revealPendingKey)
+        }
         profile.profileImageData = data
         profile.profileUpdatedAt = now
         profile.pendingProfileImageData = nil

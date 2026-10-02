@@ -40,6 +40,7 @@ enum AccountDeletionService {
         try? modelContext.delete(model: LaterGroup.self)
         try? modelContext.delete(model: PhotoVote.self)
         try? modelContext.delete(model: BlockedUser.self)
+        try? modelContext.delete(model: ExposureDay.self)
         try? modelContext.delete(model: UserProfile.self)
         try? modelContext.save()
     }

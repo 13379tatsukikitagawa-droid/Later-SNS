@@ -62,6 +62,7 @@
 		70286FE4765CA995ED823E60 /* HomeDotRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74ABDCBD81139B48C5410711 /* HomeDotRing.swift */; };
 		8F915A14BDB816AAB1E13C14 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B938792A0F07511106FF26 /* HomeView.swift */; };
 		A36F46972FD8F95500935607 /* LaterPhotoExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */; };
+		9DB0135CCF8ACE83DD6EF4D5 /* ExposureDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F967FD2E95D6157DEC18ABFC /* ExposureDay.swift */; };
 		A36F469F2FD91AD800935607 /* CommonExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36F469E2FD91AD800935607 /* CommonExtensions.swift */; };
 		A377CEF72FC2FFD600C181AB /* LiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CEF62FC2FFD600C181AB /* LiquidBackgroundView.swift */; };
 		A377CF0D2FC32D0100C181AB /* SharedUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A377CF0C2FC32D0100C181AB /* SharedUtilities.swift */; };
@@ -98,6 +99,8 @@
 		A3D53C662FC98F1C00D675AE /* SupportingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C652FC98F1C00D675AE /* SupportingComponents.swift */; };
 		A3D639BB2FC5A21F0020EF04 /* SettingsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D639BA2FC5A21F0020EF04 /* SettingsMenuView.swift */; };
 		A3FBC86C2FAADC120020FAF9 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FBC86B2FAADC0A0020FAF9 /* ProfileView.swift */; };
+		AA02B084116A54FB2CDB13B8 /* ProfileImmersiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */; };
+		A238E04F6BEF045A2E681DA5 /* DayCloudView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4018BC743F5F21B970643E6A /* DayCloudView.swift */; };
 		A3FBC86E2FAB1FDB0020FAF9 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FBC86D2FAB1FD40020FAF9 /* UserProfile.swift */; };
 		A3FDAEEF2FB71C5C001484F7 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FDAEEE2FB71C5B001484F7 /* Theme.swift */; };
 		A3FDAEF32FB72048001484F7 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FDAEF22FB72048001484F7 /* ShareSheet.swift */; };
@@ -177,6 +180,7 @@
 		74ABDCBD81139B48C5410711 /* HomeDotRing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeDotRing.swift; sourceTree = "<group>"; };
 		60B938792A0F07511106FF26 /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterPhotoExtensions.swift; sourceTree = "<group>"; };
+		F967FD2E95D6157DEC18ABFC /* ExposureDay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExposureDay.swift; sourceTree = "<group>"; };
 		A36F469E2FD91AD800935607 /* CommonExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonExtensions.swift; sourceTree = "<group>"; };
 		A377CEF62FC2FFD600C181AB /* LiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidBackgroundView.swift; sourceTree = "<group>"; };
 		A377CF0C2FC32D0100C181AB /* SharedUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUtilities.swift; sourceTree = "<group>"; };
@@ -213,6 +217,8 @@
 		A3D53C652FC98F1C00D675AE /* SupportingComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportingComponents.swift; sourceTree = "<group>"; };
 		A3D639BA2FC5A21F0020EF04 /* SettingsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMenuView.swift; sourceTree = "<group>"; };
 		A3FBC86B2FAADC0A0020FAF9 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileImmersiveView.swift; sourceTree = "<group>"; };
+		4018BC743F5F21B970643E6A /* DayCloudView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayCloudView.swift; sourceTree = "<group>"; };
 		A3FBC86D2FAB1FD40020FAF9 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		A3FDAEEE2FB71C5B001484F7 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A3FDAEF22FB72048001484F7 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
@@ -264,6 +270,8 @@
 			children = (
 				109414FC4E47E9391C73F5BB /* ProfileChekiCard.swift */,
 				A3FBC86B2FAADC0A0020FAF9 /* ProfileView.swift */,
+				024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */,
+				4018BC743F5F21B970643E6A /* DayCloudView.swift */,
 				A38EEAB92FC852D600D23F0C /* UserDetailView.swift */,
 				A3B6328C30354F270010ACBB /* PinPhotoPickerView.swift */,
 			);
@@ -628,6 +636,7 @@
 			isa = PBXGroup;
 			children = (
 				A36F46962FD8F95500935607 /* LaterPhotoExtensions.swift */,
+				F967FD2E95D6157DEC18ABFC /* ExposureDay.swift */,
 			);
 			path = Photo;
 			sourceTree = "<group>";
@@ -784,6 +793,8 @@
 				9023ABDBBAAB176274F44C18 /* PolaroidPromptCard.swift in Sources */,
 				A3B63289303546B00010ACBB /* MeDailyTargetSheet.swift in Sources */,
 				A3FBC86C2FAADC120020FAF9 /* ProfileView.swift in Sources */,
+				AA02B084116A54FB2CDB13B8 /* ProfileImmersiveView.swift in Sources */,
+				A238E04F6BEF045A2E681DA5 /* DayCloudView.swift in Sources */,
 				A3B6328F30355BB20010ACBB /* EmptyGalleryView.swift in Sources */,
 				A341E82C2FAA11E200E03515 /* LaterApp.swift in Sources */,
 				A39EF5C32FBE8AB600A7A965 /* AppStorageData.swift in Sources */,
@@ -826,6 +837,7 @@
 				E3EEF64028A1411C946C4CB7 /* CachedPhotoImage.swift in Sources */,
 				A3C2D9B22FC59B4200BB731B /* ButtonStyles.swift in Sources */,
 				A36F46972FD8F95500935607 /* LaterPhotoExtensions.swift in Sources */,
+				9DB0135CCF8ACE83DD6EF4D5 /* ExposureDay.swift in Sources */,
 				A3348FA32FC691D9006568EE /* MinimalSplashView.swift in Sources */,
 				A38EEAA02FC84AF400D23F0C /* CircleManagementView.swift in Sources */,
 				D64957E75D653DB410948C03 /* AppleSignInView.swift in Sources */,

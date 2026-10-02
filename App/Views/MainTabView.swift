@@ -142,7 +142,7 @@ struct MainTabView: View {
             }
 
             Tab(value: MainTabSelection.profile) {
-                ProfileView()
+                ProfileImmersiveView()
             } label: {
                 Label("プロフィール", systemImage: selectedTab == 1 ? "person.crop.circle.fill" : "person.crop.circle")
                     .font(.system(size: 22))
