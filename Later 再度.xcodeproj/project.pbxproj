@@ -58,6 +58,10 @@
 		A341E82A2FAA11D400E03515 /* LaterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A341E8292FAA11CD00E03515 /* LaterModels.swift */; };
 		A341E82C2FAA11E200E03515 /* LaterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A341E82B2FAA11DA00E03515 /* LaterApp.swift */; };
 		A341E8362FAA128100E03515 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A341E8352FAA127400E03515 /* TodayView.swift */; };
+		6C3A71E989C5CA5C2CE0C93E /* ShootFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8810D882A16275D0754D898F /* ShootFlowView.swift */; };
+		CCD22F0E2816A0C5B506602B /* TagBeforeShootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21AA092CD3CFFF2A3CD288ED /* TagBeforeShootView.swift */; };
+		C2A781DF9C7C9E443088C40E /* TagInputField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A16A68CC586C49503C5E405 /* TagInputField.swift */; };
+		162B431A6E3C78DE876FF95E /* ShootTagModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 900CADE34F762E12EA101526 /* ShootTagModel.swift */; };
 		63CBEAE3C375CA7A6E846D09 /* HomeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10933EEA9258ABBF7CF2220 /* HomeState.swift */; };
 		70286FE4765CA995ED823E60 /* HomeDotRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74ABDCBD81139B48C5410711 /* HomeDotRing.swift */; };
 		8F915A14BDB816AAB1E13C14 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B938792A0F07511106FF26 /* HomeView.swift */; };
@@ -176,6 +180,10 @@
 		A341E8292FAA11CD00E03515 /* LaterModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterModels.swift; sourceTree = "<group>"; };
 		A341E82B2FAA11DA00E03515 /* LaterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterApp.swift; sourceTree = "<group>"; };
 		A341E8352FAA127400E03515 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		8810D882A16275D0754D898F /* ShootFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShootFlowView.swift; sourceTree = "<group>"; };
+		21AA092CD3CFFF2A3CD288ED /* TagBeforeShootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TagBeforeShootView.swift; sourceTree = "<group>"; };
+		3A16A68CC586C49503C5E405 /* TagInputField.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TagInputField.swift; sourceTree = "<group>"; };
+		900CADE34F762E12EA101526 /* ShootTagModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShootTagModel.swift; sourceTree = "<group>"; };
 		F10933EEA9258ABBF7CF2220 /* HomeState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeState.swift; sourceTree = "<group>"; };
 		74ABDCBD81139B48C5410711 /* HomeDotRing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeDotRing.swift; sourceTree = "<group>"; };
 		60B938792A0F07511106FF26 /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -487,6 +495,10 @@
 			isa = PBXGroup;
 			children = (
 				A341E8352FAA127400E03515 /* TodayView.swift */,
+				8810D882A16275D0754D898F /* ShootFlowView.swift */,
+				21AA092CD3CFFF2A3CD288ED /* TagBeforeShootView.swift */,
+				3A16A68CC586C49503C5E405 /* TagInputField.swift */,
+				900CADE34F762E12EA101526 /* ShootTagModel.swift */,
 				F10933EEA9258ABBF7CF2220 /* HomeState.swift */,
 				74ABDCBD81139B48C5410711 /* HomeDotRing.swift */,
 				60B938792A0F07511106FF26 /* HomeView.swift */,
@@ -811,6 +823,10 @@
 				A3B6284E302EF28D0010ACBB /* PostTargetGroupSelectionView.swift in Sources */,
 				85736E6A813B42A2B8F75FBF /* PostTargetSelectionSheet.swift in Sources */,
 				A341E8362FAA128100E03515 /* TodayView.swift in Sources */,
+				6C3A71E989C5CA5C2CE0C93E /* ShootFlowView.swift in Sources */,
+				CCD22F0E2816A0C5B506602B /* TagBeforeShootView.swift in Sources */,
+				C2A781DF9C7C9E443088C40E /* TagInputField.swift in Sources */,
+				162B431A6E3C78DE876FF95E /* ShootTagModel.swift in Sources */,
 				63CBEAE3C375CA7A6E846D09 /* HomeState.swift in Sources */,
 				70286FE4765CA995ED823E60 /* HomeDotRing.swift in Sources */,
 				8F915A14BDB816AAB1E13C14 /* HomeView.swift in Sources */,

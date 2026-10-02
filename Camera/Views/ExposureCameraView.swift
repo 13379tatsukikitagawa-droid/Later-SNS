@@ -20,6 +20,11 @@ struct ExposureCameraView: View {
     let onClose: () -> Void
     /// 何を撮るか。プロフィール画像の撮り直しでも、同じ撮影(長押し・プレビューなし・暗転)を使う。
     var purpose: ExposurePurpose = .daily
+    /// 撮影前のタグ画面(TagBeforeShootView)で決めたタグ。渡された時は、撮影画面ではタグを編集できず、
+    /// 下の段に表示するだけ(0個なら段ごと出さない)。左上は「←」でタグ画面に戻る。
+    var presetTags: [String]?
+    /// タグ画面からチップが飛んでくる間は、下の段のチップを隠しておく。
+    var hidesPresetTags = false
 
     private enum Phase: Equatable {
         case ready
@@ -84,6 +89,7 @@ struct ExposureCameraView: View {
         .preferredColorScheme(.dark)
         .statusBarHidden()
         .onAppear {
+            if let presetTags { tags = presetTags }
             camera.configure()
             haptics.prepare()
             locationProvider.requestPlaceName()
@@ -143,14 +149,14 @@ struct ExposureCameraView: View {
     private var header: some View {
         HStack(spacing: 10) {
             Button(action: onClose) {
-                Image(systemName: "xmark")
+                Image(systemName: presetTags == nil ? "xmark" : "arrow.left")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Palette.subText)
                     .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
             .disabled(pressStart != nil)
-            .accessibilityLabel("閉じる")
+            .accessibilityLabel(presetTags == nil ? "閉じる" : "タグに戻る")
 
             Text("Later")
                 .font(.system(size: 22, weight: .bold))
@@ -246,7 +252,46 @@ struct ExposureCameraView: View {
 
     // MARK: タグの行
 
+    @ViewBuilder
     private var tagRow: some View {
+        if presetTags != nil {
+            presetTagRow
+        } else {
+            editableTagRow
+        }
+    }
+
+    /// タグ画面で決めたタグ(編集はできない)。左から並べ、右端に「3 / 3」。0個なら段ごと出さない。
+    private var presetTagRow: some View {
+        HStack(spacing: 8) {
+            ForEach(tags, id: \.self) { tag in
+                Text("#\(tag)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Palette.surface))
+                    .opacity(hidesPresetTags ? 0 : 1)
+                    .background(GeometryReader { geometry in
+                        Color.clear.preference(key: CameraTagChipFrameKey.self, value: [tag: geometry.frame(in: .named(TagBeforeShootView.coordinateSpace))])
+                    })
+            }
+            Spacer(minLength: 0)
+            if !tags.isEmpty {
+                Text("\(tags.count) / \(DailyExposureRules.maxTags)")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(Palette.subText)
+            }
+        }
+        .frame(height: 32)
+        .opacity(tags.isEmpty ? 0 : 1)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(tags.isEmpty ? "" : "タグ:\(tags.map { "#\($0)" }.joined(separator: "、"))")
+    }
+
+    private var editableTagRow: some View {
         HStack(spacing: 8) {
             ForEach(tags, id: \.self) { tag in
                 Button {
@@ -449,6 +494,14 @@ struct ExposureCameraView: View {
     /// 「EXPOSED · 10.02 · 18:11」
     private static func exposedLabel(for date: Date) -> String {
         "EXPOSED · \(exposedDateFormatter.string(from: date)) · \(exposedTimeFormatter.string(from: date))"
+    }
+}
+
+/// 撮影画面の下の段のタグチップの位置(タグ画面から飛んでくる動きの着地点)。
+struct CameraTagChipFrameKey: PreferenceKey {
+    static let defaultValue: [String: CGRect] = [:]
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue()) { $1 }
     }
 }
 

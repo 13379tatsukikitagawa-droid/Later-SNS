@@ -75,16 +75,16 @@ struct TodayView: View {
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
                 }
             }
-            // 再設計 Step 1: 撮影の前のキャプション入力・撮影後の投稿準備画面(プレビュー)は
-            // 挟まない。タグは撮影画面の中で選び、撮った瞬間に保存して暗転する。
+            // 再設計 Step 1: 撮影後の投稿準備画面(プレビュー)は挟まない。撮った瞬間に保存して暗転する。
+            // 撮影の前に、今日にタグをつける画面(TagBeforeShootView)を挟む。下からせり上がって開き、
+            // 「撮影へ」「タグなしで撮る」で同じフルスクリーンの中の撮影画面(Step 1)へ進む。
             .fullScreenCover(isPresented: $showingCamera) {
-                ExposureCameraView(
+                ShootFlowView(
                     hasShotToday: hasShotToday,
                     onCaptured: saveExposure,
                     onFinished: finishExposure,
                     onClose: { showingCamera = false }
                 )
-                .navigationTransition(.zoom(sourceID: HomeView.primaryActionTransitionID, in: homeTransition))
             }
             .fullScreenCover(isPresented: $showingYesterday) {
                 YesterdayPlaceholderView { showingYesterday = false }
