@@ -9,8 +9,16 @@ struct HomeDotRing: View {
         case dim
         /// ②④ 撮れる:白く光る(白22〜92%)
         case bright
-        /// ③ 撮った後:オレンジ→青→黄→オレンジに色づく
+        /// ③' ひらいたあと:オレンジ→青→黄→オレンジに色づいたまま
         case colored
+    }
+
+    /// 円の中の「あなたの1点」(預けた1枚)。みんなの点より先に、現像の濃さpで色づく。
+    struct MyDot: Equatable {
+        let color: Color
+        let progress: Double
+        /// 100%になった瞬間に、周りの輪が1回だけふくらんで消える(0.8秒)
+        var pulseStart: Date?
     }
 
     /// 描く点の数(昨日の枚数。228より少なければその数だけ描く)。
@@ -22,6 +30,9 @@ struct HomeDotRing: View {
     let entranceStart: Date?
     /// 9:00に①→②へ切り替わった時の、白い光の波の開始時刻。
     let waveStart: Date?
+    /// 長押しでひらいている割合(0〜1)。中心から半径 p×215pt まで色づく(境界は34ptのぼかし)。
+    var openProgress: Double = 0
+    var myDot: MyDot?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -99,8 +110,9 @@ struct HomeDotRing: View {
     // MARK: - 描画
 
     private func draw(in graphics: inout GraphicsContext, size: CGSize, time: Date) {
-        guard count > 0 else { return }
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        defer { drawMyDot(in: &graphics, center: center, time: time) }
+        guard count > 0 else { return }
         let visible = count >= Layout.capacity ? Self.dots : Array(Self.dotsByPriority.prefix(count))
         let t = time.timeIntervalSinceReferenceDate
         let isStill = reduceMotion
@@ -118,9 +130,11 @@ struct HomeDotRing: View {
             opacity = min(1, opacity + waveBoost(ring: dot.ring, time: time))
             guard opacity > 0.005 else { continue }
 
+            let colorAmount = colorAmount(at: dot.radius)
+            let size = dot.size * (1 + 0.25 * colorAmount * (tone == .colored ? 0 : 1))
             let point = CGPoint(x: center.x + cos(angle) * dot.radius, y: center.y + sin(angle) * dot.radius)
-            let rect = CGRect(x: point.x - dot.size / 2, y: point.y - dot.size / 2, width: dot.size, height: dot.size)
-            graphics.fill(Path(ellipseIn: rect), with: .color(color(at: angle).opacity(opacity)))
+            let rect = CGRect(x: point.x - size / 2, y: point.y - size / 2, width: size, height: size)
+            graphics.fill(Path(ellipseIn: rect), with: .color(color(at: angle, amount: colorAmount).opacity(opacity)))
         }
     }
 
@@ -149,9 +163,49 @@ struct HomeDotRing: View {
         return 0.7 * sin(.pi * local)
     }
 
-    private func color(at angle: Double) -> Color {
-        guard tone == .colored else { return .white }
-        return HomePalette.ringColor(atFraction: angle / (2 * .pi))
+    /// 色づきの量(0=白、1=色)。③'は全体。長押し中は、中心から半径 p×215pt(境界34ptのぼかし)。
+    /// Reduce Motionの時は、ぼかし境界なし。
+    private func colorAmount(at radius: CGFloat) -> Double {
+        if tone == .colored { return 1 }
+        guard openProgress > 0 else { return 0 }
+        let reach = openProgress * 215
+        if reduceMotion { return Double(radius) <= reach ? 1 : 0 }
+        return min(1, max(0, (reach - Double(radius)) / 34 + 0.5))
+    }
+
+    private func color(at angle: Double, amount: Double) -> Color {
+        guard amount > 0 else { return .white }
+        let c = HomePalette.ringRGB(atFraction: angle / (2 * .pi))
+        return Color(red: 1 + (c.r - 1) * amount, green: 1 + (c.g - 1) * amount, blue: 1 + (c.b - 1) * amount)
+    }
+
+    /// 「あなたの1点」:一番外側の輪の、中心から見て右上(-58°)。半径4.4pt、細い輪と薄い光つき。
+    private func drawMyDot(in graphics: inout GraphicsContext, center: CGPoint, time: Date) {
+        guard let myDot else { return }
+        let angle = -58.0 * .pi / 180
+        let radius = Layout.ringRadii[0]
+        let point = CGPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius)
+        let p = myDot.progress
+        let appear = entranceAlpha(ring: 0, time: time)
+
+        let glow = CGRect(x: point.x - 14, y: point.y - 14, width: 28, height: 28)
+        graphics.fill(Path(ellipseIn: glow), with: .radialGradient(
+            Gradient(colors: [myDot.color.opacity((0.10 + 0.28 * p) * appear), .clear]),
+            center: point, startRadius: 0, endRadius: 14
+        ))
+        var ringScale = 1.0, ringFade = 1.0
+        if let pulseStart = myDot.pulseStart, !reduceMotion {
+            let local = time.timeIntervalSince(pulseStart) / 0.8
+            if local >= 0 && local < 1 {
+                ringScale = 1 + local
+                ringFade = 1 - local
+            }
+        }
+        let ringRadius = 9 * ringScale
+        let ring = CGRect(x: point.x - ringRadius, y: point.y - ringRadius, width: ringRadius * 2, height: ringRadius * 2)
+        graphics.stroke(Path(ellipseIn: ring), with: .color(.white.opacity((0.25 + 0.5 * p) * ringFade * appear)), lineWidth: 1)
+        let dot = CGRect(x: point.x - 4.4, y: point.y - 4.4, width: 8.8, height: 8.8)
+        graphics.fill(Path(ellipseIn: dot), with: .color(myDot.color.opacity(appear)))
     }
 }
 
@@ -175,6 +229,11 @@ enum HomePalette {
 
     /// 輪の角度(0〜1周)に沿って、オレンジ→青→黄→オレンジをなめらかにつなぐ。
     static func ringColor(atFraction fraction: Double) -> Color {
+        let c = ringRGB(atFraction: fraction)
+        return Color(red: c.r, green: c.g, blue: c.b)
+    }
+
+    static func ringRGB(atFraction fraction: Double) -> (r: Double, g: Double, b: Double) {
         var f = fraction.truncatingRemainder(dividingBy: 1)
         if f < 0 { f += 1 }
         let segments = Double(ringStops.count - 1)
@@ -182,11 +241,7 @@ enum HomePalette {
         let index = min(Int(position), ringStops.count - 2)
         let local = position - Double(index)
         let a = ringStops[index], b = ringStops[index + 1]
-        return Color(
-            red: a.r + (b.r - a.r) * local,
-            green: a.g + (b.g - a.g) * local,
-            blue: a.b + (b.b - a.b) * local
-        )
+        return (a.r + (b.r - a.r) * local, a.g + (b.g - a.g) * local, a.b + (b.b - a.b) * local)
     }
 }
 

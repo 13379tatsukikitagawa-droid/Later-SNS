@@ -20,6 +20,9 @@ final class ExposureDay {
     var locationName: String?
     /// カード用の小さなサムネイル(JPEG)。ひらいている日だけ画面に出す。
     @Attribute(.externalStorage) var thumbnailData: Data?
+    /// 写真の主要な3色(「RRGGBB」)。Homeの現像カードと「あなたの1点」に、写真の代わりに出す。
+    /// 端末内だけに持ち、写真のレコード(CloudKit)には入れない(他人に届けない)。
+    var toneHexes: [String] = []
 
     init(dayKey: String, captureDate: Date) {
         self.dayKey = dayKey
@@ -46,6 +49,7 @@ enum ExposureDayStore {
         if let image = UIImage(data: imageData) {
             day.colorHex = PhotoColor.centerColorHex(of: image)
             day.thumbnailData = PhotoColor.thumbnailData(of: image)
+            day.toneHexes = PhotoColor.toneHexes(of: image)
         }
         context.insert(day)
         try? context.save()
@@ -54,7 +58,15 @@ enum ExposureDayStore {
     /// この仕組みより前に撮った自分の写真(まだ端末に残っている7日分)からも記録を作る。
     /// 写真が削除される前(起動時)に呼ぶ。
     static func backfill(for user: UserProfile, context: ModelContext) {
-        let existing = Set(((try? context.fetch(FetchDescriptor<ExposureDay>())) ?? []).map(\.dayKey))
+        let days = (try? context.fetch(FetchDescriptor<ExposureDay>())) ?? []
+        // 3色を持つ前に作られた記録には、写真が端末に残っていれば3色を足す。
+        for day in days where day.toneHexes.isEmpty {
+            if let photo = user.photos.first(where: { dayKey(for: $0.captureDate) == day.dayKey }),
+               let image = UIImage(data: photo.imageData) {
+                day.toneHexes = PhotoColor.toneHexes(of: image)
+            }
+        }
+        let existing = Set(days.map(\.dayKey))
         var seen = existing
         for photo in user.photos.sorted(by: { $0.captureDate < $1.captureDate }) {
             let key = dayKey(for: photo.captureDate)
@@ -95,6 +107,77 @@ nonisolated enum PhotoColor {
             alpha: 1
         )
         return hex(of: adjusted)
+    }
+
+    /// 写真を16×16に縮め、色を中央値分割で3つに分けた主要な3色。暗すぎる・くすんだ色は整える。
+    /// 色が取れない時は空(呼び出し側が既定の3色を使う)。
+    static func toneHexes(of image: UIImage) -> [String] {
+        guard let cgImage = image.cgImage else { return [] }
+        let side = 16
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        guard let context = CGContext(
+            data: &pixels, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return [] }
+        context.interpolationQuality = .medium
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+
+        var colors: [(r: Double, g: Double, b: Double)] = []
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            colors.append((Double(pixels[index]) / 255, Double(pixels[index + 1]) / 255, Double(pixels[index + 2]) / 255))
+        }
+        // 中央値分割:いちばん幅の広い色の軸で、箱を2つに割ることを3箱になるまでくり返す。
+        var boxes = [colors]
+        while boxes.count < 3 {
+            guard let widestIndex = boxes.indices.max(by: { spread(boxes[$0]) < spread(boxes[$1]) }),
+                  boxes[widestIndex].count > 1 else { break }
+            let box = boxes.remove(at: widestIndex)
+            let axis = widestAxis(box)
+            let sorted = box.sorted { component($0, axis) < component($1, axis) }
+            let middle = sorted.count / 2
+            boxes.append(Array(sorted[..<middle]))
+            boxes.append(Array(sorted[middle...]))
+        }
+        return boxes
+            .sorted { $0.count > $1.count }
+            .map { box -> String in
+                let count = Double(max(1, box.count))
+                let average = UIColor(
+                    red: box.reduce(0) { $0 + $1.r } / count,
+                    green: box.reduce(0) { $0 + $1.g } / count,
+                    blue: box.reduce(0) { $0 + $1.b } / count,
+                    alpha: 1
+                )
+                var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+                average.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+                let adjusted = UIColor(
+                    hue: hue,
+                    saturation: min(0.9, max(0.35, saturation * 1.4)),
+                    brightness: min(0.95, max(0.6, brightness * 1.2)),
+                    alpha: 1
+                )
+                return hex(of: adjusted)
+            }
+    }
+
+    private static func component(_ color: (r: Double, g: Double, b: Double), _ axis: Int) -> Double {
+        axis == 0 ? color.r : axis == 1 ? color.g : color.b
+    }
+
+    private static func widestAxis(_ box: [(r: Double, g: Double, b: Double)]) -> Int {
+        let ranges = (0..<3).map { axis -> Double in
+            let values = box.map { component($0, axis) }
+            return (values.max() ?? 0) - (values.min() ?? 0)
+        }
+        return ranges.indices.max { ranges[$0] < ranges[$1] } ?? 0
+    }
+
+    private static func spread(_ box: [(r: Double, g: Double, b: Double)]) -> Double {
+        guard box.count > 1 else { return 0 }
+        let axis = widestAxis(box)
+        let values = box.map { component($0, axis) }
+        return (values.max() ?? 0) - (values.min() ?? 0)
     }
 
     /// カード用の小さなサムネイル(長辺320px)。

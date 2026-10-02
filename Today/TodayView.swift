@@ -22,8 +22,16 @@ struct TodayView: View {
     /// ゆっくりフェードしてHomeへ移るために使う。
     @State private var isShowingExposureVeil = false
 
+    /// グループ作成(4ステップ)
+    @State private var showingNewGroup = false
+    /// Homeの円を、そのグループの点だけに絞っている時のグループ
+    @State private var selectedGroupID: UUID?
+    /// 長押しで昨日をひらいた日(ExposureDayStore.dayKey)。長押しは、その日の最初の1回だけ。
+    @AppStorage("yesterdayOpenedDay") private var yesterdayOpenedDay: String = ""
+
     @Query private var profiles: [UserProfile]
     @Query private var groups: [LaterGroup]
+    @Query(sort: \ExposureDay.captureDate, order: .reverse) private var exposureDays: [ExposureDay]
     @Bindable private var captureRequest = CaptureRequestStore.shared
 
     private var currentUser: UserProfile? {
@@ -44,21 +52,60 @@ struct TodayView: View {
         currentUser?.photos.map(\.captureDate) ?? []
     }
 
+    /// MEを除いた、参加中のグループ
+    private var sharedGroups: [LaterGroup] {
+        userGroups.filter { !$0.isPersonalSpace }.sorted { $0.creationDate < $1.creationDate }
+    }
+
     /// 件数だけを数える(昨日の写真の画像はHomeで取得しない)。ユーザー未確定の間は「—」。
+    /// グループの輪をタップしている間は、そのグループの分だけ。
     private var yesterdayCount: Int? {
         guard currentUser != nil else { return nil }
-        return HomeState.yesterdayPhotoCount(in: userGroups, now: Date())
+        let target = selectedGroupID.flatMap { id in userGroups.filter { $0.id == id } } ?? userGroups
+        return HomeState.yesterdayPhotoCount(in: target, now: Date())
+    }
+
+    private var openedToday: Bool {
+        yesterdayOpenedDay == ExposureDayStore.dayKey(for: Date())
+    }
+
+    /// 今日より前で、最後に預けた1枚(写真は7日で消えるため、1日の記録も見る)。
+    private var lastDepositBeforeToday: Date? {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        let fromPhotos = myCaptureDates.filter { $0 < startOfToday }.max()
+        let fromDays = exposureDays.first { $0.captureDate < startOfToday }?.captureDate
+        return [fromPhotos, fromDays].compactMap { $0 }.max()
+    }
+
+    /// 自分の写真の主要な3色(端末内だけ。他人の写真の色は取得しない)
+    private var tonesByDay: [String: [Color]] {
+        var result: [String: [Color]] = [:]
+        for day in exposureDays where !day.toneHexes.isEmpty {
+            result[day.dayKey] = day.toneHexes.map { Color(hex: $0) }
+        }
+        return result
     }
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
             HomeView(
                 myCaptureDates: myCaptureDates,
+                hasDeposited: !exposureDays.isEmpty || !myCaptureDates.isEmpty,
+                lastDepositBeforeToday: lastDepositBeforeToday,
+                openedToday: openedToday,
                 yesterdayCount: yesterdayCount,
-                isCovered: showingCamera || showingYesterday,
+                tonesByDay: tonesByDay,
+                groups: sharedGroups,
+                selectedGroupID: selectedGroupID,
+                isCovered: showingCamera || showingYesterday || showingNewGroup,
                 transitionNamespace: homeTransition,
                 onShoot: { showingCamera = true },
-                onViewYesterday: { showingYesterday = true }
+                onOpenYesterday: {
+                    yesterdayOpenedDay = ExposureDayStore.dayKey(for: Date())
+                    showingYesterday = true
+                },
+                onSelectGroup: { group in selectedGroupID = group?.id },
+                onCreateGroup: { showingNewGroup = true }
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // HomeView側で独自のヘッダーを組んでいるため、ネイティブのナビゲーションバーは出さない。
@@ -85,6 +132,9 @@ struct TodayView: View {
                     onFinished: finishExposure,
                     onClose: { showingCamera = false }
                 )
+            }
+            .fullScreenCover(isPresented: $showingNewGroup) {
+                NewGroupFlowView { showingNewGroup = false }
             }
             .fullScreenCover(isPresented: $showingYesterday) {
                 YesterdayPlaceholderView { showingYesterday = false }
@@ -162,7 +212,7 @@ private struct YesterdayPlaceholderView: View {
                 Text("昨日を見る")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(.white)
-                Text("この画面は、後の Step で作ります。")
+                Text("ここから Step 4・Step 3 で作ります。")
                     .font(.system(size: 13))
                     .foregroundStyle(HomePalette.subText)
             }
