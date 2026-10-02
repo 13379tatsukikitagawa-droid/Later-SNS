@@ -15,6 +15,19 @@ enum OnboardingStep: String, CaseIterable {
     case lookismStructure1, lookismStructure2, lookismStructure3
     case lookismBlame, lookismAnswer, lookismConsent
     case profilePhoto, notify, finish
+    /// 「メールで続ける」のあとの場面(アカウントの1問の延長)。本筋の順番(next)には入らない。
+    case emailInput, emailSending, emailSent, emailVerifying, emailFailed
+
+    /// メールでのサインインの場面か
+    var isEmailStep: Bool {
+        switch self {
+        case .emailInput, .emailSending, .emailSent, .emailVerifying, .emailFailed: return true
+        default: return false
+        }
+    }
+
+    /// 本筋の順番(メールの場面を除く)
+    static let mainFlow: [OnboardingStep] = allCases.filter { !$0.isEmailStep }
 
     /// 玉のまわりの8つの点のうち、白く灯っている数(進み具合。数字は出さない)。
     var litDots: Int {
@@ -30,6 +43,9 @@ enum OnboardingStep: String, CaseIterable {
         case .profilePhoto: return 6
         case .notify: return 7
         case .finish: return 8
+        case .emailInput, .emailSending, .emailVerifying, .emailFailed: return 1
+        // 送りました(待っている感じ)
+        case .emailSent: return 6
         }
     }
 
@@ -44,9 +60,9 @@ enum OnboardingStep: String, CaseIterable {
     }
 
     var next: OnboardingStep? {
-        let all = Self.allCases
-        guard let index = all.firstIndex(of: self), index + 1 < all.count else { return nil }
-        return all[index + 1]
+        let flow = Self.mainFlow
+        guard let index = flow.firstIndex(of: self), index + 1 < flow.count else { return nil }
+        return flow[index + 1]
     }
 }
 
@@ -75,6 +91,14 @@ enum OnboardingActions {
     case hold(OnboardingHoldKind)
     case profilePhoto
     case notify
+    /// メールアドレスの入力(CTA「リンクを送る」)
+    case emailInput
+    /// 送りました(メールアプリを開く・アドレスを変える・再送)
+    case emailSent
+    /// 失敗(もう一度送る・Appleで続ける)
+    case emailFailed
+    /// ボタンなし(送信中・確認中)
+    case none
 }
 
 enum OnboardingHoldKind {
@@ -82,6 +106,44 @@ enum OnboardingHoldKind {
     case consent
     /// 結び(Homeへ)
     case finish
+}
+
+/// メールでのサインインがうまくいかなかった理由
+enum EmailSignInFailure: Equatable {
+    /// 通信の失敗・時間切れ
+    case network
+    /// リンクの期限切れ・使用済み
+    case expiredLink
+    /// 別の端末でリンクを開いた(アドレスが端末に残っていない)
+    case missingEmail
+    /// 送信の回数が多すぎる(Firebaseの制限)
+    case tooManyRequests
+
+    var title: String {
+        switch self {
+        case .network, .tooManyRequests: return "送れませんでした。"
+        case .expiredLink, .missingEmail: return "確かめられませんでした。"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .network: return "通信を確かめて、\nもう一度ためしてください。"
+        case .expiredLink: return "リンクの期限が切れています。\nもう一度、送ってください。"
+        case .missingEmail: return "同じアドレスを、\nもう一度入れてください。"
+        case .tooManyRequests: return "しばらくしてから、\nもう一度ためしてください。"
+        }
+    }
+
+    /// Firebase Authのエラーを、画面の言葉に分ける(NSErrorのcodeで判定する)。
+    static func from(_ error: Error) -> EmailSignInFailure {
+        switch (error as NSError).code {
+        case 17010: return .tooManyRequests          // tooManyRequests
+        case 17028, 17030: return .expiredLink       // expiredActionCode / invalidActionCode
+        case 17034: return .missingEmail             // missingEmail
+        default: return .network
+        }
+    }
 }
 
 enum OnboardingVisual {
@@ -100,6 +162,8 @@ enum OnboardingVisual {
     case notificationCard
     /// プロフィール撮影の小さなファインダー
     case viewfinder
+    /// リンクの確認中の輪(直径96pt、白い輪が回る)
+    case verifyingRing
 }
 
 struct OnboardingScene {
@@ -113,8 +177,19 @@ struct OnboardingScene {
 }
 
 extension OnboardingStep {
-    func scene(name: String) -> OnboardingScene {
+    func scene(name: String, emailFailure: EmailSignInFailure = .network) -> OnboardingScene {
         switch self {
+        case .emailInput:
+            return OnboardingScene(lines: [.init(text: "メールアドレスを\n教えてください。")], actions: .emailInput, fontSize: 26)
+        case .emailSending:
+            return OnboardingScene(lines: [.init(text: "リンクを\n送っています…")], actions: .none, fontSize: 26)
+        case .emailSent:
+            return OnboardingScene(lines: [.init(text: "メールを\n送りました。")], actions: .emailSent)
+        case .emailVerifying:
+            return OnboardingScene(lines: [.init(text: "リンクを\n確認しています…")], actions: .none, visual: .verifyingRing, fontSize: 26)
+        case .emailFailed:
+            // 補足(14pt)は、見出しの下に入力欄と同じ層で出す(OnboardingFlowView.emailFailureNote)。
+            return OnboardingScene(lines: [.init(text: emailFailure.title)], actions: .emailFailed, fontSize: 26)
         case .meet:
             return OnboardingScene(lines: [
                 .init(text: "これから、\nいくつか質問をします。\n"),
@@ -205,6 +280,8 @@ enum OnboardingCopy {
     static let profilePhotoExamples = ["いま見えている景色", "手元", "好きなもの"]
 
     static let dailyNotificationBody = "9:00 になりました。今日を撮れます。"
+
+    static let appleSignInFailed = "Appleでのサインインができませんでした。もう一度ためしてください。"
 }
 
 // MARK: - 入力ルール
@@ -266,9 +343,18 @@ enum OnboardingTuning {
     static let finishTail: (intensity: Float, duration: TimeInterval) = (0.4, 0.3)
     /// パシャの瞬間にシャッター音を鳴らすか(今は鳴らさない。将来、設定で選べるようにする)。
     static let playsShutterSound = false
+    /// メールのリンクを再送できるまでの秒数
+    static let emailResendInterval = 30
 }
 
 // MARK: - 保存キー
+
+extension Notification.Name {
+    /// メールのサインインリンクからアプリに戻ってきた(LaterApp.onOpenURL)
+    static let emailSignInLinkOpened = Notification.Name("emailSignInLinkOpened")
+    /// メールのサインインリンクで、サインインを完了できなかった(objectにError。nilなら端末にアドレスが無い)
+    static let emailSignInLinkFailed = Notification.Name("emailSignInLinkFailed")
+}
 
 enum OnboardingStorage {
     static let stepKey = "onboardingStep"

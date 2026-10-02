@@ -249,17 +249,22 @@ struct RootView: View {
         }
         .onOpenURL { url in
             if FirebaseAuthService.isSignInLink(url) {
-                // 同じ端末でリンクを開けた場合(pendingEmailが残っている)は、ここで
-                // そのままサインインを完了できる。別端末で開いた場合はEmailSignInView側の
-                // 手動貼り付け欄で完了してもらう(pendingEmailが無いため、ここでは何もしない)。
-                if let email = FirebaseAuthService.pendingEmail {
-                    Task {
-                        do {
-                            let result = try await FirebaseAuthService.completeSignIn(withLink: url.absoluteString, email: email)
-                            firebaseUID = result.uid
-                        } catch {
-                            print("[Firebase] onOpenURL経由のサインイン完了に失敗: \(error)")
-                        }
+                // 初回設定の画面を「確認中」にする。同じ端末でリンクを開けた場合(pendingEmailが
+                // 残っている)は、ここでそのままサインインを完了する。別の端末で開いた場合は、
+                // 初回設定の画面で同じアドレスを入れ直してもらう(emailSignInLinkFailed)。
+                NotificationCenter.default.post(name: .emailSignInLinkOpened, object: nil)
+                guard let email = FirebaseAuthService.pendingEmail else {
+                    NotificationCenter.default.post(name: .emailSignInLinkFailed, object: nil)
+                    return
+                }
+                Task {
+                    do {
+                        let result = try await FirebaseAuthService.completeSignIn(withLink: url.absoluteString, email: email)
+                        UserDefaults.standard.set(result.email ?? email, forKey: "firebaseEmail")
+                        firebaseUID = result.uid
+                    } catch {
+                        print("[Firebase] onOpenURL経由のサインイン完了に失敗: \(error)")
+                        NotificationCenter.default.post(name: .emailSignInLinkFailed, object: error)
                     }
                 }
                 return

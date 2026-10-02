@@ -18,6 +18,9 @@ enum FirebaseAuthService {
         URL(string: "https://later-app-f2606.firebaseapp.com/finishSignIn")!
     }
 
+    /// メールのリンクを開くドメイン(Firebase Hostingの既定ドメイン)。
+    static let linkDomain = "later-app-f2606.firebaseapp.com"
+
     enum ServiceError: Error {
         case firebaseNotConfigured
         case missingEmail
@@ -33,6 +36,10 @@ enum FirebaseAuthService {
         settings.url = actionCodeSettingsURL
         settings.handleCodeInApp = true
         settings.setIOSBundleID(Bundle.main.bundleIdentifier ?? "")
+        // Firebase Dynamic Linksの終了に伴う新しい方式:リンクのドメインを、Firebase Hostingの
+        // 既定ドメインにする。このドメインのUniversal Link(Associated Domainsの
+        // applinks:later-app-f2606.firebaseapp.com)で、メールのリンクからアプリへ直接戻る。
+        settings.linkDomain = linkDomain
         try await Auth.auth().sendSignInLink(toEmail: email, actionCodeSettings: settings)
         UserDefaults.standard.set(email, forKey: pendingEmailKey)
     }

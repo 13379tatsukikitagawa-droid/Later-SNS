@@ -39,6 +39,8 @@ struct OnboardingOrb: View {
     var bloom: Double = 0
     /// 値が変わるたびに、玉が1回だけ明るく脈打つ(名前の確定)。
     var pulseTrigger: Int = 0
+    /// 送信中:8つの点が1つずつ順に灯っては消える(1周1.2秒・点ごとに150msずらす)
+    var isCycling = false
 
     static let pearlDiameter: CGFloat = 78
     static let dotRadius: CGFloat = 74
@@ -72,7 +74,30 @@ struct OnboardingOrb: View {
             .frame(width: Self.pearlDiameter + 80 + 80, height: Self.pearlDiameter + 80 + 80)
     }
 
+    @ViewBuilder
     private var dots: some View {
+        if isCycling {
+            TimelineView(.animation) { context in
+                let t = context.date.timeIntervalSinceReferenceDate
+                ZStack {
+                    ForEach(0..<8, id: \.self) { index in
+                        let angle = Angle.degrees(-90 + 45 * Double(index)).radians
+                        let phase = (t - 0.15 * Double(index)).truncatingRemainder(dividingBy: 1.2) / 1.2
+                        let light = max(0, 1 - abs(phase - 0.15) / 0.15)
+                        Circle()
+                            .fill(.white.opacity(0.16 + 0.84 * light))
+                            .frame(width: 5, height: 5)
+                            .shadow(color: .white.opacity(0.9 * light), radius: 5)
+                            .offset(x: cos(angle) * Self.dotRadius, y: sin(angle) * Self.dotRadius)
+                    }
+                }
+            }
+        } else {
+            litDots
+        }
+    }
+
+    private var litDots: some View {
         ZStack {
             ForEach(0..<8, id: \.self) { index in
                 let angle = Angle.degrees(-90 + 45 * Double(index)).radians
@@ -707,6 +732,28 @@ struct PersonaIcon: View {
                 opacity: index == 0 ? 1 : 0.45 + next() * 0.45
             )
         }
+    }
+}
+
+// MARK: - 確認中の輪
+
+/// メールのリンクを確認している間の輪(直径96pt、白い輪が回る)。
+struct VerifyingRing: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            let angle = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.2) / 1.2 * 360
+            ZStack {
+                Circle().stroke(.white.opacity(0.12), lineWidth: 2)
+                Circle()
+                    .trim(from: 0, to: 0.28)
+                    .stroke(.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(angle - 90))
+            }
+            .frame(width: 96, height: 96)
+        }
+        .accessibilityLabel("リンクを確認しています")
     }
 }
 

@@ -68,16 +68,30 @@ struct OnboardingFlowView: View {
     @State private var selectedTags: [String] = []
 
     // アカウント
-    @State private var isShowingEmailSignIn = false
     @State private var signInError: String?
     @State private var isCheckingAccount = false
+
+    // メールで続ける
+    @State private var emailInput = ""
+    @FocusState private var isEmailFocused: Bool
+    @State private var isEmailErrorShown = false
+    @State private var hasShownEmailError = false
+    @State private var emailShake = 0
+    @State private var emailErrorTask: Task<Void, Never>?
+    @State private var emailFailure: EmailSignInFailure = .network
+    @State private var sendingAttempt = 0
+    @State private var resendRemaining = 0
+    @State private var resendTask: Task<Void, Never>?
+    @State private var sentAddress = ""
 
     // プロフィール撮影
     @StateObject private var camera = FilmCameraController()
     @State private var cameraPosition: AVCaptureDevicePositionValue = .back
     @State private var photoNotice: (title: String, message: String)?
 
-    private var scene: OnboardingScene { step.scene(name: confirmedName) }
+    private var scene: OnboardingScene { step.scene(name: confirmedName, emailFailure: emailFailure) }
+    /// 玉を0.6倍に縮めて上へ寄せる(キーボードが出る入力の場面)
+    private var isCompactOrb: Bool { isNameEditing || step == .emailInput }
     private var primaryTextColor: Color { step.isQuiet ? OnboardingPalette.quietText : OnboardingPalette.text }
     private var showsEverything: Bool { voiceOverEnabled || isTypingSkipped || isTypingDone }
     private var isNameEditing: Bool { step == .name && isNameFocused }
@@ -98,6 +112,11 @@ struct OnboardingFlowView: View {
                     }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
+                // 画面をタップしてタイプ演出を飛ばすのは、文と玉の層だけにする。
+                // 以前は画面全体(ボタンの層を含む)に付けていたため、中身がUIKitの
+                // SignInWithAppleButtonまでタップが届かず、「Appleで続ける」が押せなかった。
+                .contentShape(Rectangle())
+                .onTapGesture { skipTyping() }
             }
             .ignoresSafeArea()
 
@@ -121,8 +140,6 @@ struct OnboardingFlowView: View {
                 .transition(.opacity)
             }
         }
-        .contentShape(Rectangle())
-        .onTapGesture { skipTyping() }
         .preferredColorScheme(.dark)
         .statusBarHidden()
         .onAppear(perform: startIfNeeded)
@@ -135,8 +152,38 @@ struct OnboardingFlowView: View {
                 camera.stopSession()
             }
         }
-        .sheet(isPresented: $isShowingEmailSignIn) {
-            EmailSignInView()
+        .overlay(alignment: .topLeading) { emailBackButton }
+        .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkOpened)) { _ in
+            // メールのリンクからアプリに戻ってきた:確認中へ。
+            guard step.isEmailStep || step == .account else { return }
+            go(to: .emailVerifying, withHaptic: false)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkFailed)) { note in
+            guard step.isEmailStep || step == .account else { return }
+            let failure = (note.object as? Error).map { EmailSignInFailure.from($0) } ?? .missingEmail
+            showEmailFailure(failure)
+        }
+    }
+
+    /// 左上の「<」(メールの入力・送りました)。ひとつ前の画面に戻る。
+    @ViewBuilder
+    private var emailBackButton: some View {
+        if step == .emailInput || step == .emailSent {
+            Button {
+                go(to: step == .emailInput ? .account : .emailInput, withHaptic: false)
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(LinearGradient(colors: [.white.opacity(0.13), .white.opacity(0.05)], startPoint: .top, endPoint: .bottom)))
+                    .overlay(Circle().strokeBorder(.white.opacity(0.09), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 22)
+            .padding(.top, 6)
+            .accessibilityLabel("戻る")
+            .transition(.opacity)
         }
     }
 
@@ -155,14 +202,15 @@ struct OnboardingFlowView: View {
                 OnboardingOrb(
                     litCount: litOverride ?? step.litDots,
                     bloom: step == .finish ? progress : 0,
-                    pulseTrigger: pulseTrigger
+                    pulseTrigger: pulseTrigger,
+                    isCycling: step == .emailSending && !reduceMotion
                 )
-                .scaleEffect(isNameEditing ? 0.6 : 1)
-                .position(x: metrics.size.width / 2, y: metrics.y(isNameEditing ? 110 : OnboardingMetrics.orbCenterY))
+                .scaleEffect(isCompactOrb ? 0.6 : 1)
+                .position(x: metrics.size.width / 2, y: metrics.y(isCompactOrb ? (step == .emailInput ? 86 : 110) : OnboardingMetrics.orbCenterY))
                 .opacity(orbOpacity)
             }
         }
-        .animation(.easeOut(duration: 0.3), value: isNameEditing)
+        .animation(.easeOut(duration: 0.4), value: isCompactOrb)
     }
 
     // MARK: - 前の文
@@ -220,6 +268,8 @@ struct OnboardingFlowView: View {
             case .notificationCard:
                 NotificationCardSample()
                     .padding(.horizontal, 28)
+            case .verifyingRing:
+                VerifyingRing()
             case .viewfinder:
                 HStack(spacing: 14) {
                     CameraPreviewRepresentable(session: camera.session)
@@ -278,9 +328,9 @@ struct OnboardingFlowView: View {
             }
         }
         .padding(.horizontal, 28)
-        .padding(.top, metrics.y(isNameEditing ? 196 : OnboardingMetrics.textTop))
+        .padding(.top, metrics.y(isNameEditing ? 196 : (step == .emailInput ? 184 : OnboardingMetrics.textTop)))
         .frame(width: metrics.size.width, alignment: .leading)
-        .animation(.easeOut(duration: 0.3), value: isNameEditing)
+        .animation(.easeOut(duration: 0.3), value: isCompactOrb)
     }
 
     @ViewBuilder
@@ -293,6 +343,16 @@ struct OnboardingFlowView: View {
                 .padding(.top, 18)
         case .nameInput:
             nameField
+        case .emailInput:
+            emailField
+        case .emailSent:
+            emailSentInfo
+        case .emailFailed:
+            Text(emailFailure.message)
+                .font(.system(size: 14))
+                .foregroundStyle(OnboardingPalette.subText)
+                .lineSpacing(3)
+                .padding(.top, 14)
         case .tags:
             tagChips
         case .profilePhoto:
@@ -366,8 +426,18 @@ struct OnboardingFlowView: View {
                 accountButtons
             case .nameInput:
                 primaryButton("つづける", isEnabled: OnboardingRules.validateName(nameInput).problem == nil) { confirmName() }
-            case .auto:
+            case .auto, .none:
                 EmptyView()
+            case .emailInput:
+                primaryButton("リンクを送る", isEnabled: isEmailValid, disabledTextColor: Color(hex: "5A5A5E")) { sendEmailLink() }
+            case .emailSent:
+                emailSentActions
+            case .emailFailed:
+                VStack(spacing: 16) {
+                    primaryButton("もう一度送る") { retryAfterFailure() }
+                    appleButton(style: .black)
+                        .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+                }
             case .tags:
                 VStack(spacing: 6) {
                     primaryButton("つづける", isEnabled: !selectedTags.isEmpty) { saveTagsAndAdvance() }
@@ -405,24 +475,17 @@ struct OnboardingFlowView: View {
     }
 
     private var accountButtons: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             if isCheckingAccount {
                 ProgressView()
                     .tint(.white)
                     .frame(height: 56)
                     .accessibilityLabel("アカウントを確認しています")
             } else {
-                SignInWithAppleButton(.continue) { request in
-                    request.requestedScopes = [.fullName]
-                } onCompletion: { result in
-                    signInError = AppleSignInView.applySignIn(result, modelContext: modelContext)
-                }
-                .signInWithAppleButtonStyle(.white)
-                .frame(height: 56)
-                .clipShape(Capsule())
+                appleButton(style: .white)
 
                 Button {
-                    isShowingEmailSignIn = true
+                    go(to: .emailInput)
                 } label: {
                     Label("メールで続ける", systemImage: "envelope")
                         .font(.system(size: 17, weight: .semibold))
@@ -436,10 +499,51 @@ struct OnboardingFlowView: View {
             }
             if let signInError {
                 Text(signInError)
-                    .font(.system(size: 12))
-                    .foregroundStyle(OnboardingPalette.secondaryText)
+                    .font(.system(size: 13))
+                    .foregroundStyle(OnboardingPalette.subText)
                     .multilineTextAlignment(.center)
             }
+        }
+    }
+
+    /// 公式のSign in with Appleボタン(「Appleで続ける」)。高さ56pt・完全な丸み。
+    /// キャンセル(1001)は何も表示しない。ほかの失敗は、静かに1行とやわらかい触覚2回。
+    private func appleButton(style: SignInWithAppleButton.Style) -> some View {
+        SignInWithAppleButton(.continue) { request in
+            print("[AppleSignIn] onRequest: ボタンが押され、認証を要求します")
+            signInError = nil
+            request.requestedScopes = [.fullName]
+        } onCompletion: { result in
+            switch result {
+            case .success:
+                print("[AppleSignIn] onCompletion: 成功")
+                if let message = AppleSignInView.applySignIn(result, modelContext: modelContext) {
+                    print("[AppleSignIn] 結果の保存に失敗: \(message)")
+                    showSignInError(OnboardingCopy.appleSignInFailed)
+                }
+            case .failure(let error):
+                let code = (error as? ASAuthorizationError)?.code
+                print("[AppleSignIn] onCompletion: 失敗 code=\(code.map { String($0.rawValue) } ?? "nil") error=\(error)")
+                if code == .canceled { return }
+                showSignInError(OnboardingCopy.appleSignInFailed)
+            }
+        }
+        .signInWithAppleButtonStyle(style)
+        .frame(height: 56)
+        .clipShape(Capsule())
+    }
+
+    private func showSignInError(_ message: String) {
+        signInError = message
+        playSoftDouble()
+        UIAccessibility.post(notification: .announcement, argument: message)
+    }
+
+    /// やわらかく2回(断られた・失敗した時)
+    private func playSoftDouble() {
+        haptics.playTransient(intensity: 0.3, sharpness: 0.3)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            haptics.playTransient(intensity: 0.3, sharpness: 0.3)
         }
     }
 
@@ -456,18 +560,19 @@ struct OnboardingFlowView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func primaryButton(_ title: String, isEnabled: Bool = true, action: @escaping () -> Void) -> some View {
+    private func primaryButton(_ title: String, isEnabled: Bool = true, disabledTextColor: Color = OnboardingPalette.secondaryText, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 17, weight: .semibold))
                 .tracking(-0.025 * 17)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .foregroundStyle(isEnabled ? .black : OnboardingPalette.secondaryText)
+                .foregroundStyle(isEnabled ? .black : disabledTextColor)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(Capsule().fill(isEnabled ? Color.white : OnboardingPalette.surface))
                 .shadow(color: .white.opacity(isEnabled ? 0.16 : 0), radius: 14)
+                .animation(.easeOut(duration: 0.25), value: isEnabled)
         }
         .buttonStyle(OnboardingPressStyle())
         .disabled(!isEnabled)
@@ -546,7 +651,16 @@ struct OnboardingFlowView: View {
     private func resumeStep() -> OnboardingStep? {
         guard let saved = OnboardingStep(rawValue: savedStep) else { return nil }
         let isSignedIn = !appleUserID.isEmpty || !firebaseUID.isEmpty
-        let order = OnboardingStep.allCases
+        if saved.isEmailStep {
+            if isSignedIn { return .name }
+            // メールを送ったあとに閉じた時は「送りました」から(リンクを開けば、そのまま続く)。
+            if FirebaseAuthService.pendingEmail != nil {
+                sentAddress = FirebaseAuthService.pendingEmail ?? ""
+                return .emailSent
+            }
+            return .emailInput
+        }
+        let order = OnboardingStep.mainFlow
         // サインイン前の場面より先に保存されていても、未サインインならアカウントから。
         if !isSignedIn, let savedIndex = order.firstIndex(of: saved), let accountIndex = order.firstIndex(of: .account), savedIndex > accountIndex {
             return .account
@@ -630,6 +744,11 @@ struct OnboardingFlowView: View {
             }
         case .nameInput:
             isNameFocused = true
+        case .emailInput:
+            // 質問のタイプ演出が終わってから0.3秒後に、キーボードを自動で開く。
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if step == .emailInput { isEmailFocused = true }
+            }
         default:
             break
         }
@@ -653,9 +772,16 @@ struct OnboardingFlowView: View {
         transition(withHaptic: withHaptic) { swap(to: next) }
     }
 
+    /// 本筋の順番によらず、指定の場面へ移る(メールの場面など)。
+    private func go(to target: OnboardingStep, withHaptic: Bool = true) {
+        guard !isTransitioning, target != step else { return }
+        transition(withHaptic: withHaptic) { swap(to: target) }
+    }
+
     private func transition(withHaptic: Bool, swap: @escaping () -> Void) {
         isTransitioning = true
         isNameFocused = false
+        isEmailFocused = false
         if withHaptic && !step.isQuiet {
             haptics.playTransient(intensity: OnboardingTuning.shutterHaptic.intensity, sharpness: OnboardingTuning.shutterHaptic.sharpness)
         }
@@ -707,7 +833,7 @@ struct OnboardingFlowView: View {
     // MARK: - アカウント
 
     private func handleSignInChange() {
-        guard step == .account, !appleUserID.isEmpty || !firebaseUID.isEmpty, !isCheckingAccount else { return }
+        guard step == .account || step.isEmailStep, !appleUserID.isEmpty || !firebaseUID.isEmpty, !isCheckingAccount else { return }
         // 端末に同じアカウントのプロフィールがあれば、サインイン処理側がisSetupCompletedを立てる。
         if isSetupCompleted {
             completeAsExistingUser()
@@ -730,7 +856,8 @@ struct OnboardingFlowView: View {
                 try? await Task.sleep(for: .seconds(0.5))
             }
             isCheckingAccount = false
-            advance()
+            // はじめてのアカウント:パシャで、次の質問(名前)へ。
+            go(to: .name)
         }
     }
 
@@ -787,6 +914,233 @@ struct OnboardingFlowView: View {
         Task { await UserDirectoryService.publish(profile) }
 
         advance()
+    }
+
+    // MARK: - メールで続ける
+
+    /// 前後の空白を除き、全角を半角に直して(「＠」など)、小文字にしたアドレス
+    private var normalizedEmail: String {
+        emailInput.precomposedStringWithCompatibilityMapping
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+    }
+
+    /// 簡易な形の判定(「@」が1つ、前後が空でなく、「@」のあとに「.」を含む)。厳密にしすぎない。
+    private var isEmailValid: Bool {
+        normalizedEmail.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#, options: .regularExpression) != nil
+    }
+
+    private var emailField: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("", text: $emailInput, prompt: Text("メールアドレス").foregroundStyle(Color(hex: "4A4A4F")))
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(.white)
+                .tint(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(20 / 28)
+                .keyboardType(.emailAddress)
+                .textContentType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.send)
+                .focused($isEmailFocused)
+                .onSubmit {
+                    if isEmailValid { sendEmailLink() } else { showEmailError() }
+                }
+                .onChange(of: emailInput) { old, _ in emailInputChanged(wasValid: Self.isValid(old)) }
+                .accessibilityLabel("メールアドレス")
+                .dynamicTypeSize(.large)
+            Rectangle()
+                .fill(.white.opacity(isEmailErrorShown ? 0.9 : 0.3))
+                .frame(height: 1)
+                .animation(.easeOut(duration: 0.2), value: isEmailErrorShown)
+
+            if isEmailErrorShown {
+                HStack(alignment: .top, spacing: 8) {
+                    Text("!")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.black)
+                        .frame(width: 15, height: 15)
+                        .background(Circle().fill(OnboardingPalette.subText))
+                        .padding(.top, 1)
+                    Text("メールアドレスの形が違うようです。「@」のあとも、確かめてください。")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(OnboardingPalette.subText)
+                }
+                .transition(.opacity)
+            } else if isEmailValid {
+                Text("サインイン用のリンクを送ります。パスワードは要りません。")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(OnboardingPalette.secondaryText)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.top, 34)
+        .modifier(ShakeEffect(animatableData: CGFloat(emailShake)))
+        .animation(.easeOut(duration: 0.2), value: isEmailErrorShown)
+    }
+
+    private static func isValid(_ raw: String) -> Bool {
+        let value = raw.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return value.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#, options: .regularExpression) != nil
+    }
+
+    /// 入力のたびに:エラーは消す。形が合った瞬間だけ軽く1回。止まって0.8秒たったら形を確かめる。
+    private func emailInputChanged(wasValid: Bool) {
+        emailErrorTask?.cancel()
+        if isEmailErrorShown { isEmailErrorShown = false }
+        if isEmailValid && !wasValid {
+            haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
+        }
+        guard !normalizedEmail.isEmpty, !isEmailValid else { return }
+        emailErrorTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.8))
+            guard !Task.isCancelled, !isEmailValid, step == .emailInput else { return }
+            showEmailError()
+        }
+    }
+
+    /// 形が違う:赤くしない。「!」とやさしい言葉、線が白く強くなり、入力欄が左右に小さく揺れる。
+    private func showEmailError() {
+        guard !isEmailErrorShown else { return }
+        isEmailErrorShown = true
+        if !reduceMotion {
+            withAnimation(.linear(duration: 0.3)) { emailShake += 1 }
+        }
+        if !hasShownEmailError {
+            hasShownEmailError = true
+            playSoftDouble()
+        }
+        UIAccessibility.post(notification: .announcement, argument: "メールアドレスの形が違うようです。「@」のあとも、確かめてください。")
+    }
+
+    /// リンクを送る:キーボードを閉じて「送っています…」へ。10秒たっても終わらなければ失敗へ。
+    /// 送る前にアドレスを端末に保存する(FirebaseAuthService.sendSignInLinkが行う)。
+    private func sendEmailLink() {
+        guard isEmailValid else {
+            showEmailError()
+            return
+        }
+        let address = normalizedEmail
+        sentAddress = address
+        isEmailFocused = false
+        sendingAttempt += 1
+        let attempt = sendingAttempt
+        go(to: .emailSending, withHaptic: false)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(10))
+            guard attempt == sendingAttempt, step == .emailSending else { return }
+            sendingAttempt += 1
+            showEmailFailure(.network)
+        }
+        Task { @MainActor in
+            do {
+                try await FirebaseAuthService.sendSignInLink(to: address)
+                guard attempt == sendingAttempt else { return }
+                sendingAttempt += 1
+                // 送信中の画面を一瞬で飛ばさないよう、少しだけ見せてから進む。
+                try? await Task.sleep(for: .seconds(0.6))
+                haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
+                go(to: .emailSent, withHaptic: false)
+                startResendCountdown()
+                UIAccessibility.post(notification: .announcement, argument: "メールを送りました。届いたメールのサインインを開いてください")
+            } catch {
+                print("[EmailSignIn] sendSignInLink failed: \(error)")
+                guard attempt == sendingAttempt else { return }
+                sendingAttempt += 1
+                showEmailFailure(EmailSignInFailure.from(error))
+            }
+        }
+    }
+
+    private func showEmailFailure(_ failure: EmailSignInFailure) {
+        emailFailure = failure
+        if step == .emailFailed {
+            return
+        }
+        // 送信中など、場面の切り替え中でも必ず失敗の画面に移す。
+        DispatchQueue.main.asyncAfter(deadline: .now() + (isTransitioning ? 0.3 : 0)) {
+            go(to: .emailFailed, withHaptic: false)
+            playSoftDouble()
+            UIAccessibility.post(notification: .announcement, argument: failure.title + failure.message.replacingOccurrences(of: "\n", with: ""))
+        }
+    }
+
+    /// 失敗のあと:期限切れ・別の端末で開いた時は入力へ(アドレスを入れ直す)。それ以外は、もう一度送る。
+    private func retryAfterFailure() {
+        switch emailFailure {
+        case .expiredLink, .missingEmail:
+            go(to: .emailInput)
+        case .network, .tooManyRequests:
+            if isEmailValid { sendEmailLink() } else { go(to: .emailInput) }
+        }
+    }
+
+    private var emailSentInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(sentAddress)
+                .font(.system(size: 13, design: .monospaced))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text("届いたメールの「サインイン」を開くと、そのまま続きに進めます。")
+                .font(.system(size: 14))
+                .foregroundStyle(OnboardingPalette.subText)
+                .lineSpacing(3)
+            Text("届かないときは、迷惑メールも見てみてください。")
+                .font(.system(size: 12.5))
+                .foregroundStyle(OnboardingPalette.secondaryText)
+        }
+        .padding(.top, 24)
+    }
+
+    private var canOpenMailApp: Bool {
+        URL(string: "message://").map { UIApplication.shared.canOpenURL($0) } ?? false
+    }
+
+    private var emailSentActions: some View {
+        VStack(spacing: 18) {
+            if canOpenMailApp {
+                primaryButton("メールアプリを開く") {
+                    if let url = URL(string: "message://") { UIApplication.shared.open(url) }
+                }
+            }
+            HStack {
+                Button("アドレスを変える") { go(to: .emailInput, withHaptic: false) }
+                    .font(.system(size: 13.5, weight: .medium))
+                    .foregroundStyle(OnboardingPalette.secondaryText)
+                Spacer()
+                if resendRemaining > 0 {
+                    Text(String(format: "再送まで %d:%02d", resendRemaining / 60, resendRemaining % 60))
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(OnboardingPalette.secondaryText)
+                        .monospacedDigit()
+                        .accessibilityLabel("再送まで あと\(resendRemaining)秒")
+                } else {
+                    Button("もう一度送る") { sendEmailLink() }
+                        .font(.system(size: 13.5, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    /// 再送までの30秒のカウントダウン。読み上げは毎秒ではなく10秒おき。
+    private func startResendCountdown() {
+        resendTask?.cancel()
+        resendRemaining = OnboardingTuning.emailResendInterval
+        resendTask = Task { @MainActor in
+            while resendRemaining > 0, !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                resendRemaining -= 1
+                if voiceOverEnabled, resendRemaining > 0, resendRemaining % 10 == 0, step == .emailSent {
+                    UIAccessibility.post(notification: .announcement, argument: "再送まで あと\(resendRemaining)秒")
+                }
+            }
+        }
     }
 
     // MARK: - タグ
