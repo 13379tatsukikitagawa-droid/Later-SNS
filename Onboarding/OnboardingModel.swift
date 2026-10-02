@@ -10,10 +10,8 @@ enum OnboardingStep: String, CaseIterable {
     case meet, account, name, nameConfirm
     case explainAsk, explainSealed, explain9, explainArrive
     case tags
-    case lookismAsk1, lookismAsk2
-    case lookismNow1, lookismNow2, lookismNow3
-    case lookismStructure1, lookismStructure2, lookismStructure3
-    case lookismBlame, lookismAnswer, lookismConsent
+    /// 5. ルッキズム(5画面):問い → 計算 → 換算 → 責任とLaterの答え → 同意
+    case lookismRetakes, lookismCount, lookismTime, lookismAnswer, lookismConsent
     case profilePhoto, notify, finish
     /// 「メールで続ける」のあとの場面(アカウントの1問の延長)。本筋の順番(next)には入らない。
     case emailInput, emailSending, emailSent, emailVerifying, emailFailed
@@ -37,9 +35,7 @@ enum OnboardingStep: String, CaseIterable {
         case .name, .nameConfirm: return 2
         case .explainAsk, .explainSealed, .explain9, .explainArrive: return 3
         case .tags: return 4
-        case .lookismAsk1, .lookismAsk2, .lookismNow1, .lookismNow2, .lookismNow3,
-             .lookismStructure1, .lookismStructure2, .lookismStructure3,
-             .lookismBlame, .lookismAnswer, .lookismConsent: return 4
+        case .lookismRetakes, .lookismCount, .lookismTime, .lookismAnswer, .lookismConsent: return 4
         case .profilePhoto: return 6
         case .notify: return 7
         case .finish: return 8
@@ -52,9 +48,7 @@ enum OnboardingStep: String, CaseIterable {
     /// ルッキズムのパート(静けさのパート)。玉・点・光を消し、触覚もタイプのスキップも止める。
     var isQuiet: Bool {
         switch self {
-        case .lookismAsk1, .lookismAsk2, .lookismNow1, .lookismNow2, .lookismNow3,
-             .lookismStructure1, .lookismStructure2, .lookismStructure3,
-             .lookismBlame, .lookismAnswer, .lookismConsent: return true
+        case .lookismRetakes, .lookismCount, .lookismTime, .lookismAnswer, .lookismConsent: return true
         default: return false
         }
     }
@@ -91,6 +85,8 @@ enum OnboardingActions {
     case hold(OnboardingHoldKind)
     case profilePhoto
     case notify
+    /// 5-1の選択肢(0 / 1〜2 / 3〜5 / 6〜10 / 11以上)
+    case retakeChoice
     /// メールアドレスの入力(CTA「リンクを送る」)
     case emailInput
     /// 送りました(メールアプリを開く・アドレスを変える・再送)
@@ -106,6 +102,67 @@ enum OnboardingHoldKind {
     case consent
     /// 結び(Homeへ)
     case finish
+}
+
+/// 5-1「1枚の写真を投稿するまでに、何回撮り直しますか。」の答え。答えは保存しない。
+enum RetakeAnswer: Int, CaseIterable {
+    case zero, oneToTwo, threeToFive, sixToTen, elevenOrMore
+
+    var label: String {
+        switch self {
+        case .zero: return "0"
+        case .oneToTwo: return "1〜2"
+        case .threeToFive: return "3〜5"
+        case .sixToTen: return "6〜10"
+        case .elevenOrMore: return "11以上"
+        }
+    }
+
+    /// 計算に使う代表値
+    var representative: Int {
+        switch self {
+        case .zero: return 0
+        case .oneToTwo: return 2
+        case .threeToFive: return 4
+        case .sixToTen: return 8
+        case .elevenOrMore: return 12
+        }
+    }
+}
+
+/// 5-2・5-3の計算。1日1枚、1回10秒、80年(仮の数字)。
+enum RetakeMath {
+    static let years = 80
+    static let secondsPerRetake = 10.0
+
+    /// 換算の表し方(設定1つで切り替える)
+    enum Conversion {
+        /// 日数(基本)
+        case days
+        /// 映画の本数(1本2時間)
+        case movies
+    }
+
+    static let conversion: Conversion = .days
+    static let movieHours = 2.0
+
+    /// 回数 = 撮り直し回数 × 365 × 80
+    static func totalRetakes(_ answer: RetakeAnswer) -> Int {
+        answer.representative * 365 * years
+    }
+
+    /// 5-3の文。日数 = 回数 × 10秒 ÷ 86400(映画なら、時間 ÷ 2時間)
+    static func conversionText(_ answer: RetakeAnswer) -> String {
+        let seconds = Double(totalRetakes(answer)) * secondsPerRetake
+        switch conversion {
+        case .days:
+            let days = max(1, Int((seconds / 86400).rounded()))
+            return "それは、\n約\(days.formatted())日分の時間です。\n"
+        case .movies:
+            let movies = max(1, Int((seconds / 3600 / movieHours).rounded()))
+            return "それは、映画\n約\(movies.formatted())本分の時間です。\n"
+        }
+    }
 }
 
 /// メールでのサインインがうまくいかなかった理由
@@ -154,10 +211,6 @@ enum OnboardingVisual {
     case nineAM
     /// 34個の点の輪(オレンジ→青→黄)
     case arriveRing
-    /// 灰色の「いいね」「フォロワー」の数字
-    case counts
-    /// 3つの丸(1つだけ白く灯る)
-    case threeCircles
     /// 通知カードの見本
     case notificationCard
     /// プロフィール撮影の小さなファインダー
@@ -174,10 +227,12 @@ struct OnboardingScene {
     var fontSize: CGFloat = 27
     /// 文の下に添える小さな出典など(等幅)。
     var footnote: String?
+    /// 文の下で、0から一気に数え上がる数字(5-2の撮り直しの回数)
+    var countUp: Int?
 }
 
 extension OnboardingStep {
-    func scene(name: String, emailFailure: EmailSignInFailure = .network) -> OnboardingScene {
+    func scene(name: String, emailFailure: EmailSignInFailure = .network, retakes: RetakeAnswer? = nil) -> OnboardingScene {
         switch self {
         case .emailInput:
             return OnboardingScene(lines: [.init(text: "メールアドレスを\n教えてください。")], actions: .emailInput, fontSize: 26)
@@ -211,40 +266,32 @@ extension OnboardingStep {
             return OnboardingScene(lines: [.init(text: "今日の1枚を撮ると、\n昨日みんなが撮った\n写真が届きます。")], actions: .primary("つづける"), visual: .arriveRing)
         case .tags:
             return OnboardingScene(lines: [.init(text: "あなたを3つのタグで\n表すとしたら、何ですか。")], actions: .tags, fontSize: 25)
-        case .lookismAsk1:
-            return OnboardingScene(lines: [.init(text: "SNSに写真を載せる前に、\n何度も撮り直したことは\nありますか。")], actions: .choice(yes: "ある", no: "ない"))
-        case .lookismAsk2:
-            return OnboardingScene(lines: [.init(text: "見た目が気になって、\n投稿をやめたことは\nありますか。")], actions: .choice(yes: "ある", no: "ない"))
-        case .lookismNow1:
-            return OnboardingScene(lines: [.init(text: "多くのSNSでは、\n写真は加工されてから\n公開されます。")], actions: .primary("つづける"))
-        case .lookismNow2:
-            return OnboardingScene(lines: [.init(text: "肌は整えられ、\n輪郭は細くされ、\n本当の顔は少しずつ\n見えなくなっています。")], actions: .primary("つづける"))
-        case .lookismNow3:
-            return OnboardingScene(lines: [.init(text: "そして、その写真には\n数字がつきます。\nいいねの数、\nフォロワーの数。")], actions: .primary("つづける"), visual: .counts)
-        case .lookismStructure1:
-            return OnboardingScene(lines: [.init(text: "数字は\n比べるためにあります。")], actions: .primary("つづける"))
-        case .lookismStructure2:
-            return OnboardingScene(lines: [.init(text: "比べられる場所では、\n人は「よく見られる\n自分」を作り続ける\nことになります。")], actions: .primary("つづける"))
-        case .lookismStructure3:
+        case .lookismRetakes:
+            return OnboardingScene(lines: [.init(text: "あなたは、1枚の写真を\n投稿するまでに、\n何回撮り直しますか。")], actions: .retakeChoice)
+        case .lookismCount:
+            guard let retakes, retakes != .zero else {
+                return OnboardingScene(lines: [.init(text: "あなたは、\n撮り直さない人です。")], actions: .primary("つづける"))
+            }
             return OnboardingScene(
-                lines: [.init(text: OnboardingCopy.lookismStatistic)],
+                lines: [.init(text: "あなたはこれから\n80年生きるとして、")],
                 actions: .primary("つづける"),
-                visual: .threeCircles,
-                footnote: OnboardingCopy.lookismStatisticSource
+                footnote: "1日1枚、1回10秒として計算しています。\n80年は仮の数字です。",
+                countUp: RetakeMath.totalRetakes(retakes)
             )
-        case .lookismBlame:
+        case .lookismTime:
+            guard let retakes, retakes != .zero else {
+                return OnboardingScene(lines: [.init(text: "それでも、多くの人は\nそうではありません。")], actions: .primary("つづける"))
+            }
             return OnboardingScene(lines: [
-                .init(text: "これは、あなたが\n弱いからではありません。\n"),
-                .init(text: "比べたくなるように\n作られた仕組みの\n問題です。", tone: .secondary),
+                .init(text: RetakeMath.conversionText(retakes)),
+                .init(text: "よく見られるためだけに、\n使う時間です。", tone: .secondary),
             ], actions: .primary("つづける"))
         case .lookismAnswer:
-            // 4つの約束で9行になるため、この場面だけ文字を小さくして画面に収める。
+            // 責任の所在とLaterの答えを1画面にまとめる(行が多いため、この場面だけ文字を小さく)。
             return OnboardingScene(lines: [
-                .init(text: "Laterには、\nいいねもフォロワー数も\nありません。\n"),
-                .init(text: "加工も、\n撮り直しもできません。\n"),
-                .init(text: "プロフィールに、\n顔は必要ありません。\n"),
-                .init(text: "ここでは、見た目ではなく\nその日の瞬間を残します。", tone: .secondary),
-            ], actions: .primary("つづける"), fontSize: 21)
+                .init(text: "これは、あなたの\n弱さではなく、\n比べさせる仕組みの\n問題です。\n"),
+                .init(text: "Laterでは、撮り直しも、\n加工も、いいねも\nありません。"),
+            ], actions: .primary("つづける"), fontSize: 23)
         case .lookismConsent:
             return OnboardingScene(lines: [.init(text: "この約束のもとで、\nはじめますか。")], actions: .hold(.consent))
         case .profilePhoto:
@@ -266,13 +313,6 @@ extension OnboardingStep {
 // MARK: - 文言
 
 enum OnboardingCopy {
-    /// 「Laterの答え」の数字の根拠。根拠が確認できる表現にだけ変更すること。
-    /// 報道(WSJ, 2021)では、Meta(旧Facebook)社内調査で「体の悩みを抱えた10代の少女の32%が、
-    /// Instagramでその悩みが悪化したと答えた」とされている。
-    static let lookismStatistic = "体に悩む10代女性の\n32%が、Instagramで\n悩みが悪化したと\n答えました。"
-    /// 出典の1行は、数字と切り離さず必ず画面に出す。
-    static let lookismStatisticSource = "出典:Meta(旧Facebook)社内調査(Instagram)\n2021年 WSJ報道・米議会提出資料"
-
     /// 「自分を表すタグ」の候補。後で流行のタグに差し替えられるよう、データとして分けておく。
     static let selfTagCandidates = ["朝型", "散歩", "コーヒー", "音楽", "夜型", "本", "猫", "ひとり時間", "空"]
 

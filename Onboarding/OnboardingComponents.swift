@@ -10,7 +10,6 @@ enum OnboardingPalette {
     static let secondaryText = Color(hex: "8E8E93")
     static let subText = Color(hex: "BCBBC0")
     static let note = Color(hex: "6B6B70")
-    static let counts = Color(hex: "6F6F75")
     static let surface = Color(hex: "1C1C1E")
 }
 
@@ -732,6 +731,52 @@ struct PersonaIcon: View {
                 opacity: index == 0 ? 1 : 0.45 + next() * 0.45
             )
         }
+    }
+}
+
+// MARK: - 数え上がる数字(5-2)
+
+/// 「約〇〇回、撮り直すことになります。」の数字。文が出終わったら、0から一気に数え上がる(1.2秒)。
+struct RetakeCountUp: View {
+    let target: Int
+    let isRunning: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var start: Date?
+
+    private static let duration = 1.2
+
+    var body: some View {
+        TimelineView(.animation(paused: start == nil || reduceMotion)) { context in
+            let value = currentValue(at: context.date)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("約\(value.formatted())回、")
+                    .font(.system(size: 40, weight: .bold, design: .monospaced))
+                    .tracking(-0.03 * 40)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .foregroundStyle(OnboardingPalette.quietText)
+                Text("撮り直すことになります。")
+                    .font(.system(size: 27, weight: .semibold))
+                    .tracking(-0.04 * 27)
+                    .foregroundStyle(OnboardingPalette.quietText)
+            }
+        }
+        .opacity(isRunning ? 1 : 0)
+        .animation(.easeOut(duration: 0.3), value: isRunning)
+        .onChange(of: isRunning, initial: true) { _, running in
+            if running, start == nil { start = Date() }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("約\(target.formatted())回、撮り直すことになります。")
+    }
+
+    private func currentValue(at date: Date) -> Int {
+        guard let start, !reduceMotion else { return isRunning ? target : 0 }
+        let t = min(1, max(0, date.timeIntervalSince(start) / Self.duration))
+        let eased = 1 - pow(1 - t, 3)
+        return Int(Double(target) * eased)
     }
 }
 

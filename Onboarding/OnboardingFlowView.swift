@@ -67,6 +67,9 @@ struct OnboardingFlowView: View {
     // タグ
     @State private var selectedTags: [String] = []
 
+    // 5-1の答え(保存しない)
+    @State private var retakeAnswer: RetakeAnswer?
+
     // アカウント
     @State private var signInError: String?
     @State private var isCheckingAccount = false
@@ -89,7 +92,7 @@ struct OnboardingFlowView: View {
     @State private var cameraPosition: AVCaptureDevicePositionValue = .back
     @State private var photoNotice: (title: String, message: String)?
 
-    private var scene: OnboardingScene { step.scene(name: confirmedName, emailFailure: emailFailure) }
+    private var scene: OnboardingScene { step.scene(name: confirmedName, emailFailure: emailFailure, retakes: retakeAnswer) }
     /// 玉を0.6倍に縮めて上へ寄せる(キーボードが出る入力の場面)
     private var isCompactOrb: Bool { isNameEditing || step == .emailInput }
     private var primaryTextColor: Color { step.isQuiet ? OnboardingPalette.quietText : OnboardingPalette.text }
@@ -249,22 +252,6 @@ struct OnboardingFlowView: View {
                 NineAMVisual()
             case .arriveRing:
                 ArriveRingVisual()
-            case .counts:
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text("12,408 いいね")
-                    Text("8,203 フォロワー")
-                }
-                .font(.system(size: 15, design: .monospaced))
-                .foregroundStyle(OnboardingPalette.counts)
-            case .threeCircles:
-                HStack(spacing: 14) {
-                    ForEach(0..<3, id: \.self) { index in
-                        Circle()
-                            .fill(index == 0 ? Color.white : Color.white.opacity(0.14))
-                            .frame(width: 18, height: 18)
-                            .shadow(color: index == 0 ? .white.opacity(0.6) : .clear, radius: 6)
-                    }
-                }
             case .notificationCard:
                 NotificationCardSample()
                     .padding(.horizontal, 28)
@@ -312,6 +299,11 @@ struct OnboardingFlowView: View {
                     showsEverything: showsEverything
                 )
                 .id(step)
+
+                if let countUp = scene.countUp {
+                    RetakeCountUp(target: countUp, isRunning: isTypingDone || showsEverything)
+                        .padding(.top, 6)
+                }
 
                 if let footnote = scene.footnote {
                     Text(footnote)
@@ -428,6 +420,8 @@ struct OnboardingFlowView: View {
                 primaryButton("つづける", isEnabled: OnboardingRules.validateName(nameInput).problem == nil) { confirmName() }
             case .auto, .none:
                 EmptyView()
+            case .retakeChoice:
+                retakeChoices
             case .emailInput:
                 primaryButton("リンクを送る", isEnabled: isEmailValid, disabledTextColor: Color(hex: "5A5A5E")) { sendEmailLink() }
             case .emailSent:
@@ -459,7 +453,7 @@ struct OnboardingFlowView: View {
                 .frame(maxWidth: .infinity)
             case .notify:
                 VStack(spacing: 6) {
-                    primaryButton("お知らせを受け取る") {
+                    primaryButton("はい") {
                         Task {
                             await DailyOpenNotification.requestAndSchedule()
                             advance()
@@ -472,6 +466,29 @@ struct OnboardingFlowView: View {
         .opacity(areActionsVisible ? 1 : 0)
         .offset(y: areActionsVisible || reduceMotion ? 0 : 10)
         .allowsHitTesting(areActionsVisible && !isTransitioning)
+    }
+
+    /// 5-1の選択肢。1列に並べ、タップするとそのまま次へ進む。
+    private var retakeChoices: some View {
+        HStack(spacing: 6) {
+            ForEach(RetakeAnswer.allCases, id: \.self) { answer in
+                Button {
+                    retakeAnswer = answer
+                    advance()
+                } label: {
+                    Text(answer.label)
+                        .font(.system(size: 15, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Capsule().fill(OnboardingPalette.surface))
+                }
+                .buttonStyle(OnboardingPressStyle())
+                .accessibilityLabel(answer == .zero ? "0回" : "\(answer.label)回")
+            }
+        }
     }
 
     private var accountButtons: some View {
@@ -649,8 +666,14 @@ struct OnboardingFlowView: View {
     }
 
     private func resumeStep() -> OnboardingStep? {
+        // 以前のルッキズムのパート(11画面)の途中で保存されていた場合は、新しい5-1から。
+        if OnboardingStep(rawValue: savedStep) == nil, savedStep.hasPrefix("lookism") {
+            return .lookismRetakes
+        }
         guard let saved = OnboardingStep(rawValue: savedStep) else { return nil }
         let isSignedIn = !appleUserID.isEmpty || !firebaseUID.isEmpty
+        // 5-2・5-3は5-1の答えを保存しないため、5-1から。
+        if saved == .lookismCount || saved == .lookismTime { return .lookismRetakes }
         if saved.isEmailStep {
             if isSignedIn { return .name }
             // メールを送ったあとに閉じた時は「送りました」から(リンクを開けば、そのまま続く)。
