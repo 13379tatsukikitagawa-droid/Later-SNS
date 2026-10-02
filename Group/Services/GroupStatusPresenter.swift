@@ -19,8 +19,7 @@ enum GroupDailyState: Equatable {
 enum GroupStatusPresenter {
     static func state(for group: LaterGroup, now: Date = Date(), calendar: Calendar = .current) -> GroupDailyState {
         let currentCyclePhotos = group.currentCyclePhotos(now: now, calendar: calendar)
-        let currentCycleVideos = group.currentCycleVideos(now: now, calendar: calendar)
-        let currentCycleTotal = currentCyclePhotos.count + currentCycleVideos.count
+        let currentCycleTotal = currentCyclePhotos.count
 
         if group.isPersonalSpace {
             // MEには「全員達成」という概念が無い。共同投票フェーズも存在しないため、
@@ -48,10 +47,6 @@ enum GroupStatusPresenter {
         var countsByOwnerID: [UUID: Int] = [:]
         for photo in currentCyclePhotos {
             guard let ownerID = photo.owner?.id else { continue }
-            countsByOwnerID[ownerID, default: 0] += 1
-        }
-        for video in currentCycleVideos {
-            guard let ownerID = video.owner?.id else { continue }
             countsByOwnerID[ownerID, default: 0] += 1
         }
         let achievedCount = memberIDs.filter { (countsByOwnerID[$0] ?? 0) >= GroupUnlockPolicy.individualMinimumPhotoCount }.count

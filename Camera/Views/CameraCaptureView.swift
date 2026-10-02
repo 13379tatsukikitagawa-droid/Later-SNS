@@ -16,8 +16,6 @@ struct TrueBlindCameraView: View {
     /// 今日すでに撮影した枚数と、個人の撮影上限(「残り◯枚」表示・上限到達判定用)
     var currentCount: Int
     var limit: Int
-    /// 直近(昨日を起点)からの連続撮影日数。控えめなアイコン表示にのみ使う。
-    var streakCount: Int
     /// 撮影データに加え、その時点で取得できていた撮影地の地名(未取得/権限無しならnil)を渡す。
     var onCapture: (Data, String?) -> Void
     /// 動画(FilmEmulation加工済み.mp4のURL・サムネイル・長さ(秒)・撮影地の地名)の
@@ -43,7 +41,6 @@ struct TrueBlindCameraView: View {
         isFlashOn: Binding<Bool>,
         currentCount: Int,
         limit: Int,
-        streakCount: Int,
         caption: String = "",
         onCapture: @escaping (Data, String?) -> Void,
         onCaptureVideo: @escaping (URL, UIImage?, Double, String?) -> Void
@@ -53,7 +50,6 @@ struct TrueBlindCameraView: View {
         self._isFlashOn = isFlashOn
         self.currentCount = currentCount
         self.limit = limit
-        self.streakCount = streakCount
         self.caption = caption
         self.onCapture = onCapture
         self.onCaptureVideo = onCaptureVideo

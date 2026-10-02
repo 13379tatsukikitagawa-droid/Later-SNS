@@ -19,14 +19,11 @@ enum AppRecordType {
     static let userProfile = "UserProfile"
     static let laterGroup = "LaterGroup"
     static let laterPhoto = "LaterPhoto"
-    static let laterVideo = "LaterVideo"
     static let photoVote = "PhotoVote"
     static let groupInvite = "GroupInvite"
     static let userDirectory = "UserDirectory"
     static let report = "Report"
     static let block = "Block"
-    static let worldPost = "WorldPost"
-    static let todaysLaterSelection = "TodaysLaterSelection"
 }
 
 /// record.recordID.zoneID.ownerNameは、レコードの所有者自身が自分のprivateCloudDatabase
@@ -338,92 +335,6 @@ extension LaterPhoto {
             // 写真は元々imageキーを持たないのが正常なので、その場合はログを出さない)。
             print("[GroupSync] LaterPhoto.apply: isUnlocked=trueだがrecord内にimageキーが存在しない recordName=\(record.recordID.recordName)")
         }
-        ckRecordName = record.recordID.recordName
-        ckZoneName = record.recordID.zoneID.zoneName
-        ckZoneOwnerName = resolvedZoneOwnerName(from: record)
-        ckRecordChangeTag = record.recordChangeTag
-    }
-}
-
-// MARK: - LaterVideo (サムネイルは通常同期、動画本体は端末に永続保持しない)
-
-extension LaterVideo {
-    func recordID(zoneID: CKRecordZone.ID) -> CKRecord.ID {
-        CKRecord.ID(recordName: ckRecordName ?? id.uuidString, zoneID: zoneID)
-    }
-
-    var cachedZoneID: CKRecordZone.ID? {
-        guard let zoneName = ckZoneName, let ownerName = ckZoneOwnerName else { return nil }
-        return CKRecordZone.ID(zoneName: zoneName, ownerName: ownerName)
-    }
-
-    var cachedRecordID: CKRecord.ID? {
-        guard let zoneID = cachedZoneID, let recordName = ckRecordName else { return nil }
-        return CKRecord.ID(recordName: recordName, zoneID: zoneID)
-    }
-
-    /// isUnlockedがfalse(ブラインド解禁待ち)の間は写真と同じくフィールドを一切設定しない
-    /// (解禁タイミングを写真と揃えるため)。動画本体は、まだアップロード未確認
-    /// (localFilePathが残っている)の間だけ、そのローカルファイルからCKAssetとして添付する。
-    /// アップロード確認後(CloudKitManager.markSynced)はローカルの動画ファイル自体を
-    /// 削除しているため、以降の再送ではサムネイルとメタデータだけを送り直す
-    /// (動画データは既にCloudKit上にあるはずなので問題ない)。
-    func toCKRecord(existing: CKRecord?, zoneID: CKRecordZone.ID, groupRecordID: CKRecord.ID) throws -> CKRecord {
-        let record = existing ?? CKRecord(recordType: AppRecordType.laterVideo, recordID: recordID(zoneID: zoneID))
-        record["captureDate"] = captureDate
-        record["unlockDate"] = unlockDate
-        record["isUnlocked"] = isUnlocked
-        record["durationSeconds"] = durationSeconds
-        record["caption"] = caption
-        record["locationName"] = locationName
-        record["authorCloudKitUserRecordName"] = authorCloudKitUserRecordName
-        record["authorNameCache"] = authorNameCache ?? owner?.name
-        record["groupNameCache"] = groupNameCache
-        record["groupIDString"] = groupID?.uuidString
-        record["group"] = CKRecord.Reference(recordID: groupRecordID, action: .deleteSelf)
-        record.parent = CKRecord.Reference(recordID: groupRecordID, action: .none)
-
-        if isUnlocked {
-            let thumbTempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).jpg")
-            do {
-                try thumbnailData.write(to: thumbTempURL)
-                record["thumbnail"] = CKAsset(fileURL: thumbTempURL)
-            } catch {
-                print("[GroupSync] LaterVideo.toCKRecord: サムネイル書き込み失敗 recordID=\(recordID(zoneID: zoneID)), error=\(error)")
-            }
-
-            if let localFilePath, FileManager.default.fileExists(atPath: localFilePath) {
-                record["video"] = CKAsset(fileURL: URL(fileURLWithPath: localFilePath))
-            }
-        }
-
-        return record
-    }
-
-    /// 動画本体(CKAsset)は意図的にここで永続化しない。CKSyncEngineが同期の過程で
-    /// システムのtmp領域へ一時ファイルとしてダウンロードすること自体は避けられないが、
-    /// サムネイルだけを取り込み、動画バイト列はどこにもコピーしない。再生はタップ時に
-    /// CloudKitManager.fetchVideoAsset(for:)で都度取得する(写真で起きたDocuments & Data
-    /// 肥大化を動画では繰り返さないための設計)。
-    func apply(from record: CKRecord) throws {
-        captureDate = record["captureDate"] as? Date ?? captureDate
-        unlockDate = record["unlockDate"] as? Date ?? unlockDate
-        isUnlocked = record["isUnlocked"] as? Bool ?? isUnlocked
-        durationSeconds = record["durationSeconds"] as? Double ?? durationSeconds
-        caption = record["caption"] as? String
-        locationName = record["locationName"] as? String
-        authorCloudKitUserRecordName = record["authorCloudKitUserRecordName"] as? String ?? authorCloudKitUserRecordName
-        authorNameCache = record["authorNameCache"] as? String ?? authorNameCache
-        groupNameCache = record["groupNameCache"] as? String ?? groupNameCache
-
-        if let asset = record["thumbnail"] as? CKAsset, let fileURL = asset.fileURL {
-            do {
-                thumbnailData = try Data(contentsOf: fileURL)
-            } catch {
-                print("[GroupSync] LaterVideo.apply: サムネイル読み込み失敗 recordName=\(record.recordID.recordName), error=\(error)")
-            }
-        }
-
         ckRecordName = record.recordID.recordName
         ckZoneName = record.recordID.zoneID.zoneName
         ckZoneOwnerName = resolvedZoneOwnerName(from: record)

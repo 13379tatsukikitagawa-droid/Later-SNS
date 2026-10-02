@@ -132,7 +132,7 @@ struct GroupDetailView: View {
 
                 HStack(spacing: 12) {
                     Label("\(group.members.count)/\(GroupMembershipPolicy.maxMembersPerGroup)人", systemImage: "person.2.fill")
-                    Label("\(group.photos.count + group.videos.count)枚", systemImage: "photo.fill")
+                    Label("\(group.photos.count)枚", systemImage: "photo.fill")
                 }
                 .font(.system(size: 13))
                 .foregroundStyle(.white.opacity(0.55))

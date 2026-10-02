@@ -26,11 +26,6 @@ class LaterGroup {
     @Relationship(deleteRule: .cascade)
     var photos: [LaterPhoto] = []
 
-    // 🎬 グループで共有されている動画たち。目標達成枚数のカウントは写真と合算する
-    // (LaterGroup.currentCycleVideos()/currentCycleContentCount(ownerID:)参照)。
-    @Relationship(deleteRule: .cascade)
-    var videos: [LaterVideo] = []
-
     // 🏆 ホスト管理
     @Relationship
     var host: UserProfile?
@@ -209,12 +204,6 @@ extension LaterGroup {
         return photos.filter { $0.captureDate > boundary }
     }
 
-    /// 現在進行中サイクルに属する動画(currentCyclePhotosの動画版)。
-    func currentCycleVideos(now: Date = Date(), calendar: Calendar = .current) -> [LaterVideo] {
-        let boundary = lastUnlockAt ?? creationDate
-        return videos.filter { $0.captureDate > boundary }
-    }
-
     /// 直近に解禁されたサイクルに属する写真。解禁の瞬間、そのサイクルの写真は
     /// unlockDateがlastUnlockAtと同じ値に揃えられる(CloudKitManager.
     /// evaluateGroupUnlockConditions参照)ため、その一致で「直近の解禁バッチ」を
@@ -224,20 +213,10 @@ extension LaterGroup {
         return photos.filter { $0.isUnlocked && $0.unlockDate == lastUnlockAt }
     }
 
-    /// 直近に解禁されたサイクルに属する動画(mostRecentCyclePhotosの動画版)。
-    /// evaluateGroupUnlockConditionsは写真と動画の両方にunlockDate=lastUnlockAtを
-    /// 揃えて設定するため、判定方法は写真と完全に同じでよい。
-    func mostRecentCycleVideos(now: Date = Date(), calendar: Calendar = .current) -> [LaterVideo] {
-        guard let lastUnlockAt else { return [] }
-        return videos.filter { $0.isUnlocked && $0.unlockDate == lastUnlockAt }
-    }
-
-    /// 目標達成枚数のカウントは写真・動画を合算する(仕様変更)。現在進行中サイクルで
-    /// 指定ユーザーが撮影した写真+動画の合計枚数。isSelectable(枚数上限判定)・
+    /// 現在進行中サイクルで指定ユーザーが撮影した写真の枚数。isSelectable(枚数上限判定)・
     /// 解禁条件判定(CloudKitManager.evaluateGroupUnlockConditions)双方で同じ考え方を使う。
     func currentCycleContentCount(ownerID: UUID, now: Date = Date(), calendar: Calendar = .current) -> Int {
         currentCyclePhotos(now: now, calendar: calendar).filter { $0.owner?.id == ownerID }.count
-            + currentCycleVideos(now: now, calendar: calendar).filter { $0.owner?.id == ownerID }.count
     }
 
     /// 特定の日に選出された(1票以上入った)写真をすべて取得。複数枚が同時に

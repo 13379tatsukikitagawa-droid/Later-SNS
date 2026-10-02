@@ -1,9 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Homeタブ(今日のミッション画面)。撮影中/投票中/終了の3状態を切り替えるだけの
-/// 薄いコンテナで、各状態の中身は TodayShootingView / TodayVotingPromptView /
-/// TodayFinishedView に分離している。
+/// Homeタブ(今日のミッション画面)。中身はTodayShootingViewに分離した薄いコンテナで、
+/// 撮影〜投稿の画面遷移(fullScreenCover)だけを受け持つ。
 struct TodayView: View {
     @Environment(\.modelContext) private var context
     /// グループ詳細(GroupHomeDetailView)など、Home内でさらに奥へ遷移した状態で
@@ -21,10 +20,6 @@ struct TodayView: View {
     @State private var pendingImageData: Data?
     @State private var pendingLocationName: String?
     @State private var showingPostTargetSelection = false
-    @State private var pendingVideoURL: URL?
-    @State private var pendingVideoThumbnail: UIImage?
-    @State private var pendingVideoDuration: Double = 0
-    @State private var showingVideoPostFlow = false
 
     @Query private var profiles: [UserProfile]
     @Query private var groups: [LaterGroup]
@@ -47,18 +42,9 @@ struct TodayView: View {
         return ordered.first
     }
 
-    private var personalSpaceGroupIDs: Set<UUID> {
-        Set(groups.filter(\.isPersonalSpace).map(\.id))
-    }
-
-    /// カメラ画面の控えめな連続記録表示に渡す、直近の連続撮影日数。
-    private var currentStreakCount: Int {
-        UserProfile.current(from: profiles)?.currentStreak(personalSpaceGroupIDs: personalSpaceGroupIDs) ?? 0
-    }
-
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            TodayShootingView(groups: userGroups, streakCount: currentStreakCount)
+            TodayShootingView(groups: userGroups)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             // 以前はここに.navigationTitle("Today's Mission")があったが、
             // TodayShootingView側で独自のヘッダー(ロゴ・ストリーク・通知ベル)を
@@ -102,27 +88,22 @@ struct TodayView: View {
                 CheckiCameraEntryView(
                     currentCount: currentGroup.map { myTodayCount(in: $0) } ?? 0,
                     limit: currentGroup.map { GroupUnlockPolicy.individualMaximumPhotoCount(for: $0) } ?? GroupUnlockPolicy.individualMinimumPhotoCount,
-                    streakCount: currentStreakCount,
                     caption: pendingCaption
                 ) { imageData, locationName in
                     pendingImageData = imageData
                     pendingLocationName = locationName
                     showingCamera = false
-                } onCaptureVideo: { videoURL, thumbnail, duration, locationName in
-                    pendingVideoURL = videoURL
-                    pendingVideoThumbnail = thumbnail
-                    pendingVideoDuration = duration
-                    pendingLocationName = locationName
+                } onCaptureVideo: { _, _, _, _ in
+                    // 動画投稿は廃止。旧カメラ画面(TrueBlindCameraView)はStep 1で置き換える。
                     showingCamera = false
                 }
                 .ignoresSafeArea()
             }
             // 撮影直後、キャプション入力は別画面に分けず投稿準備画面(写真プレビュー+
             // キャプション+投稿先選択を1画面にまとめたBeReal/setlog融合UI)へ直接進む。
-            // 動画も同じ考え方で、動画専用の投稿準備画面(VideoPostFlowView)へ直接進む。
             //
             // showingCameraがfalseになった直後の同一トランザクション内で次のfullScreenCover
-            // (showingPostTargetSelection/showingVideoPostFlow)をtrueにすると、撮影画面が
+            // (showingPostTargetSelection)をtrueにすると、撮影画面が
             // まだ閉じきっていない状態で次の提示が要求され、プレゼンテーションが競合して
             // 投稿準備画面が正しく開かない(=写真が撮影されただけでどこにも投稿されない)
             // 不具合があった。キャプション→撮影画面の遷移と同じく、閉じるアニメーションが
@@ -132,11 +113,6 @@ struct TodayView: View {
                 if pendingImageData != nil {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         showingPostTargetSelection = true
-                    }
-                }
-                if pendingVideoURL != nil {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        showingVideoPostFlow = true
                     }
                 }
             }
@@ -151,32 +127,6 @@ struct TodayView: View {
                             pendingImageData = nil
                             pendingLocationName = nil
                             pendingCaption = ""
-                            guard success else { return }
-                            withAnimation(.spring()) {
-                                showSuccessMessage = true
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation(.easeOut) {
-                                    showSuccessMessage = false
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-            .fullScreenCover(isPresented: $showingVideoPostFlow) {
-                if let videoURL = pendingVideoURL {
-                    VideoPostFlowView(
-                        videoURL: videoURL,
-                        thumbnail: pendingVideoThumbnail,
-                        durationSeconds: pendingVideoDuration,
-                        locationName: pendingLocationName,
-                        onFinished: { success in
-                            showingVideoPostFlow = false
-                            pendingVideoURL = nil
-                            pendingVideoThumbnail = nil
-                            pendingVideoDuration = 0
-                            pendingLocationName = nil
                             guard success else { return }
                             withAnimation(.spring()) {
                                 showSuccessMessage = true
@@ -239,7 +189,7 @@ struct TodayView: View {
 
 /// 画面中央のアクション要素(撮影ボタンが置かれる場所)の状態。GroupStatusPresenter.state(for:)と
 /// 「個人の撮影上限に達しているか」の組み合わせで決まる。実際の描画分岐は
-/// TodayShootingView/TodayVotingPromptView/TodayFinishedView側で行うため、
+/// TodayShootingView側で行うため、
 /// ここでは概念を明示するためのenumとして定義するに留める。
 enum CaptureActionState: Equatable {
     case capture              // 撮影中・撮影可能

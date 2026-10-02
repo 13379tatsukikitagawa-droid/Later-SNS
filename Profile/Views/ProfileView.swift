@@ -14,7 +14,6 @@ struct ProfileView: View {
     @State private var isShowingSetup = false
     @State private var isShowingSettingsMenu = false
     @State private var isShowingPinPicker = false
-    @State private var showingCalendar = false
 
     private static let accent = Color.laterAccent
     /// プロフィールが1件も無い状態(オンボーディング未完了など)でも、この定数を
@@ -104,9 +103,6 @@ struct ProfileView: View {
                     onConfirm: { newIDs in addPins(newIDs) }
                 )
             }
-            .navigationDestination(isPresented: $showingCalendar) {
-                TodaysLaterCalendarView()
-            }
         }
     }
 
@@ -114,10 +110,6 @@ struct ProfileView: View {
 
     private var header: some View {
         HStack {
-            headerButton(icon: "calendar") {
-                showingCalendar = true
-            }
-
             Spacer()
 
             headerButton(icon: "gearshape.fill") {

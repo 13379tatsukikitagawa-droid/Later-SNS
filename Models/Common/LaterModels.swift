@@ -84,26 +84,6 @@ extension UserProfile {
         return profiles.first
     }
 
-    /// 直近(昨日を起点)から連続して、いずれかのグループで1日最低撮影枚数を
-    /// 達成できている日数。ME(personalSpaceGroupIDsで渡される個人スペース)の
-    /// 写真は共同実績にカウントしないため除外する。ProfileViewのストリーク表示・
-    /// カメラ画面の控えめな連続記録表示の両方から呼ばれる、二重管理を避けるための
-    /// 共通ロジック。
-    func currentStreak(personalSpaceGroupIDs: Set<UUID>, calendar: Calendar = .current) -> Int {
-        let countablePhotos = photos.filter { photo in
-            guard let groupID = photo.groupID else { return true }
-            return !personalSpaceGroupIDs.contains(groupID)
-        }
-        var count = 0
-        var day = calendar.startOfDay(for: Date())
-        for _ in 0..<3650 {
-            day = calendar.date(byAdding: .day, value: -1, to: day) ?? day
-            let photosThatDay = countablePhotos.filter { calendar.isDate($0.captureDate, inSameDayAs: day) }
-            guard photosThatDay.count >= GroupUnlockPolicy.individualMinimumPhotoCount else { break }
-            count += 1
-        }
-        return count
-    }
 }
 
 // MARK: - 撮影した写真 (思い出の封印データ)

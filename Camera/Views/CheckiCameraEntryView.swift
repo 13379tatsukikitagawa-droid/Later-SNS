@@ -8,7 +8,6 @@ import AVFoundation
 struct CheckiCameraEntryView: View {
     var currentCount: Int
     var limit: Int
-    var streakCount: Int
     /// 撮影前のキャプション入力画面(CaptionEntryView)で入力された文字列。
     /// TrueBlindCameraViewのファインダー上にバッジ表示する。
     var caption: String = ""
@@ -26,7 +25,6 @@ struct CheckiCameraEntryView: View {
             isFlashOn: $isFlashOn,
             currentCount: currentCount,
             limit: limit,
-            streakCount: streakCount,
             caption: caption,
             onCapture: onCapture,
             onCaptureVideo: onCaptureVideo

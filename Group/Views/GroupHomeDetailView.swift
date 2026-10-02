@@ -27,7 +27,6 @@ struct GroupHomeDetailView: View {
     @State private var pendingTargetCount = 1
     @State private var showGoalReachedAnimation = false
     @State private var reportTargetPhoto: LaterPhoto?
-    @State private var selectedVideoForPlayback: LaterVideo?
     @State private var selectedPhotoForViewing: LaterPhoto?
 
     private var currentUser: UserProfile? {
@@ -87,15 +86,7 @@ struct GroupHomeDetailView: View {
         if let lastSet = group.personalTargetLastSetDate, Calendar.current.isDateInToday(lastSet) {
             return
         }
-        // Tomorrow +1: 前日、自分のWorld Later投稿が誰かに選ばれていれば、その分だけ
-        // 今日の目標のデフォルト提示値を底上げする(選んだのが誰かは一切問い合わせない)。
-        let calendar = Calendar.current
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()
-        let myWorldPosts = (try? modelContext.fetch(FetchDescriptor<WorldPost>(predicate: #Predicate { $0.isOwnPost }))) ?? []
-        let recordNames = myWorldPosts.compactMap(\.ckRecordName)
-        let bonus = await WorldLaterService.fetchSelectionCount(for: recordNames, on: yesterday, calendar: calendar)
-
-        pendingTargetCount = group.personalDailyTargetCount + bonus
+        pendingTargetCount = group.personalDailyTargetCount
         showingTargetSheet = true
     }
 
@@ -189,9 +180,6 @@ struct GroupHomeDetailView: View {
             MeDailyTargetSheet(initialValue: pendingTargetCount) { count in
                 confirmDailyTarget(count)
             }
-        }
-        .sheet(item: $selectedVideoForPlayback) { video in
-            VideoDetailPlayerView(video: video)
         }
         .sheet(item: $reportTargetPhoto) { photo in
             ReportSheet(targetType: .circlePhoto, targetID: photo.ckRecordName ?? photo.id.uuidString)
@@ -410,43 +398,16 @@ struct GroupHomeDetailView: View {
         .padding(.top, 4)
     }
 
-    // MARK: - ③過去の公開(3列グリッド。写真・動画をまとめて撮影日の新しい順に並べる)
+    // MARK: - ③過去の公開(3列グリッド。撮影日の新しい順に並べる)
 
-    private enum UnlockedMediaItem: Identifiable {
-        case photo(LaterPhoto)
-        case video(LaterVideo)
-
-        var id: String {
-            switch self {
-            case .photo(let photo): return "photo_\(photo.id.uuidString)"
-            case .video(let video): return "video_\(video.id.uuidString)"
-            }
-        }
-
-        var captureDate: Date {
-            switch self {
-            case .photo(let photo): return photo.captureDate
-            case .video(let video): return video.captureDate
-            }
-        }
-    }
-
-    private var pastUnlockedItems: [UnlockedMediaItem] {
+    private var pastUnlockedItems: [LaterPhoto] {
         let blockedIDs = Set(blockedUsers.map(\.blockedCloudKitUserRecordName))
-        let photos = group.getUnlockedPhotos()
+        return group.getUnlockedPhotos()
             .filter { photo in
                 guard let authorID = photo.authorCloudKitUserRecordName else { return true }
                 return !blockedIDs.contains(authorID)
             }
-            .map(UnlockedMediaItem.photo)
-        let videos = group.videos
-            .filter(\.isUnlocked)
-            .filter { video in
-                guard let authorID = video.authorCloudKitUserRecordName else { return true }
-                return !blockedIDs.contains(authorID)
-            }
-            .map(UnlockedMediaItem.video)
-        return (photos + videos).sorted { $0.captureDate > $1.captureDate }
+            .sorted { $0.captureDate > $1.captureDate }
     }
 
     private static let gridColumns = [GridItem(.flexible(), spacing: 3), GridItem(.flexible(), spacing: 3), GridItem(.flexible(), spacing: 3)]
@@ -468,8 +429,8 @@ struct GroupHomeDetailView: View {
                     .padding(.bottom, 40)
             } else {
                 LazyVGrid(columns: Self.gridColumns, spacing: 3) {
-                    ForEach(items) { item in
-                        pastUnlockCell(item)
+                    ForEach(items) { photo in
+                        pastUnlockCell(photo)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -478,34 +439,14 @@ struct GroupHomeDetailView: View {
         }
     }
 
-    private func pastUnlockCell(_ item: UnlockedMediaItem) -> some View {
+    private func pastUnlockCell(_ photo: LaterPhoto) -> some View {
         Button {
-            switch item {
-            case .photo(let photo):
-                selectedPhotoForViewing = photo
-            case .video(let video):
-                selectedVideoForPlayback = video
-            }
+            selectedPhotoForViewing = photo
         } label: {
-            ZStack {
-                switch item {
-                case .photo(let photo):
-                    CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
-                        Image(uiImage: uiImage).resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Color.laterCard
-                    }
-                case .video(let video):
-                    CachedPhotoImage(imageData: video.thumbnailData, cacheKey: video.imageCacheKey) { uiImage in
-                        Image(uiImage: uiImage).resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Color.laterCard
-                    }
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .shadow(radius: 4)
-                }
+            CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
+                Image(uiImage: uiImage).resizable().aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.laterCard
             }
             .aspectRatio(1, contentMode: .fill)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))

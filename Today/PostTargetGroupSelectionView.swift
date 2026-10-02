@@ -54,10 +54,6 @@ struct PostTargetGroupSelectionView: View {
     @State private var errorMessage: String?
     /// 「送信先」ボタンから開く、投稿先選択専用画面(PostTargetSelectionSheet)の表示状態。
     @State private var isShowingDestinationPicker = false
-    /// World Later(匿名グローバルフィード)へも同時に投稿するかどうか。Circle/MEへの
-    /// 投稿とは完全に独立した経路(WorldLaterService)で、選ばなくてもCircle/ME側の
-    /// 投稿には一切影響しない。
-    @State private var postToWorldLater = false
 
     private static let chekiFrameColor = Color(red: 0.969, green: 0.961, blue: 0.933) // #f7f5ee
 
@@ -103,9 +99,6 @@ struct PostTargetGroupSelectionView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
 
-                worldLaterToggleRow
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
 
                 if let errorMessage {
                     Text(errorMessage)
@@ -185,28 +178,6 @@ struct PostTargetGroupSelectionView: View {
             )
         }
         .buttonStyle(.plain)
-    }
-
-    /// World Later(匿名グローバルフィード)への同時投稿トグル。Circle/MEへの投稿先
-    /// 選択(selectedGroupIDs)とは独立した、単純なON/OFFのみ。
-    private var worldLaterToggleRow: some View {
-        Toggle(isOn: $postToWorldLater) {
-            HStack(spacing: 8) {
-                Image(systemName: "globe")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.7))
-                Text("World Laterにも投稿する(匿名)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.85))
-            }
-        }
-        .tint(Color.brandGreen)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.05))
-        )
     }
 
     // MARK: - チェキ風「現像前」写真プレビュー(画面の主役として大きく表示)
@@ -340,12 +311,9 @@ struct PostTargetGroupSelectionView: View {
 
     // MARK: - 送信ボタン
 
-    /// 投稿先が1つも無い(グループ未選択かつWorld Laterもオフ)かどうか。submitPost()の
-    /// ガード条件(!selectedGroupIDs.isEmpty || postToWorldLater)と必ず一致させること。
-    /// 以前はここがselectedGroupIDs.isEmptyだけを見ており、「グループは選ばずWorld
-    /// Laterだけに投稿したい」場合でもボタンが押せないままになる不具合があった。
+    /// 投稿先が1つも無いかどうか。submitPost()のガード条件と必ず一致させること。
     private var hasNoDestination: Bool {
-        selectedGroupIDs.isEmpty && !postToWorldLater
+        selectedGroupIDs.isEmpty
     }
 
     private var submitButton: some View {
@@ -399,7 +367,7 @@ struct PostTargetGroupSelectionView: View {
 
     private func submitPost() {
         guard let user = currentUser, !isSubmitting else { return }
-        guard !selectedGroupIDs.isEmpty || postToWorldLater else { return }
+        guard !selectedGroupIDs.isEmpty else { return }
         isSubmitting = true
         errorMessage = nil
         isCaptionFocused = false
@@ -440,7 +408,7 @@ struct PostTargetGroupSelectionView: View {
             inserted.append((newPhoto, group))
         }
 
-        guard !inserted.isEmpty || postToWorldLater else {
+        guard !inserted.isEmpty else {
             isSubmitting = false
             errorMessage = "投稿できるグループがありませんでした。締切や上限をご確認ください。"
             return
@@ -455,23 +423,6 @@ struct PostTargetGroupSelectionView: View {
                 isSubmitting = false
                 errorMessage = "保存に失敗しました。もう一度お試しください。"
                 return
-            }
-        }
-
-        // World Laterへの投稿はCircle/MEへの投稿と完全に独立した経路(Public DB、
-        // 撮影者情報を含めない)のため、Circle/ME側の成否と関係なく単独で送信する。
-        if postToWorldLater {
-            Task {
-                do {
-                    try await WorldLaterService.submitPost(
-                        imageData: imageData,
-                        captureDate: now,
-                        locationRegion: locationName,
-                        caption: trimmedCaption.isEmpty ? nil : trimmedCaption
-                    )
-                } catch {
-                    print("[WorldLater] submitPost failed: \(error)")
-                }
             }
         }
 

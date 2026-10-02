@@ -17,7 +17,6 @@ enum ModerationService {
     // MARK: - 通報
 
     enum ReportTargetType: String {
-        case worldPost
         case circlePhoto
         case user
     }

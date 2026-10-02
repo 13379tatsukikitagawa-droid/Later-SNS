@@ -9,9 +9,7 @@ struct PersonalTodayView: View {
     let group: LaterGroup?
 
     @Query private var profiles: [UserProfile]
-    @Query(sort: \TodaysLaterSelection.selectedDate, order: .reverse) private var mySelections: [TodaysLaterSelection]
     @State private var showingDevelopingProgress = false
-    @State private var showingCalendar = false
 
     private static let accent = Color.laterAccent
     /// 過去の記録グリッドを一度に表示する上限枚数。データは既にSwiftDataでローカルに
@@ -65,17 +63,6 @@ struct PersonalTodayView: View {
         showingAllPastPhotos ? pastPhotos : Array(pastPhotos.prefix(Self.initialPastPhotoLimit))
     }
 
-    /// 「Today's Laterに選ばれた日」の判定に使う、選択済みの暦日集合。
-    private var selectedDays: Set<DateComponents> {
-        let calendar = Calendar.current
-        return Set(mySelections.map { calendar.dateComponents([.year, .month, .day], from: $0.selectedDate) })
-    }
-
-    private func wasSelectedAsTodaysLater(_ date: Date) -> Bool {
-        let calendar = Calendar.current
-        return selectedDays.contains(calendar.dateComponents([.year, .month, .day], from: date))
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -103,12 +90,9 @@ struct PersonalTodayView: View {
         .sheet(isPresented: $showingDevelopingProgress) {
             DevelopingProgressView(photos: todaysPhotos)
         }
-        .navigationDestination(isPresented: $showingCalendar) {
-            TodaysLaterCalendarView()
-        }
     }
 
-    // MARK: - ①ヘッダー(見出し+カレンダーリンク)
+    // MARK: - ①ヘッダー(見出し)
 
     private var header: some View {
         HStack {
@@ -117,22 +101,6 @@ struct PersonalTodayView: View {
                 .foregroundStyle(Color.laterText)
 
             Spacer()
-
-            Button {
-                showingCalendar = true
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 13, weight: .semibold))
-                    Text("カレンダー")
-                        .font(.system(size: 13, weight: .semibold))
-                }
-                .foregroundStyle(Self.accent)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Capsule().fill(Color.laterCard))
-            }
-            .buttonStyle(.plain)
         }
     }
 
@@ -224,7 +192,7 @@ struct PersonalTodayView: View {
         CaptureRequestStore.shared.pendingRequestID = UUID()
     }
 
-    // MARK: - ③これまでの記録(3列グリッド。Today's Laterに選ばれた日は★バッジ)
+    // MARK: - ③これまでの記録(3列グリッド)
 
     private static let gridColumns = [
         GridItem(.flexible(), spacing: 3),
@@ -260,36 +228,20 @@ struct PersonalTodayView: View {
     }
 
     private func pastPhotoCard(_ photo: LaterPhoto) -> some View {
-        let isSelected = wasSelectedAsTodaysLater(photo.captureDate)
-        return ZStack(alignment: .topTrailing) {
-            VStack(spacing: 4) {
-                CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Color.laterCard
-                }
-                .aspectRatio(1, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(isSelected ? Self.accent : Color.clear, lineWidth: 2)
-                )
-
-                Text(Self.pastDateLabel(for: photo.captureDate))
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Color.laterTextMuted)
+        VStack(spacing: 4) {
+            CachedPhotoImage(imageData: photo.imageData, cacheKey: photo.imageCacheKey) { uiImage in
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.laterCard
             }
+            .aspectRatio(1, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            if isSelected {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Self.accent)
-                    .padding(5)
-                    .background(Circle().fill(Color.laterBackground.opacity(0.85)))
-                    .offset(x: 4, y: -4)
-            }
+            Text(Self.pastDateLabel(for: photo.captureDate))
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(Color.laterTextMuted)
         }
     }
 

@@ -17,7 +17,7 @@ struct LaterApp: App {
     // SwiftDataが自動でCloudKitミラーリングを有効化しようとし、起動時にクラッシュしうる。
     static let sharedModelContainer: ModelContainer = {
         let token = PerformanceSignpost.begin("App.ModelContainerInit")
-        let schema = Schema([LaterPhoto.self, LaterVideo.self, LaterGroup.self, UserProfile.self, PhotoVote.self, BlockedUser.self, WorldPost.self, TodaysLaterSelection.self])
+        let schema = Schema([LaterPhoto.self, LaterGroup.self, UserProfile.self, PhotoVote.self, BlockedUser.self])
         let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
@@ -144,22 +144,6 @@ struct RootView: View {
         try? modelContext.save()
     }
 
-    /// 動画もGalleryでの表示対象は写真と同じ直近7日間に限定されるため、同じ保持期間
-    /// ポリシーを適用する。localFilePathが残っている(=アップロード未確認)場合は、
-    /// レコード削除の前にローカルファイルごと削除しておく(端末に取り残さないため)。
-    private func pruneExpiredVideos() {
-        guard let cutoff = Calendar.current.date(byAdding: .day, value: -Self.photoRetentionDays, to: Date()) else { return }
-        let descriptor = FetchDescriptor<LaterVideo>(predicate: #Predicate<LaterVideo> { $0.captureDate < cutoff })
-        guard let expiredVideos = try? modelContext.fetch(descriptor), !expiredVideos.isEmpty else { return }
-        for video in expiredVideos {
-            if let path = video.localFilePath {
-                try? FileManager.default.removeItem(atPath: path)
-            }
-            cloudKitManager?.markForDelete(video: video)
-            modelContext.delete(video)
-        }
-        try? modelContext.save()
-    }
 
     var body: some View {
         ZStack {
@@ -221,7 +205,6 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             resetIfNeeded()
             pruneExpiredPhotos()
-            pruneExpiredVideos()
         }
         .task(id: appleUserID + firebaseUID) {
             // Sign in with Apple・メールのマジックリンクいずれかの完了後に
@@ -234,7 +217,6 @@ struct RootView: View {
             await cloudKitManager?.resendOwnUnlockedPhotosIfNeeded()
             await ModerationService.refreshBlockedUsersIfNeeded(modelContext: modelContext)
             pruneExpiredPhotos()
-            pruneExpiredVideos()
         }
         .onReceive(ShareInviteInbox.shared.$pendingMetadata) { metadata in
             guard let metadata else { return }
@@ -476,15 +458,5 @@ struct RootView: View {
         .modelContainer(for: [LaterPhoto.self, LaterGroup.self, UserProfile.self])
 }
 
-#Preview("ギャラリー画面") {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(
-        for: LaterPhoto.self, UserProfile.self, LaterGroup.self,
-        configurations: config
-    )
-    
-    GalleryView()
-        .modelContainer(container)
-}
 
 

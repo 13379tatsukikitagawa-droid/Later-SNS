@@ -283,7 +283,7 @@ struct GroupCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "photo.fill")
                                 .font(.caption)
-                            Text("\(group.photos.count + group.videos.count)枚")
+                            Text("\(group.photos.count)枚")
                                 .font(.caption)
                         }
                     }

@@ -465,50 +465,6 @@ final class CloudKitManager: NSObject {
         engine(forZoneOwnerName: ownerName)?.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
     }
 
-    /// markForUpload(photo:in:)と同じ流れ。動画本体は既にLaterVideo.toCKRecord側で
-    /// isUnlocked&&localFilePathが残っている場合だけ添付される(未解禁の間はメタデータのみ)。
-    func markForUpload(video: LaterVideo, in group: LaterGroup) async {
-        let videoLabel = video.ckRecordName ?? video.id.uuidString
-        if group.cachedZoneID == nil {
-            GroupSyncLogger.shared.warning("[GroupSync] markForUpload(video): groupID=\(group.id, privacy: .public)のゾーン情報が未確定のため再同期を試みます recordName=\(videoLabel, privacy: .public)")
-            _ = await resyncGroupZoneInfoIfNeeded(group)
-        }
-        inheritZone(zoneName: &video.ckZoneName, zoneOwnerName: &video.ckZoneOwnerName, from: group)
-        if video.ckRecordName == nil {
-            video.ckRecordName = video.id.uuidString
-        }
-        try? modelContext.save()
-        enqueueSave(zoneOwnerName: video.ckZoneOwnerName, recordName: video.ckRecordName, zoneName: video.ckZoneName)
-    }
-
-    func markForDelete(video: LaterVideo) {
-        guard let recordName = video.ckRecordName, let zoneName = video.ckZoneName, let ownerName = video.ckZoneOwnerName else { return }
-        let zoneID = CKRecordZone.ID(zoneName: zoneName, ownerName: ownerName)
-        let recordID = CKRecord.ID(recordName: recordName, zoneID: zoneID)
-        engine(forZoneOwnerName: ownerName)?.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
-    }
-
-    /// タップ時にだけ動画本体(CKAsset)を都度フェッチする。一覧表示・同期時には一切
-    /// 呼ばれない(サムネイルのみで表示するため)。取得したCKAssetのfileURLはシステムの
-    /// 一時領域にあり短命なため、呼び出し側が安全に使える専用の一時ファイルへコピーして返す
-    /// (再生後の削除は呼び出し側の責務)。
-    func fetchVideoAsset(for video: LaterVideo) async throws -> URL {
-        guard let recordID = video.cachedRecordID else {
-            throw NSError(domain: "LaterVideo", code: 1, userInfo: [NSLocalizedDescriptionKey: "動画のレコード情報がまだ確定していません"])
-        }
-        let database = recordID.zoneID.ownerName == currentUserRecordName
-            ? container.privateCloudDatabase
-            : container.sharedCloudDatabase
-
-        let record = try await database.record(for: recordID)
-        guard let asset = record["video"] as? CKAsset, let fileURL = asset.fileURL else {
-            throw NSError(domain: "LaterVideo", code: 2, userInfo: [NSLocalizedDescriptionKey: "動画データがまだ届いていません。しばらくしてからもう一度お試しください。"])
-        }
-        let localCopyURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mp4")
-        try FileManager.default.copyItem(at: fileURL, to: localCopyURL)
-        return localCopyURL
-    }
-
     private func inheritZone(zoneName: inout String?, zoneOwnerName: inout String?, from group: LaterGroup) {
         if zoneName == nil { zoneName = group.ckZoneName }
         if zoneOwnerName == nil { zoneOwnerName = group.ckZoneOwnerName }
@@ -671,21 +627,10 @@ final class CloudKitManager: NSObject {
             recentPhotosByGroupID[groupID, default: []].append(photo)
         }
 
-        // 動画も写真と同じ枚数カウント対象にする(仕様変更)。
-        let unlockedVideosPredicate = #Predicate<LaterVideo> { !$0.isUnlocked }
-        let recentVideos = (try? modelContext.fetch(FetchDescriptor<LaterVideo>(predicate: unlockedVideosPredicate))) ?? []
-        var recentVideosByGroupID: [UUID: [LaterVideo]] = [:]
-        for video in recentVideos {
-            guard let groupID = video.groupID else { continue }
-            recentVideosByGroupID[groupID, default: []].append(video)
-        }
-        var videoRecordNamesNeedingResend: [String] = []
-
         for group in targetGroups {
             let groupID = group.id
             let boundary = group.lastUnlockAt ?? group.creationDate
             let currentCyclePhotos = (recentPhotosByGroupID[groupID] ?? []).filter { $0.captureDate > boundary }
-            let currentCycleVideos = (recentVideosByGroupID[groupID] ?? []).filter { $0.captureDate > boundary }
 
             let shouldUnlockNow: Bool
             if group.isPersonalSpace {
@@ -693,7 +638,7 @@ final class CloudKitManager: NSObject {
                 // 目標枚数(personalDailyTargetCount)以上撮っていれば解禁する
                 // (GroupUnlockPolicy.shouldUnlockは使わない)。
                 shouldUnlockNow = GroupUnlockPolicy.shouldUnlockPersonalSpace(
-                    shotCount: currentCyclePhotos.count + currentCycleVideos.count,
+                    shotCount: currentCyclePhotos.count,
                     targetCount: group.personalDailyTargetCount
                 )
             } else {
@@ -701,10 +646,6 @@ final class CloudKitManager: NSObject {
                 var countsByAuthor: [UUID: Int] = [:]
                 for photo in currentCyclePhotos {
                     guard let authorID = photo.owner?.id else { continue }
-                    countsByAuthor[authorID, default: 0] += 1
-                }
-                for video in currentCycleVideos {
-                    guard let authorID = video.owner?.id else { continue }
                     countsByAuthor[authorID, default: 0] += 1
                 }
                 shouldUnlockNow = GroupUnlockPolicy.shouldUnlock(
@@ -722,7 +663,7 @@ final class CloudKitManager: NSObject {
             // 代わりに「このサイクルに属する写真/動画の最新captureDate」という、
             // 既に全メンバー間で同期済みのデータだけから決まる値を使うことで、
             // どの端末で計算しても同じ結果になるようにする。
-            let unlockInstant = (currentCyclePhotos.map(\.captureDate) + currentCycleVideos.map(\.captureDate)).max() ?? now
+            let unlockInstant = currentCyclePhotos.map(\.captureDate).max() ?? now
             group.lastUnlockAt = unlockInstant
             markForUpload(group: group)
 
@@ -750,31 +691,10 @@ final class CloudKitManager: NSObject {
                     didChange = true
                 }
             }
-
-            for video in currentCycleVideos where !video.isUnlocked {
-                // 写真の「現像中」演出(ChekiColorGrade.bakeIntoImageData)は動画には
-                // 適用しない。isUnlockedを反転させるだけで、動画本体の加工は撮影直後の
-                // FilmEmulationVideoExporterで既に完了済み。
-                video.unlockDate = unlockInstant
-                video.isUnlocked = true
-                didChange = true
-                if video.authorCloudKitUserRecordName == currentUserRecordName {
-                    await markForUpload(video: video, in: group)
-                    videoRecordNamesNeedingResend.append(video.ckRecordName ?? video.id.uuidString)
-                }
-            }
         }
 
         if didChange {
             try? modelContext.save()
-        }
-
-        if !videoRecordNamesNeedingResend.isEmpty {
-            DispatchQueue.main.async { [weak self] in
-                Task { @MainActor in
-                    await self?.sendPendingChangesNow()
-                }
-            }
         }
 
         guard !recordNamesNeedingResend.isEmpty else { return }
@@ -919,8 +839,6 @@ final class CloudKitManager: NSObject {
             upsertUserProfile(from: record)
         case AppRecordType.laterPhoto:
             upsertPhoto(from: record)
-        case AppRecordType.laterVideo:
-            upsertVideo(from: record)
         case AppRecordType.photoVote:
             upsertVote(from: record)
         default:
@@ -935,7 +853,7 @@ final class CloudKitManager: NSObject {
         switch record.recordType {
         case AppRecordType.laterGroup:
             return UUID(uuidString: record.recordID.recordName)
-        case AppRecordType.userProfile, AppRecordType.laterPhoto, AppRecordType.laterVideo:
+        case AppRecordType.userProfile, AppRecordType.laterPhoto:
             return groupID(fromReferenceField: "group", in: record)
         case AppRecordType.photoVote:
             // PhotoVoteレコード自体は"group"参照を持たないため、"photo"参照から
@@ -959,11 +877,6 @@ final class CloudKitManager: NSObject {
             if let photo = fetchOne(LaterPhoto.self, { $0.ckRecordName == recordName }) {
                 markGroupDirty(photo.groupID)
                 modelContext.delete(photo)
-            }
-        case AppRecordType.laterVideo:
-            if let video = fetchOne(LaterVideo.self, { $0.ckRecordName == recordName }) {
-                markGroupDirty(video.groupID)
-                modelContext.delete(video)
             }
         case AppRecordType.userProfile:
             // グループ脱退(GroupSharingService.leaveGroup)は、離脱者自身のUserProfile
@@ -1085,39 +998,6 @@ final class CloudKitManager: NSObject {
         }
     }
 
-    private func upsertVideo(from record: CKRecord) {
-        let recordName = record.recordID.recordName
-        guard let groupID = groupID(fromReferenceField: "group", in: record),
-              let group = fetchOne(LaterGroup.self, { $0.id == groupID }) else { return }
-
-        if let existing = fetchOne(LaterVideo.self, { $0.ckRecordName == recordName }) {
-            try? existing.apply(from: record)
-            resolveOwner(for: existing, in: group)
-            return
-        }
-
-        guard let id = UUID(uuidString: recordName) else { return }
-        let video = LaterVideo(
-            thumbnailData: Data(),
-            durationSeconds: (record["durationSeconds"] as? Double) ?? 0,
-            unlockDate: (record["unlockDate"] as? Date) ?? Date()
-        )
-        video.id = id
-        video.groupID = groupID
-        try? video.apply(from: record)
-        modelContext.insert(video)
-        group.videos.append(video)
-        resolveOwner(for: video, in: group)
-    }
-
-    /// resolveOwner(for photo:in:)と同じロジックのLaterVideo版。
-    private func resolveOwner(for video: LaterVideo, in group: LaterGroup) {
-        guard video.owner == nil, let authorRecordName = video.authorCloudKitUserRecordName else { return }
-        if let match = group.members.first(where: { $0.cloudKitUserRecordName == authorRecordName }) {
-            video.owner = match
-        }
-    }
-
     private func upsertVote(from record: CKRecord) {
         let recordName = record.recordID.recordName
         if let existing = fetchOne(PhotoVote.self, { $0.ckRecordName == recordName }) {
@@ -1201,12 +1081,6 @@ final class CloudKitManager: NSObject {
            let groupRecordID = group.cachedRecordID {
             return try? photo.toCKRecord(existing: existing, zoneID: recordID.zoneID, groupRecordID: groupRecordID)
         }
-        if let video = fetchOne(LaterVideo.self, { $0.ckRecordName == recordName }),
-           let groupID = video.groupID,
-           let group = fetchOne(LaterGroup.self, { $0.id == groupID }),
-           let groupRecordID = group.cachedRecordID {
-            return try? video.toCKRecord(existing: existing, zoneID: recordID.zoneID, groupRecordID: groupRecordID)
-        }
         if let vote = fetchOne(PhotoVote.self, { $0.ckRecordName == recordName }),
            let photoID = vote.photoID,
            let photo = fetchOne(LaterPhoto.self, { $0.id == photoID }),
@@ -1257,20 +1131,6 @@ final class CloudKitManager: NSObject {
                 // ここでnilなら現像中のメタデータのみの保存であり、画像はまだ未送信)。
                 if record["image"] != nil {
                     photo.isImageUploaded = true
-                }
-            }
-        case AppRecordType.laterVideo:
-            if let video = fetchOne(LaterVideo.self, { $0.ckRecordName == recordName }) {
-                video.ckRecordChangeTag = record.recordChangeTag
-                // 動画本体を含む保存が確認できた時点で、ローカルの一時ファイルはもう不要。
-                // ここで削除することで、写真のようにDocuments & Dataへ動画バイト列が
-                // 溜まり続けるのを防ぐ(サムネイルだけが端末に残る)。
-                if record["video"] != nil {
-                    video.isVideoUploaded = true
-                    if let path = video.localFilePath {
-                        try? FileManager.default.removeItem(atPath: path)
-                        video.localFilePath = nil
-                    }
                 }
             }
         case AppRecordType.photoVote:

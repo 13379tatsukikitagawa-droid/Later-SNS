@@ -23,10 +23,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
         // 撮影通知(PhotoNotificationService)のCKQuerySubscription(ユーザーに見える
         // アラート付きPush)をフォアグラウンドでもバナー表示するため、また通知タップを
-        // 拾うために必要。Gallery/Views/GlobalSecretFeedView.swiftにも同種の
-        // UNUserNotificationCenterDelegate実装(GlobalRevealNotificationHandler)があるが、
-        // .sharedがどこからも参照されておらず実際には有効化されていない。
-        // UNUserNotificationCenterのdelegateは1つしか持てないため、確実に起動時に
+        // 拾うために必要。UNUserNotificationCenterのdelegateは1つしか持てないため、確実に起動時に
         // 生きているAppDelegate自身に持たせる。
         UNUserNotificationCenter.current().delegate = self
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in

@@ -35,20 +35,11 @@ enum AccountDeletionService {
         let directoryRecordID = CKRecord.ID(recordName: "userdir_\(user.id.uuidString)")
         try? await container.publicCloudDatabase.deleteRecord(withID: directoryRecordID)
 
-        // World Laterへ自分が投稿した分をPublic DBから削除する。
-        let worldPosts = (try? modelContext.fetch(FetchDescriptor<WorldPost>(predicate: #Predicate { $0.isOwnPost }))) ?? []
-        for post in worldPosts {
-            await WorldLaterService.deletePost(post)
-        }
-
         // ローカルのSwiftDataストアを全て消去する。
         try? modelContext.delete(model: LaterPhoto.self)
-        try? modelContext.delete(model: LaterVideo.self)
         try? modelContext.delete(model: LaterGroup.self)
         try? modelContext.delete(model: PhotoVote.self)
         try? modelContext.delete(model: BlockedUser.self)
-        try? modelContext.delete(model: WorldPost.self)
-        try? modelContext.delete(model: TodaysLaterSelection.self)
         try? modelContext.delete(model: UserProfile.self)
         try? modelContext.save()
     }

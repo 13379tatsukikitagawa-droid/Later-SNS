@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// Home画面(没入型v2・初回起動時)の背景に敷く、「世界中の現像中の写真」の壁。
+/// Home画面(没入型v2・初回起動時)の背景に敷く、「現像中の写真」の壁。
 ///
 /// 写真そのものの画像データは一切使わない(解禁前の写真は本人以外に見せない、という
-/// 既存方針を破らないため)。WorldLaterService.fetchTodayDevelopingWallTiles(...)が
-/// 返す「代表色・地域・投稿時刻」だけを使い、代表色をぼかしたグラデーションで
-/// 「何かが写っている気配」だけを表現する。
+/// 既存方針を破らないため)。固定パレットのぼかしたグラデーションで
+/// 「何かが写っている気配」だけを表現する装飾。
 ///
 /// 一度取得したタイルは@Stateにそのまま保持し、以後は再取得・再生成しない
 /// (親のカウントダウン側が毎秒更新されても、このView自体はその状態を観測していない
@@ -137,23 +136,13 @@ struct HomeDevelopingWallView: View {
         .opacity(0.4)
     }
 
-    // MARK: - データ取得(一度だけ)
+    // MARK: - タイル生成(一度だけ)
 
+    /// World Later(全体フィード)の廃止に伴い、実投稿の色タイルは取得しない。
+    /// 装飾用の固定パレットだけで壁を埋める。
     private func loadTiles() async {
         let desiredCount = Self.columns * Self.rows
-        let fetched = await WorldLaterService.fetchTodayDevelopingWallTiles(limit: desiredCount)
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-
-        var tiles: [DisplayTile] = fetched.prefix(desiredCount).map { tile in
-            let colors = tile.colorHexes.map { Color(hex: $0) }
-            let resolvedColors = colors.isEmpty ? [Color(hex: "2A3B32"), Color(hex: "1E2B24")] : colors
-            let label: String? = tile.locationRegion.map { region in
-                "\(region) · \(formatter.string(from: tile.postedAt))"
-            }
-            return DisplayTile(id: tile.id, colors: resolvedColors, regionTimeLabel: label)
-        }
+        var tiles: [DisplayTile] = []
 
         var fallbackIndex = 0
         while tiles.count < desiredCount {

@@ -1,8 +1,7 @@
 import Foundation
 
-/// 「今どのグループを見ているか」をHome/投票画面/結果画面で共有するためのストア。
-/// PhotoManager/VotingManager/UnlockTimeManagerと同じ「UserDefaultsで永続化された
-/// Observableシングルトン」パターンに揃えている。
+/// 「今どのグループを見ているか」をHomeと各画面で共有するための、
+/// UserDefaultsで永続化されたObservableシングルトン。
 @MainActor
 @Observable
 final class GroupSelectionStore {

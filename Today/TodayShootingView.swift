@@ -9,7 +9,6 @@ import SwiftData
 /// 経由の導線に入る。
 struct TodayShootingView: View {
     let groups: [LaterGroup]
-    let streakCount: Int
 
     @Query private var profiles: [UserProfile]
     @Bindable private var groupSelection = GroupSelectionStore.shared
@@ -23,17 +22,13 @@ struct TodayShootingView: View {
     /// 「透明度を下げる」設定が有効な端末では不透明なダーク塗りに切り替える。
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
-    @State private var memoryMatch: MemoryMatch?
-    @State private var showingMemoryViewer = false
     @State private var showingCreateGroup = false
     @State private var showingNotifications = false
     @State private var showingInviteSheet = false
     @State private var showingGroupsOverview = false
     @State private var showingPersonalFromHome = false
-    @State private var showingWorld = false
 
     private static let accent = Color.laterAccent
-    private static let streakPurple = Color(hex: "B388FF")
     /// 「①Home画面」で指定された、通常グループの作成上限。
     private static var maxOtherGroupCount: Int { GroupMembershipPolicy.maxGroupsPerUser }
 
@@ -115,13 +110,6 @@ struct TodayShootingView: View {
 
                     groupsSection
 
-                    if let memoryMatch {
-                        MemorySurpriseCardView(match: memoryMatch) {
-                            MemorySurpriseManager.markSeenToday()
-                            showingMemoryViewer = true
-                        }
-                    }
-
                     inviteBanner
                 }
             }
@@ -135,25 +123,15 @@ struct TodayShootingView: View {
             await refreshAllGroups()
         }
         .onAppear {
-            checkForMemory()
             AppLaunchTiming.reportHomeDisplayedIfNeeded()
             PerformanceSignpost.event("Home.groupListDisplayed", detail: "groups.count=\(groups.count)")
         }
-        .onChange(of: groupSelection.selectedGroupID) { _, _ in checkForMemory() }
         .task {
             while !Task.isCancelled {
                 if selectedMainTabIndex == Self.homeTabIndex {
                     await refreshAllGroups()
                 }
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
-            }
-        }
-        .fullScreenCover(isPresented: $showingMemoryViewer) {
-            if let memoryMatch {
-                MemorySurpriseViewerView(match: memoryMatch) {
-                    showingMemoryViewer = false
-                    self.memoryMatch = nil
-                }
             }
         }
         .sheet(isPresented: $showingCreateGroup) {
@@ -165,12 +143,6 @@ struct TodayShootingView: View {
         .sheet(isPresented: $showingInviteSheet) {
             ShareSheet(activityItems: inviteShareItems)
         }
-        .fullScreenCover(isPresented: $showingWorld) {
-            // WorldLaterFeedView自身のヘッダーに閉じるXボタン(Environment(\.dismiss)経由)が
-            // 既にあるため、ここでは重ねて追加のツールバー/Xボタンを用意しない
-            // (以前は二重になっていた)。
-            WorldLaterFeedView()
-        }
         .navigationDestination(isPresented: $showingGroupsOverview) {
             GroupListView(groups: otherGroups) {
                 showingCreateGroup = true
@@ -181,7 +153,7 @@ struct TodayShootingView: View {
         }
     }
 
-    // MARK: - ① ヘッダー(ロゴ+ストリークバッジ+通知ベル)
+    // MARK: - ① ヘッダー(ロゴ+通知ベル)
 
     private var header: some View {
         HStack(spacing: 12) {
@@ -196,21 +168,6 @@ struct TodayShootingView: View {
             }
 
             Spacer()
-
-            if !isFirstRun && streakCount > 0 {
-                HStack(spacing: 5) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 12, weight: .bold))
-                    Text("\(streakCount)")
-                        .font(.system(size: 13, weight: .bold))
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Capsule().fill(Self.streakPurple))
-            }
-
-            homeWorldSwitcher
 
             Button {
                 showingNotifications = true
@@ -235,36 +192,6 @@ struct TodayShootingView: View {
             }
             .buttonStyle(.plain)
         }
-    }
-
-    /// Home/World切替ピル。World画面と対になる導線で、Homeでは常にHomeがアクティブ
-    /// 表示のまま、Worldをタップすると既存のfullScreenCover(showingWorld)を開く。
-    private var homeWorldSwitcher: some View {
-        HStack(spacing: 2) {
-            Text("Home")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Color(hex: "04170B"))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(Self.accent))
-
-            Button {
-                showingWorld = true
-            } label: {
-                Text("World")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(hex: "7FA88E"))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(3)
-        .background(
-            Capsule()
-                .fill(Color.laterCard)
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
-        )
     }
 
     // MARK: - ⑨はじめての起動・没入型v2(グループにも記録にもまだ何も無い新規ユーザー向け)
@@ -334,8 +261,6 @@ struct TodayShootingView: View {
 
             Spacer()
 
-            firstRunHomeWorldGlassSwitcher
-
             Button {
                 showingNotifications = true
             } label: {
@@ -362,43 +287,11 @@ struct TodayShootingView: View {
         }
     }
 
-    /// Home/World切替ピル(すりガラス版)。アクティブのHomeは白〜クリームのカプセル、
-    /// 非アクティブのWorldは白60%の文字にする(仕様書§5)。
-    private var firstRunHomeWorldGlassSwitcher: some View {
-        HStack(spacing: 2) {
-            Text("Home")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Color(hex: "04170B"))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule().fill(
-                        LinearGradient(colors: [.white, Color(hex: "F4EFE0")], startPoint: .top, endPoint: .bottom)
-                    )
-                )
-
-            Button {
-                showingWorld = true
-            } label: {
-                Text("World")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(3)
-        .background(Capsule().fill(glassMaterial))
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
-    }
-
-    /// 翌朝9:00までの残り時間。解禁時刻の計算はWorldLaterService.nextGlobalUnlockDate(_:)を
-    /// 再利用し(World画面のカウントダウンと必ず同じ値になるようにするため)、別途計算しない。
+    /// 次の9:00までの残り時間。
     private var firstRunCountdownHero: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let now = context.date
-            let target = WorldLaterService.nextGlobalUnlockDate(from: now)
+            let target = Self.nextNineAM(from: now)
             let remaining = max(0, Int(target.timeIntervalSince(now)))
             let hours = remaining / 3600
             let minutes = (remaining % 3600) / 60
@@ -914,10 +807,10 @@ struct TodayShootingView: View {
         ["Laterで、今日の一枚をみんなで撮っています。あなたも一緒にどうですか？\nhttps://13379tatsukikitagawa-droid.github.io/APP-Later2/"]
     }
 
-    // MARK: - 節目の記憶
-
-    private func checkForMemory() {
-        memoryMatch = MemorySurpriseManager.findMemory(in: groups, preferredGroupID: groupSelection.selectedGroupID)
+    private static func nextNineAM(from now: Date, calendar: Calendar = .current) -> Date {
+        let todayNineAM = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: now) ?? now
+        if now < todayNineAM { return todayNineAM }
+        return calendar.date(byAdding: .day, value: 1, to: todayNineAM) ?? todayNineAM
     }
 }
 
