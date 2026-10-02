@@ -40,7 +40,9 @@ struct LaterApp: App {
 
 
 struct RootView: View {
-    @State private var isSplashActive = true
+    /// 既存のスプラッシュは、サインイン済みの起動でだけ出す。未サインイン(=新規)の起動では、
+    /// 初回設定(OnboardingFlowView)の開幕がスプラッシュの代わりになる。
+    @State private var isSplashActive = RootView.launchedSignedIn
     @State private var cloudKitManager: CloudKitManager?
     @State private var sharedProfile: UserProfile?
     @State private var showingSharedProfile = false
@@ -77,6 +79,17 @@ struct RootView: View {
     // プロフィール設定完了(OnboardingViewの「Laterをはじめる」)直後、Later紹介サイトへの
     // 導線画面(LaterAboutIntroView)を見た/スキップしたかどうか。
     @AppStorage("hasSeenAboutLaterIntro") private var hasSeenAboutLaterIntro: Bool = false
+
+    private static var launchedSignedIn: Bool {
+        let defaults = UserDefaults.standard
+        return !(defaults.string(forKey: "appleUserID") ?? "").isEmpty || !(defaults.string(forKey: "firebaseUID") ?? "").isEmpty
+    }
+
+    /// 初回設定で撮ったプロフィール画像は、次の9:00を過ぎたら現像(反映)する。
+    private func developProfilePhotoIfDue() {
+        guard let user = UserProfile.current(from: profiles) else { return }
+        ProfilePhotoDevelopment.promoteIfDue(user, context: modelContext)
+    }
 
     /// Sign in with Apple・メールのマジックリンクいずれかでサインイン済みかどうか。
     /// 以降のゲート判定(appleUserID.isEmptyだけを見ていた箇所)は全てこちらに揃える。
@@ -159,23 +172,10 @@ struct RootView: View {
             } else {
                 // メインコンテンツ
                 Group {
-                    if !hasSeenWelcomeOnboarding {
-                        WelcomeOnboardingView()
-                    } else if !hasCompletedSurvey {
-                        // Sign in with Apple(AppleSignInView)より前に、事前アンケートへの
-                        // 回答を促すゲート画面を挟む。既存ユーザー(isSetupCompleted済み)は
-                        // ensureSurveyCompletedForExistingUser()により自動的にtrue扱いに
-                        // なるため、この分岐には来ない。
-                        SurveyGateView()
-                    } else if !isSignedIn {
-                        AppleSignInView()
-                    } else if !isSetupCompleted {
-                        OnboardingView()
-                    } else if !hasSeenAboutLaterIntro {
-                        // プロフィール設定完了直後、一度だけLaterの紹介サイトへの導線を挟む。
-                        LaterAboutIntroView {
-                            hasSeenAboutLaterIntro = true
-                        }
+                    if !isSetupCompleted {
+                        // 新規ユーザーの初回設定(開幕・サインイン・名前・説明・タグ・約束・
+                        // プロフィール撮影・通知)。既存ユーザー(isSetupCompleted済み)は通らない。
+                        OnboardingFlowView()
                     } else {
                         MainTabView()
                     }
@@ -193,9 +193,13 @@ struct RootView: View {
             ensureWelcomeSeenForExistingUser()
             ensureSurveyCompletedForExistingUser()
             ensureAboutLaterIntroSeenForExistingUser()
+            developProfilePhotoIfDue()
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
-            if newPhase == .active { resetIfNeeded() }
+            if newPhase == .active {
+                resetIfNeeded()
+                developProfilePhotoIfDue()
+            }
             if newPhase == .active, isSignedIn {
                 Task { await cloudKitManager?.handleRemoteNotification() }
                 Task { await cloudKitManager?.resendOwnUnlockedPhotosIfNeeded() }

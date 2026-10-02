@@ -90,6 +90,9 @@
 		A3CEC63A2FBDDFD4001F650B /* PhotoUnlockUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CEC6392FBDDFD4001F650B /* PhotoUnlockUtilities.swift */; };
 		A3CEC6402FBDE324001F650B /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CEC63F2FBDE324001F650B /* AppTheme.swift */; };
 		A3CF27BD2FBD623A00DA8913 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CF27BC2FBD623A00DA8913 /* OnboardingView.swift */; };
+		A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF193B5747AE398EAD547C74 /* OnboardingModel.swift */; };
+		B7824F0868F782C69F76B8D7 /* OnboardingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BF6389BC965BF1D800AEC6D /* OnboardingComponents.swift */; };
+		8AEC2FC399D74E06D7A981E1 /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */; };
 		A3D53C4A2FC882CE00D675AE /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C492FC882CE00D675AE /* Color+Brand.swift */; };
 		A3D53C4C2FC88DB800D675AE /* Color+Neon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C4B2FC88DB800D675AE /* Color+Neon.swift */; };
 		A3D53C662FC98F1C00D675AE /* SupportingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D53C652FC98F1C00D675AE /* SupportingComponents.swift */; };
@@ -202,6 +205,9 @@
 		A3CEC6392FBDDFD4001F650B /* PhotoUnlockUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoUnlockUtilities.swift; sourceTree = "<group>"; };
 		A3CEC63F2FBDE324001F650B /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		A3CF27BC2FBD623A00DA8913 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		BF193B5747AE398EAD547C74 /* OnboardingModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingModel.swift; sourceTree = "<group>"; };
+		9BF6389BC965BF1D800AEC6D /* OnboardingComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingComponents.swift; sourceTree = "<group>"; };
+		EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		A3D53C492FC882CE00D675AE /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
 		A3D53C4B2FC88DB800D675AE /* Color+Neon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Neon.swift"; sourceTree = "<group>"; };
 		A3D53C652FC98F1C00D675AE /* SupportingComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportingComponents.swift; sourceTree = "<group>"; };
@@ -447,6 +453,9 @@
 			isa = PBXGroup;
 			children = (
 				A3CF27BC2FBD623A00DA8913 /* OnboardingView.swift */,
+				BF193B5747AE398EAD547C74 /* OnboardingModel.swift */,
+				9BF6389BC965BF1D800AEC6D /* OnboardingComponents.swift */,
+				EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */,
 				9BD678D0F33848FED35DBA5D /* AppleSignInView.swift */,
 				4223DCBF41BC23820D06D5F9 /* EmailSignInView.swift */,
 				549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */,
@@ -763,6 +772,9 @@
 				A3FDAEEF2FB71C5C001484F7 /* Theme.swift in Sources */,
 				A3348FA12FC689B8006568EE /* Color+Extensions.swift in Sources */,
 				A3CF27BD2FBD623A00DA8913 /* OnboardingView.swift in Sources */,
+				A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */,
+				B7824F0868F782C69F76B8D7 /* OnboardingComponents.swift in Sources */,
+				8AEC2FC399D74E06D7A981E1 /* OnboardingFlowView.swift in Sources */,
 				A338351A2FEE9DCE009F718B /* AppIconPickerView.swift in Sources */,
 				A3B62838302D73920010ACBB /* SceneDelegate.swift in Sources */,
 				A36F469F2FD91AD800935607 /* CommonExtensions.swift in Sources */,

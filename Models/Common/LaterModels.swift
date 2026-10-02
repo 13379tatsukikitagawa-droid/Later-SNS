@@ -38,6 +38,16 @@ final class UserProfile {
     /// 表示設定であるピン留めをそこに載せると不要な複雑さが増えるため)。
     var pinnedPhotoIDs: [UUID] = []
 
+    /// 初回設定で選んだ「自分を表すタグ」(最大3つ、「#」なし)。プロフィールに表示するだけで、
+    /// 撮影時のハッシュタグ(LaterPhoto.tags)とは別物。
+    var selfTags: [String] = []
+
+    /// 初回設定で撮ったプロフィール画像。翌朝9:00の現像(pendingProfileImageRevealAt)までは
+    /// 本人にも見せないため、profileImageDataとは別に端末内だけで保持する
+    /// (ProfilePhotoDevelopment.promoteIfDue参照)。
+    @Attribute(.externalStorage) var pendingProfileImageData: Data?
+    var pendingProfileImageRevealAt: Date?
+
     // CloudKit同期メタデータ
     /// CKContainer.userRecordID.recordName — CloudKit上のこのユーザーの識別子
     var cloudKitUserRecordName: String?

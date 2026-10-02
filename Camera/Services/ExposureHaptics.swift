@@ -1,10 +1,11 @@
 import CoreHaptics
 import UIKit
 
-/// 撮影画面の触覚(Core Haptics)。振動させるのは2か所だけ:
+/// Laterの触覚(Core Haptics)。撮影画面で振動させるのは2か所だけ:
 /// ① 長押し中 … 連続振動が1.5秒かけてだんだん強くなる
 /// ② 撮れた瞬間 … くっきり1回だけ(単発)
 /// それ以外(構えている間・途中で離した時)は一切振動させない。
+/// 初回設定(オンボーディング)も同じエンジンを使い、単発・弱い上昇などを追加で鳴らす。
 ///
 /// 触覚に対応していない端末(iPadなど)や、アプリ側で触覚をOFFにしている場合は
 /// 何もしない(見た目だけで同じ流れになる)。強さ・鋭さは実機で触って決め直す前提の初期値。
@@ -95,24 +96,81 @@ final class ExposureHaptics {
     }
 
     /// 撮影の瞬間に呼ぶ(撮影処理と同じタイミングで鳴らすため、呼び出し側は
-    /// capturePhotoの直前に呼ぶ)。
-    func fireCapture() {
+    /// capturePhotoの直前に呼ぶ)。tailを渡すと、くっきり1回のあとに弱まっていく余韻を足す。
+    func fireCapture(
+        intensity: Float? = nil,
+        sharpness: Float? = nil,
+        tail: (intensity: Float, duration: TimeInterval)? = nil
+    ) {
         cancelHold()
+        var events = [Self.transientEvent(
+            intensity: intensity ?? Tuning.captureIntensity,
+            sharpness: sharpness ?? Tuning.captureSharpness
+        )]
+        var curves: [CHHapticParameterCurve] = []
+        if let tail {
+            events.append(CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: tail.intensity),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3),
+                ],
+                relativeTime: 0.02,
+                duration: tail.duration
+            ))
+            curves.append(CHHapticParameterCurve(
+                parameterID: .hapticIntensityControl,
+                controlPoints: [.init(relativeTime: 0, value: 1), .init(relativeTime: tail.duration, value: 0)],
+                relativeTime: 0.02
+            ))
+        }
+        play(events: events, curves: curves, label: "撮影時")
+    }
+
+    /// 単発の軽い振動(初回設定のボタン・タグ選択・タイプなど)。
+    func playTransient(intensity: Float, sharpness: Float) {
+        play(events: [Self.transientEvent(intensity: intensity, sharpness: sharpness)], curves: [], label: "単発")
+    }
+
+    /// 弱い連続振動を、指定の強さまでゆっくり上げる(初回設定の開幕で絞りが開く時)。
+    func playRamp(from start: Float, to end: Float, sharpness: Float, duration: TimeInterval) {
+        let event = CHHapticEvent(
+            eventType: .hapticContinuous,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: sharpness),
+            ],
+            relativeTime: 0,
+            duration: duration
+        )
+        let curve = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [.init(relativeTime: 0, value: start), .init(relativeTime: duration, value: end)],
+            relativeTime: 0
+        )
+        play(events: [event], curves: [curve], label: "上昇")
+    }
+
+    private static func transientEvent(intensity: Float, sharpness: Float) -> CHHapticEvent {
+        CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: sharpness),
+            ],
+            relativeTime: 0
+        )
+    }
+
+    private func play(events: [CHHapticEvent], curves: [CHHapticParameterCurve], label: String) {
         guard isEnabled, let engine else { return }
         startEngineIfNeeded()
         do {
-            let event = CHHapticEvent(
-                eventType: .hapticTransient,
-                parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Tuning.captureIntensity),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: Tuning.captureSharpness),
-                ],
-                relativeTime: 0
-            )
-            let player = try engine.makePlayer(with: CHHapticPattern(events: [event], parameters: []))
+            let pattern = try CHHapticPattern(events: events, parameterCurves: curves)
+            let player = try engine.makePlayer(with: pattern)
             try player.start(atTime: CHHapticTimeImmediate)
         } catch {
-            print("[ExposureHaptics] 撮影時の振動を再生できませんでした: \(error)")
+            print("[ExposureHaptics] \(label)の振動を再生できませんでした: \(error)")
         }
     }
 

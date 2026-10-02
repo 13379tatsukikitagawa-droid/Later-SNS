@@ -79,6 +79,11 @@ struct ProfileView: View {
                     )
                     .padding(.horizontal, 20)
 
+                    if let selfTags = currentProfile?.selfTags, !selfTags.isEmpty {
+                        selfTagsRow(selfTags)
+                            .padding(.horizontal, 20)
+                    }
+
                     pinsSection
                         .padding(.top, 2)
                 }
@@ -104,6 +109,23 @@ struct ProfileView: View {
                 )
             }
         }
+    }
+
+    /// 初回設定で選んだ「自分を表すタグ」(撮影時のハッシュタグとは別物)。
+    private func selfTagsRow(_ tags: [String]) -> some View {
+        HStack(spacing: 8) {
+            ForEach(tags, id: \.self) { tag in
+                Text("#\(tag)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color(hex: "1C1C1E")))
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("自分を表すタグ:\(tags.joined(separator: "、"))")
     }
 
     // MARK: - ①ヘッダー(左右両端にアイコン1つずつ。ロゴは廃止)

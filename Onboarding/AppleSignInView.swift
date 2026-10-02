@@ -11,10 +11,6 @@ import CoreImage.CIFilterBuiltins
 struct AppleSignInView: View {
     @Environment(\.modelContext) private var modelContext
 
-    @AppStorage("appleUserID") private var appleUserID: String = ""
-    @AppStorage("appleFullName") private var appleFullName: String = ""
-    @AppStorage("currentProfileID") private var currentProfileID: String = ""
-    @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
 
     @State private var errorMessage: String?
     @State private var isLoading = false
@@ -136,38 +132,45 @@ struct AppleSignInView: View {
     }
 
     private func handle(_ result: Result<ASAuthorization, Error>) {
+        isLoading = true
+        defer { isLoading = false }
+        errorMessage = Self.applySignIn(result, modelContext: modelContext)
+    }
+}
+
+extension AppleSignInView {
+    /// Sign in with Appleの結果を保存する(初回設定のOnboardingFlowViewからも同じ処理を使う)。
+    /// 成功するとappleUserIDを保存し、同じApple IDの既存プロフィールが端末にあれば、
+    /// それを再利用して設定済み(isSetupCompleted)にする。失敗時はエラー文言を返す。
+    @MainActor
+    static func applySignIn(_ result: Result<ASAuthorization, Error>, modelContext: ModelContext) -> String? {
         switch result {
         case .success(let authorization):
             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-                errorMessage = "Apple認証に失敗しました"
-                return
+                return "Apple認証に失敗しました"
             }
-
-            isLoading = true
-            defer { isLoading = false }
-
+            let defaults = UserDefaults.standard
             let userID = credential.user
             let fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
                 .compactMap { $0 }
                 .joined(separator: " ")
 
-            appleUserID = userID
+            defaults.set(userID, forKey: "appleUserID")
             if !fullName.isEmpty {
-                appleFullName = fullName
+                defaults.set(fullName, forKey: "appleFullName")
             }
 
-            // 同じApple IDの既存プロフィールがあれば再利用し、そのままメイン画面へ進む。
-            // なければ、この後 OnboardingView でプロフィール(名前・ユーザーID・写真)を入力してもらう。
             let descriptor = FetchDescriptor<UserProfile>(
                 predicate: #Predicate<UserProfile> { $0.appleUserID == userID }
             )
             if let existing = try? modelContext.fetch(descriptor).first {
-                currentProfileID = existing.id.uuidString
-                isSetupCompleted = true
+                defaults.set(existing.id.uuidString, forKey: "currentProfileID")
+                defaults.set(true, forKey: "isSetupCompleted")
             }
+            return nil
 
         case .failure(let error):
-            errorMessage = error.localizedDescription
+            return error.localizedDescription
         }
     }
 }

@@ -56,7 +56,6 @@ struct ExposureCameraView: View {
     @State private var exposureStart: Date?
     @State private var isBlackedOut = false
     @State private var isExposedContentVisible = false
-    @State private var isDotBright = false
 
     var body: some View {
         ZStack {
@@ -375,11 +374,6 @@ struct ExposureCameraView: View {
         withAnimation(.easeOut(duration: 0.5).delay(Timing.blackout)) {
             isExposedContentVisible = true
         }
-        if !reduceMotion {
-            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true).delay(Timing.blackout)) {
-                isDotBright = true
-            }
-        }
 
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(Timing.blackout + Timing.exposedHold))
@@ -406,42 +400,11 @@ struct ExposureCameraView: View {
     // MARK: - ③ 暗転・預ける
 
     private var exposedLayout: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            Circle()
-                .fill(.white)
-                .frame(width: 8, height: 8)
-                .shadow(color: .white.opacity(0.8), radius: 8)
-                .opacity(isDotBright ? 1 : 0.7)
-                .accessibilityHidden(true)
-
-            Text(phase == .failed ? "預けられませんでした" : "預けました")
-                .font(.system(size: 27, weight: .bold))
-                .tracking(-0.04 * 27)
-                .foregroundStyle(.white)
-                .padding(.top, 24)
-
-            Text(phase == .failed ? "今日の1枚は、まだ撮れます。\n少し時間をおいて、もう一度。" : "今日の1枚は、\n次にあなたが撮った瞬間に、ひらく。")
-                .font(.system(size: 14))
-                .tracking(-0.01 * 14)
-                .lineSpacing(4)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Palette.subText)
-                .padding(.top, 12)
-
-            Spacer()
-
-            if let exposureStart, phase == .exposed {
-                Text(Self.exposedLabel(for: exposureStart))
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.32))
-                    .padding(.bottom, 24)
-            }
-        }
-        .padding(.horizontal, 16)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+        ExposedNoticeView(
+            title: phase == .failed ? "預けられませんでした" : "預けました",
+            message: phase == .failed ? "今日の1枚は、まだ撮れます。\n少し時間をおいて、もう一度。" : "今日の1枚は、\n次にあなたが撮った瞬間に、ひらく。",
+            footer: phase == .exposed ? exposureStart.map { Self.exposedLabel(for: $0) } : nil
+        )
     }
 
     // MARK: - 日付の表記
@@ -465,6 +428,65 @@ struct ExposureCameraView: View {
     /// 「EXPOSED · 10.02 · 18:11」
     private static func exposedLabel(for date: Date) -> String {
         "EXPOSED · \(exposedDateFormatter.string(from: date)) · \(exposedTimeFormatter.string(from: date))"
+    }
+}
+
+// MARK: - 暗転・預ける(撮影画面と初回設定で共有)
+
+/// 撮った瞬間の暗転画面の中身。中央にやわらかく光る白い点と「預けました」、下に等幅の小さな文字。
+/// 写真は一切見せない。
+struct ExposedNoticeView: View {
+    let title: String
+    let message: String
+    var footer: String?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isDotBright = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            Circle()
+                .fill(.white)
+                .frame(width: 8, height: 8)
+                .shadow(color: .white.opacity(0.8), radius: 8)
+                .opacity(isDotBright ? 1 : 0.7)
+                .accessibilityHidden(true)
+
+            Text(title)
+                .font(.system(size: 27, weight: .bold))
+                .tracking(-0.04 * 27)
+                .foregroundStyle(.white)
+                .padding(.top, 24)
+
+            Text(message)
+                .font(.system(size: 14))
+                .tracking(-0.01 * 14)
+                .lineSpacing(4)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Color(hex: "BCBBC0"))
+                .padding(.top, 12)
+
+            Spacer()
+
+            if let footer {
+                Text(footer)
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.32))
+                    .padding(.bottom, 24)
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .onAppear {
+            // ゆっくり呼吸するように、ごくわずかに明滅する(速くしない)。
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
+                isDotBright = true
+            }
+        }
     }
 }
 

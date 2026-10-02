@@ -79,6 +79,7 @@ extension UserProfile {
         record["cloudKitUserRecordName"] = cloudKitUserRecordName
         record["firebaseUID"] = firebaseUID
         record["firebaseEmail"] = firebaseEmail
+        record["selfTags"] = selfTags.isEmpty ? nil : selfTags
         record["group"] = CKRecord.Reference(recordID: groupRecordID, action: .deleteSelf)
         // CKShare(rootRecord: groupRecord)は階層共有(record.parentで連なるレコードのみが
         // 共有対象になる)方式のため、上のrecord["group"](通常のカスタムフィールド参照)とは
@@ -105,6 +106,7 @@ extension UserProfile {
         cloudKitUserRecordName = record["cloudKitUserRecordName"] as? String ?? cloudKitUserRecordName
         firebaseUID = record["firebaseUID"] as? String ?? firebaseUID
         firebaseEmail = record["firebaseEmail"] as? String ?? firebaseEmail
+        selfTags = record["selfTags"] as? [String] ?? []
         if let asset = record["avatar"] as? CKAsset, let fileURL = asset.fileURL {
             profileImageData = try? Data(contentsOf: fileURL)
         }

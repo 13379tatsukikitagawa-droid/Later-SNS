@@ -123,9 +123,10 @@ struct ProfileChekiCard: View {
                 }
             } else {
                 fallbackPhotoColor
-                Image(systemName: "person.fill")
-                    .font(.system(size: 40))
-                    .foregroundStyle(.white.opacity(0.4))
+                // プロフィール画像が無い(初回設定で撮った1枚が現像前を含む)間は、
+                // 自動で割り当てるペルソナのアイコンを出す。
+                PersonaIcon(seed: seed)
+                    .frame(width: 96, height: 96)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 

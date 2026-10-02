@@ -26,9 +26,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         // 拾うために必要。UNUserNotificationCenterのdelegateは1つしか持てないため、確実に起動時に
         // 生きているAppDelegate自身に持たせる。
         UNUserNotificationCenter.current().delegate = self
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if let error {
-                print("[Notification] requestAuthorization failed: \(error)")
+        // 新規ユーザーには、初回設定の「通知」の場面(DailyOpenNotification)で許可を求める。
+        // 起動直後には出さず、初回設定を終えた既存ユーザーだけ、これまで通りここで求める。
+        if UserDefaults.standard.bool(forKey: "isSetupCompleted") {
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                if let error {
+                    print("[Notification] requestAuthorization failed: \(error)")
+                }
             }
         }
 
