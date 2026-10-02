@@ -184,7 +184,7 @@ struct RootView: View {
                         // プロフィール撮影・通知)。既存ユーザー(isSetupCompleted済み)は通らない。
                         OnboardingFlowView()
                     } else {
-                        MainTabView()
+                        MainNavigationView()
                     }
                 }
                 .transition(.opacity)

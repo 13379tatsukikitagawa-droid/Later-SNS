@@ -2,9 +2,10 @@ import SwiftUI
 
 /// Home画面(再設計 Step 2 + v2:状態で変わる1画面)。「今、何ができるか」を1つだけ伝える。
 ///
-/// 上から:ヘッダー → 点の輪(みんなの昨日、260pt)→ 見出しと説明 → 現像カード(預けた1枚の色と濃さ)
-/// → ボタン(全状態で同じ位置)→ グループの段。状態はHomeState.resolveで決まる。
-/// 振動は「ひらく」の長押しだけで使う(ほかは使わない)。
+/// 上から:ヘッダー(Later・時間のカプセル・アバター)→ 点の輪(みんなの昨日、260pt)→ 見出しと説明
+/// → 現像カード(預けた1枚の色と濃さ)→ グループの段。画面の下の「月」(撮る・ひらく・待つ)は、
+/// 次の画面になってふくらむため、Homeの上に重なる層としてTodayViewが持つ。
+/// 状態はHomeState.resolveで決まる。振動は「ひらく」の長押し(月)だけで使う。
 struct HomeView: View {
     /// 自分が撮った写真の撮影日時。
     let myCaptureDates: [Date]
@@ -22,20 +23,24 @@ struct HomeView: View {
     let groups: [LaterGroup]
     /// 円をそのグループの点だけに絞っている時のグループ
     let selectedGroupID: UUID?
-    /// 撮影画面・仮の「昨日を見る」画面などで、Homeが覆われているか。
+    /// タグ画面・撮影画面・仮の「昨日を見る」画面などで、Homeが覆われているか。
     let isCovered: Bool
-    /// zoom遷移の起点(ボタンの位置)を共有するための名前空間。
-    let transitionNamespace: Namespace.ID
-    let onShoot: () -> Void
-    /// 長押しが完了した(③)、または「昨日をもう一度見る」(③')
-    let onOpenYesterday: () -> Void
+    /// 月の長押し(③)の進み具合。円の色づきが同じ値を読む。
+    let holdModel: HoldGaugeModel
+    /// 右上のアバター(プロフィール画像。なければペルソナのアイコン)
+    let avatarImage: UIImage?
+    let avatarSeed: UUID?
+    /// あなたのページに、見ていない変化がある(現像が100%になった)
+    let showsAvatarBadge: Bool
+    let onOpenProfile: () -> Void
+    /// 現像が100%になった(アバターの白い点を点ける)。引数は、その1枚を表すキー。
+    let onDevelopFinished: (String) -> Void
     /// グループの輪をタップした(nilなら「みんな」に戻る)
     let onSelectGroup: (LaterGroup?) -> Void
     let onCreateGroup: () -> Void
     /// 現在時刻。プレビューやテストでは任意の時刻を返す。
     var clock: () -> Date = Date.init
 
-    static let primaryActionTransitionID = "home.primaryAction"
     private static let homeTabIndex = 0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -44,7 +49,6 @@ struct HomeView: View {
 
     @ScaledMetric(relativeTo: .title) private var headlineSize: CGFloat = 25
     @ScaledMetric(relativeTo: .subheadline) private var bodySize: CGFloat = 13
-    @ScaledMetric(relativeTo: .headline) private var buttonTextSize: CGFloat = 16
 
     @State private var now = Date()
     @State private var isOnScreen = false
@@ -53,7 +57,6 @@ struct HomeView: View {
     @State private var entranceStart: Date?
     @State private var isTextVisible = false
     @State private var isCardVisible = false
-    @State private var isButtonVisible = false
     @State private var isStripVisible = false
     @State private var displayedCount = 0
     @State private var waveStart: Date?
@@ -62,9 +65,6 @@ struct HomeView: View {
     /// 現像カードと「あなたの1点」に表示している濃さ(開くたびに0からのぼる)
     @State private var displayedDevelop: Double = 0
     @State private var myDotPulseStart: Date?
-    @State private var holdModel = HoldGaugeModel()
-    @State private var haptics = ExposureHaptics()
-    @State private var flashStart: Date?
 
     private var state: HomeState {
         HomeState.resolve(now: now, myCaptureDates: myCaptureDates, hasDeposited: hasDeposited, openedToday: openedToday)
@@ -76,7 +76,7 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let fixedHeight: CGFloat = 430
+            let fixedHeight: CGFloat = 450
             let ringSize = min(260, max(220, proxy.size.height - fixedHeight))
             let isCompact = proxy.size.height - fixedHeight < 220
             VStack(spacing: 0) {
@@ -106,11 +106,6 @@ struct HomeView: View {
                     .padding(.top, 8)
                     .opacity(isCardVisible ? 1 : 0)
 
-                primaryArea
-                    .frame(height: 86, alignment: .top)
-                    .padding(.top, 18)
-                    .opacity(isButtonVisible ? 1 : 0)
-
                 HomeGroupStrip(
                     groups: groups,
                     selectedGroupID: selectedGroupID,
@@ -118,9 +113,11 @@ struct HomeView: View {
                     onSelect: { group in onSelectGroup(group.id == selectedGroupID ? nil : group) },
                     onCreate: onCreateGroup
                 )
+                .padding(.top, 24)
                 .opacity(isStripVisible ? 1 : 0)
 
-                Spacer(minLength: 0)
+                // 画面の下の月(TodayViewが重ねる)の場所
+                Spacer(minLength: MoonLayout.visibleHeight + 16)
             }
             .frame(width: proxy.size.width)
         }
@@ -129,18 +126,14 @@ struct HomeView: View {
             FilmGrainOverlay(opacity: 0.05, blendMode: .normal)
                 .ignoresSafeArea()
         }
-        .overlay { openFlash }
         .onAppear {
             isOnScreen = true
             now = clock()
             playEntranceIfNeeded()
             playDevelopRise()
-            if case .shot = state { haptics.prepare() }
+            reportDevelopFinishedIfNeeded()
         }
-        .onDisappear {
-            isOnScreen = false
-            haptics.tearDown()
-        }
+        .onDisappear { isOnScreen = false }
         .onChange(of: scenePhase) { _, phase in
             // バックグラウンドから戻った時は時間が経っている可能性があるため再計算する。
             if phase == .active { updateNow() }
@@ -155,6 +148,7 @@ struct HomeView: View {
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { displayedDevelop = new }
             // 100%になった瞬間に開いていたら、「あなたの1点」の輪が1回だけふくらんで消える(振動なし)。
             if old < 1, new >= 1, isVisible, !reduceMotion { myDotPulseStart = Date() }
+            reportDevelopFinishedIfNeeded()
         }
         .task(id: isVisible) {
             // 時刻の表示と現像の濃さは1分ごとに更新する。見えていない間は止める。
@@ -182,7 +176,6 @@ struct HomeView: View {
             withAnimation(.easeOut(duration: 0.5)) {
                 isTextVisible = true
                 isCardVisible = true
-                isButtonVisible = true
                 isStripVisible = true
                 displayedCount = countValue
             }
@@ -191,7 +184,6 @@ struct HomeView: View {
             withAnimation(.easeOut(duration: 0.9)) { displayedCount = countValue }
             withAnimation(.easeOut(duration: 0.5).delay(0.3)) { isTextVisible = true }
             withAnimation(.easeOut(duration: 0.4).delay(0.45)) { isCardVisible = true }
-            withAnimation(.easeOut(duration: 0.4).delay(0.5)) { isButtonVisible = true }
             withAnimation(.easeOut(duration: 0.4).delay(0.7)) { isStripVisible = true }
         }
         startIdleAnimations()
@@ -221,7 +213,6 @@ struct HomeView: View {
         }
         if case .shot = new {
             holdModel.reset()
-            haptics.prepare()
         }
         withAnimation(.easeOut(duration: 0.9)) { displayedCount = countValue }
     }
@@ -236,7 +227,43 @@ struct HomeView: View {
                 .foregroundStyle(.white)
             Spacer()
             timeCapsule
+            avatarButton
+                .padding(.leading, 12 - 4)
         }
+    }
+
+    /// 右上のアバター(直径36pt、タップ領域44pt)。右上の白い点は「見ていない変化がある」時だけ。
+    private var avatarButton: some View {
+        Button(action: onOpenProfile) {
+            ZStack(alignment: .topTrailing) {
+                Group {
+                    if let avatarImage {
+                        Image(uiImage: avatarImage).resizable().aspectRatio(contentMode: .fill)
+                    } else if let avatarSeed {
+                        PersonaIcon(seed: avatarSeed)
+                    } else {
+                        Circle().fill(HomePalette.surface)
+                    }
+                }
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.55), lineWidth: 1.5))
+                .overlay(Circle().stroke(.black, lineWidth: 2).padding(-1))
+
+                if showsAvatarBadge {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 9, height: 9)
+                        .overlay(Circle().stroke(.black, lineWidth: 2))
+                        .shadow(color: .white.opacity(0.7), radius: 4)
+                        .offset(x: 2, y: -2)
+                }
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(showsAvatarBadge ? "あなたのページ、新しい変化があります" : "あなたのページ")
     }
 
     /// 撮れる時間は「消灯まで 05:49」、9:00前は現在時刻(点はグレー)。
@@ -477,111 +504,17 @@ struct HomeView: View {
         }
     }
 
+    /// 現像が100%になったら、アバターの白い点を点ける(その1枚につき1度)。
+    private func reportDevelopFinishedIfNeeded() {
+        guard let subject = developSubject, developTarget >= 1 else { return }
+        onDevelopFinished(String(Int(subject.capturedAt.timeIntervalSince1970)))
+    }
+
     /// 円の中の「あなたの1点」。預けた1枚がない時(⑤)は出さない。
     private var myDot: HomeDotRing.MyDot? {
         guard let subject = developSubject else { return nil }
         let p = displayedDevelop
         return HomeDotRing.MyDot(color: DevelopProgress.developed(subject.tones[0], p), progress: p, pulseStart: myDotPulseStart)
-    }
-
-    // MARK: - ボタン(全状態で同じ位置)
-
-    @ViewBuilder
-    private var primaryArea: some View {
-        switch state {
-        case .shot:
-            HoldToOpenButton(model: holdModel, haptics: haptics) { playOpenFlash() }
-                .padding(.horizontal, 36)
-                .matchedTransitionSource(id: Self.primaryActionTransitionID, in: transitionNamespace)
-        default:
-            primaryButton
-                .padding(.top, 2)
-        }
-    }
-
-    private var primaryButtonTitle: String {
-        switch state {
-        case .beforeOpening: return "9:00 に、はじまる"
-        case .lightsOut: return "明日 9:00 に、はじまる"
-        case .canShoot, .returning, .firstDay: return "今日を撮る"
-        case .opened: return "昨日をもう一度見る"
-        case .shot: return "現像された昨日を見る"
-        }
-    }
-
-    private var isPrimaryEnabled: Bool {
-        switch state {
-        case .canShoot, .returning, .firstDay, .opened, .shot: return true
-        case .beforeOpening, .lightsOut: return false
-        }
-    }
-
-    private var primaryButton: some View {
-        Button {
-            if case .opened = state {
-                onOpenYesterday()
-            } else if state.canShoot {
-                onShoot()
-            }
-        } label: {
-            Text(primaryButtonTitle)
-                .font(.system(size: buttonTextSize, weight: .semibold))
-                .tracking(-0.01 * buttonTextSize)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .padding(.horizontal, 34)
-                .frame(height: 56)
-                .contentTransition(.opacity)
-        }
-        .buttonStyle(HomePrimaryButtonStyle(isEnabled: isPrimaryEnabled, breathes: state.canShoot && isBreathing))
-        .disabled(!isPrimaryEnabled)
-        .matchedTransitionSource(id: Self.primaryActionTransitionID, in: transitionNamespace)
-        .animation(.easeInOut(duration: 0.5), value: state.kind)
-        .accessibilityLabel(primaryAccessibilityLabel)
-    }
-
-    private var primaryAccessibilityLabel: String {
-        switch state {
-        case .beforeOpening: return "9時にはじまります"
-        case .lightsOut: return "明日9時にはじまります"
-        default: return primaryButtonTitle
-        }
-    }
-
-    // MARK: - ひらく閃光
-
-    /// たまり切った瞬間:円の中心(画面の上から36%)から広がる白→薄いオレンジの光
-    /// (0.25秒で0→0.9、全体1.1秒で0へ)。0.9秒後に「昨日を見る」へ移る。
-    private func playOpenFlash() {
-        flashStart = Date()
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.9))
-            onOpenYesterday()
-            try? await Task.sleep(for: .seconds(0.4))
-            flashStart = nil
-        }
-    }
-
-    @ViewBuilder
-    private var openFlash: some View {
-        if let flashStart {
-            TimelineView(.animation) { context in
-                let t = context.date.timeIntervalSince(flashStart)
-                let opacity: Double = t < 0.25 ? 0.9 * t / 0.25 : 0.9 * max(0, 1 - pow((t - 0.25) / 0.85, 0.6))
-                GeometryReader { proxy in
-                    RadialGradient(
-                        colors: [.white, Color(hex: "FFE3CC"), Color(hex: "FFB38A").opacity(0.6)],
-                        center: UnitPoint(x: 0.5, y: 0.36),
-                        startRadius: 0,
-                        endRadius: max(proxy.size.width, proxy.size.height)
-                    )
-                }
-                .opacity(opacity)
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-        }
     }
 
     // MARK: - 時刻の表記
@@ -618,30 +551,6 @@ struct HomeView: View {
     }
 }
 
-// MARK: - ボタンのスタイル
-
-/// 白い丸いボタン(高さ56pt、完全な丸み、白い光)。押している間は0.97倍に縮み、光が少し強くなる。
-/// 押せない時はグレー(#1C1C1E・文字#8E8E93)。
-private struct HomePrimaryButtonStyle: ButtonStyle {
-    let isEnabled: Bool
-    /// 呼吸の山側にいるか(撮れる時だけ。光が0.12↔0.28で3秒周期)。
-    let breathes: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        let glow: Double = {
-            guard isEnabled else { return 0 }
-            let base = breathes ? 0.28 : 0.12
-            return configuration.isPressed ? base + 0.12 : base
-        }()
-        return configuration.label
-            .foregroundStyle(isEnabled ? Color.black : HomePalette.disabledText)
-            .background(Capsule().fill(isEnabled ? Color.white : HomePalette.surface))
-            .shadow(color: .white.opacity(glow), radius: 18)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.spring(response: 0.22, dampingFraction: 0.7), value: configuration.isPressed)
-    }
-}
-
 // MARK: - プレビュー(時刻と撮影状況を差し込んで状態を確認する)
 
 private struct HomeViewPreview: View {
@@ -649,7 +558,7 @@ private struct HomeViewPreview: View {
     let captures: [Date]
     let count: Int?
     var openedToday = false
-    @Namespace private var namespace
+    @State private var holdModel = HoldGaugeModel()
 
     var body: some View {
         HomeView(
@@ -662,9 +571,12 @@ private struct HomeViewPreview: View {
             groups: [],
             selectedGroupID: nil,
             isCovered: false,
-            transitionNamespace: namespace,
-            onShoot: {},
-            onOpenYesterday: {},
+            holdModel: holdModel,
+            avatarImage: nil,
+            avatarSeed: UUID(),
+            showsAvatarBadge: true,
+            onOpenProfile: {},
+            onDevelopFinished: { _ in },
             onSelectGroup: { _ in },
             onCreateGroup: {},
             clock: { now }

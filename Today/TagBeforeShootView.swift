@@ -7,6 +7,8 @@ struct TagBeforeShootView: View {
     @Binding var tags: [String]
     /// 値が変わるたびにキーボードを開き直す(撮影画面から戻った時)
     let focusTrigger: Int
+    /// 月がふくらんで開いた時に、各要素をずらして入れる(開始までの遅れ)。nilなら演出なし。
+    var entranceDelay: Double?
     let onClose: () -> Void
     /// 「撮影へ」「タグなしで撮る」。チップの位置(飛ぶ動きの出発点)を渡す。
     let onProceed: (_ chipFrames: [String: CGRect]) -> Void
@@ -34,6 +36,7 @@ struct TagBeforeShootView: View {
     @State private var isExampleVisible = true
     @State private var hintIndex = 0
     @State private var isProceeding = false
+    @State private var hasEntered = false
 
     private static let examples = ["雨の日", "帰り道", "机の上", "朝ごはん", "夕焼け", "ひとりの時間"]
     private static let hints = ["空白か改行で、タグになります", "場所や名前は書かないでください"]
@@ -63,6 +66,7 @@ struct TagBeforeShootView: View {
             VStack(alignment: .leading, spacing: 0) {
                 closeButton
                     .padding(.leading, 20)
+                    .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0.2), rises: false))
 
                 Text("今日を撮る前に")
                     .font(.system(size: 10, design: .monospaced))
@@ -71,6 +75,7 @@ struct TagBeforeShootView: View {
                     .padding(.top, 15)
                     .padding(.horizontal, 28)
                     .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                    .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0)))
 
                 Text("今日を、ひとことで。")
                     .font(.system(size: titleSize, weight: .semibold))
@@ -81,11 +86,13 @@ struct TagBeforeShootView: View {
                     .padding(.top, 8)
                     .padding(.horizontal, 28)
                     .accessibilityAddTraits(.isHeader)
+                    .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0.04)))
 
                 inputPanel
                     .padding(.top, 20)
                     .padding(.horizontal, 28)
                     .modifier(ShakeEffect(animatableData: CGFloat(shakeCount)))
+                    .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0.09)))
 
                 Text(notice ?? " ")
                     .font(.system(size: 12))
@@ -98,6 +105,7 @@ struct TagBeforeShootView: View {
 
                 if showsRivers {
                     riversArea(showsSecond: showsSecondRiver)
+                        .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0.17)))
                 }
                 Spacer(minLength: 0)
             }
@@ -116,6 +124,12 @@ struct TagBeforeShootView: View {
         }
         .onPreferenceChange(TagInputFrameKey.self) { inputFrame = $0 }
         .onAppear {
+            // 月がふくらんで開いた時だけ、各要素をずらして入れる。Reduce Motionの時は演出しない。
+            if entranceDelay == nil || reduceMotion {
+                hasEntered = true
+            } else {
+                DispatchQueue.main.async { hasEntered = true }
+            }
             haptics.prepare()
             if !reduceMotion {
                 withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { isBreathing = true }
@@ -126,6 +140,10 @@ struct TagBeforeShootView: View {
             guard !isEmpty, voiceOverEnabled else { return }
             UIAccessibility.post(notification: .announcement, argument: "候補 \(candidates.count)件")
         }
+    }
+
+    private func entranceOffset(_ delay: Double) -> Double {
+        (entranceDelay ?? 0) + delay
     }
 
     // MARK: - 上部
@@ -800,6 +818,26 @@ struct ArcFlightEffect: ViewModifier, Animatable {
         content
             .scaleEffect(fromScale + (toScale - fromScale) * p)
             .position(x: x, y: y)
+    }
+}
+
+/// ずらして入れる:下から14ptの位置からフェードイン(520ms・cubic-bezier(.2,.8,.2,1))。
+/// risesがfalseなら、フェードのみ(400ms)。
+struct StaggerIn: ViewModifier {
+    let isIn: Bool
+    let delay: Double
+    var rises = true
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isIn ? 1 : 0)
+            .offset(y: isIn || !rises ? 0 : 14)
+            .animation(
+                rises
+                    ? .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.52).delay(delay)
+                    : .easeOut(duration: 0.4).delay(delay),
+                value: isIn
+            )
     }
 }
 

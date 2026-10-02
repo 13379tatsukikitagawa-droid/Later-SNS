@@ -7,6 +7,8 @@ import UIKit
 /// タグ画面はフェードアウト・撮影画面はフェードイン(0.45秒)。撮影画面の「←」で戻ってタグを直せる。
 struct ShootFlowView: View {
     let hasShotToday: Bool
+    /// 月がふくらんで開いた時の、タグ画面の各要素をずらして入れる演出の遅れ(nilなら演出なし)
+    var entranceDelay: Double?
     /// 撮った1枚を保存する(タグはこの画面で決めたもの)。保存できたらtrue。
     let onCaptured: (_ imageData: Data, _ exposureStart: Date, _ tags: [String], _ locationName: String?) -> Bool
     let onFinished: () -> Void
@@ -35,6 +37,7 @@ struct ShootFlowView: View {
             TagBeforeShootView(
                 tags: $tags,
                 focusTrigger: focusTrigger,
+                entranceDelay: entranceDelay,
                 onClose: onClose,
                 onProceed: goToCamera
             )

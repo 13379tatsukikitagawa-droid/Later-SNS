@@ -9,6 +9,9 @@ import UIKit
 /// → 自分を表すタグ →(書いた時だけ)ひとこと → 預けた日々(1日1点の渦)。
 /// 色は写真から取った色だけを使う。
 struct ProfileImmersiveView: View {
+    /// Homeへ戻る(左上の「<」)。右スワイプでも戻る(MainNavigationViewが受け持つ)。
+    var onBack: (() -> Void)?
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -19,6 +22,8 @@ struct ProfileImmersiveView: View {
 
     @AppStorage("profileBallColorHex") private var cachedBallColorHex: String = ""
     @AppStorage("profileBallColorKey") private var cachedBallColorKey: String = ""
+    @AppStorage(AvatarBadge.pendingKey) private var avatarBadgePending: String = ""
+    @AppStorage(AvatarBadge.acknowledgedKey) private var avatarBadgeAcknowledged: String = ""
 
     @State private var isOnScreen = false
     @State private var tilt = GlassTilt()
@@ -117,7 +122,14 @@ struct ProfileImmersiveView: View {
         .onDisappear { isOnScreen = false }
         .onChange(of: isVisible) { _, visible in
             updateMotion(visible: visible)
-            if visible { playRevealIfNeeded() }
+            if visible {
+                playRevealIfNeeded()
+                // Profileを開いたら、アバターの白い点を消す。
+                if !avatarBadgePending.isEmpty {
+                    avatarBadgeAcknowledged = avatarBadgePending
+                    avatarBadgePending = ""
+                }
+            }
         }
         .onChange(of: profile?.profileImageData) { _, _ in
             updateBallColorIfNeeded()
@@ -151,7 +163,10 @@ struct ProfileImmersiveView: View {
     // MARK: - ヘッダー(編集・設定)
 
     private var header: some View {
-        HStack {
+        HStack(spacing: 10) {
+            if let onBack {
+                GlassCircleButton(systemImage: "chevron.left", label: "戻る", action: onBack)
+            }
             GlassCircleButton(systemImage: "pencil", label: "編集") { editFocus = ProfileEditFocus.none }
             Spacer()
             GlassCircleButton(systemImage: "slider.horizontal.3", label: "設定") { isShowingSettings = true }
@@ -375,6 +390,15 @@ struct ProfileImmersiveView: View {
             }
         }
     }
+}
+
+/// Homeのアバターの白い点(あなたのページに、見ていない変化がある)。
+/// いまは「現像が100%になった」時だけ点け、Profileを開いたら消す。
+enum AvatarBadge {
+    /// 点いている時、その1枚を表すキー
+    static let pendingKey = "avatarBadgePending"
+    /// 最後に見た(消した)1枚のキー
+    static let acknowledgedKey = "avatarBadgeAcknowledged"
 }
 
 /// 実機で調整するための数値(プロフィール)。
