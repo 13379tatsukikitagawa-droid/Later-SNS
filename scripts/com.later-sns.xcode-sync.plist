@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.later-sns.xcode-sync</string>
+  <!-- ここの2か所を、手元の実際のパスに書き換える(launchdは$HOMEを展開しません) -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/YOUR_USER/Later-SNS/scripts/sync_xcode_branch.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>LATER_SNS_REPO</key>
+    <string>/Users/YOUR_USER/Later-SNS</string>
+  </dict>
+  <key>StartInterval</key>
+  <integer>600</integer>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
