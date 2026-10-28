@@ -26,6 +26,24 @@ enum FirebaseAuthService {
         case missingEmail
     }
 
+    /// 開発中とTestFlightのときだけ、失敗の内訳(domain / code / 名前)を画面の小さな文字で出す。
+    /// App Store版では出さない。
+    static var showsDebugDetails: Bool {
+        #if DEBUG
+        return true
+        #else
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+        #endif
+    }
+
+    /// 失敗の中身を1行にまとめる(画面表示とログの両方で使う)。
+    static func debugLabel(for error: Error) -> String {
+        let e = error as NSError
+        let name = e.userInfo["FIRAuthErrorUserInfoNameKey"] as? String ?? "-"
+        let inner = (e.userInfo[NSUnderlyingErrorKey] as? NSError).map { " / inner \($0.domain) \($0.code)" } ?? ""
+        return "\(e.domain) \(e.code) \(name)\(inner)"
+    }
+
     /// 指定したメールアドレスへサインインリンクを送信する。送信したメールアドレスは
     /// ローカルに保存しておき(pendingEmail)、リンクを開いた際に同じ端末なら
     /// 自動的に補完できるようにする(別端末で開いた場合はEmailSignInView側で

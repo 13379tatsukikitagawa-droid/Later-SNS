@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Later の招待</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0c0c0e; color: #fff;
+         font-family: -apple-system, "Hiragino Sans", sans-serif; }
+  main { max-width: 340px; padding: 32px 24px; text-align: center; }
+  h1 { font-size: 24px; letter-spacing: -0.03em; margin: 0 0 12px; }
+  p { color: #bcbbc0; font-size: 14px; line-height: 1.8; margin: 0 0 24px; }
+  a.button { display: block; height: 52px; line-height: 52px; border-radius: 26px; text-decoration: none; font-weight: 700;
+             color: #1a0d08; background: linear-gradient(90deg, #ffb078, #ff8fa0); margin-bottom: 12px; }
+  small { color: #8e8e93; font-size: 11.5px; line-height: 1.7; display: block; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Later に招待されました</h1>
+  <p>Later で、昨日をひらきあいましょう。</p>
+  <!-- App Store の ID が決まったら、APP_STORE_URL を差しかえる -->
+  <a class="button" id="store" href="https://apps.apple.com/jp/search?term=Later">リンクをコピーして、App Store へ</a>
+  <small>アプリを入れたら、さいしょの設定のあとに「貼りつける」を押してください。<br>そのまま、続きからグループに入れます。</small>
+  <script>
+    // 続きから入るため、招待リンクをコピーしてから App Store へ(アプリでは OS の「ペースト」ボタンで受けとる)
+    document.getElementById("store").addEventListener("click", async (event) => {
+      event.preventDefault();
+      const target = event.currentTarget.href;
+      try { await navigator.clipboard.writeText(location.href); } catch (_) {}
+      location.href = target;
+    });
+  </script>
+</main>
+</body>
+</html>

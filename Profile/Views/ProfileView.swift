@@ -493,7 +493,7 @@ struct ProfileEditView: View {
 
         // 成功のHaptic
         let successFeedback = UINotificationFeedbackGenerator()
-        successFeedback.notificationOccurred(.success)
+        successFeedback.notificationOccurredIfEnabled(.success)
 
         dismiss()
     }

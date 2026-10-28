@@ -65,7 +65,6 @@ struct PinPhotoPickerView: View {
                 confirmButton
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private var emptyState: some View {

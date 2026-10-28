@@ -76,12 +76,17 @@ final class ExposureHaptics {
         isEngineRunning = false
     }
 
-    /// 長押しの開始と同時に呼ぶ。
-    func beginHold(duration: TimeInterval) {
+    /// 長押しの開始と同時に呼ぶ。intensity・sharpnessを渡すと、その範囲でじわっと上げる
+    /// (省略時は撮影の値)。
+    func beginHold(
+        duration: TimeInterval,
+        intensity: ClosedRange<Float> = Tuning.holdIntensity,
+        sharpness: ClosedRange<Float> = Tuning.holdSharpness
+    ) {
         guard isEnabled, let engine else { return }
         startEngineIfNeeded()
         do {
-            let player = try engine.makeAdvancedPlayer(with: Self.holdPattern(duration: duration))
+            let player = try engine.makeAdvancedPlayer(with: Self.holdPattern(duration: duration, intensity: intensity, sharpness: sharpness))
             holdPlayer = player
             try player.start(atTime: CHHapticTimeImmediate)
         } catch {
@@ -159,6 +164,99 @@ final class ExposureHaptics {
         play(events: [event], curves: curves, label: "上昇")
     }
 
+    /// 起動アニメーション(morning):t=150〜1350msにContinuousでじわっと強く(0.08→0.45、鋭さ0.2)
+    /// → t=1350ms(光の球ができる瞬間)にTransientで弱く1回(0.5、鋭さ0.4)。
+    /// speed は低電力モードの倍速。cancelHold() ですぐ止まる。
+    func playLaunchMorning(speed: Double = 1) {
+        guard isEnabled, let engine else { return }
+        startEngineIfNeeded()
+        let begin = 0.15 / speed, end = 1.35 / speed
+        let duration = end - begin
+        let continuous = CHHapticEvent(
+            eventType: .hapticContinuous,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.2),
+            ],
+            relativeTime: begin,
+            duration: duration
+        )
+        let curve = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [.init(relativeTime: 0, value: 0.08), .init(relativeTime: duration, value: 0.45)],
+            relativeTime: begin
+        )
+        do {
+            let pattern = try CHHapticPattern(
+                events: [continuous, Self.transientEvent(intensity: 0.5, sharpness: 0.4, at: end)],
+                parameterCurves: [curve]
+            )
+            let player = try engine.makeAdvancedPlayer(with: pattern)
+            holdPlayer = player
+            try player.start(atTime: CHHapticTimeImmediate)
+        } catch {
+            print("[ExposureHaptics] 起動の振動を再生できませんでした: \(error)")
+        }
+    }
+
+    /// ロック中の操作:やわらかく2回(強さ0.4・鋭さ0.2、間90ms)
+    func playSoftDouble() {
+        play(events: [
+            Self.transientEvent(intensity: 0.4, sharpness: 0.2),
+            Self.transientEvent(intensity: 0.4, sharpness: 0.2, at: 0.09),
+        ], curves: [], label: "ロック")
+    }
+
+    /// 灯をともす:soft 0.45 → 50ms後 → medium 0.7(LampRules.placeHaptic)
+    func playLampPlace() {
+        play(events: LampRules.placeHaptic.map { Self.transientEvent(intensity: $0.intensity, sharpness: $0.sharpness, at: $0.at) }, curves: [], label: "灯")
+    }
+
+    /// 灯を取り消す:light 1回
+    func playLampCancel() {
+        play(events: LampRules.cancelHaptic.map { Self.transientEvent(intensity: $0.intensity, sharpness: $0.sharpness, at: $0.at) }, curves: [], label: "灯を消す")
+    }
+
+    /// Home v5 の触覚(HomeHapticPattern の「鳴らす長さ・あき」のならび)。単発のつなぎで鳴らす。
+    func playPattern(_ pattern: [Int], sharpness: Float = 0.4) {
+        let events = HomeHapticPattern.pulses(pattern).map {
+            Self.transientEvent(intensity: $0.intensity, sharpness: sharpness, at: $0.time)
+        }
+        guard !events.isEmpty else { return }
+        play(events: events, curves: [], label: "Home")
+    }
+
+    /// 鼓動1拍:「ドクン(強さ0.55)→ ドク(強さ0.3)」
+    func playHeartbeat() {
+        play(events: [
+            Self.transientEvent(intensity: 0.55, sharpness: 0.25),
+            Self.transientEvent(intensity: 0.3, sharpness: 0.2, at: 0.16),
+        ], curves: [], label: "鼓動")
+    }
+
+    /// 現像の早送り:さらさらと弱く始まり、少し強く → 最後にトンと弱く1回
+    func playDevelopRustle(duration: TimeInterval, peak: Float) {
+        let grains = max(1, Int(duration / 0.06))
+        var events: [CHHapticEvent] = []
+        for i in 0..<grains {
+            let u = Float(i) / Float(grains)
+            events.append(Self.transientEvent(intensity: 0.08 + (peak - 0.08) * u * u, sharpness: 0.7, at: Double(i) * 0.06))
+        }
+        events.append(Self.transientEvent(intensity: 0.4, sharpness: 0.3, at: duration + 0.05))
+        play(events: events, curves: [], label: "早送り")
+    }
+
+    private static func transientEvent(intensity: Float, sharpness: Float, at time: TimeInterval) -> CHHapticEvent {
+        CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: sharpness),
+            ],
+            relativeTime: time
+        )
+    }
+
     private static func transientEvent(intensity: Float, sharpness: Float) -> CHHapticEvent {
         CHHapticEvent(
             eventType: .hapticTransient,
@@ -195,7 +293,11 @@ final class ExposureHaptics {
     /// 連続振動(長さ=duration)の上に、強さ・鋭さをゆるやかに上げるカーブを重ねる。
     /// 強さ(hapticIntensityControl)はイベント側の強さ1.0への掛け算、鋭さ
     /// (hapticSharpnessControl)はイベント側の鋭さ0への足し算として効く。
-    private static func holdPattern(duration: TimeInterval) throws -> CHHapticPattern {
+    private static func holdPattern(
+        duration: TimeInterval,
+        intensity: ClosedRange<Float>,
+        sharpness: ClosedRange<Float>
+    ) throws -> CHHapticPattern {
         let event = CHHapticEvent(
             eventType: .hapticContinuous,
             parameters: [
@@ -216,11 +318,37 @@ final class ExposureHaptics {
             }
         }
         let intensityCurve = CHHapticParameterCurve(
-            parameterID: .hapticIntensityControl, controlPoints: points(Tuning.holdIntensity), relativeTime: 0
+            parameterID: .hapticIntensityControl, controlPoints: points(intensity), relativeTime: 0
         )
         let sharpnessCurve = CHHapticParameterCurve(
-            parameterID: .hapticSharpnessControl, controlPoints: points(Tuning.holdSharpness), relativeTime: 0
+            parameterID: .hapticSharpnessControl, controlPoints: points(sharpness), relativeTime: 0
         )
         return try CHHapticPattern(events: [event], parameterCurves: [intensityCurve, sharpnessCurve])
+    }
+}
+
+// MARK: - アプリ全体の触覚の ON/OFF
+
+/// 設定の「触覚」。OFF のときは、撮る・ひらく・えらぶ も含めて、アプリ全体で鳴らさない。
+enum AppHapticsSetting {
+    static var isEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: ExposureHaptics.enabledDefaultsKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: ExposureHaptics.enabledDefaultsKey) }
+    }
+}
+
+extension UIImpactFeedbackGenerator {
+    /// 設定の「触覚」が ON のときだけ鳴らす
+    func impactOccurredIfEnabled() {
+        guard AppHapticsSetting.isEnabled else { return }
+        impactOccurred()
+    }
+}
+
+extension UINotificationFeedbackGenerator {
+    /// 設定の「触覚」が ON のときだけ鳴らす
+    func notificationOccurredIfEnabled(_ type: FeedbackType) {
+        guard AppHapticsSetting.isEnabled else { return }
+        notificationOccurred(type)
     }
 }

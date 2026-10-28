@@ -1,59 +1,20 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
-import CloudKit
 import UIKit
 
-// MARK: - 合言葉
+// MARK: - グループ作成(3ステップ)
 
-/// グループの合言葉(例 hikari-2741)。Public DBに「invite_合言葉」のレコードとして登録し、
-/// 重複したら発行し直す。参加する側の画面(合言葉を入力する)は別途作る。今は表示と発行だけ。
-enum GroupPassphrase {
-    private static let words = [
-        "hikari", "sora", "kumo", "ame", "umi", "kaze", "hoshi", "tsuki", "mori", "yuki",
-        "hana", "nagi", "asa", "yoru", "niji", "kawa", "michi", "tori", "aki", "natsu",
-    ]
-    private static let maxAttempts = 6
-
-    static func generate() -> String {
-        "\(words.randomElement()!)-\(Int.random(in: 1000...9999))"
-    }
-
-    /// 合言葉を発行して登録する。共有リンク(CKShareのURL)を合言葉から引けるようにしておく。
-    @MainActor
-    static func issue(for group: LaterGroup, shareURL: URL?, container: CKContainer) async throws -> String {
-        let database = container.publicCloudDatabase
-        for _ in 0..<maxAttempts {
-            let code = generate()
-            let record = CKRecord(recordType: AppRecordType.groupInvite, recordID: CKRecord.ID(recordName: "invite_\(code)"))
-            record["shareURL"] = shareURL?.absoluteString
-            record["groupID"] = group.id.uuidString
-            do {
-                // 既に同じ合言葉のレコードがあれば失敗する保存方法で、重複を防ぐ。
-                let (results, _) = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged)
-                if case .failure(let error) = results[record.recordID] {
-                    if let ckError = error as? CKError, ckError.code == .serverRecordChanged { continue }
-                    throw error
-                }
-                return code
-            } catch let error as CKError where error.code == .serverRecordChanged {
-                continue
-            }
-        }
-        throw GroupSharingError.shareURLMissing
-    }
-}
-
-// MARK: - グループ作成(4ステップ)
-
-/// グループ作成:① 名前 → ② 写真 → ③ 呼ぶ → ④ できた。下から上がる全画面で開く。
-/// 左上の「×」で閉じる(入力中は捨てる。③以降はグループが作成済みなので残る)。
+/// グループ作成:① 名前 → ② 顔 → [グループをつくる] → ③ できた+呼ぶ。下から上がる全画面で開く。
+/// ①は左上の ✕ で閉じる(入力は破棄・確認なし)。②の左上は「←」(①へ)。
+/// グループが CloudKit に作られるのは、②の「グループをつくる」を押した瞬間だけ。③には戻る・✕ がない。
 struct NewGroupFlowView: View {
+    /// 最初から入れておくグループ名(空の GROUP 画面のステッカーから。nil なら空)
+    var initialName: String? = nil
     let onClose: () -> Void
 
-    private enum Step: Int {
-        case name = 1, photo, invite, done
-    }
+    private enum Step: Int { case name = 1, face, invite }
+    private enum FaceTab: String, CaseIterable { case photo, camera, colorOnly }
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -61,129 +22,166 @@ struct NewGroupFlowView: View {
 
     @State private var step: Step = .name
     @State private var name = ""
+    @State private var memberLimit = GroupMembershipPolicy.maxMembersPerGroup
+    /// 手で選んだ色(nil なら名前から決める)
+    @State private var chosenColor: Int?
     @FocusState private var isNameFocused: Bool
-    @State private var candidates: [UIImage] = []
-    @State private var selectedCandidate: Int?
-    @State private var photoData: Data?
-    @State private var cropSource: UIImage?
+    @State private var discBump = false
+
+    @State private var faceTab: FaceTab = .photo
+    @State private var recent = RecentPhotos()
+    @State private var sourceImage: UIImage?
+    @State private var faceScale: CGFloat = 1
+    @State private var faceOffset: CGSize = .zero
+    @State private var dragBase: CGSize?
+    @State private var tone: FaceTone = .original
+    @State private var preview: UIImage?
+    @State private var develop: Double = 1
+    @State private var isPickingAlbum = false
     @State private var pickerItem: PhotosPickerItem?
     @State private var isShowingCamera = false
-    @State private var createdGroup: LaterGroup?
-    @State private var isWorking = false
+
+    @State private var isCreating = false
+    @State private var burst = false
+    @State private var burstExpanded = false
     @State private var errorMessage: String?
-    @State private var passphrase: String?
-    @State private var shareURL: URL?
-    @State private var isShowingShare = false
-    @State private var didCopy = false
+    @State private var createdGroup: LaterGroup?
+    @State private var popStart: Date?
+    @State private var popIndex = 0
+    @State private var inviteAppeared = false
     @State private var haptics = ExposureHaptics()
 
-    private static let nameLimit = 12
+    private static let nameSuggestions = ["帰り道の4人", "朝活ぐみ", "しずかな会"]
+    private static let warmText = Color(hex: "FFB078")
+
     private var currentUser: UserProfile? { UserProfile.current(from: profiles) }
-    private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
-    private var photo: UIImage? { photoData.flatMap(UIImage.init(data:)) }
+    private var finalName: String { GroupNameRules.finalize(name) }
+    private var colorIndex: Int { chosenColor ?? GroupPalette.index(forName: finalName) }
+    private var initial: String { GroupNameRules.initial(of: name) }
 
     var body: some View {
         ZStack(alignment: .top) {
             Color.black.ignoresSafeArea()
-            GeometryReader { proxy in
-                Ellipse()
-                    .fill(RadialGradient(colors: [.white.opacity(0.12), .clear], center: .center, startRadius: 0, endRadius: proxy.size.width * 0.62))
-                    .frame(width: proxy.size.width * 1.4, height: 420)
-                    .position(x: proxy.size.width / 2, y: -25)
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
+            auraBackground
 
             VStack(spacing: 0) {
                 topBar
                 ScrollView {
-                    VStack(spacing: 0) {
-                        content
-                            .id(step)
-                            .transition(.opacity)
-                    }
-                    .padding(.bottom, 24)
+                    content
+                        .id(step)
+                        .transition(.opacity)
+                        .padding(.bottom, 24)
                 }
-                .scrollDismissesKeyboard(.never)
+                .scrollDismissesKeyboard(.interactively)
                 .scrollBounceBehavior(.basedOnSize)
             }
-        }
-        .preferredColorScheme(.dark)
-        .overlay {
-            FilmGrainOverlay(opacity: 0.05, blendMode: .normal)
-                .ignoresSafeArea()
+            // キーボードが出ていても、ボタンが隠れない(キーボードの上に追従)
+            .safeAreaInset(edge: .bottom) { bottomButton }
+
+            if burst {
+                Circle()
+                    .fill(RadialGradient(colors: [.white, Color(hex: "FFD2AE"), .clear], center: .center, startRadius: 0, endRadius: 40))
+                    .frame(width: 80, height: 80)
+                    .scaleEffect(burstExpanded ? 20 : 0.5)
+                    .opacity(burstExpanded ? 0 : 1)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+            }
         }
         .onAppear { haptics.prepare() }
         .onDisappear { haptics.tearDown() }
-        .sheet(item: Binding(get: { cropSource.map(IdentifiedImage.init) }, set: { cropSource = $0?.image })) { item in
-            SquareImageCropView(sourceImage: item.image) { data in
-                photoData = Self.resized(data)
-                cropSource = nil
-            } onCancel: {
-                cropSource = nil
-            }
-        }
-        .fullScreenCover(isPresented: $isShowingCamera) {
-            CameraImagePicker { image in
-                isShowingCamera = false
-                guard let image else { return }
-                candidates.insert(image, at: 0)
-                choose(0)
-            }
-            .ignoresSafeArea()
-        }
-        .sheet(isPresented: $isShowingShare) {
-            if let shareURL {
-                ShareSheet(activityItems: [GroupJoinLink.buildURL(shareURL: shareURL) ?? shareURL]) { _ in
-                    isShowingShare = false
-                    go(to: .done)
-                }
-            }
-        }
+        .photosPicker(isPresented: $isPickingAlbum, selection: $pickerItem, matching: .images, photoLibrary: .shared())
         .onChange(of: pickerItem) { _, item in
             guard let item else { return }
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-                    candidates.append(image)
-                    choose(candidates.count - 1)
+                    choose(image)
                 }
                 pickerItem = nil
             }
         }
+        .fullScreenCover(isPresented: $isShowingCamera) {
+            CircleCameraView(haptics: haptics) { image in
+                isShowingCamera = false
+                faceTab = .photo
+                choose(image)
+            } onClose: {
+                isShowingCamera = false
+                faceTab = sourceImage == nil ? .photo : faceTab
+            }
+        }
+        .onChange(of: createdGroup?.members.count) { old, new in
+            // ③を開いている間に、だれかが入った:その点がオレンジで現れて白に(触覚なし)
+            guard let old, let new, new > old else { return }
+            popIndex = new - 1
+            popStart = Date()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) { popStart = nil }
+        }
     }
 
-    // MARK: - 上部
+    // MARK: - 上部(✕ / ← と、進み具合のバー)
 
     private var topBar: some View {
-        ZStack {
-            Text("NEW GROUP ・ \(step.rawValue) / 4")
-                .font(.system(size: 10, design: .monospaced))
-                .tracking(0.14 * 10)
-                .foregroundStyle(.white.opacity(0.45))
+        VStack(spacing: 12) {
             HStack {
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Circle().fill(.white.opacity(0.1)))
+                switch step {
+                case .name:
+                    circleButton("xmark", label: "閉じる", action: onClose)
+                case .face:
+                    circleButton("arrow.left", label: "もどる") { go(to: .name) }
+                case .invite:
+                    Color.clear.frame(width: 44, height: 44)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("閉じる")
                 Spacer()
             }
+            HStack(spacing: 6) {
+                ForEach(1...3, id: \.self) { index in
+                    Capsule()
+                        .fill(.white.opacity(index <= step.rawValue ? 0.9 : 0.18))
+                        .frame(height: 3)
+                }
+            }
+            .padding(.horizontal, 4)
+            .accessibilityElement()
+            .accessibilityLabel("ステップ \(step.rawValue) / 3")
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
+    }
+
+    private func circleButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(.white.opacity(0.1)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    private var auraBackground: some View {
+        let colors = GroupRingMath.auraPalettes[colorIndex]
+        return GeometryReader { proxy in
+            Ellipse()
+                .fill(RadialGradient(colors: [colors[0].opacity(0.32), colors[1].opacity(0.12), .clear], center: .center, startRadius: 0, endRadius: proxy.size.width * 0.7))
+                .frame(width: proxy.size.width * 1.5, height: 520)
+                .position(x: proxy.size.width / 2, y: 120)
+                .blur(radius: 30)
+                .animation(.easeInOut(duration: 0.6), value: colorIndex)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder
     private var content: some View {
         switch step {
         case .name: nameStep
-        case .photo: photoStep
+        case .face: faceStep
         case .invite: inviteStep
-        case .done: doneStep
         }
     }
 
@@ -191,345 +189,591 @@ struct NewGroupFlowView: View {
 
     private var nameStep: some View {
         VStack(spacing: 0) {
-            GroupDotRing(photo: nil, initial: trimmedName.isEmpty ? "" : String(trimmedName.prefix(1)), memberCount: 1, diameter: 150, photoDiameter: 66)
-                .padding(.top, 20)
-            heading("グループに、\n名前をつけます。", "みんなに見える名前です。実名や学校名は避けて。")
+            GroupCircle(initial: initial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1, diameter: 224,
+                        discScale: discBump ? 1.04 : 1)
+                .padding(.top, 18)
+            heading("グループに、\n名前をつけます。", nil)
+
             VStack(alignment: .leading, spacing: 6) {
-                Text("グループの名前")
-                    .font(.system(size: 9.5, design: .monospaced))
-                    .foregroundStyle(Color(hex: "8E8E93"))
-                HStack(alignment: .lastTextBaseline) {
-                    TextField("", text: $name)
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white)
-                        .tint(.white)
-                        .focused($isNameFocused)
-                        .submitLabel(.next)
-                        .onSubmit { if !trimmedName.isEmpty { go(to: .photo) } }
-                        .onChange(of: name) { _, value in
-                            if value.count > Self.nameLimit { name = String(value.prefix(Self.nameLimit)) }
-                        }
-                        .accessibilityLabel("グループの名前")
-                    Text("\(name.count) / \(Self.nameLimit)")
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(Color(hex: "8E8E93"))
+                HStack {
+                    Text("グループの名前")
+                    Spacer()
+                    Text("\(finalName.count) / \(GroupNameRules.maxLength)").monospacedDigit()
                 }
+                .font(.system(size: 10.5, design: .monospaced))
+                .foregroundStyle(Color(hex: "8E8E93"))
+                TextField("", text: $name, prompt: Text("たとえば「帰り道の4人」").foregroundStyle(.white.opacity(0.25)))
+                    .font(.system(size: 27, weight: .bold))
+                    .foregroundStyle(.white)
+                    .tint(.white)
+                    .lineLimit(1)
+                    .focused($isNameFocused)
+                    .submitLabel(.done)
+                    .onSubmit { isNameFocused = false }
+                    .onChange(of: name) { _, value in
+                        let clean = GroupNameRules.sanitizeInput(value)
+                        if clean != value { name = clean }
+                        bumpDisc()
+                    }
+                    .accessibilityLabel("グループの名前")
             }
-            .padding(.horizontal, 20)
-            .frame(height: 92)
-            .background(glassShape(24))
-            .padding(.horizontal, 28)
+            .padding(.horizontal, 18)
+            .frame(minHeight: 78)
+            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.white.opacity(0.07)))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(isNameFocused ? 0.55 : 0.12), lineWidth: 1))
+            .padding(.horizontal, 24)
             .padding(.top, 22)
 
-            primaryButton("つぎへ", height: 50, isEnabled: !trimmedName.isEmpty) { go(to: .photo) }
+            limitStepper
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("思いつかないときは")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Color(hex: "8E8E93"))
+                OnboardingFlowLayout(spacing: 8) {
+                    ForEach(Self.nameSuggestions, id: \.self) { suggestion in
+                        Button {
+                            haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+                            name = suggestion
+                        } label: {
+                            Text(suggestion)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                                .background(Capsule().fill(.white.opacity(0.08)))
+                                .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
+                        }
+                        .buttonStyle(PressScaleStyle())
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+
+            Text("みんなに見える名前です。実名や学校名は避けましょう。")
+                .font(.system(size: 11))
+                .foregroundStyle(Color(hex: "6B6B70"))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
                 .padding(.top, 20)
         }
-        .onAppear { isNameFocused = true }
+        .onAppear {
+            if let initialName, name.isEmpty { name = GroupNameRules.sanitizeInput(initialName) }
+            isNameFocused = true
+        }
     }
 
-    // MARK: - ② 写真
+    private var limitStepper: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("人数の上限").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                Text("4〜8人。あとから変えられます").font(.system(size: 11)).foregroundStyle(Color(hex: "8E8E93"))
+            }
+            Spacer()
+            HStack(spacing: 14) {
+                stepButton("minus", enabled: memberLimit > GroupMembershipPolicy.memberLimitRange.lowerBound) { memberLimit -= 1 }
+                Text("\(memberLimit)人")
+                    .font(.system(size: 17, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+                stepButton("plus", enabled: memberLimit < GroupMembershipPolicy.memberLimitRange.upperBound) { memberLimit += 1 }
+            }
+        }
+        .padding(.horizontal, 18)
+        .frame(minHeight: 64)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(0.05)))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("人数の上限、\(memberLimit)人")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: if memberLimit < 8 { memberLimit += 1 }
+            case .decrement: if memberLimit > 4 { memberLimit -= 1 }
+            @unknown default: break
+            }
+        }
+    }
 
-    private var photoStep: some View {
+    private func stepButton(_ icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+            withAnimation(.easeOut(duration: 0.2)) { action() }
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(Circle().fill(.white.opacity(0.1)))
+        }
+        .buttonStyle(PressScaleStyle())
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.3)
+    }
+
+    // MARK: - ② 顔
+
+    private var faceHeading: (String, String) {
+        if sourceImage != nil { return ("いい顔です。\nこれでいきますか。", "ドラッグで位置を、つまみで大きさをあわせられます。") }
+        if faceTab == .colorOnly { return ("色と頭文字で、\n顔にします。", "写真は、あとからいつでも足せます。") }
+        return ("グループの、\n顔になる写真を。", "あとから、いつでも変えられます。")
+    }
+
+    private var faceStep: some View {
         VStack(spacing: 0) {
-            GroupDotRing(photo: photo, initial: String(trimmedName.prefix(1)), memberCount: 1, diameter: 170, photoDiameter: 104)
-                .padding(.top, 16)
-            heading("グループの、\n顔になる写真を。", "あとから、いつでも変えられます。")
+            GroupCircle(image: preview, initial: initial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1,
+                        diameter: 256, discScale: discBump ? 1.04 : 1, develop: develop)
+                .padding(.top, 10)
+                .gesture(sourceImage == nil ? nil : dragGesture)
+                .accessibilityHint(sourceImage == nil ? "" : "ドラッグで位置をあわせられます")
+            heading(faceHeading.0, faceHeading.1)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(78), spacing: 10), count: 4), spacing: 12) {
-                Button { isShowingCamera = true } label: {
-                    gridCell { Image(systemName: "camera").font(.system(size: 20)).foregroundStyle(.white) }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("カメラで撮る")
+            tabs
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
 
-                PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
-                    gridCell { Image(systemName: "photo.on.rectangle").font(.system(size: 20)).foregroundStyle(.white) }
-                }
-                .accessibilityLabel("写真を選ぶ")
-
-                ForEach(candidates.indices, id: \.self) { index in
-                    let isSelected = selectedCandidate == index
-                    Button { choose(index) } label: {
-                        Image(uiImage: candidates[index])
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 78, height: 78)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(.white, lineWidth: isSelected ? 2.4 : 0))
-                            .overlay(alignment: .topTrailing) {
-                                if isSelected {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 18))
-                                        .foregroundStyle(.white, .black)
-                                        .padding(5)
-                                }
-                            }
-                            .opacity(selectedCandidate == nil || isSelected ? 1 : 0.72)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("写真")
-                    .accessibilityValue(isSelected ? "選択中" : "")
-                    .accessibilityHint("選択")
+            Group {
+                switch faceTab {
+                case .photo:
+                    if sourceImage != nil { adjustPanel } else { recentRow }
+                case .camera:
+                    Text("カメラをひらいています…")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Color(hex: "8E8E93"))
+                        .padding(.top, 20)
+                case .colorOnly:
+                    swatches
                 }
             }
-            .padding(.top, 22)
+            .padding(.top, 16)
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(hex: "8E8E93"))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 28)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(Self.warmText)
                     .padding(.top, 14)
+                    .transition(.opacity)
             }
-
-            primaryButton(isWorking ? "つくっています…" : "つぎへ", height: 56, isEnabled: !isWorking) { createGroup() }
-                .padding(.top, 22)
-            Button("写真なしで進む") {
-                photoData = nil
-                selectedCandidate = nil
-                createGroup()
-            }
-            .font(.system(size: 14, weight: .medium))
-            .foregroundStyle(Color(hex: "8E8E93"))
-            .padding(.top, 12)
-            .disabled(isWorking)
         }
     }
 
-    private func gridCell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .frame(width: 78, height: 78)
-            .background(glassShape(16))
+    private var tabs: some View {
+        HStack(spacing: 8) {
+            tab(.photo, "写真", "photo")
+            tab(.camera, "カメラ", "camera")
+            tab(.colorOnly, "色だけ", "circle.lefthalf.filled")
+        }
     }
 
-    private func choose(_ index: Int) {
-        guard candidates.indices.contains(index) else { return }
-        selectedCandidate = index
-        haptics.playTransient(intensity: 0.5, sharpness: 0.6)
-        // 丸くトリミング:ドラッグ+ピンチで位置・大きさを決める(プロフィール写真と同じ操作)。
-        cropSource = candidates[index]
+    private func tab(_ value: FaceTab, _ title: String, _ icon: String) -> some View {
+        let selected = faceTab == value
+        return Button {
+            switch value {
+            case .camera:
+                faceTab = .camera
+                isShowingCamera = true
+            case .colorOnly:
+                // 写真を選んでいたら、外れる(色だけの顔になる)
+                withAnimation(.easeOut(duration: 0.25)) {
+                    faceTab = .colorOnly
+                    clearPhoto()
+                }
+            case .photo:
+                withAnimation(.easeOut(duration: 0.25)) { faceTab = .photo }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 13, weight: .semibold))
+                Text(title).font(.system(size: 13.5, weight: .semibold))
+            }
+            .foregroundStyle(selected ? .black : .white)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(Capsule().fill(selected ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.08))))
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    // MARK: - ③ 呼ぶ
-
-    private var inviteStep: some View {
-        VStack(spacing: 0) {
-            GroupDotRing(photo: photo, initial: String(trimmedName.prefix(1)), memberCount: createdGroup?.members.count ?? 1, diameter: 190, photoDiameter: 112)
-                .padding(.top, 16)
-            heading("つぎは、\n呼ぶ人を。", "4〜8人。合言葉を送ると、参加できます。")
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("合言葉")
-                        .font(.system(size: 9.5, design: .monospaced))
-                        .foregroundStyle(Color(hex: "8E8E93"))
-                    Spacer()
-                    if let passphrase {
-                        Button(didCopy ? "コピーしました" : "コピー") {
-                            UIPasteboard.general.string = passphrase
-                            didCopy = true
+    /// 最近の写真(左端は「アルバム」タイル)。許可がないときは「アルバム」だけ
+    private var recentRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    Button(action: openAlbum) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo.on.rectangle").font(.system(size: 20))
+                            Text("アルバム").font(.system(size: 11.5, weight: .medium))
                         }
-                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.white)
+                        .frame(width: 74, height: 92)
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.08)))
+                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 1))
+                    }
+                    .buttonStyle(PressScaleStyle())
+
+                    if recent.access == .granted {
+                        ForEach(recent.thumbnails, id: \.id) { item in
+                            Button { chooseRecent(item.id, thumbnail: item.image) } label: {
+                                Image(uiImage: item.image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 74, height: 92)
+                                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            }
+                            .buttonStyle(PressScaleStyle())
+                            .accessibilityLabel("最近の写真")
+                        }
                     }
                 }
-                Text(passphrase ?? "発行しています…")
-                    .font(.system(size: 28, weight: .bold, design: .monospaced))
-                    .tracking(0.04 * 28)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .accessibilityLabel(passphrase.map { "合言葉、" + $0.map(String.init).joined(separator: " ") } ?? "合言葉を発行しています")
-                Text("入力した人だけが、参加できます")
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(Color(hex: "8E8E93"))
+                .padding(.horizontal, 24)
             }
-            .padding(18)
-            .frame(height: 104)
-            .background(glassShape(22))
-            .padding(.horizontal, 28)
-            .padding(.top, 22)
+            .mask(HStack(spacing: 0) { Color.black; LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing).frame(width: 30) })
 
-            primaryButton("リンクを送る", height: 56, isEnabled: shareURL != nil) { isShowingShare = true }
-                .padding(.top, 22)
-            Button("あとで送る") { go(to: .done) }
-                .font(.system(size: 14, weight: .medium))
+            Text(recent.access == .denied ? "写真の許可がないので、色だけでも作れます" : "顔や名前が写っていない写真が、おすすめです。")
+                .font(.system(size: 11))
+                .foregroundStyle(Color(hex: "6B6B70"))
+                .padding(.horizontal, 24)
+        }
+    }
+
+    /// 写真を選んだあと:大きさ・色あい・ホームでの見え方
+    private var adjustPanel: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 12) {
+                Text("大きさ").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(.white)
+                Slider(value: $faceScale, in: FaceImageRenderer.scaleRange)
+                    .tint(.white)
+                    .onChange(of: faceScale) { _, _ in
+                        faceOffset = FaceImageRenderer.clampOffset(faceOffset, scale: faceScale)
+                        renderPreview()
+                    }
+                    .accessibilityLabel("大きさ")
+            }
+            HStack(spacing: 8) {
+                ForEach(FaceTone.allCases) { value in
+                    Button {
+                        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+                        tone = value
+                        renderPreview()
+                    } label: {
+                        Text(value.label)
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(tone == value ? .black : .white)
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                            .background(Capsule().fill(tone == value ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.08))))
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .accessibilityAddTraits(tone == value ? .isSelected : [])
+                }
+            }
+            HStack(spacing: 14) {
+                // ホームのグループ列の1つぶん(直径40pt)
+                VStack(spacing: 4) {
+                    ZStack {
+                        GroupFace(iconData: preview?.jpegData(compressionQuality: 0.7), initial: initial, auraIndex: colorIndex, diameter: 30)
+                        GroupLightRing(memberCount: memberLimit, posted: 1, diameter: 40)
+                    }
+                    .frame(width: 40, height: 40)
+                    Text(finalName).font(.system(size: 9.5, weight: .medium)).foregroundStyle(.white.opacity(0.88)).lineLimit(1).frame(maxWidth: 56)
+                    Text("1 / \(memberLimit)").font(.system(size: 8.5, design: .monospaced)).foregroundStyle(Color(hex: "8E8E93"))
+                }
+                .accessibilityHidden(true)
+                Text("ホームでの見え方")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(Color(hex: "BCBBC0"))
+                Spacer()
+                Button {
+                    haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+                    withAnimation(.easeOut(duration: 0.25)) { clearPhoto() }
+                } label: {
+                    Text("えらびなおす")
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 34)
+                        .background(Capsule().fill(.white.opacity(0.1)))
+                }
+                .buttonStyle(PressScaleStyle())
+            }
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.white.opacity(0.05)))
+        .padding(.horizontal, 24)
+    }
+
+    private var swatches: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 14) {
+                ForEach(0..<GroupPalette.count, id: \.self) { index in
+                    let colors = GroupRingMath.auraPalettes[index]
+                    let selected = colorIndex == index
+                    Button {
+                        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+                        withAnimation(.easeOut(duration: 0.2)) { chosenColor = index }
+                        bumpDisc()
+                    } label: {
+                        Circle()
+                            .fill(LinearGradient(colors: [colors[0], colors[1]], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 36, height: 36)
+                            .overlay(Circle().strokeBorder(.white, lineWidth: selected ? 2 : 0).padding(-4))
+                            .scaleEffect(selected ? 1.12 : 1)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("色 \(index + 1)")
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+            Text("写真がなくても、色と頭文字で、ちゃんと顔になります。")
+                .font(.system(size: 11.5))
                 .foregroundStyle(Color(hex: "8E8E93"))
-                .padding(.top, 12)
+        }
+        .padding(.horizontal, 24)
+    }
+
+    private var dragGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                if dragBase == nil { dragBase = faceOffset }
+                guard let base = dragBase else { return }
+                // 円板(直径256×0.74)の上の動き → 正方形の一辺に対する割合
+                let disc = 256 * 0.74 * faceScale
+                faceOffset = FaceImageRenderer.clampOffset(
+                    CGSize(width: base.width + value.translation.width / disc, height: base.height + value.translation.height / disc),
+                    scale: faceScale
+                )
+                renderPreview()
+            }
+            .onEnded { _ in dragBase = nil }
+    }
+
+    // MARK: - ③ できた+呼ぶ
+
+    @ViewBuilder
+    private var inviteStep: some View {
+        if let group = createdGroup {
+            let members = max(1, group.members.count)
+            let limit = GroupPalette.clampLimit(group.memberLimit)
+            VStack(spacing: 0) {
+                GroupCircle(image: group.iconImageData.flatMap(UIImage.init(data:)), initial: initial, colorIndex: colorIndex,
+                            memberLimit: limit, litCount: members, diameter: 196, popStart: popStart, popIndex: popIndex)
+                    .padding(.top, 6)
+                HStack(spacing: 8) {
+                    (Text("\(members)").bold() + Text(" / \(limit)人"))
+                        .foregroundStyle(.white)
+                        .contentTransition(.numericText(countsDown: false))
+                    Text(members >= limit ? "満員" : "あと\(limit - members)人")
+                        .foregroundStyle(members >= limit ? Color(hex: "8E8E93") : Self.warmText)
+                }
+                .font(.system(size: 13))
+                .padding(.top, 10)
+                .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.5), value: members)
+
+                heading("グループが、\nできました。", "つぎは、呼ぶ人を。入った人から、点が光ります。")
+                    .modifier(InviteStagger(index: 0, appeared: inviteAppeared, reduceMotion: reduceMotion))
+                InviteCard(group: group, summary: GroupRingMath.summaries(for: [group], now: Date())[0], haptics: haptics, onShowQR: { url in
+                    inviteQR = url
+                })
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .modifier(InviteStagger(index: 1, appeared: inviteAppeared, reduceMotion: reduceMotion))
+            }
+            .onAppear { inviteAppeared = true }
+            .overlay {
+                if let inviteQR {
+                    InviteQROverlay(url: inviteQR, auraIndex: colorIndex) { self.inviteQR = nil }
+                }
+            }
         }
     }
 
-    // MARK: - ④ できた
+    @State private var inviteQR: URL?
 
-    private var doneStep: some View {
-        let members = createdGroup?.members.count ?? 1
-        let groupCount = (currentUser?.groups.filter { !$0.isPersonalSpace }.count) ?? 1
-        return VStack(spacing: 0) {
-            // ひらく前のこの画面だけ、参加ずみの点を写真の色(オレンジ・青・黄)で光らせる。
-            GroupDotRing(
-                photo: photo,
-                initial: String(trimmedName.prefix(1)),
-                memberCount: members,
-                diameter: 210,
-                photoDiameter: 128,
-                dotSize: 6,
-                litColor: { index in HomePalette.ringColor(atFraction: Double(index) / Double(GroupDotRing.slotCount)) }
-            )
-            .padding(.top, 16)
-            heading("グループが、\nできました。", "\(trimmedName)\n撮ると、このグループの昨日も、一緒にひらきます。")
-            Text("\(members) / 4 参加ずみ ・ グループ \(groupCount) / \(GroupMembershipPolicy.maxGroupsPerUser)")
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.45))
-                .padding(.top, 14)
-            primaryButton("Home にもどる", height: 56, isEnabled: true, action: onClose)
-                .padding(.top, 24)
+    // MARK: - 下のボタン
+
+    @ViewBuilder
+    private var bottomButton: some View {
+        switch step {
+        case .name:
+            primaryButton("つぎへ", enabled: !finalName.isEmpty) { go(to: .face) }
+        case .face:
+            primaryButton(isCreating ? "つくっています…" : "グループをつくる", enabled: !isCreating && !finalName.isEmpty, action: create)
+        case .invite:
+            primaryButton("ホームで、見る", enabled: true, action: onClose)
         }
-        .onAppear { haptics.playTransient(intensity: 0.8, sharpness: 0.7) }
     }
 
-    // MARK: - 共通の部品
-
-    private func heading(_ title: String, _ description: String) -> some View {
-        VStack(spacing: 10) {
-            Text(title)
-                .font(.system(size: 26, weight: .bold))
-                .tracking(-0.045 * 26)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.white)
-            Text(description)
-                .font(.system(size: 12.5))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Color(hex: "BCBBC0"))
-        }
-        .padding(.horizontal, 28)
-        .padding(.top, 22)
-    }
-
-    private func glassShape(_ radius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: radius, style: .continuous)
-            .fill(LinearGradient(colors: [.white.opacity(0.1), .white.opacity(0.04)], startPoint: .top, endPoint: .bottom))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(.white.opacity(0.1), lineWidth: 1))
-    }
-
-    private func primaryButton(_ title: String, height: CGFloat, isEnabled: Bool, action: @escaping () -> Void) -> some View {
+    private func primaryButton(_ title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 16, weight: .semibold))
-                .lineLimit(1)
-                .foregroundStyle(isEnabled ? .black : Color(hex: "8E8E93"))
-                .frame(maxWidth: .infinity)
-                .frame(height: height)
-                .background(Capsule().fill(isEnabled ? Color.white : Color(hex: "1C1C1E")))
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(enabled ? .black : Color(hex: "8E8E93"))
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(Capsule().fill(enabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.12))))
         }
-        .buttonStyle(ShrinkPressStyle(scale: 0.97))
-        .disabled(!isEnabled)
+        .buttonStyle(PressScaleStyle(scale: 0.97))
+        .disabled(!enabled)
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .background(LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+    }
+
+    // MARK: - 共通
+
+    private func heading(_ title: String, _ description: String?) -> some View {
+        VStack(spacing: 10) {
+            Text(title)
+                .font(.system(size: 27, weight: .bold))
+                .tracking(-0.045 * 27)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            if let description {
+                Text(description)
+                    .font(.system(size: 12.5))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Color(hex: "BCBBC0"))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
         .padding(.horizontal, 28)
+        .padding(.top, 20)
     }
 
     private func go(to next: Step) {
         isNameFocused = false
-        withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.35)) { step = next }
+        errorMessage = nil
+        withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.45)) { step = next }
+    }
+
+    /// 円板が 1.04 倍にぽんと跳ねて戻る(0.26秒)
+    private func bumpDisc() {
+        guard !reduceMotion else { return }
+        withAnimation(.easeOut(duration: 0.13)) { discBump = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.13) { withAnimation(.easeIn(duration: 0.13)) { discBump = false } }
+    }
+
+    // MARK: - 写真
+
+    private func openAlbum() {
+        Task {
+            await recent.requestIfNeeded()
+            isPickingAlbum = true
+        }
+    }
+
+    private func chooseRecent(_ id: String, thumbnail: UIImage) {
+        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+        choose(thumbnail)
+        Task {
+            if let full = await recent.fullImage(id: id) {
+                sourceImage = full
+                renderPreview()
+            }
+        }
+    }
+
+    /// 写真を選んだ:1.5秒で、ぼかし+うす白+低い彩度 → くっきり・色づく(現像)
+    private func choose(_ image: UIImage) {
+        sourceImage = image
+        faceScale = 1
+        faceOffset = .zero
+        tone = .original
+        renderPreview()
+        faceTab = .photo
+        guard !reduceMotion else { develop = 1; return }
+        develop = 0
+        withAnimation(.easeOut(duration: 1.5)) { develop = 1 }
+        bumpDisc()
+    }
+
+    private func clearPhoto() {
+        sourceImage = nil
+        preview = nil
+        faceScale = 1
+        faceOffset = .zero
+        tone = .original
+    }
+
+    private func renderPreview() {
+        guard let sourceImage else { preview = nil; return }
+        preview = FaceImageRenderer.render(sourceImage, scale: faceScale, offset: faceOffset, tone: tone, side: 512)
     }
 
     // MARK: - 作成
 
-    /// 写真の段階から「つぎへ」で、グループを実際に作成する(既存のGroupSharingService.createGroupを使う)。
-    private func createGroup() {
-        guard !isWorking, createdGroup == nil else {
-            go(to: .invite)
-            return
-        }
-        guard let user = currentUser else { return }
+    /// 「グループをつくる」:強く1回 → 中央から光が広がる(1.1秒)→ 0.52秒後に③(保存が終わっていれば)。
+    /// 保存に失敗したら②にとどまり、「つくれませんでした。もういちど」(グループは作られていない)。
+    private func create() {
+        guard !isCreating, let user = currentUser else { return }
         guard let cloudKitManager = CloudKitManager.current else {
-            errorMessage = "iCloudへの接続が完了していません。しばらくしてから、もう一度お試しください。"
+            errorMessage = "つくれませんでした。もういちど"
             return
         }
-        let joinedGroupCount = user.groups.filter { !$0.isPersonalSpace }.count
-        guard joinedGroupCount < GroupMembershipPolicy.maxGroupsPerUser else {
-            errorMessage = "グループがいっぱいです"
+        guard user.groups.filter({ !$0.isPersonalSpace }).count < GroupMembershipPolicy.maxGroupsPerUser else {
+            errorMessage = "グループは、10個までです。"
             return
+        }
+        isCreating = true
+        errorMessage = nil
+        haptics.playTransient(intensity: 1.0, sharpness: 0.7)
+        if !reduceMotion {
+            burstExpanded = false
+            burst = true
+            DispatchQueue.main.async { withAnimation(.easeOut(duration: 1.1)) { burstExpanded = true } }
+            bumpDisc()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.15) { burst = false; burstExpanded = false }
         }
 
-        isWorking = true
-        errorMessage = nil
-        let group = LaterGroup(name: trimmedName, host: user, autoGenerateMission: false, isPrivate: true)
-        group.iconImageData = photoData
+        let group = LaterGroup(name: finalName, host: user, autoGenerateMission: false, isPrivate: true)
+        group.memberLimit = memberLimit
+        group.colorIndex = colorIndex
+        group.joinedAt = Date()
+        if let sourceImage {
+            group.iconImageData = FaceImageRenderer.render(sourceImage, scale: faceScale, offset: faceOffset, tone: tone)?.jpegData(compressionQuality: 0.85)
+        }
         _ = group.addMember(user)
         modelContext.insert(group)
 
+        let started = Date()
         Task { @MainActor in
-            defer { isWorking = false }
             let sharingService = GroupSharingService(container: cloudKitManager.container, modelContext: modelContext, cloudKitManager: cloudKitManager)
             do {
                 try await sharingService.createGroup(group, hostProfile: user)
             } catch GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true) {
-                // iCloudの容量不足で写真だけ除いて作成できた。グループ自体は作成済み。
-                errorMessage = GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true).errorDescription
+                // iCloud の容量不足で、写真だけ除いて作れた(グループは作成ずみ)
             } catch {
                 modelContext.delete(group)
-                errorMessage = (error as? GroupSharingError)?.errorDescription ?? "グループをつくれませんでした。もう一度お試しください。"
+                try? modelContext.save()
+                isCreating = false
+                withAnimation { errorMessage = "つくれませんでした。もういちど" }
                 return
             }
             createdGroup = group
-            shareURL = group.ckShareURL.flatMap(URL.init(string:))
-            go(to: .invite)
-
-            if let code = try? await GroupPassphrase.issue(for: group, shareURL: shareURL, container: cloudKitManager.container) {
-                group.inviteCode = code
-                try? modelContext.save()
-                cloudKitManager.markForUpload(group: group)
-                passphrase = code
+            let wait = max(0, 0.52 - Date().timeIntervalSince(started))
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
+                isCreating = false
+                go(to: .invite)
             }
         }
     }
-
-    /// 端末内で512×512に縮小する(フィルム加工はしない)。
-    private static func resized(_ data: Data) -> Data {
-        guard let image = UIImage(data: data) else { return data }
-        let size = CGSize(width: 512, height: 512)
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let rendered = UIGraphicsImageRenderer(size: size, format: format).image { _ in
-            image.draw(in: CGRect(origin: .zero, size: size))
-        }
-        return rendered.jpegData(compressionQuality: 0.85) ?? data
-    }
 }
 
-private struct IdentifiedImage: Identifiable {
-    let id = UUID()
-    let image: UIImage
-}
+/// ③:見出し → 招待カードの順に、80msずつずらして、ぼかしから浮かぶ(0.7秒)
+private struct InviteStagger: ViewModifier {
+    let index: Int
+    let appeared: Bool
+    let reduceMotion: Bool
 
-/// その場で撮るカメラ(グループの写真用。Daily Shotのルールはここには適用しない)。
-struct CameraImagePicker: UIViewControllerRepresentable {
-    let onFinish: (UIImage?) -> Void
-
-    func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let onFinish: (UIImage?) -> Void
-
-        init(onFinish: @escaping (UIImage?) -> Void) {
-            self.onFinish = onFinish
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            onFinish(info[.originalImage] as? UIImage)
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            onFinish(nil)
-        }
+    func body(content: Content) -> some View {
+        let shown = appeared || reduceMotion
+        return content
+            .blur(radius: shown ? 0 : 10)
+            .offset(y: shown ? 0 : 14)
+            .opacity(shown ? 1 : 0)
+            .animation(reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.7).delay(0.1 + Double(index) * 0.08), value: appeared)
     }
 }

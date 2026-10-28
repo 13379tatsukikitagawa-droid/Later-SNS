@@ -20,6 +20,8 @@ enum GroupMembershipPolicy {
     /// 1グループあたりの最大人数(ホストを含む)。9人目の参加は拒否する。
     /// 「4人以上」は作成直後には満たせないため、案内の文言だけにして強制しない。
     static let maxMembersPerGroup = 8
+    /// グループごとに決められる人数の上限の範囲
+    static let memberLimitRange = 4...8
     /// 1人が参加・作成できる最大グループ数。個人用スペース「ME」は数えない
     /// (全ユーザーが自動的に持つものであり、「参加・作成した」グループではないため)。
     static let maxGroupsPerUser = 10

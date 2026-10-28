@@ -116,6 +116,10 @@ final class LaterPhoto {
     /// 画像がまだ届いていない写真」だけをDB側の#Predicateで絞り込むために使う
     /// (グループ数・写真数が増えても、無関係な写真まで毎回全件取得しないようにするため)。
     var isImageUploaded: Bool = false
+    /// 「投稿する」を選んだか。撮った時点ではfalse(画像以外のレコードだけがグループに届く)。
+    /// 「投稿する」でtrueにして画像を送る。この項目より前の写真・古いアプリから届いたレコードは
+    /// 投稿ずみとみなす(既定値true)。「投稿しない」を選んだ写真は、その場で削除する。
+    var isPosted: Bool = true
 
     // 🌟 キャプション（記憶の封印）
     var caption: String?
@@ -127,6 +131,15 @@ final class LaterPhoto {
     /// 撮影地の地名(逆ジオコーディング結果、市区町村名程度)。位置情報の許可が無い/
     /// 取得に失敗した場合はnil(CameraLocationNameProvider参照)。
     var locationName: String?
+
+    /// 解禁前の表示に使う、とても小さな画像(22 × 48 px の PNG・数KB)。フィルム加工後の画像から作る。
+    /// 解禁前の GROUP のモザイクは、これだけを使う(高解像度の本体は使わない)。
+    var mosaicTiny: Data?
+
+    /// 撮った場所(約500mの格子に丸めた緯度経度)。位置の共有を「撮った場所」にしたグループのレコードにだけ入る。
+    /// 正確な GPS は、どこにも保存しない。共有をオフにしたら、そのグループの分は消す。
+    var approxLatitude: Double?
+    var approxLongitude: Double?
 
     // 撮影者（所有者）
     @Relationship

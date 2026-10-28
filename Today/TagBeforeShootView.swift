@@ -18,7 +18,7 @@ struct TagBeforeShootView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
-    @ScaledMetric(relativeTo: .title) private var titleSize: CGFloat = 27
+    @ScaledMetric(relativeTo: .title) private var titleSize: CGFloat = 30
 
     @State private var inputText = ""
     @State private var haptics = ExposureHaptics()
@@ -37,8 +37,14 @@ struct TagBeforeShootView: View {
     @State private var hintIndex = 0
     @State private var isProceeding = false
     @State private var hasEntered = false
+    /// 1回ぶんの「気持ちのヒント」(ひらいたときに1回だけ作り、ひらいているあいだは固定)
+    @State private var hintSet: EmotionHintSet?
+    @State private var riverOpacity = 1.0
+    @State private var rerollTurns = 0.0
 
-    private static let examples = ["雨の日", "帰り道", "机の上", "朝ごはん", "夕焼け", "ひとりの時間"]
+    /// うすい例(ヒントを作る前の、ごく短いあいだだけ)
+    private static let fallbackExamples = ["うれしい", "帰り道"]
+    private var examples: [String] { hintSet?.examples ?? Self.fallbackExamples }
     private static let hints = ["空白か改行で、タグになります", "場所や名前は書かないでください"]
 
     private var isFull: Bool { tags.count >= ShootTagRules.maxTags }
@@ -77,7 +83,7 @@ struct TagBeforeShootView: View {
                     .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                     .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0)))
 
-                Text("今日を、ひとことで。")
+                Text("今日は、どんな日?")
                     .font(.system(size: titleSize, weight: .semibold))
                     .tracking(-0.045 * titleSize)
                     .foregroundStyle(.white)
@@ -87,6 +93,13 @@ struct TagBeforeShootView: View {
                     .padding(.horizontal, 28)
                     .accessibilityAddTraits(.isHeader)
                     .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0.04)))
+
+                Text("撮る前に、えらぶ。3つまで。")
+                    .font(.system(size: 13))
+                    .foregroundStyle(HomePalette.subText)
+                    .padding(.top, 8)
+                    .padding(.horizontal, 28)
+                    .modifier(StaggerIn(isIn: hasEntered, delay: entranceOffset(0.06)))
 
                 inputPanel
                     .padding(.top, 20)
@@ -124,6 +137,8 @@ struct TagBeforeShootView: View {
         }
         .onPreferenceChange(TagInputFrameKey.self) { inputFrame = $0 }
         .onAppear {
+            // ひらくたびに、ちがうヒント(復帰・キーボード・回転では作りなおさない)
+            if hintSet == nil { hintSet = EmotionHintHistory.next(ownTags: ownTags) }
             // 月がふくらんで開いた時だけ、各要素をずらして入れる。Reduce Motionの時は演出しない。
             if entranceDelay == nil || reduceMotion {
                 hasEntered = true
@@ -150,7 +165,7 @@ struct TagBeforeShootView: View {
 
     private var closeButton: some View {
         Button(action: onClose) {
-            Image(systemName: "xmark")
+            Image(systemName: "chevron.left")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
@@ -246,7 +261,7 @@ struct TagBeforeShootView: View {
                         .foregroundStyle(Color(hex: "6B6B70"))
                         .accessibilityHidden(true)
                 } else if inputText.isEmpty {
-                    Text(Self.examples[exampleIndex])
+                    Text(examples[exampleIndex % examples.count])
                         .font(.system(size: 32, weight: .medium))
                         .foregroundStyle(.white.opacity(0.22))
                         .opacity(isExampleVisible ? 1 : 0)
@@ -281,7 +296,7 @@ struct TagBeforeShootView: View {
                     }
                     .accessibilityHidden(true)
                 }
-                Text(hasContent ? "撮影へ" : "タグなしで撮る")
+                Text(hasContent ? "撮影へ" : "つけずに撮る")
                     .font(.system(size: 14.5, weight: .bold))
                     .tracking(-0.025 * 14.5)
                     .lineLimit(1)
@@ -295,7 +310,7 @@ struct TagBeforeShootView: View {
         }
         .buttonStyle(ShrinkPressStyle(scale: 0.96))
         .disabled(isProceeding)
-        .accessibilityLabel(hasContent ? "撮影へ" : "タグなしで撮る")
+        .accessibilityLabel(hasContent ? "撮影へ" : "つけずに撮る")
     }
 
     // MARK: - 川・候補
@@ -304,20 +319,26 @@ struct TagBeforeShootView: View {
     private func riversArea(showsSecond: Bool) -> some View {
         let isTyping = !inputText.isEmpty
         VStack(alignment: .leading, spacing: 0) {
-            riverHeading(isTyping ? "候補" : "いま、よく選ばれている")
-                .padding(.top, 4)
+            HStack(alignment: .firstTextBaseline) {
+                riverHeading(isTyping ? "候補" : "気持ちのヒント")
+                Spacer(minLength: 8)
+                if !isTyping { rerollButton }
+            }
+            .padding(.top, 4)
             Group {
                 if isTyping {
                     candidateRow
                 } else {
                     TagRiver(
-                        items: suggestions.popularTags().map { .tag($0) },
-                        period: 46,
+                        items: (hintSet?.river ?? []).map { .tag($0) },
+                        period: 40,
                         direction: -1,
                         selectedKeys: selectedKeys,
                         isDimmed: isFull,
                         onTap: riverTapped
                     )
+                    .id(hintSet?.river ?? [])
+                    .opacity(riverOpacity)
                 }
             }
             .frame(height: 44)
@@ -345,6 +366,45 @@ struct TagBeforeShootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: isTyping)
+    }
+
+    /// 「↻ ほかの言葉」:川①とうすい例を作りなおす(履歴に入る)。触覚なし。満杯のときは押せない
+    private var rerollButton: some View {
+        Button(action: reroll) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 11, weight: .medium))
+                    .rotationEffect(.degrees(rerollTurns * 180))
+                Text("ほかの言葉")
+                    .font(.system(size: 9.5, design: .monospaced))
+            }
+            .foregroundStyle(Color(hex: "8E8E93"))
+            .padding(.vertical, 6)
+            .padding(.leading, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.trailing, 28)
+        .disabled(isFull)
+        .opacity(isFull ? 0.35 : 1)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+        .accessibilityLabel("ほかの言葉を出す")
+    }
+
+    /// 川②に出る自分のタグ(川①と重ならないように除く)
+    private var ownTags: [String] { ShootTagHistory.last + ShootTagHistory.recent }
+
+    private func reroll() {
+        let fade = reduceMotion ? 0.2 : 0.25
+        if !reduceMotion {
+            withAnimation(.easeInOut(duration: 0.5)) { rerollTurns += 1 }
+        }
+        withAnimation(.easeOut(duration: fade)) { riverOpacity = 0 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + fade) {
+            hintSet = EmotionHintHistory.next(ownTags: ownTags)
+            exampleIndex = 0
+            withAnimation(.easeIn(duration: fade)) { riverOpacity = 1 }
+        }
     }
 
     private func riverHeading(_ title: String) -> some View {
@@ -584,7 +644,7 @@ struct TagBeforeShootView: View {
             if inputText.isEmpty {
                 withAnimation(.easeInOut(duration: 0.5)) { isExampleVisible = false }
                 try? await Task.sleep(for: .seconds(0.5))
-                exampleIndex = (exampleIndex + 1) % Self.examples.count
+                exampleIndex = (exampleIndex + 1) % examples.count
                 withAnimation(.easeInOut(duration: 0.5)) { isExampleVisible = true }
             }
             if tick % 2 == 0 {
@@ -610,7 +670,7 @@ struct TagChip: View {
                     .foregroundStyle(.black)
                     .lineLimit(1)
                     .minimumScaleFactor(0.55)
-                Image(systemName: "xmark")
+                Image(systemName: "chevron.left")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Color(hex: "8E8E93"))
                     .frame(width: 15, height: 15)

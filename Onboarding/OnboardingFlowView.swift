@@ -3,16 +3,16 @@ import SwiftData
 import AuthenticationServices
 import AVFoundation
 
-/// 初回設定(オンボーディング)。Opal風の「会話が流れる」体験として、質問に答えるうちに設定が進み、
-/// 最後の長押しでHomeへ入る。新規ユーザーだけが通る(既存ユーザーはisSetupCompletedでスキップ)。
+/// 初回設定 v2(6画面)。開幕 → ① はじめる → ② ニックネーム → ③ Laterの一日 → ④ 仕組みの問題
+/// → ⑤ 最初の1枚 → ⑥ 預けました → ようこそ → Home。新規ユーザーだけが通る。
 ///
-/// 全画面が同じ型:上に真珠の玉(まわりの8つの点が進み具合)、前の文がぼやけて上に残り、
-/// 今の文がタイプライターで現れ、打ち終わってからボタンが浮かび上がる。場面は「パシャ」
-/// (シャッター幕が閉じる → フラッシュ → 開く)で切り替わる。
+/// 全画面が同じ型:上に真珠の玉(まわりの6つの点が進み具合)、見出し(28pt)+ あれば補足(15pt)、
+/// 画面ごとの中身、下にボタン。切り替えは「浮かんで入る」(パシャは⑤の撮影の1回だけ)。
 struct OnboardingFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage(OnboardingStorage.stepKey) private var savedStep: String = ""
     @AppStorage(OnboardingStorage.completedKey) private var onboardingCompleted = false
@@ -27,31 +27,27 @@ struct OnboardingFlowView: View {
     @AppStorage("currentProfileID") private var currentProfileID: String = ""
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("userID") private var userID: String = ""
+    /// ⑤を「あとで撮る」で通った(⑥の文言が変わる)
+    @AppStorage("onboardingPhotoSkipped") private var photoSkipped = false
 
     @Query private var profiles: [UserProfile]
 
-    @ScaledMetric(relativeTo: .title2) private var typeScale: CGFloat = 1
-
-    // 場面と文
-    @State private var step: OnboardingStep = .meet
+    // 場面
+    @State private var step: OnboardingStep = .account
     @State private var hasStarted = false
     @State private var isOpening = false
+    /// 開幕の絵を消しはじめた(①の中身はこのあいだに入ってくる)
+    @State private var openingFading = false
     @State private var openingStart = Date()
-    @State private var history: [OnboardingLine]?
-    @State private var schedule = TypewriterSchedule(text: "", reduceMotion: false)
-    @State private var typingStart = Date()
-    @State private var isTypingDone = false
-    @State private var isTypingSkipped = false
-    @State private var areActionsVisible = false
-    @State private var typingTask: Task<Void, Never>?
+    /// 中身の状態:浮かんで入る(shown)・上へ消える(leaving)・入る前(hidden)
+    @State private var contentPhase: ContentPhase = .hidden
+    @State private var isTransitioning = false
 
     // 玉・光
     @State private var isOrbVisible = false
-    @State private var litOverride: Int?
-    @State private var pulseTrigger = 0
+    @State private var orbIsHero = true
 
-    // パシャ
-    @State private var isTransitioning = false
+    // パシャ(⑤の撮影だけ)
     @State private var isCurtainClosed = false
     @State private var flashOpacity = 0.0
 
@@ -64,15 +60,18 @@ struct OnboardingFlowView: View {
     @FocusState private var isNameFocused: Bool
     @State private var confirmedName = ""
 
-    // タグ
-    @State private var selectedTags: [String] = []
-
-    // 5-1の答え(保存しない)
-    @State private var retakeAnswer: RetakeAnswer?
+    // ④ タグ
+    @State private var selfTags: [String] = []
+    /// 「＋ 自由に追加」で足したタグ(候補の末尾に並ぶ)
+    @State private var customTags: [String] = []
+    @State private var isAddingTag = false
+    @State private var tagDraft = ""
+    @FocusState private var isTagFocused: Bool
 
     // アカウント
     @State private var signInError: String?
     @State private var isCheckingAccount = false
+    @State private var showingPolicy = false
 
     // メールで続ける
     @State private var emailInput = ""
@@ -82,84 +81,113 @@ struct OnboardingFlowView: View {
     @State private var emailShake = 0
     @State private var emailErrorTask: Task<Void, Never>?
     @State private var emailFailure: EmailSignInFailure = .network
+    /// 失敗の内訳(開発中・TestFlightだけ画面に小さく出す)
+    @State private var emailDebugText: String?
     @State private var sendingAttempt = 0
     @State private var resendRemaining = 0
     @State private var resendTask: Task<Void, Never>?
     @State private var sentAddress = ""
 
-    // プロフィール撮影
-    @StateObject private var camera = FilmCameraController()
+    // ⑤ プロフィール撮影
+    @ObservedObject private var camera = FilmCameraController.shared
     @State private var cameraPosition: AVCaptureDevicePositionValue = .back
-    @State private var photoNotice: (title: String, message: String)?
 
-    private var scene: OnboardingScene { step.scene(name: confirmedName, emailFailure: emailFailure, retakes: retakeAnswer) }
-    /// 玉を0.6倍に縮めて上へ寄せる(キーボードが出る入力の場面)
-    private var isCompactOrb: Bool { isNameEditing || step == .emailInput }
-    private var primaryTextColor: Color { step.isQuiet ? OnboardingPalette.quietText : OnboardingPalette.text }
-    private var showsEverything: Bool { voiceOverEnabled || isTypingSkipped || isTypingDone }
-    private var isNameEditing: Bool { step == .name && isNameFocused }
-    private var fontScale: CGFloat { min(typeScale, 1.15) }
+    // ④ 3つ目の人が灯る
+    @State private var quietLit = false
+
+    // ⑥ → ようこそ
+    @State private var welcomeStart: Date?
+    /// 通知の許可のあと・「ようこそ」の前に出す「ウィジェットを置きますか」
+    @State private var showingWidgetSetup = false
+    @State private var widgetSetupPressedAt = Date()
+    /// 「ようこそ」の途中で、本当にバックグラウンドへ行ったか(許可のダイアログの inactive では立てない)
+    @State private var welcomeWentBackground = false
+
+    enum ContentPhase { case hidden, leaving, shown }
+
+    private var orbScale: CGFloat { orbIsHero ? 1 : OnboardingMetrics.smallOrbScale }
 
     var body: some View {
         ZStack {
             GeometryReader { proxy in
                 let metrics = OnboardingMetrics(size: proxy.size)
                 ZStack(alignment: .topLeading) {
-                    OnboardingPalette.background
-                    orbLayer(metrics)
-                    historyLayer(metrics)
-                    visualLayer(metrics)
-                    textLayer(metrics)
+                    // ようこその間は、背景をようこそ側(円でくり抜く)にまかせる。下に Home がある
+                    if welcomeStart == nil {
+                        OnboardingPalette.background
+                        orbLayer(metrics)
+                    }
+                    if hasStarted && (!isOpening || openingFading) && welcomeStart == nil {
+                        contentLayer(metrics)
+                    }
                     if isOpening {
                         OnboardingOpeningView(start: openingStart, metrics: metrics)
+                            .opacity(openingFading ? 0 : 1)
                     }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
-                // 画面をタップしてタイプ演出を飛ばすのは、文と玉の層だけにする。
-                // 以前は画面全体(ボタンの層を含む)に付けていたため、中身がUIKitの
-                // SignInWithAppleButtonまでタップが届かず、「Appleで続ける」が押せなかった。
-                .contentShape(Rectangle())
-                .onTapGesture { skipTyping() }
             }
             .ignoresSafeArea()
 
-            actionsLayer
-                .padding(.horizontal, 28)
-                .padding(.bottom, 16)
-                .frame(maxHeight: .infinity, alignment: .bottom)
+            if hasStarted && (!isOpening || openingFading) && welcomeStart == nil {
+                actionsLayer
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, step == .name ? 10 : 16)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+            }
 
-            FilmGrainOverlay(opacity: 0.05, blendMode: .normal)
-                .ignoresSafeArea()
+            if welcomeStart == nil {
+                FilmGrainOverlay(opacity: 0.05, blendMode: .normal)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
+
+            if showingWidgetSetup {
+                WidgetSetupFlow(start: .intro) { _ in
+                    withAnimation(.easeInOut(duration: 0.3)) { showingWidgetSetup = false }
+                    beginWelcome(pressedAt: widgetSetupPressedAt)
+                }
+                .transition(.opacity)
+                .zIndex(5)
+            }
+
+            if let welcomeStart {
+                OnboardingWelcomeView(start: welcomeStart, haptics: haptics, onFinished: finishWelcome)
+                    .ignoresSafeArea()
+            }
 
             curtains
                 .ignoresSafeArea()
-
-            if let photoNotice {
-                ZStack {
-                    Color.black
-                    ExposedNoticeView(title: photoNotice.title, message: photoNotice.message)
-                }
-                .ignoresSafeArea()
-                .transition(.opacity)
-            }
         }
-        .preferredColorScheme(.dark)
         .statusBarHidden()
         .onAppear(perform: startIfNeeded)
         .onChange(of: appleUserID) { _, _ in handleSignInChange() }
         .onChange(of: firebaseUID) { _, _ in handleSignInChange() }
         .onChange(of: step) { _, newStep in
-            if newStep == .profilePhoto {
-                camera.configure()
-            } else {
-                camera.stopSession()
+            print("[PermPerf] step → \(newStep.rawValue) camera=\(AVCaptureDevice.authorizationStatus(for: .video).rawValue)")
+            if newStep == .photo { camera.configure() } else { camera.stopSession() }
+        }
+        .onChange(of: contentPhase) { _, phase in
+            print("[PermPerf] content → \(phase) step=\(step.rawValue) scene=\(scenePhase)")
+        }
+        .onChange(of: scenePhase) { old, phase in
+            print("[PermPerf] scenePhase \(old) → \(phase) step=\(step.rawValue) content=\(contentPhase) transitioning=\(isTransitioning) welcome=\(welcomeStart != nil) orbVisible=\(isOrbVisible) opening=\(isOpening)")
+            if phase == .active, step == .photo {
+                print("[PermPerf] 前面にもどった(撮影)camera=\(AVCaptureDevice.authorizationStatus(for: .video).rawValue) running=\(camera.session.isRunning)")
+                camera.resumeIfNeeded()
             }
+            // ようこその途中でバックグラウンドへ行って戻った:最初から再生せず、Homeへ直接。
+            // (許可のダイアログでは inactive → active になるだけなので、ここでは飛ばさない。
+            //  以前は active だけで判定していて、「お知らせを受け取る」のあと「ようこそ」が飛ばされていた)
+            if phase == .background, welcomeStart != nil { welcomeWentBackground = true }
+            if phase == .active, welcomeStart != nil, welcomeWentBackground, !isSetupCompleted { finishWelcome() }
         }
         .overlay(alignment: .topLeading) { emailBackButton }
+        .sheet(isPresented: $showingPolicy) { PrivacyPolicyView() }
         .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkOpened)) { _ in
-            // メールのリンクからアプリに戻ってきた:確認中へ。
+            // メールのリンクからアプリに戻ってきた:確認中へ
             guard step.isEmailStep || step == .account else { return }
-            go(to: .emailVerifying, withHaptic: false)
+            go(to: .emailVerifying)
         }
         .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkFailed)) { note in
             guard step.isEmailStep || step == .account else { return }
@@ -168,237 +196,348 @@ struct OnboardingFlowView: View {
         }
     }
 
-    /// 左上の「<」(メールの入力・送りました)。ひとつ前の画面に戻る。
-    @ViewBuilder
-    private var emailBackButton: some View {
-        if step == .emailInput || step == .emailSent {
-            Button {
-                go(to: step == .emailInput ? .account : .emailInput, withHaptic: false)
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Circle().fill(LinearGradient(colors: [.white.opacity(0.13), .white.opacity(0.05)], startPoint: .top, endPoint: .bottom)))
-                    .overlay(Circle().strokeBorder(.white.opacity(0.09), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .padding(.leading, 22)
-            .padding(.top, 6)
-            .accessibilityLabel("戻る")
-            .transition(.opacity)
-        }
-    }
-
     // MARK: - 玉・背景の光
 
     private func orbLayer(_ metrics: OnboardingMetrics) -> some View {
-        TimelineView(.animation(paused: !holdModel.isMoving)) { context in
-            let progress = holdModel.progress(at: context.date)
-            let isConsent = step == .lookismConsent && !isOrbVisible
-            // 同意の長押し中だけ、押している間に玉と光が戻ってくる。
-            let orbOpacity = isConsent ? (progress > 0 ? 0.15 + 0.85 * progress : 0) : (isOrbVisible ? 1 : 0)
-            let spotOpacity = isConsent ? progress * 0.55 : (isOrbVisible ? 1 : 0)
-            ZStack(alignment: .topLeading) {
-                OnboardingSpotlight()
-                    .opacity(spotOpacity)
-                OnboardingOrb(
-                    litCount: litOverride ?? step.litDots,
-                    bloom: step == .finish ? progress : 0,
-                    pulseTrigger: pulseTrigger,
-                    isCycling: step == .emailSending && !reduceMotion
-                )
-                .scaleEffect(isCompactOrb ? 0.6 : 1)
-                .position(x: metrics.size.width / 2, y: metrics.y(isCompactOrb ? (step == .emailInput ? 86 : 110) : OnboardingMetrics.orbCenterY))
-                .opacity(orbOpacity)
-            }
+        let quiet = step.isQuiet
+        return ZStack(alignment: .topLeading) {
+            OnboardingSpotlight()
+                .opacity(isOrbVisible && !quiet ? 1 : 0)
+                .animation(.easeInOut(duration: 1.2), value: quiet)
+            OnboardingOrb(
+                litCount: step.litDots,
+                isCycling: step == .emailSending && !reduceMotion,
+                dotCount: OnboardingStep.dotCount,
+                dotSize: orbIsHero ? 5 : 8
+            )
+            .scaleEffect(orbScale)
+            .position(x: metrics.size.width / 2, y: metrics.y(orbIsHero ? OnboardingMetrics.orbCenterY : OnboardingMetrics.smallOrbCenterY))
+            .opacity(isOrbVisible ? (quiet ? 0.1 : 1) : 0)
+            .animation(.easeInOut(duration: 1.2), value: quiet)
         }
-        .animation(.easeOut(duration: 0.4), value: isCompactOrb)
+        .allowsHitTesting(false)
     }
 
-    // MARK: - 前の文
+    // MARK: - 中身(見出し・補足・画面ごとの中身)
 
-    @ViewBuilder
-    private func historyLayer(_ metrics: OnboardingMetrics) -> some View {
-        if let history, !isNameEditing {
-            TypewriterText.text(history, fontSize: 27 * fontScale, primaryColor: .white.opacity(0.55))
-                .lineSpacing(27 * fontScale * 0.42)
-                .frame(width: metrics.size.width - 56, height: metrics.y(OnboardingMetrics.historyHeight), alignment: .bottomLeading)
-                .clipped()
-                .blur(radius: 5)
-                .opacity(0.34)
-                .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.55)], startPoint: .top, endPoint: .bottom))
-                .offset(x: 28, y: metrics.y(OnboardingMetrics.historyTop))
-                .accessibilityHidden(true)
-                .allowsHitTesting(false)
+    private func contentLayer(_ metrics: OnboardingMetrics) -> some View {
+        ZStack(alignment: .topLeading) {
+            headline
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width, alignment: .leading)
+                .offset(y: metrics.y(step.usesHeroOrb ? 372 : (step.isEmailStep ? 184 : 196)))
+
+            stepContent(metrics)
+        }
+        .frame(width: metrics.size.width, height: metrics.size.height, alignment: .topLeading)
+    }
+
+    private var texts: (title: String, sub: String?) {
+        switch step {
+        case .account: return (OnboardingCopy.accountTitle, OnboardingCopy.accountSub)
+        case .name: return (OnboardingCopy.nameTitle, OnboardingCopy.nameSub)
+        case .day: return (OnboardingCopy.dayTitle, OnboardingCopy.daySub(name: confirmedName.isEmpty ? userName : confirmedName))
+        case .tags:
+            return isAddingTag
+                ? (OnboardingCopy.tagAddTitle, OnboardingCopy.tagAddSub)
+                : (OnboardingCopy.tagsTitle, OnboardingCopy.tagsSub)
+        case .quiet: return (OnboardingCopy.quietTitle, nil)
+        case .photo: return (OnboardingCopy.photoTitle, OnboardingCopy.photoSub)
+        case .notify:
+            return photoSkipped
+                ? (OnboardingCopy.notifySkippedTitle, OnboardingCopy.notifySkippedSub)
+                : (OnboardingCopy.notifyTitle, OnboardingCopy.notifySub)
+        case .emailInput: return ("メールアドレスを\n教えてください。", nil)
+        case .emailSending: return ("リンクを\n送っています…", nil)
+        case .emailSent: return ("メールを\n送りました。", nil)
+        case .emailVerifying: return ("リンクを\n確認しています…", nil)
+        case .emailFailed: return (emailFailure.title, emailFailure.message)
         }
     }
 
-    // MARK: - 場面ごとの視覚要素(玉の下、y=262〜362)
-
-    @ViewBuilder
-    private func visualLayer(_ metrics: OnboardingMetrics) -> some View {
-        Group {
-            switch scene.visual {
-            case .none:
-                EmptyView()
-            case .sealedFrame:
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(.black)
-                    .frame(width: 68, height: 86)
-                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.6), lineWidth: 0.75))
-                    .overlay(Circle().fill(.white).frame(width: 5, height: 5).shadow(color: .white.opacity(0.8), radius: 4))
-            case .nineAM:
-                NineAMVisual()
-            case .arriveRing:
-                ArriveRingVisual()
-            case .notificationCard:
-                NotificationCardSample()
-                    .padding(.horizontal, 28)
-            case .verifyingRing:
-                VerifyingRing()
-            case .viewfinder:
-                HStack(spacing: 14) {
-                    CameraPreviewRepresentable(session: camera.session)
-                        .frame(width: 78, height: 104)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(.white.opacity(0.2), lineWidth: 1))
-                        .accessibilityLabel("ファインダー")
-                    Button {
-                        cameraPosition = cameraPosition == .back ? .front : .back
-                        camera.setCameraPosition(cameraPosition.avPosition)
-                    } label: {
-                        Image(systemName: "arrow.triangle.2.circlepath.camera")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(.white)
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(OnboardingPalette.surface))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(cameraPosition == .back ? "前面カメラに切り替える" : "背面カメラに切り替える")
-                }
-                .padding(.leading, 54)
-            }
-        }
-        .frame(width: metrics.size.width)
-        .position(x: metrics.size.width / 2, y: metrics.y(OnboardingMetrics.visualCenterY))
-        .opacity(isNameEditing ? 0 : 1)
-    }
-
-    // MARK: - 今の文と入力欄
-
-    private func textLayer(_ metrics: OnboardingMetrics) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if hasStarted && !isOpening {
-                TypewriterText(
-                    lines: scene.lines,
-                    fontSize: scene.fontSize * fontScale,
-                    primaryColor: primaryTextColor,
-                    schedule: schedule,
-                    start: typingStart,
-                    showsEverything: showsEverything
-                )
-                .id(step)
-
-                if let countUp = scene.countUp {
-                    RetakeCountUp(target: countUp, isRunning: isTypingDone || showsEverything)
-                        .padding(.top, 6)
-                }
-
-                if let footnote = scene.footnote {
-                    Text(footnote)
-                        .font(.system(size: 9.5, design: .monospaced))
-                        .foregroundStyle(OnboardingPalette.note)
-                        .lineSpacing(3)
-                        .padding(.top, 16)
-                        .opacity(isTypingDone || showsEverything ? 1 : 0)
-                }
-
-                inputs
-                    .opacity(areActionsVisible ? 1 : 0)
-                    .offset(y: areActionsVisible || reduceMotion ? 0 : 10)
-            }
-        }
-        .padding(.horizontal, 28)
-        .padding(.top, metrics.y(isNameEditing ? 196 : (step == .emailInput ? 184 : OnboardingMetrics.textTop)))
-        .frame(width: metrics.size.width, alignment: .leading)
-        .animation(.easeOut(duration: 0.3), value: isCompactOrb)
+    private var headline: some View {
+        OnboardingHeadline(
+            title: texts.title,
+            sub: texts.sub,
+            titleColor: step.isQuiet ? OnboardingPalette.quietText : OnboardingPalette.text,
+            phase: contentPhase,
+            reduceMotion: reduceMotion
+        )
     }
 
     @ViewBuilder
-    private var inputs: some View {
-        switch scene.actions {
-        case .account:
-            Text("はじめての方も、同じボタンです。")
-                .font(.system(size: 12))
-                .foregroundStyle(OnboardingPalette.note)
-                .padding(.top, 18)
-        case .nameInput:
+    private func stepContent(_ metrics: OnboardingMetrics) -> some View {
+        switch step {
+        case .name:
             nameField
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(368))
+                .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
+        case .day:
+            LaterDayView(isActive: contentPhase == .shown && scenePhase == .active, onFinish: { go(to: .tags) }, onTapNext: buttonHaptic)
+                .frame(width: metrics.size.width, height: metrics.size.height)
+                .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
+        case .tags:
+            tagsContent(metrics)
+        case .quiet:
+            quietCard
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(316))
+                .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
+            Text(OnboardingCopy.quietAnswer)
+                .font(.system(size: 18, weight: .bold))
+                .tracking(-0.03 * 18)
+                .lineSpacing(18 * 0.5 - 4)
+                .foregroundStyle(OnboardingPalette.quietText)
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width, alignment: .leading)
+                .offset(y: metrics.y(620))
+                .floatIn(contentPhase, index: 5, reduceMotion: reduceMotion)
+        case .photo:
+            viewfinder
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(356))
+                .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
+        case .notify:
+            NotificationCardSample()
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(376))
+                .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
+            Text(OnboardingCopy.notifyNote)
+                .font(.system(size: 13.5))
+                .foregroundStyle(OnboardingPalette.note)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(478))
+                .floatIn(contentPhase, index: 3, reduceMotion: reduceMotion)
         case .emailInput:
             emailField
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(300))
+                .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
         case .emailSent:
             emailSentInfo
-        case .emailFailed:
-            Text(emailFailure.message)
-                .font(.system(size: 14))
-                .foregroundStyle(OnboardingPalette.subText)
-                .lineSpacing(3)
-                .padding(.top, 14)
-        case .tags:
-            tagChips
-        case .profilePhoto:
-            OnboardingFlowLayout(spacing: 8) {
-                ForEach(OnboardingCopy.profilePhotoExamples, id: \.self) { example in
-                    Text(example)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(OnboardingPalette.subText)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(Capsule().fill(OnboardingPalette.surface))
-                }
-            }
-            .padding(.top, 18)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("例:\(OnboardingCopy.profilePhotoExamples.joined(separator: "、"))")
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width, alignment: .leading)
+                .offset(y: metrics.y(300))
+                .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
+        case .emailVerifying:
+            VerifyingRing()
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(340))
         default:
             EmptyView()
         }
     }
 
+    // MARK: - ② ニックネーム
+
     private var nameField: some View {
         let validation = OnboardingRules.validateName(nameInput)
-        return VStack(alignment: .leading, spacing: 10) {
-            TextField("", text: $nameInput)
-                .font(.system(size: 34, weight: .semibold))
-                .tracking(-0.03 * 34)
+        return VStack(alignment: .trailing, spacing: 0) {
+            TextField("", text: $nameInput, prompt: Text("ニックネーム").foregroundStyle(Color(hex: "3A3A3E")))
+                .font(.system(size: 34, weight: .bold))
+                .tracking(-0.04 * 34)
                 .foregroundStyle(.white)
                 .tint(.white)
                 .focused($isNameFocused)
                 .submitLabel(.done)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .onSubmit(confirmName)
-                .accessibilityLabel("名前")
-            Rectangle()
-                .fill(.white.opacity(0.3))
-                .frame(height: 1)
-            Text(validation.problem == .looksLikeContact
-                 ? "URLやメールアドレスは使えません。"
-                 : validation.problem == .tooLong
-                    ? "12文字までにしてください。"
-                    : "本名でなくて大丈夫です。あとから変えられます。")
-                .font(.system(size: 12.5))
-                .foregroundStyle(OnboardingPalette.secondaryText)
+                .onSubmit { if validation.problem == nil { confirmName() } }
+                .onChange(of: nameInput) { _, value in
+                    if value.count > OnboardingRules.nameMaxLength + 4 { nameInput = String(value.prefix(OnboardingRules.nameMaxLength + 4)) }
+                }
+                .frame(height: 64)
+                .accessibilityLabel("ニックネーム")
+            Rectangle().fill(.white.opacity(0.35)).frame(height: 1.5)
+            HStack {
+                if validation.problem == .looksLikeContact {
+                    Text("URLやメールアドレスは使えません。")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(OnboardingPalette.secondaryText)
+                }
+                Spacer()
+                Text("\(validation.name.count) / \(OnboardingRules.nameMaxLength)")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(validation.problem == .tooLong ? OnboardingPalette.subText : OnboardingPalette.note)
+                    .monospacedDigit()
+            }
+            .padding(.top, 26 - 11)
         }
-        .padding(.top, 24)
     }
 
-    private var tagChips: some View {
-        SelfTagPicker(selectedTags: $selectedTags) {
-            haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
+    // MARK: - ④ タグ
+
+    @ViewBuilder
+    private func tagsContent(_ metrics: OnboardingMetrics) -> some View {
+        if isAddingTag {
+            OnboardingTagInputField(text: $tagDraft, focus: $isTagFocused, onSubmit: addCustomTag)
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(368))
+                .transition(.opacity)
+            // キーボードの上
+            VStack(spacing: 6) {
+                primaryButton("追加する", isEnabled: !tagDraft.isEmpty) { addCustomTag() }
+                textButton("やめる") { closeTagInput() }
+            }
+            .padding(.horizontal, 28)
+            .frame(width: metrics.size.width)
+            .offset(y: metrics.y(478))
+            .transition(.opacity)
+        } else {
+            OnboardingTagChips(
+                candidates: OnboardingCopy.selfTagCandidates + customTags,
+                selected: selfTags,
+                onToggle: toggleTag,
+                onAdd: openTagInput
+            )
+            .padding(.horizontal, 28)
+            .frame(width: metrics.size.width)
+            .offset(y: metrics.y(356))
+            .floatIn(contentPhase, index: 2, reduceMotion: reduceMotion)
+            .transition(.opacity)
+            OnboardingTagCount(count: selfTags.count)
+                .padding(.horizontal, 28)
+                .frame(width: metrics.size.width)
+                .offset(y: metrics.y(632))
+                .floatIn(contentPhase, index: 3, reduceMotion: reduceMotion)
+                .transition(.opacity)
         }
-        .padding(.top, 20)
+    }
+
+    private func toggleTag(_ tag: String) {
+        if let index = selfTags.firstIndex(of: tag) {
+            selfTags.remove(at: index)
+        } else if selfTags.count < OnboardingRules.maxSelfTags {
+            selfTags.append(tag)
+        } else {
+            return
+        }
+        haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
+    }
+
+    private func openTagInput() {
+        guard selfTags.count < OnboardingRules.maxSelfTags else { return }
+        tagDraft = ""
+        withAnimation(.easeInOut(duration: 0.3)) { isAddingTag = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { isTagFocused = true }
+    }
+
+    private func closeTagInput() {
+        isTagFocused = false
+        tagDraft = ""
+        withAnimation(.easeInOut(duration: 0.3)) { isAddingTag = false }
+    }
+
+    /// 追加したタグは候補の末尾に加わり、自動で選ばれる(すでに3つなら、加えるだけ)
+    private func addCustomTag() {
+        guard let tag = OnboardingRules.normalizedTag(tagDraft) else { return }
+        buttonHaptic()
+        if !OnboardingCopy.selfTagCandidates.contains(tag), !customTags.contains(tag) {
+            customTags.append(tag)
+        }
+        if !selfTags.contains(tag), selfTags.count < OnboardingRules.maxSelfTags {
+            selfTags.append(tag)
+        }
+        closeTagInput()
+    }
+
+    /// 「つぎへ」で保存(プロフィールの「自分を表すタグ」)。「あとで選ぶ」は保存せずに進む
+    private func confirmTags(save: Bool) {
+        guard !isTransitioning else { return }
+        if save, let profile = UserProfile.current(from: profiles) {
+            profile.selfTags = selfTags
+            profile.profileUpdatedAt = Date()
+            try? modelContext.save()
+            if let cloudKitManager = CloudKitManager.current {
+                for group in profile.groups {
+                    cloudKitManager.markForUpload(userProfile: profile, in: group)
+                }
+            }
+        }
+        go(to: .quiet, haptic: true)
+    }
+
+    // MARK: - ⑤ 数字のカード
+
+    private var quietCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 14) {
+                ForEach(0..<3, id: \.self) { index in
+                    let lit = index == 2 && quietLit
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 34))
+                        .frame(width: 44, height: 44)
+                        .foregroundStyle(lit ? Color.white : Color(hex: "2E2E32"))
+                        .shadow(color: lit ? .white.opacity(0.55) : .clear, radius: 10)
+                }
+            }
+            .accessibilityHidden(true)
+            Text(OnboardingCopy.quietStat)
+                .font(.system(size: 40, weight: .bold))
+                .tracking(-0.05 * 40)
+                .foregroundStyle(OnboardingPalette.quietText)
+                .padding(.top, 14)
+            Text(OnboardingCopy.quietStatBody)
+                .font(.system(size: 14.5))
+                .lineSpacing(14.5 * 0.65 - 4)
+                .foregroundStyle(OnboardingPalette.subText)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+            Rectangle().fill(.white.opacity(0.08)).frame(height: 1).padding(.top, 14)
+            Text(OnboardingCopy.quietSource)
+                .font(.system(size: 9.5, design: .monospaced))
+                .tracking(0.06 * 9.5)
+                .lineSpacing(9.5 * 0.7 - 2)
+                .foregroundStyle(OnboardingPalette.note)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
+        }
+        .padding(.top, 22)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.white.opacity(0.04)))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.07), lineWidth: 1))
+        .accessibilityElement(children: .combine)
+        .dynamicTypeSize(...DynamicTypeSize.large)
+    }
+
+    // MARK: - ⑤ ファインダー
+
+    private var viewfinder: some View {
+        TimelineView(.animation(paused: !holdModel.isMoving)) { context in
+            let pressing = holdModel.progress(at: context.date) > 0
+            ZStack(alignment: .topTrailing) {
+                CameraPreviewRepresentable(session: camera.session)
+                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(OnboardingPalette.surface))
+                // 四隅のマーク:押している間に内側へ16pt縮む(ピントを合わせる)
+                ViewfinderCorners(inset: pressing ? 30 : 14)
+                    .animation(.easeOut(duration: 0.3), value: pressing)
+                Button {
+                    cameraPosition = cameraPosition == .back ? .front : .back
+                    camera.setCameraPosition(cameraPosition.avPosition)
+                } label: {
+                    Text(cameraPosition == .back ? "背面カメラ" : "前面カメラ")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(OnboardingPalette.quietText)
+                        .padding(.horizontal, 12)
+                        .frame(height: 28)
+                        .background(Capsule().fill(.black.opacity(0.4)).background(.ultraThinMaterial, in: Capsule()))
+                }
+                .buttonStyle(.plain)
+                .padding(14)
+                .accessibilityLabel(cameraPosition == .back ? "背面カメラ。前面に切り替える" : "前面カメラ。背面に切り替える")
+            }
+            .frame(height: 218)
+        }
     }
 
     // MARK: - ボタン
@@ -406,93 +545,86 @@ struct OnboardingFlowView: View {
     @ViewBuilder
     private var actionsLayer: some View {
         Group {
-            switch scene.actions {
-            case .primary(let title):
-                primaryButton(title) { advance() }
-            case .choice(let yes, let no):
-                VStack(spacing: 12) {
-                    primaryButton(yes) { advance() }
-                    secondaryButton(no) { advance() }
-                }
+            switch step {
             case .account:
                 accountButtons
-            case .nameInput:
-                primaryButton("つづける", isEnabled: OnboardingRules.validateName(nameInput).problem == nil) { confirmName() }
-            case .auto, .none:
-                EmptyView()
-            case .retakeChoice:
-                retakeChoices
+            case .name:
+                primaryButton("つぎへ", isEnabled: OnboardingRules.validateName(nameInput).problem == nil) { confirmName() }
+            case .day:
+                EmptyView() // ③のボタンは、場面の中(LaterDayView)にある
+            case .tags:
+                if !isAddingTag {
+                    VStack(spacing: 6) {
+                        primaryButton("つぎへ", isEnabled: !selfTags.isEmpty) { confirmTags(save: true) }
+                        textButton("あとで選ぶ") { confirmTags(save: false) }
+                    }
+                }
+            case .quiet:
+                primaryButton("つぎへ") { go(to: .photo, haptic: false) }
+            case .photo:
+                VStack(spacing: 0) {
+                    OnboardingHoldButton(
+                        model: holdModel,
+                        diameter: 88,
+                        label: "長押しで、撮る",
+                        sublabel: "プレビューなし",
+                        accessibilityActionName: "撮る",
+                        onBegin: { remaining in
+                            haptics.beginHold(duration: remaining, intensity: OnboardingTuning.photoHoldIntensity, sharpness: OnboardingTuning.photoHoldSharpness)
+                        },
+                        onRelease: { haptics.cancelHold() },
+                        onComplete: captureProfilePhoto
+                    )
+                    Spacer(minLength: 0)
+                    textButton("あとで撮る") {
+                        photoSkipped = true
+                        go(to: .notify)
+                    }
+                    .padding(.bottom, 14)
+                }
+                .frame(height: 240)
+            case .notify:
+                VStack(spacing: 6) {
+                    primaryButton("お知らせを受け取る") { startWelcome(requestNotifications: true) }
+                    textButton("あとで") { startWelcome(requestNotifications: false) }
+                }
             case .emailInput:
                 primaryButton("リンクを送る", isEnabled: isEmailValid, disabledTextColor: Color(hex: "5A5A5E")) { sendEmailLink() }
             case .emailSent:
                 emailSentActions
             case .emailFailed:
                 VStack(spacing: 16) {
+                    if FirebaseAuthService.showsDebugDetails, let emailDebugText {
+                        Text(emailDebugText)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(OnboardingPalette.quietText)
+                            .multilineTextAlignment(.center)
+                            .textSelection(.enabled)
+                    }
                     primaryButton("もう一度送る") { retryAfterFailure() }
                     appleButton(style: .black)
                         .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
                 }
-            case .tags:
-                VStack(spacing: 6) {
-                    primaryButton("つづける", isEnabled: !selectedTags.isEmpty) { saveTagsAndAdvance() }
-                    textButton("スキップ") { saveTagsAndAdvance() }
-                }
-            case .hold(let kind):
-                holdButton(kind)
-            case .profilePhoto:
-                OnboardingHoldButton(
-                    model: holdModel,
-                    diameter: 96,
-                    label: "長押しで、撮る",
-                    sublabel: "プレビューなし ・ 翌朝の現像まで、あなたにも見えません",
-                    accessibilityActionName: "撮る",
-                    onBegin: { haptics.beginHold(duration: $0) },
-                    onRelease: { haptics.cancelHold() },
-                    onComplete: captureProfilePhoto
-                )
-                .frame(maxWidth: .infinity)
-            case .notify:
-                VStack(spacing: 6) {
-                    primaryButton("はい") {
-                        Task {
-                            await DailyOpenNotification.requestAndSchedule()
-                            advance()
-                        }
-                    }
-                    textButton("あとで") { advance() }
-                }
+            case .emailSending, .emailVerifying:
+                EmptyView()
             }
         }
-        .opacity(areActionsVisible ? 1 : 0)
-        .offset(y: areActionsVisible || reduceMotion ? 0 : 10)
-        .allowsHitTesting(areActionsVisible && !isTransitioning)
+        .floatIn(contentPhase, index: buttonIndex, reduceMotion: reduceMotion)
+        .allowsHitTesting(contentPhase == .shown && !isTransitioning)
     }
 
-    /// 5-1の選択肢。1列に並べ、タップするとそのまま次へ進む。
-    private var retakeChoices: some View {
-        HStack(spacing: 6) {
-            ForEach(RetakeAnswer.allCases, id: \.self) { answer in
-                Button {
-                    retakeAnswer = answer
-                    advance()
-                } label: {
-                    Text(answer.label)
-                        .font(.system(size: 15, weight: .semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Capsule().fill(OnboardingPalette.surface))
-                }
-                .buttonStyle(OnboardingPressStyle())
-                .accessibilityLabel(answer == .zero ? "0回" : "\(answer.label)回")
-            }
+    /// ボタンの浮かぶ順番(いちばん最後)
+    private var buttonIndex: Int {
+        switch step {
+        case .quiet: return 6
+        case .notify: return 4
+        case .account: return 2
+        default: return 3
         }
     }
 
     private var accountButtons: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             if isCheckingAccount {
                 ProgressView()
                     .tint(.white)
@@ -500,8 +632,8 @@ struct OnboardingFlowView: View {
                     .accessibilityLabel("アカウントを確認しています")
             } else {
                 appleButton(style: .white)
-
                 Button {
+                    buttonHaptic()
                     go(to: .emailInput)
                 } label: {
                     Label("メールで続ける", systemImage: "envelope")
@@ -520,20 +652,53 @@ struct OnboardingFlowView: View {
                     .foregroundStyle(OnboardingPalette.subText)
                     .multilineTextAlignment(.center)
             }
+            // 続けると、利用規約とプライバシーポリシーに同意したことになります
+            Text(Self.consentNote)
+                .font(.system(size: 11.5))
+                .lineSpacing(11.5 * 0.6 - 3)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(OnboardingPalette.note)
+                .tint(OnboardingPalette.note)
+                .padding(.top, 2)
+                .environment(\.openURL, OpenURLAction { _ in
+                    showingPolicy = true
+                    return .handled
+                })
         }
     }
+
+    private static let consentNote: AttributedString = {
+        var text = AttributedString("続けると、")
+        var terms = AttributedString("利用規約")
+        terms.link = URL(string: "later-policy://terms")
+        terms.underlineStyle = .single
+        var and = AttributedString("と")
+        var privacy = AttributedString("プライバシーポリシー")
+        privacy.link = URL(string: "later-policy://privacy")
+        privacy.underlineStyle = .single
+        let rest = AttributedString("に\n同意したことになります。")
+        text.append(terms)
+        text.append(and)
+        text.append(privacy)
+        text.append(rest)
+        return text
+    }()
 
     /// 公式のSign in with Appleボタン(「Appleで続ける」)。高さ56pt・完全な丸み。
     /// キャンセル(1001)は何も表示しない。ほかの失敗は、静かに1行とやわらかい触覚2回。
     private func appleButton(style: SignInWithAppleButton.Style) -> some View {
         SignInWithAppleButton(.continue) { request in
             print("[AppleSignIn] onRequest: ボタンが押され、認証を要求します")
+            SignInPerf.begin()
             signInError = nil
+            buttonHaptic()
             request.requestedScopes = [.fullName]
         } onCompletion: { result in
             switch result {
             case .success:
+                SignInPerf.mark("T2 Face ID が済み、結果が返った")
                 print("[AppleSignIn] onCompletion: 成功")
+                defer { SignInPerf.mark("T2b 結果を端末に保存した(appleUserID)") }
                 if let message = AppleSignInView.applySignIn(result, modelContext: modelContext) {
                     print("[AppleSignIn] 結果の保存に失敗: \(message)")
                     showSignInError(OnboardingCopy.appleSignInFailed)
@@ -556,71 +721,51 @@ struct OnboardingFlowView: View {
         UIAccessibility.post(notification: .announcement, argument: message)
     }
 
-    /// やわらかく2回(断られた・失敗した時)
     private func playSoftDouble() {
+        guard !step.isQuiet else { return }
         haptics.playTransient(intensity: 0.3, sharpness: 0.3)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
             haptics.playTransient(intensity: 0.3, sharpness: 0.3)
         }
     }
 
-    private func holdButton(_ kind: OnboardingHoldKind) -> some View {
-        OnboardingHoldButton(
-            model: holdModel,
-            label: kind == .consent ? "長押しして、はじめる" : "長押しで、Homeへ",
-            sublabel: "1.5秒",
-            accessibilityActionName: kind == .consent ? "同意する" : "Homeへ進む",
-            onBegin: { haptics.beginHold(duration: $0) },
-            onRelease: { haptics.cancelHold() },
-            onComplete: { completeHold(kind) }
-        )
-        .frame(maxWidth: .infinity)
+    /// ボタン:くっきり軽く1回(④では鳴らさない)
+    private func buttonHaptic() {
+        guard !step.isQuiet else { return }
+        haptics.playTransient(intensity: OnboardingTuning.buttonHaptic.intensity, sharpness: OnboardingTuning.buttonHaptic.sharpness)
     }
 
     private func primaryButton(_ title: String, isEnabled: Bool = true, disabledTextColor: Color = OnboardingPalette.secondaryText, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 17, weight: .semibold))
-                .tracking(-0.025 * 17)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .foregroundStyle(isEnabled ? .black : disabledTextColor)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Capsule().fill(isEnabled ? Color.white : OnboardingPalette.surface))
-                .shadow(color: .white.opacity(isEnabled ? 0.16 : 0), radius: 14)
-                .animation(.easeOut(duration: 0.25), value: isEnabled)
-        }
-        .buttonStyle(OnboardingPressStyle())
-        .disabled(!isEnabled)
-    }
-
-    private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 17, weight: .semibold))
-                .tracking(-0.025 * 17)
-                .lineLimit(1)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Capsule().fill(OnboardingPalette.surface))
-        }
-        .buttonStyle(OnboardingPressStyle())
+        OnboardingPrimaryButton(title: title, isEnabled: isEnabled, action: action)
     }
 
     private func textButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(OnboardingPalette.subText)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-        }
-        .buttonStyle(.plain)
+        OnboardingTextButton(title: title, action: action)
     }
 
-    // MARK: - パシャ(シャッター幕・フラッシュ)
+    /// 左上の「<」(メールの入力・送りました)。ひとつ前の画面に戻る。
+    @ViewBuilder
+    private var emailBackButton: some View {
+        if step == .emailInput || step == .emailSent {
+            Button {
+                go(to: step == .emailInput ? .account : .emailInput)
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(LinearGradient(colors: [.white.opacity(0.13), .white.opacity(0.05)], startPoint: .top, endPoint: .bottom)))
+                    .overlay(Circle().strokeBorder(.white.opacity(0.09), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 22)
+            .padding(.top, 6)
+            .accessibilityLabel("戻る")
+            .transition(.opacity)
+        }
+    }
+
+    // MARK: - パシャ(⑤の撮影の1回だけ)
 
     private var curtains: some View {
         GeometryReader { proxy in
@@ -641,8 +786,25 @@ struct OnboardingFlowView: View {
                 Color.white.opacity(flashOpacity)
             }
         }
-        .allowsHitTesting(isTransitioning)
+        .allowsHitTesting(isCurtainClosed)
         .accessibilityHidden(true)
+    }
+
+    /// 幕が130msで閉じる → 120msで中身を入れ替え → フラッシュ(620ms)→ 70ms後に幕が230msで開く。音はなし
+    private func pasha(swap: @escaping () -> Void) {
+        isTransitioning = true
+        withAnimation(.timingCurve(0.5, 0, 0.9, 0.4, duration: 0.13)) { isCurtainClosed = true }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.12))
+            swap()
+            withAnimation(.linear(duration: 0.05)) { flashOpacity = 0.92 }
+            try? await Task.sleep(for: .seconds(0.05))
+            withAnimation(.easeOut(duration: 0.57)) { flashOpacity = 0 }
+            try? await Task.sleep(for: .seconds(0.07))
+            withAnimation(.timingCurve(0.2, 0.7, 0.3, 1, duration: 0.23)) { isCurtainClosed = false }
+            try? await Task.sleep(for: .seconds(0.24))
+            isTransitioning = false
+        }
     }
 
     // MARK: - 開始・再開
@@ -651,14 +813,20 @@ struct OnboardingFlowView: View {
         guard !hasStarted else { return }
         hasStarted = true
         haptics.prepare()
-        selectedTags = UserProfile.current(from: profiles)?.selfTags ?? []
         confirmedName = UserProfile.current(from: profiles)?.name ?? userName
 
+        // ようこその途中で閉じた:初回設定はやり直さず、Homeへ
+        if onboardingCompleted {
+            markOnboardingCompleted()
+            return
+        }
         if let resumed = resumeStep() {
-            // 再開時は開幕を再生せず、現在の場面から続ける。
+            // 再開時は開幕を再生せず、いまの場面から
             step = resumed
-            isOrbVisible = !resumed.isQuiet
-            startTyping()
+            orbIsHero = resumed.usesHeroOrb
+            isOrbVisible = true
+            contentPhase = .hidden
+            enter()
             if resumed == .account { handleSignInChange() }
             return
         }
@@ -666,44 +834,39 @@ struct OnboardingFlowView: View {
     }
 
     private func resumeStep() -> OnboardingStep? {
-        // 以前のルッキズムのパート(11画面)の途中で保存されていた場合は、新しい5-1から。
-        if OnboardingStep(rawValue: savedStep) == nil, savedStep.hasPrefix("lookism") {
-            return .lookismRetakes
-        }
-        guard let saved = OnboardingStep(rawValue: savedStep) else { return nil }
         let isSignedIn = !appleUserID.isEmpty || !firebaseUID.isEmpty
-        // 5-2・5-3は5-1の答えを保存しないため、5-1から。
-        if saved == .lookismCount || saved == .lookismTime { return .lookismRetakes }
+        guard let saved = OnboardingStep(rawValue: savedStep) else {
+            // 古い版の場面で止まっていた:サインインずみなら②から(名前があれば③から)
+            guard !savedStep.isEmpty else { return nil }
+            if !isSignedIn { return .account }
+            return confirmedName.isEmpty ? .name : .day
+        }
         if saved.isEmailStep {
             if isSignedIn { return .name }
-            // メールを送ったあとに閉じた時は「送りました」から(リンクを開けば、そのまま続く)。
+            // メールを送ったあとに閉じた時は「送りました」から(リンクを開けば、そのまま続く)
             if FirebaseAuthService.pendingEmail != nil {
                 sentAddress = FirebaseAuthService.pendingEmail ?? ""
                 return .emailSent
             }
             return .emailInput
         }
-        let order = OnboardingStep.mainFlow
-        // サインイン前の場面より先に保存されていても、未サインインならアカウントから。
-        if !isSignedIn, let savedIndex = order.firstIndex(of: saved), let accountIndex = order.firstIndex(of: .account), savedIndex > accountIndex {
-            return .account
-        }
-        // 名前の確定表示(自動で進む場面)の途中で閉じた時は、その次から。
-        if saved == .nameConfirm { return .explainAsk }
+        // サインイン前の場面より先に保存されていても、未サインインならアカウントから
+        if !isSignedIn, saved != .account { return .account }
         return saved
     }
 
+    /// 開幕(約7秒、スキップなし)。絞りが縮みながら①の玉(y=240)へ着き、約1.5秒後に①の中身が浮かぶ
     private func playOpening() {
         isOpening = true
         openingStart = Date()
+        step = .account
+        orbIsHero = true
         let reveal = OnboardingOpeningView.orbRevealTime(reduceMotion: reduceMotion)
         let duration = OnboardingOpeningView.duration(reduceMotion: reduceMotion)
         Task { @MainActor in
             if !reduceMotion {
-                // 絞りが開く:ごく弱い連続(強さ0→0.3、鋭さ0.2、1.6秒で上昇)
                 try? await Task.sleep(for: .seconds(1.2))
                 haptics.playRamp(from: 0, to: 0.3, sharpness: 0.2, duration: 1.6)
-                // 「Later」が定着:軽く1回
                 try? await Task.sleep(for: .seconds(3.0))
                 haptics.playTransient(intensity: OnboardingTuning.openingSettleHaptic.intensity, sharpness: OnboardingTuning.openingSettleHaptic.sharpness)
                 try? await Task.sleep(for: .seconds(reveal - 4.2))
@@ -711,176 +874,157 @@ struct OnboardingFlowView: View {
                 try? await Task.sleep(for: .seconds(reveal))
             }
             withAnimation(.easeInOut(duration: 1.2)) { isOrbVisible = true }
-            try? await Task.sleep(for: .seconds(duration - reveal))
-            isOpening = false
-            step = .meet
-            savedStep = OnboardingStep.meet.rawValue
-            startTyping()
+            if reduceMotion {
+                try? await Task.sleep(for: .seconds(duration - reveal))
+                isOpening = false
+                savedStep = OnboardingStep.account.rawValue
+                contentPhase = .hidden
+                enter()
+            } else {
+                // 切り替え:玉に波紋が広がりはじめる頃(開幕の 7.15 秒)から①の中身が入り、開幕の絵は 0.4 秒で消える
+                try? await Task.sleep(for: .seconds(OnboardingOpeningView.contentStartTime - reveal))
+                savedStep = OnboardingStep.account.rawValue
+                contentPhase = .hidden
+                enter()
+                withAnimation(.easeOut(duration: 0.4)) { openingFading = true }
+                try? await Task.sleep(for: .seconds(0.4))
+                isOpening = false
+                openingFading = false
+            }
         }
     }
 
-    // MARK: - タイプ
+    // MARK: - 切り替え(浮かんで入る)
 
-    private func startTyping() {
-        typingTask?.cancel()
-        isTypingDone = false
-        isTypingSkipped = false
-        areActionsVisible = false
-        let text = scene.lines.map(\.text).joined()
-        schedule = TypewriterSchedule(text: text, reduceMotion: reduceMotion)
-        typingStart = Date()
+    /// 出ていく中身:上へ10pt・ぼかし・0.25秒 → 玉と点を切り替え → 入ってくる中身:下から14pt・0.6秒(上から順に0.11秒ずつ)
+    private func go(to target: OnboardingStep, haptic: Bool = false) {
+        guard !isTransitioning, target != step else { return }
+        isTransitioning = true
+        isNameFocused = false
+        isEmailFocused = false
+        isTagFocused = false
+        if haptic { buttonHaptic() }
 
-        if voiceOverEnabled {
-            finishTyping()
+        let movesOrb = target.usesHeroOrb != orbIsHero
+        if reduceMotion || voiceOverEnabled {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                contentPhase = .leaving
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.25))
+                swap(to: target, movesOrb: movesOrb)
+                withAnimation(.easeInOut(duration: 0.25)) { contentPhase = .shown }
+                try? await Task.sleep(for: .seconds(0.25))
+                isTransitioning = false
+                afterEnter()
+            }
             return
         }
-        let currentSchedule = schedule
-        let start = typingStart
-        let currentStep = step
-        typingTask = Task { @MainActor in
-            let every = OnboardingTuning.typingHapticEvery
-            if every > 0, !currentStep.isQuiet, !reduceMotion {
-                for (index, time) in currentSchedule.revealTimes.enumerated() where (index + 1) % every == 0 {
-                    let wait = time - Date().timeIntervalSince(start)
-                    if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
-                    guard !Task.isCancelled else { return }
-                    haptics.playTransient(intensity: OnboardingTuning.typingHaptic.intensity, sharpness: OnboardingTuning.typingHaptic.sharpness)
-                }
-            }
-            let remaining = currentSchedule.finishTime - Date().timeIntervalSince(start)
-            if remaining > 0 { try? await Task.sleep(for: .seconds(remaining)) }
-            guard !Task.isCancelled else { return }
-            finishTyping()
+
+        withAnimation(.easeIn(duration: 0.25)) { contentPhase = .leaving }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.24))
+            swap(to: target, movesOrb: movesOrb)
+            try? await Task.sleep(for: .seconds(movesOrb ? 0.38 : 0.12))
+            enter()
         }
     }
 
-    private func finishTyping() {
-        isTypingDone = true
-        withAnimation(.easeOut(duration: 0.5)) { areActionsVisible = true }
-        switch scene.actions {
-        case .auto(let delay):
-            let currentStep = step
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(delay))
-                guard step == currentStep else { return }
-                advance()
+    private func swap(to next: OnboardingStep, movesOrb: Bool) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { contentPhase = .hidden }
+        holdModel.reset()
+        step = next
+        savedStep = next.rawValue
+        quietLit = false
+        if movesOrb {
+            if reduceMotion {
+                orbIsHero = next.usesHeroOrb
+            } else {
+                withAnimation(.timingCurve(0.6, 0, 0.2, 1, duration: 0.95)) { orbIsHero = next.usesHeroOrb }
             }
-        case .nameInput:
-            isNameFocused = true
+        }
+        if next == .name { SignInPerf.end("T7 次の画面(名前)が出た") }
+    }
+
+    /// 入ってくる中身を浮かべる(各要素が自分の遅れで動く)
+    private func enter() {
+        withAnimation(nil) { contentPhase = .hidden }
+        DispatchQueue.main.async {
+            contentPhase = .shown
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.4))
+                isTransitioning = false
+            }
+            afterEnter()
+        }
+    }
+
+    private func afterEnter() {
+        switch step {
+        case .name:
+            // 中身が浮かび終わってから、キーボードを出す
+            DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.9)) { isNameFocused = true }
         case .emailInput:
-            // 質問のタイプ演出が終わってから0.3秒後に、キーボードを自動で開く。
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                if step == .emailInput { isEmailFocused = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { isEmailFocused = true }
+        case .tags:
+            // 途中から再開したとき:保存ずみのタグを選んだ状態にもどす
+            if selfTags.isEmpty, let saved = UserProfile.current(from: profiles)?.selfTags, !saved.isEmpty {
+                selfTags = saved
+                customTags = saved.filter { !OnboardingCopy.selfTagCandidates.contains($0) }
+            }
+        case .quiet:
+            // 入ってから1.5秒後に、3つ目の人が1秒かけて灯る
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                guard step == .quiet else { return }
+                withAnimation(.easeInOut(duration: 1.0)) { quietLit = true }
             }
         default:
             break
         }
     }
 
-    /// 画面をタップして、タイプをスキップする(ルッキズムのパートではスキップできない)。
-    private func skipTyping() {
-        guard !step.isQuiet, !isTypingDone, !isOpening, hasStarted else { return }
-        typingTask?.cancel()
-        isTypingSkipped = true
-        finishTyping()
-    }
-
-    // MARK: - 次の場面へ(パシャ)
-
-    /// - Parameter withHaptic: ボタンの触覚とシャッターの触覚は兼ねる(別々に2回鳴らさない)。
-    ///   長押しが満ちた時は、満ちた時の触覚がすでに鳴っているためfalse。
-    private func advance(withHaptic: Bool = true) {
-        guard !isTransitioning else { return }
-        guard let next = step.next else { return }
-        transition(withHaptic: withHaptic) { swap(to: next) }
-    }
-
-    /// 本筋の順番によらず、指定の場面へ移る(メールの場面など)。
-    private func go(to target: OnboardingStep, withHaptic: Bool = true) {
-        guard !isTransitioning, target != step else { return }
-        transition(withHaptic: withHaptic) { swap(to: target) }
-    }
-
-    private func transition(withHaptic: Bool, swap: @escaping () -> Void) {
-        isTransitioning = true
-        isNameFocused = false
-        isEmailFocused = false
-        if withHaptic && !step.isQuiet {
-            haptics.playTransient(intensity: OnboardingTuning.shutterHaptic.intensity, sharpness: OnboardingTuning.shutterHaptic.sharpness)
-        }
-
-        if reduceMotion || voiceOverEnabled {
-            withAnimation(.easeInOut(duration: 0.25)) { swap() }
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(0.25))
-                isTransitioning = false
-            }
-            return
-        }
-
-        withAnimation(.timingCurve(0.5, 0, 0.9, 0.4, duration: 0.13)) { isCurtainClosed = true }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.12))
-            swap()
-            withAnimation(.linear(duration: 0.037)) { flashOpacity = 0.92 }
-            try? await Task.sleep(for: .seconds(0.037))
-            withAnimation(.easeOut(duration: 0.42)) { flashOpacity = 0 }
-            try? await Task.sleep(for: .seconds(0.033))
-            withAnimation(.timingCurve(0.2, 0.7, 0.3, 1, duration: 0.23)) { isCurtainClosed = false }
-            try? await Task.sleep(for: .seconds(0.24))
-            isTransitioning = false
-        }
-    }
-
-    private func swap(to next: OnboardingStep) {
-        let previous = step
-        history = scene.lines
-        photoNotice = nil
-        litOverride = nil
-        holdModel.reset()
-        step = next
-        savedStep = next.rawValue
-
-        if next.isQuiet && !previous.isQuiet {
-            // ルッキズムに入る:玉・点・背景の光を消す(1.2秒)。
-            withAnimation(.easeInOut(duration: 1.2)) { isOrbVisible = false }
-        } else if !next.isQuiet && !isOrbVisible {
-            withAnimation(.easeInOut(duration: 0.6)) { isOrbVisible = true }
-        }
-        if next == .nameConfirm {
-            pulseTrigger += 1
-        }
-        startTyping()
-    }
-
     // MARK: - アカウント
 
     private func handleSignInChange() {
         guard step == .account || step.isEmailStep, !appleUserID.isEmpty || !firebaseUID.isEmpty, !isCheckingAccount else { return }
-        // 端末に同じアカウントのプロフィールがあれば、サインイン処理側がisSetupCompletedを立てる。
+        // 端末に同じアカウントのプロフィールがあれば、サインイン処理側がisSetupCompletedを立てる
         if isSetupCompleted {
             completeAsExistingUser()
             return
         }
+        // 最初の同期(以前のデータが多いと1分近くかかる)を待たずに、すぐ名前の画面へ。
+        // 以前Laterを使っていたアカウントかどうかは、裏で確かめ、見つかったらHomeへ切りかえる。
+        if let existing = existingProfileForSignedInAccount() {
+            currentProfileID = existing.id.uuidString
+            completeAsExistingUser()
+            return
+        }
+        go(to: .name)
+        checkExistingAccountInBackground()
+    }
+
+    /// 裏で、iCloud の同期が届くのを待って既存アカウントを確かめる(画面は止めない)。
+    /// 見つかったら、初回設定の途中でも Home へ(名前・写真などの入力はしなくてよい)。
+    private func checkExistingAccountInBackground() {
+        guard !isCheckingAccount else { return }
         isCheckingAccount = true
+        SignInPerf.mark("既存アカウントの確認を、裏で開始")
         Task { @MainActor in
-            // 以前Laterを使っていたアカウントなら、CloudKitから自分のプロフィールが同期されてくる。
-            // 少しだけ待って確認し、見つかれば初回設定を飛ばしてHomeへ。
-            for _ in 0..<12 {
-                if let existing = existingProfileForSignedInAccount() {
-                    currentProfileID = existing.id.uuidString
-                    completeAsExistingUser()
-                    return
-                }
-                if let cloudKitManager = CloudKitManager.current {
-                    await cloudKitManager.fetchPrivateChangesNow()
-                    await cloudKitManager.fetchSharedChangesNow()
-                }
+            defer { isCheckingAccount = false }
+            // iCloud の準備(CloudKitManager)ができるまで、少しずつ待つ(最大20秒)
+            for _ in 0..<40 where CloudKitManager.current == nil {
                 try? await Task.sleep(for: .seconds(0.5))
             }
-            isCheckingAccount = false
-            // はじめてのアカウント:パシャで、次の質問(名前)へ。
-            go(to: .name)
+            guard let cloudKitManager = CloudKitManager.current else { return }
+            await cloudKitManager.fetchPrivateChangesNow()
+            await cloudKitManager.fetchSharedChangesNow()
+            SignInPerf.mark("裏の確認:同期が終わった")
+            guard !isSetupCompleted, welcomeStart == nil, let existing = existingProfileForSignedInAccount() else { return }
+            SignInPerf.mark("裏の確認:既存アカウントが見つかった → Home")
+            currentProfileID = existing.id.uuidString
+            completeAsExistingUser()
         }
     }
 
@@ -895,17 +1039,18 @@ struct OnboardingFlowView: View {
         }
     }
 
-    /// 既存のアカウントだった:2〜8をスキップし、既存のペルソナ名・プロフィールのままHomeへ。
+    /// 既存のアカウントだった:②〜⑥を飛ばし、既存のプロフィールのままHomeへ
     private func completeAsExistingUser() {
         markOnboardingCompleted()
     }
 
-    // MARK: - 名前
+    // MARK: - ② 名前の保存(確認画面は作らない。名前は③の補足で呼ぶ)
 
     private func confirmName() {
         let validation = OnboardingRules.validateName(nameInput)
         guard validation.problem == nil, !isTransitioning else { return }
         let name = validation.name
+        buttonHaptic()
 
         let profile: UserProfile
         if let existing = UserProfile.current(from: profiles) {
@@ -936,7 +1081,90 @@ struct OnboardingFlowView: View {
         confirmedName = name
         Task { await UserDirectoryService.publish(profile) }
 
-        advance()
+        go(to: .day)
+    }
+
+    // MARK: - ⑤ 撮影
+
+    /// 満ちたら強く1回 → 0.16秒後にパシャ → ⑥。画像は裏で保存し、待たせない(翌朝9:00に現像)
+    private func captureProfilePhoto() {
+        haptics.fireCapture(intensity: OnboardingTuning.photoCaptureHaptic.intensity, sharpness: OnboardingTuning.photoCaptureHaptic.sharpness)
+        photoSkipped = false
+        camera.capturePhoto { data in
+            DispatchQueue.main.async {
+                if let data, let profile = UserProfile.current(from: profiles) {
+                    ProfilePhotoDevelopment.store(CapturedImageCompressor.compressedImageData(from: data), for: profile, context: modelContext)
+                } else {
+                    photoSkipped = true
+                }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+            pasha {
+                swap(to: .notify, movesOrb: false)
+                contentPhase = .shown
+            }
+        }
+    }
+
+    // MARK: - ⑥ → ようこそ → Home
+
+    /// 「お知らせを受け取る」は許可のダイアログの答えが出てから、「あとで」はすぐに、ようこその演出へ。
+    /// 演出を始める時点で onboardingCompleted を保存する(途中で閉じても、やり直させない)。
+    private func startWelcome(requestNotifications: Bool) {
+        guard welcomeStart == nil, !isTransitioning else { return }
+        isTransitioning = true
+        haptics.playTransient(intensity: OnboardingTuning.buttonHaptic.intensity, sharpness: OnboardingTuning.buttonHaptic.sharpness)
+        let pressedAt = Date()
+        print("[Welcome] W0 \(requestNotifications ? "「お知らせを受け取る」" : "「あとで」")を押した")
+        // ダイアログが出ている間は、画面を何も変えない。結果が返った時刻(または「あとで」)を t = 0 にする
+        Task { @MainActor in
+            if requestNotifications {
+                print(String(format: "[Welcome] W1 許可を求めた(ダイアログ) +%.2fs", Date().timeIntervalSince(pressedAt)))
+                let result = await DailyOpenNotification.requestAuthorization(timeout: 10)
+                print(String(format: "[Welcome] W2 ダイアログの結果:%@ +%.2fs scene=%@", result.rawValue, Date().timeIntervalSince(pressedAt), "\(scenePhase)"))
+                // 通知の登録は演出と並行(待たない・失敗しても演出は止めない)
+                Task {
+                    let scheduled = await DailyOpenNotification.schedule()
+                    print(String(format: "[Welcome] W3 通知の登録が終わった scheduled=%@ +%.2fs", "\(scheduled)", Date().timeIntervalSince(pressedAt)))
+                }
+            }
+            // まだ見ていなければ、「ようこそ」の前に「ウィジェットを置きますか」(あとで → そのまま「ようこそ」へ)
+            if !UserDefaults.standard.bool(forKey: WidgetSetupStorage.seenKey) {
+                widgetSetupPressedAt = pressedAt
+                withAnimation(.easeInOut(duration: 0.3)) { showingWidgetSetup = true }
+                return
+            }
+            beginWelcome(pressedAt: pressedAt)
+        }
+    }
+
+    /// 「ようこそ」の演出を始める(t = 0)
+    private func beginWelcome(pressedAt: Date) {
+        onboardingCompleted = true
+        savedStep = ""
+        welcomeWentBackground = false
+        withAnimation(.easeOut(duration: 0.42)) { contentPhase = .leaving }
+        welcomeStart = Date()
+        print(String(format: "[Welcome] W4 「ようこそ」の演出を始めた(t = 0) +%.2fs", Date().timeIntervalSince(pressedAt)))
+    }
+
+    private func finishWelcome() {
+        print("[Welcome] W6 Homeが出た(演出の t = \(welcomeStart.map { String(format: "%.2fs", Date().timeIntervalSince($0)) } ?? "-"))")
+        markOnboardingCompleted()
+    }
+
+    private func markOnboardingCompleted() {
+        savedStep = ""
+        onboardingCompleted = true
+        if UserDefaults.standard.object(forKey: "onboardingCompletedAt") == nil {
+            UserDefaults.standard.set(Date(), forKey: "onboardingCompletedAt")
+        }
+        hasSeenWelcomeOnboarding = true
+        hasCompletedSurvey = true
+        hasSeenAboutLaterIntro = true
+        isProfileSetupCompleted = true
+        isSetupCompleted = true
     }
 
     // MARK: - メールで続ける
@@ -949,8 +1177,11 @@ struct OnboardingFlowView: View {
     }
 
     /// 簡易な形の判定(「@」が1つ、前後が空でなく、「@」のあとに「.」を含む)。厳密にしすぎない。
-    private var isEmailValid: Bool {
-        normalizedEmail.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#, options: .regularExpression) != nil
+    private var isEmailValid: Bool { Self.isValid(emailInput) }
+
+    private static func isValid(_ raw: String) -> Bool {
+        let value = raw.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return value.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#, options: .regularExpression) != nil
     }
 
     private var emailField: some View {
@@ -998,14 +1229,8 @@ struct OnboardingFlowView: View {
                     .transition(.opacity)
             }
         }
-        .padding(.top, 34)
         .modifier(ShakeEffect(animatableData: CGFloat(emailShake)))
         .animation(.easeOut(duration: 0.2), value: isEmailErrorShown)
-    }
-
-    private static func isValid(_ raw: String) -> Bool {
-        let value = raw.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return value.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#, options: .regularExpression) != nil
     }
 
     /// 入力のたびに:エラーは消す。形が合った瞬間だけ軽く1回。止まって0.8秒たったら形を確かめる。
@@ -1038,8 +1263,8 @@ struct OnboardingFlowView: View {
     }
 
     /// リンクを送る:キーボードを閉じて「送っています…」へ。10秒たっても終わらなければ失敗へ。
-    /// 送る前にアドレスを端末に保存する(FirebaseAuthService.sendSignInLinkが行う)。
     private func sendEmailLink() {
+        print("[EmailSignIn] tapped")
         guard isEmailValid else {
             showEmailError()
             return
@@ -1049,12 +1274,14 @@ struct OnboardingFlowView: View {
         isEmailFocused = false
         sendingAttempt += 1
         let attempt = sendingAttempt
-        go(to: .emailSending, withHaptic: false)
+        emailDebugText = nil
+        go(to: .emailSending)
 
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(10))
             guard attempt == sendingAttempt, step == .emailSending else { return }
             sendingAttempt += 1
+            emailDebugText = "timeout: 10秒以内に応答なし"
             showEmailFailure(.network)
         }
         Task { @MainActor in
@@ -1062,16 +1289,18 @@ struct OnboardingFlowView: View {
                 try await FirebaseAuthService.sendSignInLink(to: address)
                 guard attempt == sendingAttempt else { return }
                 sendingAttempt += 1
-                // 送信中の画面を一瞬で飛ばさないよう、少しだけ見せてから進む。
                 try? await Task.sleep(for: .seconds(0.6))
                 haptics.playTransient(intensity: OnboardingTuning.tagHaptic.intensity, sharpness: OnboardingTuning.tagHaptic.sharpness)
-                go(to: .emailSent, withHaptic: false)
+                go(to: .emailSent)
                 startResendCountdown()
                 UIAccessibility.post(notification: .announcement, argument: "メールを送りました。届いたメールのサインインを開いてください")
             } catch {
-                print("[EmailSignIn] sendSignInLink failed: \(error)")
+                let label = FirebaseAuthService.debugLabel(for: error)
+                print("[EmailSignIn] sendSignInLink failed: \(label)")
+                print("[EmailSignIn] userInfo: \((error as NSError).userInfo)")
                 guard attempt == sendingAttempt else { return }
                 sendingAttempt += 1
+                emailDebugText = label
                 showEmailFailure(EmailSignInFailure.from(error))
             }
         }
@@ -1079,18 +1308,15 @@ struct OnboardingFlowView: View {
 
     private func showEmailFailure(_ failure: EmailSignInFailure) {
         emailFailure = failure
-        if step == .emailFailed {
-            return
-        }
-        // 送信中など、場面の切り替え中でも必ず失敗の画面に移す。
-        DispatchQueue.main.asyncAfter(deadline: .now() + (isTransitioning ? 0.3 : 0)) {
-            go(to: .emailFailed, withHaptic: false)
+        if step == .emailFailed { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + (isTransitioning ? 0.6 : 0)) {
+            go(to: .emailFailed)
             playSoftDouble()
             UIAccessibility.post(notification: .announcement, argument: failure.title + failure.message.replacingOccurrences(of: "\n", with: ""))
         }
     }
 
-    /// 失敗のあと:期限切れ・別の端末で開いた時は入力へ(アドレスを入れ直す)。それ以外は、もう一度送る。
+    /// 失敗のあと:期限切れ・別の端末で開いた時は入力へ。それ以外は、もう一度送る。
     private func retryAfterFailure() {
         switch emailFailure {
         case .expiredLink, .missingEmail:
@@ -1115,7 +1341,6 @@ struct OnboardingFlowView: View {
                 .font(.system(size: 12.5))
                 .foregroundStyle(OnboardingPalette.secondaryText)
         }
-        .padding(.top, 24)
     }
 
     private var canOpenMailApp: Bool {
@@ -1130,7 +1355,7 @@ struct OnboardingFlowView: View {
                 }
             }
             HStack {
-                Button("アドレスを変える") { go(to: .emailInput, withHaptic: false) }
+                Button("アドレスを変える") { go(to: .emailInput) }
                     .font(.system(size: 13.5, weight: .medium))
                     .foregroundStyle(OnboardingPalette.secondaryText)
                 Spacer()
@@ -1165,83 +1390,38 @@ struct OnboardingFlowView: View {
             }
         }
     }
+}
 
-    // MARK: - タグ
+// MARK: - 浮かんで入る
 
-    private func saveTagsAndAdvance() {
-        if let profile = UserProfile.current(from: profiles) {
-            profile.selfTags = selectedTags
-            try? modelContext.save()
-        }
-        advance()
-    }
+private struct FloatIn: ViewModifier {
+    let phase: OnboardingFlowView.ContentPhase
+    let index: Int
+    let reduceMotion: Bool
 
-    // MARK: - 長押し(同意・結び)
-
-    private func completeHold(_ kind: OnboardingHoldKind) {
-        switch kind {
-        case .consent:
-            // 満ちたらくっきり1回。玉・光・点を完全に戻し、点は5つ灯った状態から再開する。
-            haptics.fireCapture()
-            litOverride = 5
-            withAnimation(.easeOut(duration: 0.4)) { isOrbVisible = true }
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(0.42))
-                advance(withHaptic: false)
+    func body(content: Content) -> some View {
+        let opacity: Double = phase == .shown ? 1 : 0
+        let offset: CGFloat = reduceMotion ? 0 : (phase == .leaving ? -10 : (phase == .hidden ? 14 : 0))
+        let blur: CGFloat = reduceMotion ? 0 : (phase == .shown ? 0 : 5)
+        let animation: Animation? = {
+            if reduceMotion { return .easeInOut(duration: 0.25) }
+            switch phase {
+            case .shown: return .timingCurve(0.2, 0.7, 0.2, 1, duration: 0.6).delay(0.15 + 0.11 * Double(index))
+            case .leaving: return .easeIn(duration: 0.25)
+            case .hidden: return nil
             }
-        case .finish:
-            haptics.fireCapture(
-                intensity: OnboardingTuning.finishHaptic.intensity,
-                sharpness: OnboardingTuning.finishHaptic.sharpness,
-                tail: OnboardingTuning.finishTail
-            )
-            Task { @MainActor in
-                // 色づきを見せるため、結びだけ0.9秒待ってからパシャ。
-                try? await Task.sleep(for: .seconds(0.9))
-                guard !isTransitioning else { return }
-                transition(withHaptic: false) { markOnboardingCompleted() }
-            }
-        }
+        }()
+        return content
+            .opacity(opacity)
+            .offset(y: offset)
+            .blur(radius: blur)
+            .animation(animation, value: phase)
     }
+}
 
-    // MARK: - プロフィール撮影
-
-    private func captureProfilePhoto() {
-        haptics.fireCapture()
-        camera.capturePhoto(flashOn: false) { data in
-            DispatchQueue.main.async {
-                if let data, let profile = UserProfile.current(from: profiles) {
-                    ProfilePhotoDevelopment.store(CapturedImageCompressor.compressedImageData(from: data), for: profile, context: modelContext)
-                    showPhotoNotice(title: "預けました", message: "あなたの1枚は、\n次の 9:00 に現像されます。")
-                } else {
-                    showPhotoNotice(title: "撮れませんでした", message: "プロフィールの画像は、\nあとから設定できます。")
-                }
-            }
-        }
-    }
-
-    private func showPhotoNotice(title: String, message: String) {
-        withAnimation(.easeIn(duration: 0.3)) { photoNotice = (title, message) }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2.4))
-            advance(withHaptic: false)
-        }
-    }
-
-    // MARK: - 完了
-
-    private func markOnboardingCompleted() {
-        typingTask?.cancel()
-        savedStep = ""
-        onboardingCompleted = true
-        if UserDefaults.standard.object(forKey: "onboardingCompletedAt") == nil {
-            UserDefaults.standard.set(Date(), forKey: "onboardingCompletedAt")
-        }
-        hasSeenWelcomeOnboarding = true
-        hasCompletedSurvey = true
-        hasSeenAboutLaterIntro = true
-        isProfileSetupCompleted = true
-        isSetupCompleted = true
+extension View {
+    func floatIn(_ phase: OnboardingFlowView.ContentPhase, index: Int, reduceMotion: Bool) -> some View {
+        modifier(FloatIn(phase: phase, index: index, reduceMotion: reduceMotion))
     }
 }
 
@@ -1253,71 +1433,40 @@ enum AVCaptureDevicePositionValue {
     var avPosition: AVCaptureDevice.Position { self == .back ? .back : .front }
 }
 
-// MARK: - ボタンを押した時の縮み
+// MARK: - ⑤ ファインダーの四隅
 
-private struct OnboardingPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-// MARK: - 場面の視覚要素
-
-/// 「09:00」(等幅、白く光る)と、その下で一斉に光る14個の点(全員が同時に)。
-private struct NineAMVisual: View {
-    @State private var isLit = false
+private struct ViewfinderCorners: View {
+    let inset: CGFloat
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("09:00")
-                .font(.system(size: 46, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white)
-                .shadow(color: .white.opacity(0.6), radius: 10)
-            HStack(spacing: 9) {
-                ForEach(0..<14, id: \.self) { _ in
-                    Circle()
-                        .fill(.white.opacity(isLit ? 1 : 0.16))
-                        .frame(width: 5, height: 5)
-                        .shadow(color: isLit ? .white.opacity(0.9) : .clear, radius: 4)
+        GeometryReader { proxy in
+            let w = proxy.size.width, h = proxy.size.height
+            Path { path in
+                let l: CGFloat = 26
+                for (x, y, dx, dy) in [(inset, inset, 1.0, 1.0), (w - inset, inset, -1.0, 1.0), (inset, h - inset, 1.0, -1.0), (w - inset, h - inset, -1.0, -1.0)] {
+                    path.move(to: CGPoint(x: x, y: y + l * dy))
+                    path.addLine(to: CGPoint(x: x, y: y))
+                    path.addLine(to: CGPoint(x: x + l * dx, y: y))
                 }
             }
+            .stroke(.white.opacity(0.8), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
         }
-        .accessibilityHidden(true)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.6).delay(0.5)) { isLit = true }
-        }
-    }
-}
-
-/// 34個の小さな点の輪(直径96pt、オレンジ→青→黄)。
-private struct ArriveRingVisual: View {
-    var body: some View {
-        ZStack {
-            ForEach(0..<34, id: \.self) { index in
-                let fraction = Double(index) / 34
-                let angle = fraction * 2 * .pi - .pi / 2
-                Circle()
-                    .fill(HomePalette.ringColor(atFraction: fraction))
-                    .frame(width: 4, height: 4)
-                    .offset(x: cos(angle) * 48, y: sin(angle) * 48)
-            }
-        }
-        .frame(width: 100, height: 100)
+        .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
 }
 
-/// 通知カードの見本(Laterのアイコン + 「9:00 になりました。今日を撮れます。」+「いま」)。
+// MARK: - ⑥ 通知の見本
+
+/// 通知の見本カード(高さ84pt・角丸22pt)。本文は、実際に登録する通知と同じ定数を使う。
 private struct NotificationCardSample: View {
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .fill(.black)
-                .frame(width: 38, height: 38)
-                .overlay(Circle().fill(.white).frame(width: 6, height: 6).shadow(color: .white.opacity(0.8), radius: 4))
-                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(.white.opacity(0.15), lineWidth: 1))
+                .frame(width: 44, height: 44)
+                .overlay(OnboardingPearl(diameter: 22))
+                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 1))
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
                     Text("Later")
@@ -1329,14 +1478,20 @@ private struct NotificationCardSample: View {
                         .foregroundStyle(OnboardingPalette.secondaryText)
                 }
                 Text(OnboardingCopy.dailyNotificationBody)
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(OnboardingPalette.subText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .font(.system(size: 14))
+                    .foregroundStyle(OnboardingPalette.quietText)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
             }
         }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(OnboardingPalette.surface.opacity(0.92)))
+        .padding(.horizontal, 16)
+        .frame(height: 84)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(red: 40 / 255, green: 40 / 255, blue: 44 / 255).opacity(0.72))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("通知の見本:\(OnboardingCopy.dailyNotificationBody)")
     }

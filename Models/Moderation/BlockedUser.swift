@@ -11,6 +11,8 @@ final class BlockedUser {
     var createdAt: Date
     /// このBlockレコード自体のCKRecord.recordName(削除=ブロック解除の際に必要)。
     var ckRecordName: String?
+    /// 一覧に出す名前(Mondo の人など。グループのブロックでは nil のこともある)
+    var displayName: String?
 
     init(blockedCloudKitUserRecordName: String, createdAt: Date = Date(), ckRecordName: String? = nil) {
         self.blockedCloudKitUserRecordName = blockedCloudKitUserRecordName

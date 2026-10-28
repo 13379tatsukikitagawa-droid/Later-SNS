@@ -532,7 +532,7 @@ struct OnboardingView: View {
 
         // 🎉 成功のHaptic
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        impactFeedback.impactOccurredIfEnabled()
 
         let bio = inputBio.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -549,7 +549,7 @@ struct OnboardingView: View {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             let successFeedback = UINotificationFeedbackGenerator()
-            successFeedback.notificationOccurred(.success)
+            successFeedback.notificationOccurredIfEnabled(.success)
 
             withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) {
                 isProfileSetupCompleted = true

@@ -8,7 +8,23 @@ class LaterGroup {
     var id: UUID = UUID()
     var name: String
     var creationDate: Date
-    var inviteCode: String = "" // グループ招待コード
+    var inviteCode: String = "" // グループ招待コード(旧。いまの合言葉は invitePassphrase)
+
+    /// 自分が発行した招待リンクのトークン(128bit のランダム値・base64url)。https://<ドメイン>/g/<トークン>。
+    /// 招待はメンバーごとに持つ(「〇〇さんから」を正しく出し、各自が写しを更新するため)。端末だけに持ち、同期しない。
+    /// 空ならまだ発行していない。期限(7日)が近い・無効化したら作りなおす。
+    var inviteToken: String = ""
+    var inviteTokenExpiresAt: Date?
+
+    /// 人数の上限(4〜8)。リングの点の数。作成時に決め、あとから変えられる
+    var memberLimit: Int = GroupMembershipPolicy.maxMembersPerGroup
+    /// 顔の色(GroupPalette の番号)。-1 なら未設定(IDから決める)
+    var colorIndex: Int = -1
+    /// 自分がこのグループを作った・入った時刻(端末だけ)。Home の列は新しい順(入ったグループが先頭)
+    var joinedAt: Date?
+    /// 合言葉(サーバーが発行。「くじら472」)と有効期限。端末だけに持つ(期限がきたら引きなおす)
+    var invitePassphrase: String = ""
+    var invitePassphraseExpiresAt: Date?
 
     /// グループアイコン画像。オーナーに限らず、全メンバーが変更できる
     /// (EditGroupView参照)。未設定ならnilのままで、表示側がプレースホルダーに切り替える。

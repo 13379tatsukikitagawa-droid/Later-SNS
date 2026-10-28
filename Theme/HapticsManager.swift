@@ -25,7 +25,7 @@ public enum HapticsManager {
     public static func unlockSuccess() {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
-        generator.notificationOccurred(.success)
+        generator.notificationOccurredIfEnabled(.success)
     }
     
     /// ハートビート（心拍）のようなリズミカルなフィードバック
@@ -46,7 +46,7 @@ public enum HapticsManager {
     public static func vaultLock() {
         let notificationGenerator = UINotificationFeedbackGenerator()
         notificationGenerator.prepare()
-        notificationGenerator.notificationOccurred(.error)
+        notificationGenerator.notificationOccurredIfEnabled(.error)
 
         let styles: [UIImpactFeedbackGenerator.FeedbackStyle] = [.heavy, .heavy, .heavy]
         // 使用可能であれば .rigid を含める (iOS 13+)
@@ -90,7 +90,7 @@ public enum HapticsManager {
     public static func errorFeedback() {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
-        generator.notificationOccurred(.error)
+        generator.notificationOccurredIfEnabled(.error)
     }
     
     /// 軽いティック音のようなフィードバック（UI要素のタップ時）
@@ -103,7 +103,7 @@ public enum HapticsManager {
     private static func impact(style: UIImpactFeedbackGenerator.FeedbackStyle) {
         let generator = UIImpactFeedbackGenerator(style: style)
         generator.prepare()
-        generator.impactOccurred()
+        generator.impactOccurredIfEnabled()
     }
 
     @MainActor

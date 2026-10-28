@@ -1,0 +1,336 @@
+DEFINE SCHEMA
+
+    CREATE ROLE MondoServer;
+
+    RECORD TYPE ConnectionRequest (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        createdAt       TIMESTAMP QUERYABLE SORTABLE,
+        fromUserID      STRING QUERYABLE SEARCHABLE SORTABLE,
+        fromUserName    STRING QUERYABLE SEARCHABLE SORTABLE,
+        fromUsername    STRING QUERYABLE SEARCHABLE SORTABLE,
+        status          STRING QUERYABLE SEARCHABLE SORTABLE,
+        toUserID        STRING QUERYABLE SEARCHABLE SORTABLE,
+        toUserName      STRING QUERYABLE SEARCHABLE SORTABLE,
+        toUsername      STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE ConnectionResponse (
+        "___createTime"   TIMESTAMP,
+        "___createdBy"    REFERENCE,
+        "___etag"         STRING,
+        "___modTime"      TIMESTAMP,
+        "___modifiedBy"   REFERENCE,
+        "___recordID"     REFERENCE,
+        decision          STRING QUERYABLE SEARCHABLE SORTABLE,
+        requesterID       STRING QUERYABLE SEARCHABLE SORTABLE,
+        respondedAt       TIMESTAMP QUERYABLE SORTABLE,
+        responderID       STRING QUERYABLE SEARCHABLE SORTABLE,
+        responderName     STRING QUERYABLE SEARCHABLE SORTABLE,
+        responderUsername STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE DirectMessage (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        conversationID  STRING QUERYABLE SEARCHABLE SORTABLE,
+        createdAt       TIMESTAMP QUERYABLE SORTABLE,
+        receiverID      STRING QUERYABLE SEARCHABLE SORTABLE,
+        senderID        STRING QUERYABLE SEARCHABLE SORTABLE,
+        text            STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE GroupInvite (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        groupID         STRING QUERYABLE SEARCHABLE SORTABLE,
+        joinCode        STRING QUERYABLE SEARCHABLE SORTABLE,
+        shareURL        STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE GroupMessage (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        createdAt       TIMESTAMP QUERYABLE SORTABLE,
+        groupID         STRING QUERYABLE SEARCHABLE SORTABLE,
+        senderID        STRING QUERYABLE SEARCHABLE SORTABLE,
+        senderName      STRING QUERYABLE SEARCHABLE SORTABLE,
+        text            STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE LaterGroup (
+        "___createTime"             TIMESTAMP,
+        "___createdBy"              REFERENCE,
+        "___etag"                   STRING,
+        "___modTime"                TIMESTAMP,
+        "___modifiedBy"             REFERENCE,
+        "___recordID"               REFERENCE,
+        autoGenerateMission         INT64 QUERYABLE SORTABLE,
+        colorIndex                  INT64,
+        currentDailyMission         STRING,
+        groupCreatedAt              TIMESTAMP QUERYABLE SORTABLE,
+        icon                        ASSET,
+        inviteCode                  STRING QUERYABLE SEARCHABLE SORTABLE,
+        isPrivate                   INT64 QUERYABLE SORTABLE,
+        lastUnlockAt                TIMESTAMP QUERYABLE SORTABLE,
+        memberLimit                 INT64,
+        name                        STRING QUERYABLE SEARCHABLE SORTABLE,
+        ownerCloudKitUserRecordName STRING QUERYABLE SEARCHABLE SORTABLE,
+        personalDailyTargetCount    INT64 QUERYABLE SORTABLE,
+        personalTargetLastSetDate   TIMESTAMP,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE LaterPhoto (
+        "___createTime"              TIMESTAMP QUERYABLE,
+        "___createdBy"               REFERENCE,
+        "___etag"                    STRING,
+        "___modTime"                 TIMESTAMP,
+        "___modifiedBy"              REFERENCE,
+        "___recordID"                REFERENCE,
+        authorCloudKitUserRecordName STRING QUERYABLE SEARCHABLE SORTABLE,
+        authorNameCache              STRING QUERYABLE SEARCHABLE SORTABLE,
+        caption                      STRING QUERYABLE SEARCHABLE SORTABLE,
+        captureDate                  TIMESTAMP QUERYABLE SORTABLE,
+        group                        REFERENCE QUERYABLE,
+        groupIDString                STRING QUERYABLE SEARCHABLE SORTABLE,
+        groupNameCache               STRING QUERYABLE SEARCHABLE SORTABLE,
+        image                        ASSET,
+        isPosted                     INT64,
+        isUnlocked                   INT64 QUERYABLE SORTABLE,
+        locationName                 STRING QUERYABLE SEARCHABLE SORTABLE,
+        mosaicTiny                   BYTES,
+        approxLatitude               DOUBLE,
+        approxLongitude              DOUBLE,
+        tags                         LIST<STRING> QUERYABLE SEARCHABLE,
+        unlockDate                   TIMESTAMP QUERYABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE PhotoVote (
+        "___createTime"             TIMESTAMP,
+        "___createdBy"              REFERENCE,
+        "___etag"                   STRING,
+        "___modTime"                TIMESTAMP,
+        "___modifiedBy"             REFERENCE,
+        "___recordID"               REFERENCE,
+        photo                       REFERENCE QUERYABLE,
+        reactionSpeed               DOUBLE QUERYABLE SORTABLE,
+        roundNumber                 INT64 QUERYABLE SORTABLE,
+        votedAt                     TIMESTAMP QUERYABLE SORTABLE,
+        voterCloudKitUserRecordName STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE UserDirectory (
+        "___createTime"        TIMESTAMP,
+        "___createdBy"         REFERENCE,
+        "___etag"              STRING,
+        "___modTime"           TIMESTAMP,
+        "___modifiedBy"        REFERENCE,
+        "___recordID"          REFERENCE,
+        avatar                 ASSET,
+        bio                    STRING QUERYABLE SEARCHABLE SORTABLE,
+        cloudKitUserRecordName STRING QUERYABLE SEARCHABLE SORTABLE,
+        name                   STRING QUERYABLE SEARCHABLE SORTABLE,
+        username               STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE UserProfile (
+        "___createTime"        TIMESTAMP,
+        "___createdBy"         REFERENCE,
+        "___etag"              STRING,
+        "___modTime"           TIMESTAMP,
+        "___modifiedBy"        REFERENCE,
+        "___recordID"          REFERENCE,
+        avatar                 ASSET,
+        bio                    STRING QUERYABLE SEARCHABLE SORTABLE,
+        cloudKitUserRecordName STRING QUERYABLE SEARCHABLE SORTABLE,
+        firebaseEmail          STRING,
+        firebaseUID            STRING,
+        group                  REFERENCE QUERYABLE,
+        name                   STRING QUERYABLE SEARCHABLE SORTABLE,
+        selfTags               LIST<STRING> QUERYABLE SEARCHABLE,
+        username               STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE Users (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        roles           LIST<INT64>,
+        GRANT WRITE TO "_creator",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE "cloudkit.share" (
+        "___createTime"               TIMESTAMP,
+        "___createdBy"                REFERENCE,
+        "___etag"                     STRING,
+        "___modTime"                  TIMESTAMP,
+        "___modifiedBy"               REFERENCE,
+        "___recordID"                 REFERENCE,
+        "cloudkit.thumbnailImageData" BYTES,
+        "cloudkit.title"              STRING,
+        "cloudkit.type"               STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE Block (
+        "___createTime"               TIMESTAMP,
+        "___createdBy"                REFERENCE,
+        "___etag"                     STRING,
+        "___modTime"                  TIMESTAMP,
+        "___modifiedBy"               REFERENCE,
+        "___recordID"                 REFERENCE QUERYABLE,
+        blockedAt                     TIMESTAMP,
+        blockedCloudKitUserRecordName STRING,
+        displayName                   STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE Report (
+        "___createTime"                TIMESTAMP,
+        "___createdBy"                 REFERENCE QUERYABLE,
+        "___etag"                      STRING,
+        "___modTime"                   TIMESTAMP,
+        "___modifiedBy"                REFERENCE,
+        "___recordID"                  REFERENCE QUERYABLE,
+        detail                         STRING,
+        reason                         STRING,
+        reportedAt                     TIMESTAMP,
+        reporterCloudKitUserRecordName STRING,
+        targetID                       STRING,
+        targetType                     STRING QUERYABLE,
+        GRANT READ TO "_creator",
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "MondoServer"
+    );
+
+    RECORD TYPE Lamp (
+        "___createTime"   TIMESTAMP,
+        "___createdBy"    REFERENCE,
+        "___etag"         STRING,
+        "___modTime"      TIMESTAMP,
+        "___modifiedBy"   REFERENCE,
+        "___recordID"     REFERENCE QUERYABLE,
+        day               STRING QUERYABLE,
+        photoRecordName   STRING,
+        scope             STRING QUERYABLE,
+        updatedAt         TIMESTAMP,
+        userId            STRING,
+        GRANT READ TO "_creator",
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "MondoServer"
+    );
+
+    RECORD TYPE MemberEvent (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        eventAt         TIMESTAMP,
+        eventType       STRING,
+        groupRef        REFERENCE,
+        memberId        STRING,
+        memberName      STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE MondoPhoto (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        countryCode     STRING,
+        countryName     STRING,
+        dayKey          STRING QUERYABLE,
+        image           ASSET,
+        mondoID         STRING,
+        name            STRING,
+        region          STRING,
+        tags            LIST<STRING>,
+        thumb           ASSET,
+        toneHex         STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world",
+        GRANT WRITE TO "MondoServer"
+    );
+
+    RECORD TYPE MondoDay (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        countryCount    INT64,
+        dayKey          STRING QUERYABLE,
+        generatedAt     TIMESTAMP,
+        lightCount      INT64,
+        photoNames      LIST<STRING>,
+        topTagCounts    LIST<INT64>,
+        topTags         LIST<STRING>,
+        GRANT READ TO "_world",
+        GRANT CREATE TO "MondoServer",
+        GRANT WRITE TO "MondoServer"
+    );

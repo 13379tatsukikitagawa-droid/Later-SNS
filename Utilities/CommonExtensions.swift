@@ -7,25 +7,25 @@ extension View {
     /// Provides light haptic feedback
     func lightHaptic() {
         let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
+        generator.impactOccurredIfEnabled()
     }
     
     /// Provides medium haptic feedback
     func mediumHaptic() {
         let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+        generator.impactOccurredIfEnabled()
     }
     
     /// Provides heavy haptic feedback
     func heavyHaptic() {
         let generator = UIImpactFeedbackGenerator(style: .heavy)
-        generator.impactOccurred()
+        generator.impactOccurredIfEnabled()
     }
     
     /// Provides swipe feedback (light haptic)
     func swipeFeedback() {
         let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
+        generator.impactOccurredIfEnabled()
     }
 }
 

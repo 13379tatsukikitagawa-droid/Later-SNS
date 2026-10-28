@@ -6,7 +6,8 @@ import UIKit
 /// 「撮影へ」を押すと、枠の中のチップが撮影画面の下の段へ飛んでいき(0.52秒、60msずつずらす)、
 /// タグ画面はフェードアウト・撮影画面はフェードイン(0.45秒)。撮影画面の「←」で戻ってタグを直せる。
 struct ShootFlowView: View {
-    let hasShotToday: Bool
+    /// 今日すでに撮った枚数(3こままで)
+    let shotsToday: Int
     /// 月がふくらんで開いた時の、タグ画面の各要素をずらして入れる演出の遅れ(nilなら演出なし)
     var entranceDelay: Double?
     /// 撮った1枚を保存する(タグはこの画面で決めたもの)。保存できたらtrue。
@@ -19,6 +20,9 @@ struct ShootFlowView: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    /// アプリで1つのカメラ。タグ画面が開いた時から動かし(先ごしらえ)、ここを離れる時に止める。
+    private let camera = FilmCameraController.shared
 
     @State private var stage: Stage = .tags
     /// 同じ日のあいだは下書きとして残す(Homeから入り直したら復元)。
@@ -46,7 +50,7 @@ struct ShootFlowView: View {
 
             if isCameraMounted {
                 ExposureCameraView(
-                    hasShotToday: hasShotToday,
+                    shotsToday: shotsToday,
                     onCaptured: { data, start, _, locationName in
                         let saved = onCaptured(data, start, tags, locationName)
                         if saved {
@@ -59,7 +63,8 @@ struct ShootFlowView: View {
                     onFinished: onFinished,
                     onClose: backToTags,
                     presetTags: tags,
-                    hidesPresetTags: hidesCameraTags
+                    hidesPresetTags: hidesCameraTags,
+                    managesSession: false
                 )
                 .opacity(cameraOpacity)
                 .allowsHitTesting(stage == .camera)
@@ -69,8 +74,18 @@ struct ShootFlowView: View {
         }
         .coordinateSpace(.named(TagBeforeShootView.coordinateSpace))
         .background(Color.black.ignoresSafeArea())
+        .onAppear {
+            // タグ画面が開いたら、撮影のセッションを先に起こしておく(キューに積むだけ。ブロックしない)
+            camera.useBackCameraIfNeeded()
+            camera.configure()
+        }
+        .onDisappear { camera.stopSession() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { camera.resumeIfNeeded() }
+        }
         .onPreferenceChange(CameraTagChipFrameKey.self) { targets in
-            guard isAwaitingTargets, targets.count >= tags.count else { return }
+            // 撮影画面には、タグを最大2つ・場所1つまでチップで見せる。届いたものから飛ばす。
+            guard isAwaitingTargets, !targets.isEmpty else { return }
             launchFlights(to: targets)
         }
     }

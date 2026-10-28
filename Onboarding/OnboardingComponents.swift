@@ -20,13 +20,129 @@ struct OnboardingMetrics {
     var scale: CGFloat { min(1.1, max(0.75, size.height / 844)) }
     func y(_ value: CGFloat) -> CGFloat { value * scale }
 
-    static let orbCenterY: CGFloat = 170
+    /// 玉の中心:①(ヒーロー)は y=240、②〜⑥(小・0.62倍)は y=112。開幕の絞りはヒーローの位置へ着く
+    static let orbCenterY: CGFloat = 240
+    static let smallOrbCenterY: CGFloat = 112
+    static let smallOrbScale: CGFloat = 0.62
     static let historyTop: CGFloat = 196
     static let historyHeight: CGFloat = 162
     static let textTop: CGFloat = 372
     static let visualCenterY: CGFloat = 312
     static let irisCenterY: CGFloat = 362
     static let wordCenterY: CGFloat = 530
+}
+
+// MARK: - 見出し・ボタン(初回設定と、ウィジェットの置き方で同じものを使う)
+
+/// 見出し 28pt・太字・左揃え(行間1.38・字間 -0.04em)+ 補足 15pt(#8E8E93、見出しの 14pt 下)
+struct OnboardingHeadline: View {
+    let title: String
+    var sub: String?
+    var titleColor: Color = OnboardingPalette.text
+    let phase: OnboardingFlowView.ContentPhase
+    let reduceMotion: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.system(size: 28, weight: .bold))
+                .tracking(-0.04 * 28)
+                .lineSpacing(28 * 0.38 - 10)
+                .foregroundStyle(titleColor)
+                .fixedSize(horizontal: false, vertical: true)
+                .floatIn(phase, index: 0, reduceMotion: reduceMotion)
+            if let sub {
+                Text(sub)
+                    .font(.system(size: 15))
+                    .tracking(-0.01 * 15)
+                    .lineSpacing(15 * 0.65 - 4)
+                    .foregroundStyle(OnboardingPalette.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .floatIn(phase, index: 1, reduceMotion: reduceMotion)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// 主ボタン:高さ56pt・角丸28pt・白・黒文字17pt(600)・外側にうっすら白の光
+struct OnboardingPrimaryButton: View {
+    let title: String
+    var isEnabled = true
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 17, weight: .semibold))
+                .tracking(-0.025 * 17)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Capsule().fill(Color.white))
+                .shadow(color: .white.opacity(isEnabled ? 0.16 : 0), radius: 14)
+                .opacity(isEnabled ? 1 : 0.35)
+                .animation(.easeOut(duration: 0.25), value: isEnabled)
+        }
+        .buttonStyle(OnboardingPressStyle())
+        .disabled(!isEnabled)
+    }
+}
+
+/// 2つ目のボタン:文字だけのリンク(15pt・#8E8E93・高さ44pt)
+struct OnboardingTextButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(OnboardingPalette.secondaryText)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// ボタンを押した時の縮み
+struct OnboardingPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+/// 背景:純黒+上の白い光+小さな玉(0.62倍・中心 y=112)。初回設定の②〜⑥と同じ位置
+struct OnboardingSmallOrbBackdrop: View {
+    var showsOrb = true
+    /// 灯す点の数(初回設定を終えて来た画面では、すべて)
+    var litCount = OnboardingStep.dotCount
+
+    var body: some View {
+        GeometryReader { proxy in
+            let metrics = OnboardingMetrics(size: proxy.size)
+            ZStack(alignment: .topLeading) {
+                OnboardingPalette.background
+                OnboardingSpotlight()
+                OnboardingOrb(litCount: litCount, dotCount: OnboardingStep.dotCount, dotSize: 8)
+                    .scaleEffect(OnboardingMetrics.smallOrbScale)
+                    .position(x: proxy.size.width / 2, y: metrics.y(OnboardingMetrics.smallOrbCenterY))
+                    .opacity(showsOrb ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.4), value: showsOrb)
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
 }
 
 // MARK: - 真珠の玉
@@ -38,8 +154,12 @@ struct OnboardingOrb: View {
     var bloom: Double = 0
     /// 値が変わるたびに、玉が1回だけ明るく脈打つ(名前の確定)。
     var pulseTrigger: Int = 0
-    /// 送信中:8つの点が1つずつ順に灯っては消える(1周1.2秒・点ごとに150msずらす)
+    /// 送信中:点が1つずつ順に灯っては消える(1周1.2秒・点ごとに150msずらす)
     var isCycling = false
+    /// 点の数(v2 は6つ。上から時計回りに等間隔)
+    var dotCount = 8
+    /// 点の直径(小さい玉は8pt → 0.62倍で約5pt)
+    var dotSize: CGFloat = 5
 
     static let pearlDiameter: CGFloat = 78
     static let dotRadius: CGFloat = 74
@@ -79,13 +199,13 @@ struct OnboardingOrb: View {
             TimelineView(.animation) { context in
                 let t = context.date.timeIntervalSinceReferenceDate
                 ZStack {
-                    ForEach(0..<8, id: \.self) { index in
-                        let angle = Angle.degrees(-90 + 45 * Double(index)).radians
+                    ForEach(0..<dotCount, id: \.self) { index in
+                        let angle = Angle.degrees(-90 + 360 / Double(dotCount) * Double(index)).radians
                         let phase = (t - 0.15 * Double(index)).truncatingRemainder(dividingBy: 1.2) / 1.2
                         let light = max(0, 1 - abs(phase - 0.15) / 0.15)
                         Circle()
                             .fill(.white.opacity(0.16 + 0.84 * light))
-                            .frame(width: 5, height: 5)
+                            .frame(width: dotSize, height: dotSize)
                             .shadow(color: .white.opacity(0.9 * light), radius: 5)
                             .offset(x: cos(angle) * Self.dotRadius, y: sin(angle) * Self.dotRadius)
                     }
@@ -98,13 +218,13 @@ struct OnboardingOrb: View {
 
     private var litDots: some View {
         ZStack {
-            ForEach(0..<8, id: \.self) { index in
-                let angle = Angle.degrees(-90 + 45 * Double(index)).radians
+            ForEach(0..<dotCount, id: \.self) { index in
+                let angle = Angle.degrees(-90 + 360 / Double(dotCount) * Double(index)).radians
                 let color = dotColor(index)
                 Circle()
                     .fill(color)
-                    .frame(width: 5, height: 5)
-                    .shadow(color: index < litCount || isBlooming ? color.opacity(0.9) : .clear, radius: 5)
+                    .frame(width: dotSize, height: dotSize)
+                    .shadow(color: index < litCount || isBlooming ? color.opacity(0.9) : .clear, radius: 10)
                     .offset(x: cos(angle) * Self.dotRadius, y: sin(angle) * Self.dotRadius)
                     .animation(.easeInOut(duration: 0.6), value: litCount)
             }
@@ -113,12 +233,21 @@ struct OnboardingOrb: View {
 
     private func dotColor(_ index: Int) -> Color {
         if isBlooming {
-            return HomePalette.ringColor(atFraction: Double(index) / 8).opacity(0.3 + 0.7 * min(1, bloom * 1.6))
+            return HomePalette.ringColor(atFraction: Double(index) / Double(dotCount)).opacity(0.3 + 0.7 * min(1, bloom * 1.6))
         }
         return index < litCount ? .white : .white.opacity(0.16)
     }
 
     private var pearl: some View {
+        OnboardingPearl()
+    }
+}
+
+/// 真珠の玉(直径78pt)。玉・ようこその演出・通知の見本のアイコンで使い回す。
+struct OnboardingPearl: View {
+    var diameter: CGFloat = OnboardingOrb.pearlDiameter
+
+    var body: some View {
         Circle()
             .fill(
                 RadialGradient(
@@ -130,7 +259,7 @@ struct OnboardingOrb: View {
                     ],
                     center: UnitPoint(x: 0.34, y: 0.26),
                     startRadius: 0,
-                    endRadius: 77
+                    endRadius: diameter * 77 / 78
                 )
             )
             .overlay(
@@ -139,13 +268,13 @@ struct OnboardingOrb: View {
             .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 1))
             .overlay(
                 Ellipse()
-                    .fill(RadialGradient(colors: [.white.opacity(0.85), .white.opacity(0)], center: .center, startRadius: 0, endRadius: 15))
-                    .frame(width: 30, height: 16)
+                    .fill(RadialGradient(colors: [.white.opacity(0.85), .white.opacity(0)], center: .center, startRadius: 0, endRadius: diameter * 15 / 78))
+                    .frame(width: diameter * 30 / 78, height: diameter * 16 / 78)
                     .rotationEffect(.degrees(-24))
-                    .offset(x: -12, y: -24)
+                    .offset(x: -diameter * 12 / 78, y: -diameter * 24 / 78)
             )
-            .frame(width: Self.pearlDiameter, height: Self.pearlDiameter)
-            .shadow(color: .white.opacity(0.28), radius: 25)
+            .frame(width: diameter, height: diameter)
+            .shadow(color: .white.opacity(0.28), radius: diameter * 25 / 78)
     }
 }
 
@@ -507,6 +636,8 @@ struct OnboardingOpeningView: View {
     static func duration(reduceMotion: Bool) -> TimeInterval { reduceMotion ? 2.6 : 7.0 }
     /// 玉と背景の光が現れ始める時刻。
     static func orbRevealTime(reduceMotion: Bool) -> TimeInterval { reduceMotion ? 2.0 : 6.0 }
+    /// ①の中身が入りはじめる時刻(開幕の経過秒。波紋の終わりの少し前)。
+    static let contentStartTime: TimeInterval = 7.15
 
     private static let irisRadius: CGFloat = 96
     private static let wordmark = Array("Later")
@@ -514,12 +645,16 @@ struct OnboardingOpeningView: View {
     var body: some View {
         TimelineView(.animation) { context in
             let t = context.date.timeIntervalSince(start)
+            // 切り替えの経過秒(0 = 「Later」が出そろった時点)。仕様の時間割はこの値で書いてある
+            let u = t - Self.absorbStart
             ZStack {
                 if !reduceMotion {
                     brackets(t: t)
+                    absorbGlow(u: u)
                     iris(t: t)
+                    landingRipple(u: u)
                 }
-                wordmark(t: t)
+                wordmark(t: t, u: u)
             }
             .frame(width: metrics.size.width, height: metrics.size.height)
         }
@@ -625,26 +760,83 @@ struct OnboardingOpeningView: View {
         context.stroke(hexagon, with: .color(.white.opacity(0.7)), lineWidth: 1)
     }
 
+    // MARK: 光・波紋
+
+    /// 切り替えの開始(開幕の経過秒)。ここから「Later」が絞りへ吸い込まれる。
+    static let absorbStart: Double = 5.5
+
+    /// 絞りに吸い込まれた文字の、絞りの明るさ(0.3〜0.85秒で上がり、0.95〜1.25秒で戻る)
+    private func absorbGlow(u: Double) -> some View {
+        let glow = Easing.clamp((u - 0.3) / 0.55) * (1 - Easing.clamp((u - 0.95) / 0.3))
+        let center = CGPoint(x: metrics.size.width / 2, y: metrics.y(OnboardingMetrics.irisCenterY))
+        return Circle()
+            .fill(RadialGradient(
+                colors: [Color(hex: "FFD9B3").opacity(0.5), Color(hex: "FFD9B3").opacity(0)],
+                center: .center, startRadius: 0, endRadius: 90
+            ))
+            .frame(width: 180, height: 180)
+            .opacity(glow)
+            .position(center)
+    }
+
+    /// 玉が着いたあと(開幕の経過秒 1.45〜2.05 相当)、玉の中心から白い輪が1回広がる。
+    private func landingRipple(u: Double) -> some View {
+        let p = Easing.easeOut(Easing.clamp((u - 1.45) / 0.6))
+        let diameter = 60 + 180 * p
+        return Circle()
+            .stroke(.white.opacity(0.55 * (1 - p)), lineWidth: 1.5)
+            .frame(width: diameter, height: diameter)
+            .position(x: metrics.size.width / 2, y: metrics.y(OnboardingMetrics.orbCenterY))
+    }
+
     // MARK: 「Later」
 
-    private func wordmark(t: Double) -> some View {
-        let fadeOut = reduceMotion ? Easing.clamp((t - 1.8) / 0.6) : Easing.clamp((t - 5.5) / 0.9)
-        return HStack(spacing: 0) {
+    private static let wordFont = UIFont.systemFont(ofSize: 58, weight: .bold)
+    private static let wordTracking: CGFloat = -0.045 * 58
+    /// 吸い込む順:外側から(L・r → a・e → t)。文字の番号で書く
+    private static let absorbOrder = [0, 4, 1, 3, 2]
+
+    /// 中央そろえの「Later」を文字ごとに置いたときの、各文字の中心x。
+    private func letterCenters(width: CGFloat) -> [CGFloat] {
+        let widths = Self.wordmark.map { CGFloat(NSString(string: String($0)).size(withAttributes: [.font: Self.wordFont]).width) }
+        let total = widths.reduce(0, +) + Self.wordTracking * CGFloat(widths.count - 1)
+        var x = width / 2 - total / 2
+        var centers: [CGFloat] = []
+        for w in widths {
+            centers.append(x + w / 2)
+            x += w + Self.wordTracking
+        }
+        return centers
+    }
+
+    private func wordmark(t: Double, u: Double) -> some View {
+        let fadeOut = reduceMotion ? Easing.clamp((t - 1.8) / 0.6) : 0
+        let target = CGPoint(x: metrics.size.width / 2, y: metrics.y(OnboardingMetrics.irisCenterY))
+        let naturalY = metrics.y(OnboardingMetrics.wordCenterY)
+        let centers = letterCenters(width: metrics.size.width)
+        return ZStack {
             ForEach(Array(Self.wordmark.enumerated()), id: \.offset) { index, character in
                 let progress: Double = reduceMotion
                     ? Easing.clamp(t / 0.8)
                     : Easing.easeOut(Easing.clamp((t - 2.8 - 0.23 * Double(index)) / 1.5))
+                // 吸い込み:0.55秒かけて絞りの中心へ。順番どおり0.08秒ずつずらす
+                let order = Self.absorbOrder.firstIndex(of: index) ?? 0
+                let m = reduceMotion ? 0 : Easing.easeInOutCubic(Easing.clamp((u - (0.10 + 0.08 * Double(order))) / 0.55))
                 Text(String(character))
                     .font(.system(size: 58, weight: .bold))
-                    .tracking(-0.045 * 58)
                     .foregroundStyle(.white)
-                    .opacity(progress)
-                    .blur(radius: reduceMotion ? 0 : 14 * (1 - progress))
+                    .opacity(progress * (1 - m * m * m))
+                    .blur(radius: reduceMotion ? 0 : 14 * (1 - progress) + 8 * m)
+                    .scaleEffect(1 - 0.8 * m)
+                    .position(
+                        x: centers[index] + (target.x - centers[index]) * m,
+                        y: naturalY + (target.y - naturalY) * m
+                    )
                     .offset(y: reduceMotion ? 0 : 18 * (1 - progress))
             }
         }
+        .frame(width: metrics.size.width, height: metrics.size.height)
         .opacity(1 - fadeOut)
-        .position(x: metrics.size.width / 2, y: metrics.y(OnboardingMetrics.wordCenterY))
     }
 }
 

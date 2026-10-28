@@ -25,7 +25,7 @@ enum MoonLayout {
         return farthest / radius * 1.04
     }
 
-    /// 上から下への縦グラデーション(見えるのは上の約25%:白 → 桃 → 薄い紫。ふくらむと藍まで)
+    /// dawn・first:白 → 桃 → 薄い紫 → 青(見えるのは上の約25%。ふくらむと藍まで)
     static let gradient = LinearGradient(stops: [
         .init(color: Color(hex: "FFFFFF"), location: 0),
         .init(color: Color(hex: "FFE6D3"), location: 0.07),
@@ -36,17 +36,42 @@ enum MoonLayout {
         .init(color: Color(hex: "2A2F78"), location: 1),
     ], startPoint: .top, endPoint: .bottom)
 
+    /// ready:白 → 黄 → オレンジ → 紫(あたたかい)
+    static let readyGradient = LinearGradient(stops: [
+        .init(color: Color(hex: "FFFFFF"), location: 0),
+        .init(color: Color(hex: "FFF3C4"), location: 0.07),
+        .init(color: Color(hex: "FFC56B"), location: 0.14),
+        .init(color: Color(hex: "FF9A4D"), location: 0.22),
+        .init(color: Color(hex: "C97BE0"), location: 0.32),
+        .init(color: Color(hex: "6B4BA8"), location: 0.5),
+        .init(color: Color(hex: "241A3D"), location: 1),
+    ], startPoint: .top, endPoint: .bottom)
+
+    /// opened:白 → 青白 → 青
+    static let openedGradient = LinearGradient(stops: [
+        .init(color: Color(hex: "FFFFFF"), location: 0),
+        .init(color: Color(hex: "E3EEFF"), location: 0.09),
+        .init(color: Color(hex: "AEC9FF"), location: 0.18),
+        .init(color: Color(hex: "6E8FE0"), location: 0.3),
+        .init(color: Color(hex: "3D59B0"), location: 0.48),
+        .init(color: Color(hex: "1C2654"), location: 1),
+    ], startPoint: .top, endPoint: .bottom)
+
     static let ink = Color(hex: "1A1A22")
 }
 
 struct HomeMoon: View {
     enum Mode: Equatable {
-        /// ① 9:00前・24:00後:暗い月。押せない
-        case dim(title: String)
-        /// ②④⑤・③':グラデーションの月。タップ
-        case tap(title: String, subtitle: String)
-        /// ③:やや暗いグラデーション+長押しのゲージ
+        /// night・rest:暗い月。押すとやわらかい触覚2回+お知らせ(タップでは何も進まない)
+        case dim(title: String, subtitle: String)
+        /// dawn・first・opened:グラデーションの月。タップ
+        case tap(title: String, subtitle: String, tone: Tone)
+        /// ready:やや暗いグラデーション+長押しのゲージ
         case hold
+
+        /// dawn/first(warm)とopened(cool)で、月の色を変える。
+        /// deciding(decide)は warm と同じ月で、光だけ少しあたたかく・脈動3.2秒。
+        enum Tone: Equatable { case warm, decide, cool }
     }
 
     let mode: Mode
@@ -58,7 +83,15 @@ struct HomeMoon: View {
     let isInteractive: Bool
     let onTap: () -> Void
     let onHoldComplete: () -> Void
+    /// night・rest(ロック中)に月を押して離した時。やわらかい触覚2回+お知らせは呼び出し側が出す。
+    var onDimTap: () -> Void = {}
+    /// 起動アニメーション中の、にじみの不透明度(nilなら通常の呼吸)と拡大
+    var launchGlowOpacity: Double?
+    var launchGlowScale: Double = 1
+    /// 白 × シックのホーム(白い背景の上:夜の月は灰青、にじみは上向きのラベンダー+ピーチ、文字はインク)
+    var chic = false
 
+    @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isBreathing = false
@@ -76,7 +109,7 @@ struct HomeMoon: View {
         .gesture(gesture)
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) { isBreathing = true }
+            isBreathing = true
         }
         .accessibilityElement()
         .accessibilityLabel(accessibilityLabel)
@@ -96,97 +129,150 @@ struct HomeMoon: View {
 
     // MARK: - 見た目
 
+    /// 見えている円弧の、左右の端の角度(上=270°)。trimの割合で返す。
+    private var visibleArc: (from: CGFloat, to: CGFloat) {
+        let r = diameter / 2
+        let theta = acos(max(-1, min(1, (r - MoonLayout.visibleHeight) / r))) * 180 / .pi
+        return (CGFloat((270 - theta) / 360), CGFloat((270 + theta) / 360))
+    }
+
     private func moon(progress p: Double) -> some View {
         let shape = Circle()
         return ZStack(alignment: .top) {
-            switch mode {
-            case .dim:
-                shape.fill(LinearGradient(colors: [Color(hex: "2A2A2E"), Color(hex: "151517")], startPoint: .top, endPoint: .bottom))
-                shape.strokeBorder(.white.opacity(0.12), lineWidth: 1)
-            case .tap:
-                shape.fill(MoonLayout.gradient)
-                    .brightness(isPressed ? 0.06 : 0)
-                shape.strokeBorder(.white.opacity(0.75), lineWidth: 1.5)
-            case .hold:
-                // 状態③:やや暗いグラデーション。押している間、下から明るいグラデーションがたまる。
-                shape.fill(MoonLayout.gradient)
-                    .saturation(0.7)
-                    .brightness(-0.3)
-                shape.fill(MoonLayout.gradient)
-                    .mask(alignment: .top) { gaugeMask(p) }
-                if p > 0.01 && p < 1 && !reduceMotion {
-                    Capsule()
-                        .fill(.white.opacity(0.8))
-                        .frame(width: diameter * 0.8, height: 10)
-                        .blur(radius: 5)
-                        .offset(y: gaugeTop(p) - 5)
-                        .allowsHitTesting(false)
-                }
-                shape.strokeBorder(.white.opacity(0.5), lineWidth: 1.5)
+            // にじみ(横長のやわらかい光)。box-shadowではなく別のViewで、呼吸のように不透明度が変わる。
+            glowLayer
+                .scaleEffect(launchGlowScale)
+                .offset(y: -40)
+                .opacity(launchGlowOpacity ?? (reduceMotion ? 0.7 : (isBreathing ? 1 : 0.45)))
+                .animation(reduceMotion ? nil : .easeInOut(duration: breathPeriod / 2).repeatForever(autoreverses: true), value: isBreathing)
+                .allowsHitTesting(false)
+
+            // 長押し:月の中心から、オレンジの光がひろがる
+            if mode == .hold, p > 0 {
+                Circle()
+                    .fill(RadialGradient(colors: [HomePalette.orange.opacity(0.85), HomePalette.orange.opacity(0.25), .clear], center: .center, startRadius: 0, endRadius: diameter * 1.4 * CGFloat(p)))
+                    .frame(width: diameter * 2.8 * CGFloat(p), height: diameter * 2.8 * CGFloat(p))
+                    .offset(y: diameter / 2 - diameter * 1.4 * CGFloat(p))
+                    .blendMode(.screen)
+                    .allowsHitTesting(false)
             }
 
-            label(color: textColor)
-            if mode == .hold {
-                label(color: MoonLayout.ink)
-                    .mask(alignment: .top) { gaugeMask(p) }
+            ZStack(alignment: .top) {
+                switch mode {
+                case .dim where chic:
+                    shape.fill(ChicMoon.nightGradient)
+                    shape.strokeBorder(.black.opacity(0.06), lineWidth: 1)
+                case .dim:
+                    shape.fill(LinearGradient(stops: [
+                        .init(color: Color(hex: "6E7896"), location: 0),
+                        .init(color: Color(hex: "3A4462"), location: 0.12),
+                        .init(color: Color(hex: "1A2038"), location: 0.3),
+                        .init(color: Color(hex: "080A14"), location: 1),
+                    ], startPoint: .top, endPoint: .bottom))
+                    shape.strokeBorder(.white.opacity(0.14), lineWidth: 1)
+                case .tap(_, _, let tone):
+                    shape.fill(tone == .cool ? MoonLayout.openedGradient : MoonLayout.gradient)
+                        .brightness(isPressed ? 0.06 : 0)
+                    shape.strokeBorder(chic ? (palette.isNight ? palette.line : Color.black.opacity(0.06)) : .white.opacity(0.75), lineWidth: chic ? 1 : 1.5)
+                    if chic && palette.isNight {
+                        // 夜:朝焼けの下の方は、暗い地にとける
+                        shape.fill(LinearGradient(stops: [
+                            .init(color: palette.bg.opacity(0), location: 0.16),
+                            .init(color: palette.bg.opacity(0.55), location: 0.3),
+                            .init(color: palette.bg, location: 0.5),
+                        ], startPoint: .top, endPoint: .bottom))
+                            .allowsHitTesting(false)
+                    }
+                case .hold:
+                    shape.fill(MoonLayout.readyGradient)
+                    shape.strokeBorder(.white.opacity(0.6), lineWidth: 1.5)
+                }
+                label(color: textColor)
+            }
+            .frame(width: diameter, height: diameter)
+            .clipShape(shape)
+
+            // 長押し:月の縁を、白い線が左から右へたどる
+            if mode == .hold, p > 0 {
+                let arc = visibleArc
+                shape
+                    .trim(from: arc.from, to: arc.from + (arc.to - arc.from) * CGFloat(p))
+                    .stroke(.white, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                    .shadow(color: .white.opacity(0.8), radius: 6)
+                    .frame(width: diameter, height: diameter)
+                    .allowsHitTesting(false)
             }
         }
-        .frame(width: diameter, height: diameter)
-        .clipShape(shape)
-        .shadow(color: glowColor, radius: glowRadius)
-        .scaleEffect(mode == .hold ? 1 - 0.018 * p : (isPressed ? 0.96 : 1))
+        .frame(width: diameter, height: diameter, alignment: .top)
+        .scaleEffect(mode == .hold ? 1 + 0.035 * p : (isPressed ? 0.96 : 1))
         .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
     }
 
-    /// 見えている円弧(上端から84pt)に対して、下端から p×84pt の高さまで明るい層を見せる。
-    private func gaugeTop(_ p: Double) -> CGFloat {
-        MoonLayout.visibleHeight * (1 - CGFloat(p))
+    /// にじみ(横長のやわらかい光)。box-shadowではなく別のViewで、呼吸のように不透明度が変わる。
+    @ViewBuilder
+    private var glowLayer: some View {
+        if chic {
+            ZStack {
+                Ellipse()
+                    .fill(ChicMoon.glowLavender)
+                    .frame(width: diameter * 1.1, height: 150)
+                    .blur(radius: 44)
+                Ellipse()
+                    .fill(ChicMoon.glowPeach)
+                    .frame(width: diameter * 0.9, height: 100)
+                    .blur(radius: 32)
+                    .offset(y: 14)
+            }
+        } else {
+            Ellipse()
+                .fill(glowColor)
+                .frame(width: diameter * 1.15, height: 130)
+                .blur(radius: 42)
+        }
     }
 
-    private func gaugeMask(_ p: Double) -> some View {
-        Rectangle()
-            .frame(width: diameter, height: max(0, diameter - gaugeTop(p)))
-            .offset(y: gaugeTop(p))
+    private var breathPeriod: Double {
+        switch mode {
+        case .dim: return 7
+        case .tap(_, _, let tone): return tone == .warm ? 3.6 : tone == .decide ? 3.2 : 4.4
+        case .hold: return 2.4
+        }
     }
 
     private var glowColor: Color {
-        if isDim { return .clear }
-        let opacity = reduceMotion ? 0.33 : (isBreathing ? 0.42 : 0.24)
-        return Color(red: 1, green: 200 / 255, blue: 170 / 255).opacity(opacity)
-    }
-
-    private var glowRadius: CGFloat {
-        isDim ? 0 : (reduceMotion ? 38 : (isBreathing ? 45 : 30))
+        switch mode {
+        case .dim: return Color(hex: "5A6A9A").opacity(0.22)
+        case .tap(_, _, let tone):
+            switch tone {
+            case .warm: return Color(red: 1, green: 200 / 255, blue: 170 / 255).opacity(0.45)
+            case .decide: return Color(red: 1, green: 190 / 255, blue: 150 / 255).opacity(0.5)
+            case .cool: return Color(hex: "BFD6FF").opacity(0.42)
+            }
+        case .hold: return Color(hex: "FFB070").opacity(0.5)
+        }
     }
 
     private var textColor: Color {
         switch mode {
-        case .dim: return Color(hex: "8E8E93")
+        case .dim: return chic ? MoonLayout.ink : Color(hex: "B4BCD2")
         case .tap: return MoonLayout.ink
-        case .hold: return .white
+        case .hold: return MoonLayout.ink
         }
     }
 
     private var titleText: String {
         switch mode {
-        case .dim(let title): return title
-        case .tap(let title, _): return title
-        case .hold:
-            if holdModel.isDone { return "ひらきます" }
-            return holdModel.isPressing ? "そのまま、持っていて…" : "現像された昨日を見る"
+        case .dim(let title, _): return title
+        case .tap(let title, _, _): return title
+        case .hold: return holdModel.isDone ? "ひらきます" : "昨日をひらく"
         }
     }
 
     private func subtitleText(progress p: Double) -> String? {
         switch mode {
-        case .dim: return nil
-        case .tap(_, let subtitle): return subtitle
-        case .hold:
-            if holdModel.isDone { return nil }
-            if holdModel.isPressing {
-                return String(format: "あと %.1f 秒", max(0, (1 - p) * HoldToOpenRules.duration))
-            }
-            return "長押しで、ひらく"
+        case .dim(_, let subtitle): return subtitle
+        case .tap(_, let subtitle, _): return subtitle
+        case .hold: return holdModel.isDone ? nil : "長押し"
         }
     }
 
@@ -198,7 +284,7 @@ struct HomeMoon: View {
             let titleSize: CGFloat = title.count >= 9 ? 16 : 17
             VStack(spacing: 0) {
                 Text(title)
-                    .font(.system(size: titleSize, weight: .bold))
+                    .font(.system(size: titleSize, weight: chic ? .heavy : .bold))
                     .tracking(-0.03 * titleSize)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -247,7 +333,8 @@ struct HomeMoon: View {
                 guard isInteractive else { return }
                 switch mode {
                 case .dim:
-                    break
+                    let inside = Circle().path(in: CGRect(x: 0, y: 0, width: diameter, height: diameter)).contains(value.location)
+                    if inside { onDimTap() }
                 case .tap:
                     let inside = Circle().path(in: CGRect(x: 0, y: 0, width: diameter, height: diameter)).contains(value.location)
                     isPressed = false
@@ -262,29 +349,29 @@ struct HomeMoon: View {
 
     private var accessibilityLabel: String {
         switch mode {
-        case .dim(let title): return title.contains("明日") ? "明日9時にはじまります" : "9時にはじまります"
-        case .tap(let title, _): return title
-        case .hold: return "現像された昨日を見る"
+        case .dim(let title, let subtitle): return "\(title)。\(subtitle)"
+        case .tap(let title, _, _): return title
+        case .hold: return "昨日をひらく"
         }
     }
 
     private var accessibilityHint: String {
         switch mode {
-        case .dim: return ""
-        case .tap(let title, _): return title == "今日を撮る" ? "タグをつけて、撮影へ進みます" : ""
+        case .dim: return "押すと、いつひらくか知らせます"
+        case .tap(let title, _, let tone):
+            if tone == .decide { return "タップで、昨日の1枚を投稿するか選びます" }
+            return title == "今日を撮る" ? "タップで、タグをつけて撮影へ進みます" : ""
         case .hold: return "長押しでひらきます"
         }
     }
 }
 
+/// night・rest(ロック中)でも、押すとお知らせ(onDimTap)が出せるよう操作自体は無効化しない。
+/// VoiceOverには「押すといつひらくか分かる」ボタンとして伝える。
 private struct DisabledWhenDim: ViewModifier {
     let isDim: Bool
 
     func body(content: Content) -> some View {
-        if isDim {
-            content.accessibilityAddTraits(.isStaticText).disabled(true)
-        } else {
-            content
-        }
+        content.accessibilityAddTraits(isDim ? [.isButton] : [])
     }
 }

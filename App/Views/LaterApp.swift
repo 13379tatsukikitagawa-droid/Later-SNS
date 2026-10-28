@@ -19,6 +19,12 @@ struct LaterApp: App {
         let token = PerformanceSignpost.begin("App.ModelContainerInit")
         let schema = Schema([LaterPhoto.self, LaterGroup.self, UserProfile.self, PhotoVote.self, BlockedUser.self, ExposureDay.self])
         let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
+        // 入れなおした直後は Application Support がまだ無く、CoreData が作る前に
+        // 「Failed to stat path ... default.store」などの長い診断ログ(約1000行)を出す。害はないが、
+        // 調査のじゃまになるので、先にフォルダを作っておく。
+        if let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            try? FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
+        }
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
             // ここの所要時間がデータ蓄積量(端末内のLaterPhoto/LaterGroup件数)と共に
@@ -42,7 +48,9 @@ struct LaterApp: App {
 struct RootView: View {
     /// 既存のスプラッシュは、サインイン済みの起動でだけ出す。未サインイン(=新規)の起動では、
     /// 初回設定(OnboardingFlowView)の開幕がスプラッシュの代わりになる。
-    @State private var isSplashActive = RootView.launchedSignedIn
+    /// 以前の1秒スプラッシュ(MinimalSplashView)。起動アニメーション(LaunchAnimation)をHomeの上で
+    /// 再生するようになったため、もう出さない。
+    @State private var isSplashActive = false
     @State private var cloudKitManager: CloudKitManager?
     @State private var sharedProfile: UserProfile?
     @State private var showingSharedProfile = false
@@ -51,10 +59,18 @@ struct RootView: View {
     @State private var showingGroupJoinAlert = false
     @State private var isProcessingGroupJoin = false
     @State private var lastJoinedGroupName = ""
+    /// 入るための画面(招待リンク・QR・合言葉)。どれから来ても、同じ「招待を受ける」画面に着く
+    @State private var joinFlow: JoinFlowRequest?
+    /// ログイン・初回設定の前にひらいた招待。終わったら、同じ招待にもどる
+    @AppStorage("pendingInviteLink") private var pendingInviteLink: String = ""
+    /// 初回設定のあと、一度だけ「招待されて来ましたか?」(コピーしたリンクを貼りつけて続きから)
+    @AppStorage("invitePastePromptShown") private var invitePastePromptShown = false
+    @State private var showingInvitePaste = false
 
     @AppStorage("photosTaken") private var photosTaken: Int = 0
     @AppStorage("photosTakenLastResetDate") private var lastResetDate: String = ""
     @Environment(\.scenePhase) private var scenePhase
+    @State private var themeClock = ThemeClock()
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
     @Query private var groups: [LaterGroup]
@@ -66,6 +82,7 @@ struct RootView: View {
 
     // 🎯 メインのセットアップ完了フラグ（初期値：false）
     @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
+    @AppStorage(OnboardingStorage.completedKey) private var onboardingCompleted = false
     // Sign in with Apple 済みかどうか
     @AppStorage("appleUserID") private var appleUserID: String = ""
     // メールのマジックリンク(Firebase Authentication)でサインイン済みかどうか。
@@ -79,11 +96,6 @@ struct RootView: View {
     // プロフィール設定完了(OnboardingViewの「Laterをはじめる」)直後、Later紹介サイトへの
     // 導線画面(LaterAboutIntroView)を見た/スキップしたかどうか。
     @AppStorage("hasSeenAboutLaterIntro") private var hasSeenAboutLaterIntro: Bool = false
-
-    private static var launchedSignedIn: Bool {
-        let defaults = UserDefaults.standard
-        return !(defaults.string(forKey: "appleUserID") ?? "").isEmpty || !(defaults.string(forKey: "firebaseUID") ?? "").isEmpty
-    }
 
     /// 初回設定で撮ったプロフィール画像は、次の9:00を過ぎたら現像(反映)する。
     private func developProfilePhotoIfDue() {
@@ -147,21 +159,13 @@ struct RootView: View {
         hasSeenAboutLaterIntro = true
     }
 
-    /// Galleryでは撮影から7日を過ぎた写真は表示されなくなる仕様のため、表示されなくなった
-    /// 写真をローカル(SwiftData)に残し続ける必要はない。保持期間を過ぎた写真は
-    /// CloudKit側にも削除を伝えた上でローカルから削除し、端末のストレージ肥大化を防ぐ。
-    private static let photoRetentionDays = 7
-
+    /// Galleryでは撮影から7日(DailyExposureRules.photoRetentionDays)を過ぎた写真は
+    /// 表示されなくなる仕様のため、表示されなくなった写真をローカル(SwiftData)に残し
+    /// 続ける必要はない。保持期間を過ぎた写真はCloudKit側にも削除を伝えた上でローカルから
+    /// 削除し、端末のストレージ肥大化を防ぐ(実際の判定はPhotoExpiryMaintenance参照)。
     private func pruneExpiredPhotos() {
         backfillExposureDays()
-        guard let cutoff = Calendar.current.date(byAdding: .day, value: -Self.photoRetentionDays, to: Date()) else { return }
-        let descriptor = FetchDescriptor<LaterPhoto>(predicate: #Predicate<LaterPhoto> { $0.captureDate < cutoff })
-        guard let expiredPhotos = try? modelContext.fetch(descriptor), !expiredPhotos.isEmpty else { return }
-        for photo in expiredPhotos {
-            cloudKitManager?.markForDelete(photo: photo)
-            modelContext.delete(photo)
-        }
-        try? modelContext.save()
+        PhotoExpiryMaintenance.pruneExpired(context: modelContext, cloudKitManager: cloudKitManager)
     }
 
 
@@ -178,13 +182,16 @@ struct RootView: View {
                 .transition(.opacity)
             } else {
                 // メインコンテンツ
-                Group {
-                    if !isSetupCompleted {
-                        // 新規ユーザーの初回設定(開幕・サインイン・名前・説明・タグ・約束・
-                        // プロフィール撮影・通知)。既存ユーザー(isSetupCompleted済み)は通らない。
-                        OnboardingFlowView()
-                    } else {
+                ZStack {
+                    // 初回設定の最後(ようこそ)の間は、Home を裏で用意しておく。
+                    // 最後に玉の位置から円がひらいて、本物の Home が見える(同じ位置なので作りなおされない)。
+                    if isSetupCompleted || onboardingCompleted {
                         MainNavigationView()
+                    }
+                    if !isSetupCompleted {
+                        // 新規ユーザーの初回設定 v2(開幕・はじめる・ニックネーム・Laterの一日・
+                        // 仕組みの問題・最初の1枚・預けました)。既存ユーザー(isSetupCompleted済み)は通らない。
+                        OnboardingFlowView()
                     }
                 }
                 .transition(.opacity)
@@ -195,6 +202,8 @@ struct RootView: View {
             }
         }
         .onAppear {
+            // 初回起動(初回設定がまだ)は、起動アニメーションではなくオンボーディング。
+            if !isSetupCompleted { LaunchCoordinator.hasPlayedInProcess = true }
             resetIfNeeded()
             ensurePersonalSpaceForCurrentUser()
             ensureWelcomeSeenForExistingUser()
@@ -204,6 +213,7 @@ struct RootView: View {
             backfillExposureDays()
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
+            print("[PermPerf] App scenePhase \(oldPhase) → \(newPhase) setup=\(isSetupCompleted) onboarded=\(onboardingCompleted) splash=\(isSplashActive)")
             if newPhase == .active {
                 resetIfNeeded()
                 developProfilePhotoIfDue()
@@ -212,6 +222,11 @@ struct RootView: View {
                 Task { await cloudKitManager?.handleRemoteNotification() }
                 Task { await cloudKitManager?.resendOwnUnlockedPhotosIfNeeded() }
                 ensurePersonalSpaceForCurrentUser()
+            }
+            if newPhase == .background {
+                // 次にアプリを開かなくても、iOSのバックグラウンド更新のタイミングで
+                // 期限切れ写真の片付け(BackgroundMaintenance)が走るよう申請し直す。
+                BackgroundMaintenance.schedule()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
@@ -226,6 +241,8 @@ struct RootView: View {
                 cloudKitManager = CloudKitManager(modelContext: modelContext)
             }
             await cloudKitManager?.start()
+            // 抜けている最中に止まったグループを、続きから(二重には実行しない)
+            await GroupLeaveService.resumePending(context: modelContext)
             await cloudKitManager?.resendOwnUnlockedPhotosIfNeeded()
             await ModerationService.refreshBlockedUsersIfNeeded(modelContext: modelContext)
             pruneExpiredPhotos()
@@ -269,14 +286,20 @@ struct RootView: View {
                 }
                 return
             }
-            if let shareURL = GroupJoinLink.extractShareURL(from: url) {
-                handleGroupJoinLink(shareURL: shareURL)
-            } else if GroupJoinLink.isCKShareURL(url) {
-                // LINE/メールなどから、later://でラップされていない素のCKShare URLが
-                // そのままonOpenURLに渡ってきたケース(OS標準のCKShare受け入れ経路が
-                // 何らかの理由で発火しなかった場合のフォールバック)。
-                print("[Group Join] onOpenURLで素のCKShare URLを受信: \(url.absoluteString)")
-                handleGroupJoinLink(shareURL: url)
+            // ウィジェット・コントロール・ライブアクティビティ:later://widget/<U|R|D|M>
+            // U → 撮影へ(タグ選び)/ R → Home(月を長押しで昨日をひらく)/ D・M → Home
+            if url.scheme == "later", url.host == "widget" {
+                NotificationCenter.default.post(name: .photoNotificationTapped, object: nil)
+                if url.lastPathComponent == LaterWidgetPhase.U.rawValue {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        CaptureRequestStore.shared.pendingRequestID = UUID()
+                    }
+                }
+                return
+            }
+            // 招待リンク(later://join)・素の CKShare URL(LINE などから、OS の受け入れ経路が動かなかったとき)
+            if let shareURL = InviteConfig.shareURL(from: url) {
+                handleInviteLink(shareURL)
             } else {
                 handleIncomingProfileLink(url)
             }
@@ -287,8 +310,8 @@ struct RootView: View {
             // OSの挙動差異に備えて同じ処理へフォールバックできるようにしておく。
             guard let url = activity.webpageURL else { return }
             print("[Group Join] onContinueUserActivity(BrowsingWeb)受信: \(url.absoluteString)")
-            if GroupJoinLink.isCKShareURL(url) {
-                handleGroupJoinLink(shareURL: url)
+            if let shareURL = InviteConfig.shareURL(from: url) {
+                handleInviteLink(shareURL)
             }
         }
         .sheet(isPresented: $showingSharedProfile) {
@@ -296,15 +319,45 @@ struct RootView: View {
                 UserDetailView(user: sharedProfile)
             }
         }
+        .fullScreenCover(item: $joinFlow) { request in
+            JoinFlowView(start: request.start) { joinFlow = nil }
+                .interactiveDismissDisabled()
+        }
+        .sheet(isPresented: $showingInvitePaste) {
+            InvitePasteSheet { shareURL in
+                showingInvitePaste = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { handleInviteLink(shareURL) }
+            } onDismiss: {
+                showingInvitePaste = false
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .joinFlowRequested)) { note in
+            joinFlow = JoinFlowRequest(start: note.object as? JoinFlowStart ?? .scan)
+        }
+        .onChange(of: isSetupCompleted) { _, completed in
+            guard completed else { return }
+            if let shareURL = URL(string: pendingInviteLink) {
+                pendingInviteLink = ""
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { handleInviteLink(shareURL) }
+            } else if !invitePastePromptShown {
+                invitePastePromptShown = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { showingInvitePaste = true }
+            }
+        }
         .alert(groupJoinAlertTitle, isPresented: $showingGroupJoinAlert) {
             Button("OK") {}
         } message: {
             Text(groupJoinAlertMessage)
         }
-        // アプリ全体を常時ダークテーマに固定する。実機のシステム外観設定(ライト/ダーク)に
-        // 関わらず、ネイティブのLiquid Glassタブバー等が明るい配色へ自動的に
-        // 切り替わってしまうのを防ぐ。
-        .preferredColorScheme(.dark)
+        // アプリ全体の外観は、時刻(昼/夜)で決める唯一の場所。他の画面では preferredColorScheme を使わない。
+        .background(Palette.for(themeClock.mode).bg.ignoresSafeArea())
+        .environment(themeClock)
+        .environment(\.palette, Palette.for(themeClock.mode))
+        .preferredColorScheme(themeClock.mode == .night ? .dark : .light)
+        .onAppear { themeClock.start() }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active { themeClock.refresh() }
+        }
     }
 
     /// laterapp://user?id=...&name=... 形式のリンク(ProfileViewのシェア/MyQRCodeViewの
@@ -392,53 +445,15 @@ struct RootView: View {
         return nil
     }
 
-    /// later://join?shareUrl=... 形式のグループ招待リンクを受け取った際の処理。
-    /// CKShare標準URLをGroupSharingService.resolveShareMetadata/acceptShareへそのまま渡すことで、
-    /// CloudKit連携ロジック自体は既存のものを完全に再利用する。
-    private func handleGroupJoinLink(shareURL: URL) {
-        print("[Group Join] later://join受信: shareUrl=\(shareURL.absoluteString)")
-
-        guard let cloudKitManager else {
-            print("[Group Join] 中断: cloudKitManagerが未初期化")
-            presentGroupJoinAlert(title: "iCloudへの接続が完了していません", message: "しばらくしてから、もう一度リンクを開いてください。")
+    /// 招待リンク・QR・合言葉から来た CKShare の URL → 招待を受ける画面
+    private func handleInviteLink(_ shareURL: URL) {
+        guard isSignedIn, isSetupCompleted else {
+            // ログイン・初回設定のあとで、同じ招待にもどる
+            pendingInviteLink = shareURL.absoluteString
             return
         }
-
-        Task {
-            withAnimation { isProcessingGroupJoin = true }
-            defer { withAnimation { isProcessingGroupJoin = false } }
-
-            let sharingService = GroupSharingService(container: cloudKitManager.container, modelContext: modelContext, cloudKitManager: cloudKitManager)
-
-            let metadata: CKShare.Metadata
-            do {
-                metadata = try await sharingService.resolveShareMetadata(shareURLString: shareURL.absoluteString)
-            } catch {
-                print("[Group Join] shareMetadata解決失敗: \(error)")
-                presentGroupJoinAlert(title: "グループが見つかりませんでした", message: "招待リンクが無効か、共有が取り消されている可能性があります。")
-                return
-            }
-
-            // 既に参加済みのグループなら、受諾処理を再実行せず案内だけ出す。
-            if let rootRecordName = metadata.hierarchicalRootRecordID?.recordName,
-               let user = UserProfile.current(from: profiles),
-               let existingGroup = (try? modelContext.fetch(FetchDescriptor<LaterGroup>()))?.first(where: { $0.ckRecordName == rootRecordName }),
-               existingGroup.isMember(user) {
-                print("[Group Join] 既に参加済み: group=\(existingGroup.name)")
-                GroupSelectionStore.shared.selectedGroupID = existingGroup.id
-                presentGroupJoinAlert(title: "すでに参加しています", message: "「\(existingGroup.name)」には既に参加済みです。")
-                return
-            }
-
-            print("[Group Join] 未参加のため受諾処理を開始")
-            if let failureReason = await acceptSharedInvite(metadata: metadata) {
-                print("[Group Join] 参加処理失敗: \(failureReason)")
-                presentGroupJoinAlert(title: "参加できませんでした", message: failureReason)
-            } else {
-                print("[Group Join] 参加処理成功")
-                presentGroupJoinAlert(title: "参加しました", message: "「\(lastJoinedGroupName)」に参加しました！")
-            }
-        }
+        invitePastePromptShown = true
+        joinFlow = JoinFlowRequest(start: .link(shareURL))
     }
 
     private func presentGroupJoinAlert(title: String, message: String) {

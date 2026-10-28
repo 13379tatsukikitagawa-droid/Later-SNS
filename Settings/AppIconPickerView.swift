@@ -189,7 +189,7 @@ struct AppIconPickerView: View {
         
         // ハプティクス
         let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+        generator.impactOccurredIfEnabled()
         
         UIApplication.shared.setAlternateIconName(iconName) { error in
             if let error = error {

@@ -29,12 +29,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         // 新規ユーザーには、初回設定の「通知」の場面(DailyOpenNotification)で許可を求める。
         // 起動直後には出さず、初回設定を終えた既存ユーザーだけ、これまで通りここで求める。
         if UserDefaults.standard.bool(forKey: "isSetupCompleted") {
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                if let error {
+            // async 版(返事は呼び出し元へ戻る)。失敗してもアプリは止めない。
+            Task { @MainActor in
+                do {
+                    _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+                } catch {
                     print("[Notification] requestAuthorization failed: \(error)")
                 }
             }
         }
+
+        // 期限切れ写真の片付け(第7章)。アプリを開かなくても、iOSのバックグラウンド更新の
+        // タイミングで定期的に実行されるようにする(BGTaskSchedulerの要件上、起動完了前に登録する)。
+        BackgroundMaintenance.register()
+        BackgroundMaintenance.schedule()
 
         return true
     }

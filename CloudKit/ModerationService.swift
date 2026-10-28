@@ -19,6 +19,8 @@ enum ModerationService {
     enum ReportTargetType: String {
         case circlePhoto
         case user
+        /// Mondo(世界の昨日)の公開写真。targetID は MondoPhoto のレコード名
+        case mondoPhoto
     }
 
     enum ReportReason: String, CaseIterable, Identifiable {
@@ -54,10 +56,11 @@ enum ModerationService {
     /// ユーザーを1人ブロックする。Private DB(自分専用、他人からは見えない)に保存し、
     /// 同時にローカル(BlockedUser)へも即座に反映する。
     @discardableResult
-    static func blockUser(cloudKitUserRecordName: String, modelContext: ModelContext) async throws -> BlockedUser {
+    static func blockUser(cloudKitUserRecordName: String, displayName: String? = nil, modelContext: ModelContext) async throws -> BlockedUser {
         let record = CKRecord(recordType: AppRecordType.block)
         record["blockedCloudKitUserRecordName"] = cloudKitUserRecordName
         record["blockedAt"] = Date()
+        record["displayName"] = displayName
         let saved = try await container.privateCloudDatabase.save(record)
 
         let blocked = BlockedUser(
@@ -65,6 +68,7 @@ enum ModerationService {
             createdAt: (saved["blockedAt"] as? Date) ?? Date(),
             ckRecordName: saved.recordID.recordName
         )
+        blocked.displayName = displayName
         modelContext.insert(blocked)
         try? modelContext.save()
         return blocked
@@ -101,6 +105,7 @@ enum ModerationService {
                     createdAt: (record["blockedAt"] as? Date) ?? Date(),
                     ckRecordName: recordID.recordName
                 )
+                blocked.displayName = record["displayName"] as? String
                 modelContext.insert(blocked)
             }
         }

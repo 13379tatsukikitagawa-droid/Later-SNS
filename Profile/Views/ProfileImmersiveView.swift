@@ -2,12 +2,11 @@ import SwiftUI
 import SwiftData
 import UIKit
 
-/// プロフィール(没入版)。「あなたの玉」と「あなたが預けてきた日々」を、静かに眺める場所。
-/// 自分だけが見る画面で、いいね・フォロワー・連続日数は出さない。
-///
-/// 上から:編集・設定のガラスボタン → ガラスの球(プロフィール画像)→ 名前と「LATER ・ 08.14 から」
-/// → 自分を表すタグ →(書いた時だけ)ひとこと → 預けた日々(1日1点の渦)。
-/// 色は写真から取った色だけを使う。
+/// プロフィール v5「あなたの星」。夜空と地平線と、ひとつの光(ホームやウィジェットと同じ景色)。
+/// 上半分は空:プロフィール写真が星になり、まわりに今日の現像の点の輪、自分のタグがまわる。
+/// 下半分は水面:預けた日々(直近7日)が、遠近の光の道に並ぶ。
+/// 自分だけが見る画面で、いいね・フォロワー・連続日数は出さない。数字は「現像の%」と「日付」だけ。
+/// ハプティクスは、点を押し続けて「ひらく」ときの1回だけ。
 struct ProfileImmersiveView: View {
     /// Homeへ戻る(左上の「<」)。右スワイプでも戻る(MainNavigationViewが受け持つ)。
     var onBack: (() -> Void)?
@@ -30,16 +29,26 @@ struct ProfileImmersiveView: View {
     @State private var haptics = ExposureHaptics()
     @State private var editFocus: ProfileEditFocus?
     @State private var isShowingSettings = false
-    @State private var ballFocus: Double = 1
-    @State private var cloudEntranceStart: Date?
+    @State private var planetFocus: Double = 1
     /// 0 = 真珠、1 = 写真(初めて現像された瞬間の演出で0→1)
     @State private var revealProgress: Double = 1
-    @State private var lastSelectionHaptic = Date.distantPast
+    @State private var openedDay: WeekDayPoint?
+    @State private var isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+    /// ふれている点(水面の枠の番号)
+    @State private var selectedSlot: Int?
+    @State private var pressStart: Date?
+    @State private var hasTriggeredOpen = false
+    @Namespace private var dotsNamespace
+
+    @ScaledMetric(relativeTo: .caption2) private var captionSize: CGFloat = 10.5
+    @ScaledMetric(relativeTo: .caption2) private var noteSize: CGFloat = 10
 
     /// アプリを起動して最初にProfileを開いた時だけ登場演出を再生する。
     private static var hasPlayedEntrance = false
     private static let profileTabIndex = 1
     private static let thumbnailCache = NSCache<NSString, UIImage>()
+    private static let hitRadius: CGFloat = 40
+    private static let coordinateSpace = "profileStar"
 
     private var profile: UserProfile? { UserProfile.current(from: profiles) }
 
@@ -48,80 +57,98 @@ struct ProfileImmersiveView: View {
             && editFocus == nil && !isShowingSettings
     }
 
+    private var motion: ProfileStarMotion {
+        if reduceMotion { return .reduced }
+        if isLowPower { return .still }
+        return .full
+    }
+
     private var profileImage: UIImage? {
         profile?.profileImageData.flatMap(UIImage.init(data:))
     }
 
-    private var ballColor: Color? {
+    private var planetColor: Color? {
         guard profileImage != nil, !cachedBallColorHex.isEmpty else { return nil }
         return Color(hex: cachedBallColorHex)
     }
 
+    private var displayName: String {
+        profile?.name.isEmpty == false ? profile!.name : "Later"
+    }
+
     var body: some View {
         GeometryReader { proxy in
-            let scale = min(1, proxy.size.height / 844)
-            ZStack(alignment: .top) {
-                Color.black
+            let size = proxy.size
+            let g = ProfileStarGeometry(size: size)
+            let days = starDays(now: Date())
+            ZStack(alignment: .topLeading) {
+                skyBackground
 
-                backgroundGlow
-                    .frame(height: 420)
-                    .frame(maxHeight: .infinity, alignment: .top)
-
-                header
-                    .padding(.horizontal, 20)
-                    .position(x: proxy.size.width / 2, y: 58 * scale + 22)
-
-                GlassBall(
-                    image: profileImage,
-                    glowColor: ballColor,
-                    tiltX: tilt.x,
-                    tiltY: tilt.y,
-                    revealProgress: revealProgress
+                ProfileStarLiveScene(
+                    input: sceneInput(days: days),
+                    size: size,
+                    tilt: tilt,
+                    isRunning: isVisible,
+                    isPressing: pressStart != nil,
+                    onTick: checkHold(at:)
                 )
-                .blur(radius: 14 * (1 - ballFocus))
-                .opacity(ballFocus)
-                .position(x: proxy.size.width / 2, y: 180 * scale)
-                .onTapGesture { editFocus = .photo }
-                .accessibilityElement()
-                .accessibilityLabel("プロフィール画像")
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { editFocus = .photo }
 
-                nameBlock
-                    .position(x: proxy.size.width / 2, y: 300 * scale)
+                skyTouchLayer(g: g, size: size)
+                textLayer(g: g, size: size, days: days)
+                waterTouchLayer(g: g, size: size, days: days)
+                dayAnchors(g: g, days: days)
+                accessibilityDays(g: g, days: days)
 
-                tagRow
-                    .position(x: proxy.size.width / 2, y: 372 * scale + 18)
-
-                if let bio = profile?.bio.trimmingCharacters(in: .whitespacesAndNewlines), !bio.isEmpty {
-                    Text(String(bio.prefix(ProfileEditRules.bioMaxLength)))
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color(hex: "BCBBC0"))
-                        .lineLimit(1)
-                        .padding(.horizontal, 32)
-                        .position(x: proxy.size.width / 2, y: 422 * scale + 8)
+                if openedDay == nil, let slot = selectedSlot, let day = days.first(where: { $0.slot == slot }) {
+                    dayCard(for: day, g: g, size: size)
                 }
 
-                daysSection(scale: scale, width: proxy.size.width)
-                    .position(x: proxy.size.width / 2, y: 468 * scale + 132)
+                header
+                    .padding(.horizontal, 22)
+                    .frame(width: size.width)
+                    .position(x: size.width / 2, y: 58 * g.sy + 22)
+
+                if let openedDay {
+                    DayFullScreenViewer(
+                        shots: shots,
+                        initialID: openedDay.id,
+                        namespace: dotsNamespace,
+                        haptics: haptics,
+                        isMondoSettingOn: MondoService.isPublic,
+                        imageFor: fullImage(for:),
+                        onDelete: deleteShot,
+                        onDismiss: closeOpenedDay
+                    )
+                    .frame(width: size.width, height: size.height)
+                    .transition(.opacity)
+                    .zIndex(10)
+                }
             }
-            .frame(width: proxy.size.width, height: proxy.size.height)
+            .frame(width: size.width, height: size.height)
+            .coordinateSpace(name: Self.coordinateSpace)
         }
         .ignoresSafeArea(edges: .top)
+        .preference(key: ProfileViewerOpenKey.self, value: openedDay != nil)
         .overlay {
+            // 粒子ノイズ(小さな画像をタイル)
             FilmGrainOverlay(opacity: 0.05, blendMode: .normal)
                 .ignoresSafeArea()
         }
         .onAppear {
             isOnScreen = true
             haptics.prepare()
-            updateBallColorIfNeeded()
+            updatePlanetColorIfNeeded()
             playEntranceIfNeeded()
             playRevealIfNeeded()
         }
         .onDisappear { isOnScreen = false }
+        .task {
+            for await _ in NotificationCenter.default.notifications(named: .NSProcessInfoPowerStateDidChange) {
+                isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            }
+        }
         .onChange(of: isVisible) { _, visible in
-            updateMotion(visible: visible)
+            updateMotion()
             if visible {
                 playRevealIfNeeded()
                 // Profileを開いたら、アバターの白い点を消す。
@@ -129,71 +156,159 @@ struct ProfileImmersiveView: View {
                     avatarBadgeAcknowledged = avatarBadgePending
                     avatarBadgePending = ""
                 }
+            } else {
+                resetTouch()
             }
         }
+        .onChange(of: motion) { _, _ in updateMotion() }
         .onChange(of: profile?.profileImageData) { _, _ in
-            updateBallColorIfNeeded()
+            updatePlanetColorIfNeeded()
             playRevealIfNeeded()
         }
-        .sheet(item: $editFocus) { focus in
-            ProfileEditSheet(initialFocus: focus)
+        .fullScreenCover(item: $editFocus) { focus in
+            ProfileEditScreen(initialFocus: focus)
         }
         .fullScreenCover(isPresented: $isShowingSettings) {
             SettingsMenuView(isShowing: $isShowingSettings)
         }
     }
 
-    // MARK: - 背景の光(写真の中心の色、真珠の時は白)
+    // MARK: - 景色の材料
 
-    private var backgroundGlow: some View {
-        GeometryReader { proxy in
-            Ellipse()
-                .fill(RadialGradient(
-                    colors: [(ballColor ?? .white).opacity(ballColor == nil ? 0.16 : 0.22), .clear],
-                    center: .center, startRadius: 0, endRadius: proxy.size.width * 0.7
-                ))
-                .frame(width: proxy.size.width * 1.5, height: 460)
-                .position(x: proxy.size.width / 2, y: 0)
-                .animation(.easeInOut(duration: 1.0), value: cachedBallColorHex)
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+    private func sceneInput(days: [ProfileStarDay]) -> ProfileStarInput {
+        ProfileStarInput(
+            image: profileImage,
+            planetColor: planetColor,
+            reveal: revealProgress,
+            focus: planetFocus,
+            tags: profile?.selfTags ?? [],
+            days: days,
+            todayShotAt: todayShotDate(now: Date()),
+            auroraColors: weekPoints.compactMap { $0.opened ? $0.color : nil },
+            now: Date(),
+            motion: motion,
+            selectedSlot: selectedSlot,
+            pressStart: pressStart
+        )
     }
 
-    // MARK: - ヘッダー(編集・設定)
+    /// 今日(9:00〜翌8:59)に撮った時刻。撮る前は nil
+    private func todayShotDate(now: Date) -> Date? {
+        let start = LaterWidgetDay.start(of: now)
+        return exposureDays.first { $0.captureDate >= start && $0.captureDate <= now }?.captureDate
+    }
 
-    private var header: some View {
-        HStack(spacing: 10) {
-            if let onBack {
-                GlassCircleButton(systemImage: "chevron.left", label: "戻る", action: onBack)
+    /// 水面の点。撮らなかった日は作らない(道は途切れずに続く)。
+    private func starDays(now: Date) -> [ProfileStarDay] {
+        var result: [ProfileStarDay] = []
+        for point in weekPoints {
+            guard let slot = ProfileStarLayout.slot(for: point.date, now: now),
+                  !result.contains(where: { $0.slot == slot }) else { continue }
+            result.append(ProfileStarDay(slot: slot, point: point, color: point.opened ? (point.color ?? .white) : .white, date: point.date))
+        }
+        // 今日撮ったが、まだどこにも預けていない(ひらけない)1枚も、点だけは出す
+        if let shot = todayShotDate(now: now), !result.contains(where: { $0.slot == 0 }) {
+            result.append(ProfileStarDay(slot: 0, point: nil, color: .white, date: shot))
+        }
+        return result
+    }
+
+    private var skyBackground: some View {
+        LinearGradient(
+            stops: [
+                .init(color: Color(red: 0.04, green: 0.05, blue: 0.12), location: 0),
+                .init(color: Color(red: 0.02, green: 0.02, blue: 0.06), location: 0.5),
+                .init(color: .black, location: 1),
+            ],
+            startPoint: .top, endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+
+    // MARK: - 文字(視差で動かさない)
+
+    @ViewBuilder
+    private func textLayer(g: ProfileStarGeometry, size: CGSize, days: [ProfileStarDay]) -> some View {
+        let tags = profile?.selfTags ?? []
+
+        Text(displayName)
+            .font(.system(size: 35 * g.s, weight: .heavy))
+            .tracking(-0.04 * 35 * g.s)
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .frame(maxWidth: size.width - 64)
+            .shadow(color: .black.opacity(0.6), radius: 10)
+            .onTapGesture { editFocus = .name }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint("名前を編集します")
+            .position(x: size.width / 2, y: g.y(ProfileStarLayout.nameY))
+
+        Text("LATER ・ \(Self.sinceFormatter.string(from: sinceDate)) から")
+            .font(.system(size: captionSize, design: .monospaced))
+            .tracking(0.18 * captionSize)
+            .foregroundStyle(.white.opacity(0.58))
+            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+            .position(x: size.width / 2, y: g.y(ProfileStarLayout.sinceY))
+
+        if tags.isEmpty {
+            Button { editFocus = .tags } label: {
+                Text("タグを足す")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color(hex: "BCBBC0"))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
             }
-            GlassCircleButton(systemImage: "pencil", label: "編集") { editFocus = ProfileEditFocus.none }
-            Spacer()
-            GlassCircleButton(systemImage: "slider.horizontal.3", label: "設定") { isShowingSettings = true }
+            .buttonStyle(.plain)
+            .position(x: size.width / 2, y: g.y(ProfileStarLayout.tagRowY))
+        } else if !motion.showsOrbitTags {
+            // 視差を減らす:タグは名前の下に横並び
+            HStack(spacing: 8) {
+                ForEach(tags, id: \.self) { ProfileStarTag(text: $0) }
+            }
+            .onTapGesture { editFocus = .tags }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("自分を表すタグ:\(tags.joined(separator: "、"))")
+            .accessibilityAddTraits(.isButton)
+            .position(x: size.width / 2, y: g.y(ProfileStarLayout.tagRowY))
         }
+
+        HStack(alignment: .firstTextBaseline) {
+            Text("預けた日々")
+                .font(.system(size: 17 * g.s, weight: .bold))
+                .foregroundStyle(.white)
+            Spacer(minLength: 12)
+            TimelineView(.periodic(from: .now, by: 30)) { context in
+                Text(todayStatusText(now: context.date))
+                    .font(.system(size: captionSize, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+            }
+        }
+        .padding(.horizontal, 24)
+        .frame(width: size.width)
+        .accessibilityElement(children: .combine)
+        .position(x: size.width / 2, y: g.y(ProfileStarLayout.headingY))
+
+        VStack(spacing: 3) {
+            Text("点を押し続けると、その日がひらく")
+            Text("写真は、撮ってから7日間だけ残ります")
+        }
+        .font(.system(size: noteSize))
+        .foregroundStyle(.white.opacity(0.6))
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+        .frame(width: size.width, height: size.height, alignment: .bottom)
+        .padding(.bottom, 26)
+        .allowsHitTesting(false)
     }
 
-    // MARK: - 名前と補足
-
-    private var nameBlock: some View {
-        VStack(spacing: 10) {
-            Text(profile?.name.isEmpty == false ? profile!.name : "Later")
-                .font(.system(size: 34, weight: .bold))
-                .tracking(-0.05 * 34)
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .padding(.horizontal, 32)
-                .onTapGesture { editFocus = .name }
-                .accessibilityAddTraits(.isButton)
-                .accessibilityHint("名前を編集します")
-
-            Text("LATER ・ \(Self.sinceFormatter.string(from: sinceDate)) から")
-                .font(.system(size: 10, design: .monospaced))
-                .tracking(0.14 * 10)
-                .foregroundStyle(.white.opacity(0.45))
-                .dynamicTypeSize(...DynamicTypeSize.xLarge)
-        }
+    /// 右上の文言:「今日 現像 NN%」/ 撮る前は「今日は、まだ撮っていません」
+    private func todayStatusText(now: Date) -> String {
+        guard let shot = todayShotDate(now: now) else { return "今日は、まだ撮っていません" }
+        let percent = ProfileStarLayout.developPercent(ProfileStarLayout.developProgress(shotAt: shot, now: now))
+        return "今日 現像 \(percent)%"
     }
 
     /// 最初に撮った日(なければ初回設定を終えた日)。
@@ -210,114 +325,222 @@ struct ProfileImmersiveView: View {
         return formatter
     }()
 
-    // MARK: - タグ
+    // MARK: - ヘッダー(戻る・編集|設定)
 
-    @ViewBuilder
-    private var tagRow: some View {
-        let tags = profile?.selfTags ?? []
-        if tags.isEmpty {
-            Button { editFocus = .tags } label: {
-                Text("タグを足す")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color(hex: "BCBBC0"))
-                    .padding(.vertical, 9)
+    private var header: some View {
+        HStack(spacing: 10) {
+            if let onBack {
+                GlassCircleButton(systemImage: "chevron.left", label: "戻る", action: onBack)
             }
-            .buttonStyle(.plain)
-        } else {
-            HStack(spacing: 8) {
-                ForEach(tags, id: \.self) { tag in
-                    Text("#\(tag)")
-                        .font(.system(size: 13.5, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 9)
-                        .background(GlassCapsule())
-                }
-                if tags.count < OnboardingRules.maxSelfTags {
-                    Text("+")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color(hex: "BCBBC0"))
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 8)
-                        .overlay(Capsule().strokeBorder(Color(hex: "BCBBC0").opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
-                        .accessibilityLabel("タグを足す")
-                }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture { editFocus = .tags }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityHint("タグを編集します")
-        }
-    }
-
-    // MARK: - 預けた日々
-
-    private var dayPoints: [DayPoint] {
-        let calendar = Calendar.current
-        let photoCutoff = calendar.date(byAdding: .day, value: -DayCloudRules.photoVisibleDays, to: calendar.startOfDay(for: Date())) ?? .distantPast
-        return exposureDays.enumerated().map { index, day in
-            // その日より後に撮っていれば、その日の1枚はひらいている(最新の日だけ、まだひらいていない)。
-            let opened = index > 0
-            return DayPoint(
-                id: day.dayKey,
-                date: day.captureDate,
-                opened: opened,
-                color: opened ? day.colorHex.map { Color(hex: $0) } : nil,
-                locationName: day.locationName,
-                showsPhoto: opened && day.captureDate >= photoCutoff
+            Spacer()
+            GlassActionPill(
+                onEdit: { editFocus = ProfileEditFocus.none },
+                onSettings: { isShowingSettings = true }
             )
         }
     }
 
-    private func daysSection(scale: CGFloat, width: CGFloat) -> some View {
-        let points = dayPoints
-        return VStack(spacing: 0) {
-            HStack {
-                Text("預けた日々")
-                    .font(.system(size: 12.5, weight: .bold))
-                    .foregroundStyle(Color(hex: "BCBBC0"))
-                Spacer()
-                Text("\(points.count)日")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(Color(hex: "8E8E93"))
-                    .dynamicTypeSize(...DynamicTypeSize.xLarge)
-            }
-            .padding(.horizontal, 24)
-            .accessibilityElement(children: .combine)
+    // MARK: - 空にふれる(惑星 → 写真の編集、タグ → タグの編集)
 
-            Group {
-                if points.isEmpty {
-                    Color.clear
-                } else {
-                    DayCloudView(
-                        points: points,
-                        isAnimating: isVisible,
-                        entranceStart: cloudEntranceStart,
-                        thumbnailFor: thumbnail(for:),
-                        onSelectionChange: selectionChanged,
-                        onTapDay: { _ in
-                            // その日の詳細を開く入口(別のStepで作る)。
-                        }
-                    )
-                }
-            }
-            .frame(height: DayCloudView.height)
-            .padding(.top, 8)
+    private func skyTouchLayer(g: ProfileStarGeometry, size: CGSize) -> some View {
+        let center = g.pt(ProfileStarLayout.planetCenter)
+        let tags = profile?.selfTags ?? []
+        return ZStack {
+            Color.clear
+                .frame(width: size.width, height: g.y(240))
+                .contentShape(Rectangle())
+                .gesture(SpatialTapGesture(coordinateSpace: .named(Self.coordinateSpace)).onEnded { value in
+                    handleSkyTap(at: value.location, g: g, tags: tags)
+                })
+                .position(x: size.width / 2, y: center.y)
+                .accessibilityHidden(true)
 
-            Text(points.count <= 1 ? "ここに、預けた日々が積もっていきます" : "なぞると、その日が見える")
-                .font(.system(size: 9.5, design: .monospaced))
-                .tracking(0.12 * 9.5)
-                .foregroundStyle(Color(hex: "5F5F64"))
-                .dynamicTypeSize(...DynamicTypeSize.xLarge)
-                .padding(.top, 4)
-                .accessibilityHidden(points.count > 1)
+            // 読み上げ用:惑星
+            Color.clear
+                .frame(width: ProfileStarLayout.planetDiameter * g.s, height: ProfileStarLayout.planetDiameter * g.s)
+                .contentShape(Circle())
+                .allowsHitTesting(false)
+                .accessibilityElement()
+                .accessibilityLabel("プロフィール写真、\(displayName)")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { editFocus = .photo }
+                .position(center)
+
+            if motion.showsOrbitTags, !tags.isEmpty {
+                Color.clear
+                    .frame(width: 2 * ProfileStarLayout.tagOrbitRadiusX * g.s, height: 20)
+                    .allowsHitTesting(false)
+                    .accessibilityElement()
+                    .accessibilityLabel("自分を表すタグ:\(tags.joined(separator: "、"))")
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { editFocus = .tags }
+                    .position(x: center.x, y: center.y + ProfileStarLayout.tagOrbitRadiusY * g.s + 20)
+            }
         }
-        .frame(width: width)
     }
 
-    private func thumbnail(for point: DayPoint) -> UIImage? {
+    private func handleSkyTap(at location: CGPoint, g: ProfileStarGeometry, tags: [String]) {
+        let center = g.pt(ProfileStarLayout.planetCenter)
+        if motion.showsOrbitTags, !tags.isEmpty {
+            let elapsed = motion.isMoving ? Date().timeIntervalSinceReferenceDate : 0
+            let offset = ProfileStarTilt(x: motion.isMoving ? tilt.x : 0, y: motion.isMoving ? tilt.y : 0).offset(9)
+            for index in tags.indices {
+                let orbit = ProfileStarLayout.tagOrbit(index: index, count: tags.count, elapsed: elapsed)
+                guard orbit.depth >= 0.5 else { continue }
+                let p = CGPoint(x: center.x + orbit.offset.x * g.s + offset.width, y: center.y + orbit.offset.y * g.s + offset.height)
+                if abs(p.x - location.x) < 48, abs(p.y - location.y) < 18 {
+                    editFocus = .tags
+                    return
+                }
+            }
+        }
+        if hypot(location.x - center.x, location.y - center.y) <= ProfileStarLayout.planetDiameter * g.s / 2 + 8 {
+            editFocus = .photo
+        }
+    }
+
+    // MARK: - 水面の点にふれる / 押し続ける
+
+    private func slotPosition(_ slot: Int, g: ProfileStarGeometry, withParallax: Bool) -> CGPoint {
+        let p = g.pt(ProfileStarLayout.slotCenter(slot))
+        guard withParallax, motion.isMoving else { return p }
+        let offset = ProfileStarTilt(x: tilt.x, y: tilt.y).offset(22)
+        return CGPoint(x: p.x + offset.width, y: p.y + offset.height)
+    }
+
+    private func waterTouchLayer(g: ProfileStarGeometry, size: CGSize, days: [ProfileStarDay]) -> some View {
+        let top = g.y(ProfileStarLayout.headingY + 24)
+        let bottom = size.height - 64
+        return Color.clear
+            .frame(width: size.width, height: max(0, bottom - top))
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.coordinateSpace))
+                    .onChanged { value in track(value.location, g: g, days: days) }
+                    .onEnded { _ in releaseTouch() }
+            )
+            .position(x: size.width / 2, y: (top + bottom) / 2)
+            .accessibilityHidden(true)
+    }
+
+    private func track(_ location: CGPoint, g: ProfileStarGeometry, days: [ProfileStarDay]) {
+        guard openedDay == nil, !hasTriggeredOpen else { return }
+        var nearest: (slot: Int, distance: CGFloat)?
+        for day in days where day.point != nil {
+            let p = slotPosition(day.slot, g: g, withParallax: true)
+            let distance = hypot(p.x - location.x, p.y - location.y)
+            if distance <= Self.hitRadius, distance < (nearest?.distance ?? .infinity) {
+                nearest = (day.slot, distance)
+            }
+        }
+        guard nearest?.slot != selectedSlot else { return }
+        withAnimation(.easeOut(duration: 0.18)) {
+            selectedSlot = nearest?.slot
+        }
+        pressStart = nearest == nil ? nil : Date()
+    }
+
+    private func releaseTouch() {
+        guard !hasTriggeredOpen else { return }
+        resetTouch()
+    }
+
+    private func resetTouch() {
+        withAnimation(.easeOut(duration: 0.18)) { selectedSlot = nil }
+        pressStart = nil
+        hasTriggeredOpen = false
+    }
+
+    /// 約0.55秒押し続けたら、ビューアをひらく(ここで1回だけハプティクス)
+    private func checkHold(at date: Date) {
+        guard openedDay == nil, !hasTriggeredOpen, let slot = selectedSlot, let pressStart,
+              date.timeIntervalSince(pressStart) >= ProfileStarLayout.holdDuration,
+              let point = weekPoints.first(where: { ProfileStarLayout.slot(for: $0.date, now: Date()) == slot }),
+              point.opened else { return }
+        hasTriggeredOpen = true
+        haptics.fireCapture(intensity: 1.0, sharpness: 0.7)
+        openDay(point)
+    }
+
+    /// ふれている間の小さな写真カード(日付と「あと6日で、消えます」)
+    private func dayCard(for day: ProfileStarDay, g: ProfileStarGeometry, size: CGSize) -> some View {
+        let p = slotPosition(day.slot, g: g, withParallax: true)
+        let r = ProfileStarLayout.slotRadius(day.slot) * g.s * 1.35
+        let half = WeekDayCard.width / 2
+        // 右側の点はカードを左に、今日と左側の点は右に
+        let toLeft = day.slot != 0 && ProfileStarLayout.labelOnRight(day.slot)
+        let x = min(max(p.x + (toLeft ? -1 : 1) * (r + 14 + half), 14 + half), size.width - 14 - half)
+        let cardHalfHeight = WeekDayCard.approximateHeight / 2
+        let y = min(max(p.y, g.y(ProfileStarLayout.headingY) + cardHalfHeight), size.height - 20 - cardHalfHeight)
+        return Group {
+            if let point = day.point {
+                WeekDayCard(point: point, thumbnail: thumbnail(for: point))
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .id(point.id)
+            }
+        }
+        .position(x: x, y: y)
+        .allowsHitTesting(false)
+    }
+
+    /// 全画面へ「ふくらむ」ための見えないアンカー
+    private func dayAnchors(g: ProfileStarGeometry, days: [ProfileStarDay]) -> some View {
+        ForEach(days) { day in
+            if let point = day.point {
+                let size = ProfileStarLayout.slotRadius(day.slot) * g.s * 2
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: size, height: size)
+                    .position(slotPosition(day.slot, g: g, withParallax: false))
+                    .matchedGeometryEffect(id: "day-\(point.id)", in: dotsNamespace)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    /// VoiceOver:点 =「10月15日の写真。あと6日で消えます。ダブルタップでひらく」
+    private func accessibilityDays(g: ProfileStarGeometry, days: [ProfileStarDay]) -> some View {
+        ForEach(days.sorted { $0.slot < $1.slot }) { day in
+            Color.clear
+                .frame(width: 44, height: 44)
+                .allowsHitTesting(false)
+                .accessibilityElement()
+                .accessibilityLabel(Self.spokenLabel(for: day))
+                .accessibilityAddTraits(day.point?.opened == true ? .isButton : [])
+                .accessibilityAction {
+                    if let point = day.point, point.opened { openDay(point) }
+                }
+                .position(slotPosition(day.slot, g: g, withParallax: false))
+        }
+    }
+
+    static func spokenLabel(for day: ProfileStarDay) -> String {
+        guard let point = day.point, point.opened else {
+            return "今日の1枚。あしたの朝9:00に、ひらきます"
+        }
+        let remaining = point.remainingDays <= 1 ? "あしたの朝、消えます" : "あと\(point.remainingDays)日で消えます"
+        return "\(WeekDayCard.dateLabel(point.date))の写真。\(remaining)。ダブルタップでひらく"
+    }
+
+    // MARK: - 預けた日々(直近7日)
+
+    /// Profileに出す日(古い順)。点・ビューアは、すべてこの結果を使う。
+    private var shots: [WeekDayPoint] {
+        ProfileShot.shots(profile: profile, exposureDays: exposureDays, now: Date())
+    }
+
+    /// 新しい順(0が今日)
+    private var weekPoints: [WeekDayPoint] {
+        shots.reversed()
+    }
+
+    /// 並べ替え前のprofile.photosから、その日(dayKey)に対応するLaterPhotoを探す。
+    /// 全画面ビューアの本番画質は、サムネイル(ExposureDay)ではなくこちらを使う。
+    private func photo(forDayKey dayKey: String) -> LaterPhoto? {
+        profile?.photos.first { ExposureDayStore.dayKey(for: $0.captureDate) == dayKey }
+    }
+
+    private func thumbnail(for point: WeekDayPoint) -> UIImage? {
         guard point.opened, point.showsPhoto else { return nil }
         let key = point.id as NSString
         if let cached = Self.thumbnailCache.object(forKey: key) { return cached }
@@ -327,20 +550,57 @@ struct ProfileImmersiveView: View {
         return image
     }
 
-    /// 選択中の点が切り替わるたびに、ごく軽く1回(最短60ms間隔)。ひらいていない点は、ほんの少し弱く。
-    private func selectionChanged(_ point: DayPoint?) {
-        guard let point, ProfileTuning.tracingHapticEnabled else { return }
-        let now = Date()
-        guard now.timeIntervalSince(lastSelectionHaptic) >= ProfileTuning.tracingHapticMinInterval else { return }
-        lastSelectionHaptic = now
-        let value = point.opened ? ProfileTuning.tracingHaptic : ProfileTuning.tracingHapticUnopened
-        haptics.playTransient(intensity: value.intensity, sharpness: value.sharpness)
+    /// 全画面ビューア用の本画質画像(7日以内はLaterPhotoがまだ端末にあるはず)。
+    private func fullImage(for point: WeekDayPoint) -> UIImage? {
+        guard point.opened, point.showsPhoto, let data = photo(forDayKey: point.id)?.imageData else {
+            return thumbnail(for: point)
+        }
+        return UIImage(data: data)
+    }
+
+    // MARK: - 点を開く
+
+    /// その日の写真を、共有先すべて(グループ・Mondo)から消す。7日で消える時と同じ範囲を消し、
+    /// 点の記録(ExposureDay)も消す。
+    private func deleteShot(_ point: WeekDayPoint) {
+        let cloudKitManager = CloudKitManager.current
+        let photos = profile?.photos.filter { ExposureDayStore.dayKey(for: $0.captureDate) == point.id } ?? []
+        for photo in photos {
+            cloudKitManager?.markForDelete(photo: photo)
+            modelContext.delete(photo)
+        }
+        for day in exposureDays where day.dayKey == point.id {
+            modelContext.delete(day)
+        }
+        try? modelContext.save()
+        Self.thumbnailCache.removeObject(forKey: point.id as NSString)
+
+        let mondoRecord = MondoIdentity.recordName(mondoID: MondoIdentity.id, dayKey: point.id)
+        Task {
+            if MondoLocalStore.published.contains(mondoRecord) {
+                await MondoService.shared.withdraw([mondoRecord])
+            }
+            await cloudKitManager?.sendPendingChangesNow()
+        }
+    }
+
+    private func openDay(_ point: WeekDayPoint) {
+        withAnimation(.timingCurve(0.3, 0.7, 0.2, 1, duration: 0.46)) {
+            openedDay = point
+        }
+    }
+
+    private func closeOpenedDay() {
+        withAnimation(.timingCurve(0.3, 0.7, 0.2, 1, duration: 0.46)) {
+            openedDay = nil
+        }
+        resetTouch()
     }
 
     // MARK: - 動き
 
-    private func updateMotion(visible: Bool) {
-        if visible && !reduceMotion {
+    private func updateMotion() {
+        if isVisible && motion.isMoving {
             tilt.start()
         } else {
             tilt.stop()
@@ -350,33 +610,22 @@ struct ProfileImmersiveView: View {
     private func playEntranceIfNeeded() {
         guard !Self.hasPlayedEntrance else { return }
         Self.hasPlayedEntrance = true
-        guard !reduceMotion else { return }
-        ballFocus = 0
-        withAnimation(.easeOut(duration: 0.8)) { ballFocus = 1 }
-        cloudEntranceStart = Date()
+        guard motion.isMoving else { return }
+        planetFocus = 0
+        withAnimation(.easeOut(duration: 0.8)) { planetFocus = 1 }
     }
 
-    /// 初めてプロフィール画像が現像された時に一度だけ:だんだん強く → 玉に写真が入る瞬間にくっきり1回。
+    /// 初めてプロフィール画像が現像された時に一度だけ、星に写真が入る(音・振動はなし)。
     private func playRevealIfNeeded() {
         let defaults = UserDefaults.standard
         guard isOnScreen, profileImage != nil, defaults.bool(forKey: ProfilePhotoDevelopment.revealPendingKey) else { return }
         defaults.set(false, forKey: ProfilePhotoDevelopment.revealPendingKey)
-        if reduceMotion {
-            revealProgress = 0
-            withAnimation(.easeInOut(duration: 0.25)) { revealProgress = 1 }
-            return
-        }
         revealProgress = 0
-        haptics.playRamp(from: 0.15, to: 0.7, sharpness: 0.2, sharpnessTo: 0.5, duration: 1.0)
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.0))
-            haptics.fireCapture(intensity: 1.0, sharpness: 0.9)
-            withAnimation(.easeOut(duration: 1.2)) { revealProgress = 1 }
-        }
+        withAnimation(.easeOut(duration: motion.isMoving ? 1.6 : 0.25)) { revealProgress = 1 }
     }
 
     /// 写真の中心の色は、画像が変わった時に1度だけ計算して保存する。
-    private func updateBallColorIfNeeded() {
+    private func updatePlanetColorIfNeeded() {
         guard let profile, let data = profile.profileImageData else { return }
         let key = "\(data.count)-\(profile.profileUpdatedAt?.timeIntervalSince1970 ?? 0)"
         guard key != cachedBallColorKey else { return }
@@ -392,6 +641,32 @@ struct ProfileImmersiveView: View {
     }
 }
 
+// MARK: - 動く景色(TimelineView は、ここ1つだけ)
+
+/// 傾き(45Hz)を読むのはこのビューだけにして、プロフィール全体を作り直さないようにする。
+private struct ProfileStarLiveScene: View {
+    let input: ProfileStarInput
+    let size: CGSize
+    let tilt: GlassTilt
+    let isRunning: Bool
+    let isPressing: Bool
+    let onTick: (Date) -> Void
+
+    var body: some View {
+        // 止めている時(視差を減らす・低電力)も、押し続けのリングと現像の進みのために、ゆっくり進める
+        let moving = input.motion.isMoving || isPressing
+        TimelineView(.animation(minimumInterval: moving ? nil : 30, paused: !isRunning)) { context in
+            ProfileStarFrame(
+                input: input,
+                time: context.date,
+                tilt: ProfileStarTilt(x: tilt.x, y: tilt.y),
+                size: size
+            )
+            .onChange(of: context.date) { _, date in onTick(date) }
+        }
+    }
+}
+
 /// Homeのアバターの白い点(あなたのページに、見ていない変化がある)。
 /// いまは「現像が100%になった」時だけ点け、Profileを開いたら消す。
 enum AvatarBadge {
@@ -401,108 +676,7 @@ enum AvatarBadge {
     static let acknowledgedKey = "avatarBadgeAcknowledged"
 }
 
-/// 実機で調整するための数値(プロフィール)。
-enum ProfileTuning {
-    /// なぞって選択中の点が切り替わるたびの触覚。うるさければfalseにするか弱める。
-    static let tracingHapticEnabled = true
-    static let tracingHaptic: (intensity: Float, sharpness: Float) = (0.3, 0.6)
-    static let tracingHapticUnopened: (intensity: Float, sharpness: Float) = (0.2, 0.4)
-    static let tracingHapticMinInterval: TimeInterval = 0.06
-}
-
-// MARK: - ガラスの球
-
-/// 中にプロフィール画像が入ったガラスの球(直径176pt)。傾けるとハイライトと底の光が動く。
-/// プロフィール画像がまだ現像されていない時は、真珠 + 呼吸する白い点。
-private struct GlassBall: View {
-    let image: UIImage?
-    let glowColor: Color?
-    let tiltX: Double
-    let tiltY: Double
-    let revealProgress: Double
-
-    static let diameter: CGFloat = 176
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isBreathing = false
-
-    private var showsPearl: Bool { image == nil || revealProgress < 1 }
-
-    var body: some View {
-        let d = Self.diameter
-        ZStack {
-            // 1. 背後の光(写真の中心の色、34%)
-            Circle()
-                .fill(RadialGradient(colors: [(glowColor ?? .white).opacity(glowColor == nil ? 0.18 : 0.34), .clear], center: .center, startRadius: d * 0.3, endRadius: d / 2 + 70))
-                .frame(width: d + 140, height: d + 140)
-
-            ZStack {
-                if showsPearl {
-                    pearl
-                        .opacity(image == nil ? 1 : 1 - revealProgress)
-                }
-                if let image {
-                    // 2. 写真(わずかに大きく置いて、周辺をぼかす)
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: d * 1.06, height: d * 1.06)
-                        .blur(radius: 0.6 + 14 * (1 - revealProgress))
-                        .opacity(revealProgress)
-                    // 3. 周辺減光
-                    RadialGradient(stops: [.init(color: .clear, location: 0.52), .init(color: .black.opacity(0.55), location: 1)], center: .center, startRadius: 0, endRadius: d / 2)
-                        .opacity(revealProgress)
-                }
-                // 4. 底の光(コースティクス)。ハイライトと逆方向に動く。
-                Ellipse()
-                    .fill(RadialGradient(colors: [Color(red: 1, green: 170 / 255, blue: 110 / 255).opacity(0.55), .clear], center: .center, startRadius: 0, endRadius: 40))
-                    .frame(width: 84, height: 30)
-                    .offset(x: d * 0.02 - 9 * tiltX, y: d * 0.46 - 5 * tiltY)
-                    .blendMode(.screen)
-                // 5. 内側の影(下から黒、上から白)
-                LinearGradient(stops: [.init(color: .white.opacity(0.1), location: 0), .init(color: .clear, location: 34 / d), .init(color: .clear, location: 1 - 44 / d), .init(color: .black.opacity(0.5), location: 1)], startPoint: .top, endPoint: .bottom)
-                // 7. ハイライト(左上の白い楕円、-26度)
-                Ellipse()
-                    .fill(RadialGradient(colors: [.white.opacity(0.7), .white.opacity(0)], center: .center, startRadius: 0, endRadius: 46))
-                    .frame(width: 92, height: 62)
-                    .rotationEffect(.degrees(-26))
-                    .offset(x: -d * 0.2 + 17 * tiltX, y: -d * 0.25 + 12 * tiltY)
-            }
-            .frame(width: d, height: d)
-            .clipShape(Circle())
-            // 6. 縁
-            .overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 1.5))
-        }
-        .frame(width: d, height: d)
-    }
-
-    private var pearl: some View {
-        ZStack {
-            Circle()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: .white, location: 0),
-                        .init(color: Color(hex: "E9ECF0"), location: 0.24),
-                        .init(color: Color(hex: "9AA1AB"), location: 0.6),
-                        .init(color: Color(hex: "2B2F35"), location: 1),
-                    ],
-                    center: UnitPoint(x: 0.34, y: 0.26), startRadius: 0, endRadius: Self.diameter
-                ))
-            Circle()
-                .fill(.white)
-                .frame(width: 12, height: 12)
-                .shadow(color: .white.opacity(0.9), radius: 8)
-                .scaleEffect(isBreathing ? 1.35 : 1)
-                .opacity(isBreathing ? 0.7 : 1)
-        }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) { isBreathing = true }
-        }
-    }
-}
-
-// MARK: - ガラスの部品
+// MARK: - ガラスの部品(.ultraThinMaterial + 白のふち)
 
 private struct GlassCircleButton: View {
     let systemImage: String
@@ -515,25 +689,43 @@ private struct GlassCircleButton: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
-                .background(
-                    Circle().fill(LinearGradient(colors: [.white.opacity(0.13), .white.opacity(0.05)], startPoint: .top, endPoint: .bottom))
-                )
-                .overlay(Circle().strokeBorder(.white.opacity(0.09), lineWidth: 1))
-                .overlay(alignment: .top) {
-                    Capsule().fill(.white.opacity(0.14)).frame(width: 18, height: 1).padding(.top, 1)
-                }
-                .shadow(color: .black.opacity(0.5), radius: 10, y: 6)
+                .background(Circle().fill(.ultraThinMaterial))
+                .overlay(Circle().strokeBorder(.white.opacity(0.22), lineWidth: 1))
+                .environment(\.colorScheme, .dark)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
     }
 }
 
-private struct GlassCapsule: View {
+/// 編集・設定を1つにまとめたガラスのカプセル(96×44)。中央に高さ20pt・1ptの区切り線を挟む。
+private struct GlassActionPill: View {
+    let onEdit: () -> Void
+    let onSettings: () -> Void
+
     var body: some View {
-        Capsule()
-            .fill(LinearGradient(colors: [.white.opacity(0.13), .white.opacity(0.05)], startPoint: .top, endPoint: .bottom))
-            .overlay(Capsule().strokeBorder(.white.opacity(0.09), lineWidth: 1))
+        HStack(spacing: 0) {
+            pillButton(systemImage: "pencil", label: "編集", action: onEdit)
+            Rectangle()
+                .fill(.white.opacity(0.22))
+                .frame(width: 1, height: 20)
+            pillButton(systemImage: "slider.horizontal.3", label: "設定", action: onSettings)
+        }
+        .frame(width: 96, height: 44)
+        .background(Capsule().fill(.ultraThinMaterial))
+        .overlay(Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 1))
+        .environment(\.colorScheme, .dark)
+    }
+
+    private func pillButton(systemImage: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }
 
@@ -548,184 +740,11 @@ enum ProfileEditRules {
     static let bioMaxLength = 30
 }
 
-/// 名前・自分を表すタグ・ひとことの編集と、プロフィール画像の撮り直し(1日1回まで)。
-/// 詳しいデザインは別の機会。
-private struct ProfileEditSheet: View {
-    let initialFocus: ProfileEditFocus
-
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-    @Query private var profiles: [UserProfile]
-    @AppStorage("userName") private var userName: String = ""
-
-    @State private var name = ""
-    @State private var tags: [String] = []
-    @State private var bio = ""
-    @State private var hasLoaded = false
-    @State private var isShowingCamera = false
-    @State private var canRetake = ProfilePhotoDevelopment.canRetake()
-    @FocusState private var isNameFocused: Bool
-
-    private var profile: UserProfile? { UserProfile.current(from: profiles) }
-    private var nameValidation: (name: String, problem: OnboardingRules.NameProblem?) { OnboardingRules.validateName(name) }
-
-    var body: some View {
-        NavigationStack {
-            ScrollViewReader { reader in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 28) {
-                        section("プロフィール画像") {
-                            photoSection
-                        }
-                        .id(ProfileEditFocus.photo)
-
-                        section("名前") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                TextField("名前", text: $name)
-                                    .font(.system(size: 22, weight: .semibold))
-                                    .focused($isNameFocused)
-                                    .padding(14)
-                                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "1C1C1E")))
-                                Text(nameHint)
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(Color(hex: "8E8E93"))
-                            }
-                        }
-                        .id(ProfileEditFocus.name)
-
-                        section("自分を表すタグ") {
-                            SelfTagPicker(selectedTags: $tags)
-                        }
-                        .id(ProfileEditFocus.tags)
-
-                        section("ひとこと") {
-                            VStack(alignment: .trailing, spacing: 6) {
-                                TextField("書いたときだけ、プロフィールに出ます", text: $bio)
-                                    .font(.system(size: 15))
-                                    .padding(14)
-                                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "1C1C1E")))
-                                    .onChange(of: bio) { _, value in
-                                        if value.count > ProfileEditRules.bioMaxLength {
-                                            bio = String(value.prefix(ProfileEditRules.bioMaxLength))
-                                        }
-                                    }
-                                Text("\(bio.count) / \(ProfileEditRules.bioMaxLength)")
-                                    .font(.system(size: 11, design: .monospaced))
-                                    .foregroundStyle(Color(hex: "8E8E93"))
-                            }
-                        }
-                    }
-                    .padding(20)
-                }
-                .onAppear {
-                    load()
-                    reader.scrollTo(initialFocus, anchor: .top)
-                    if initialFocus == .name { isNameFocused = true }
-                }
-            }
-            .background(Color.black.ignoresSafeArea())
-            .navigationTitle("プロフィール")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("保存", action: save)
-                        .disabled(nameValidation.problem != nil)
-                }
-            }
-        }
-        .preferredColorScheme(.dark)
-        .presentationBackground(.black)
-        .fullScreenCover(isPresented: $isShowingCamera) {
-            ExposureCameraView(
-                hasShotToday: false,
-                onCaptured: { data, start, _, _ in
-                    guard let profile else { return false }
-                    ProfilePhotoDevelopment.storeRetake(data, for: profile, takenAt: start, context: modelContext)
-                    canRetake = ProfilePhotoDevelopment.canRetake()
-                    return true
-                },
-                onFinished: { isShowingCamera = false },
-                onClose: { isShowingCamera = false },
-                purpose: .profilePhoto
-            )
-        }
-    }
-
-    private var nameHint: String {
-        switch nameValidation.problem {
-        case .looksLikeContact: return "URLやメールアドレスは使えません。"
-        case .tooLong: return "12文字までにしてください。"
-        case .empty: return "1〜12文字で入力してください。"
-        case nil: return "本名でなくて大丈夫です。"
-        }
-    }
-
-    @ViewBuilder
-    private var photoSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                isShowingCamera = true
-            } label: {
-                Label("撮り直す", systemImage: "camera.aperture")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(canRetake ? .black : Color(hex: "8E8E93"))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Capsule().fill(canRetake ? Color.white : Color(hex: "1C1C1E")))
-            }
-            .buttonStyle(.plain)
-            .disabled(!canRetake)
-            Text(photoHint)
-                .font(.system(size: 12))
-                .foregroundStyle(Color(hex: "8E8E93"))
-        }
-    }
-
-    private var photoHint: String {
-        if profile?.pendingProfileImageData != nil {
-            return "撮った1枚は、次の 9:00 に現像されます。それまで、あなたにも見えません。"
-        }
-        if !canRetake {
-            return "撮り直しは、1日\(ProfilePhotoDevelopment.maxRetakesPerDay)回までです。"
-        }
-        return "プレビューなしで撮ります。次の 9:00 に現像されます。"
-    }
-
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.system(size: 12.5, weight: .bold))
-                .foregroundStyle(Color(hex: "BCBBC0"))
-            content()
-        }
-    }
-
-    private func load() {
-        guard !hasLoaded, let profile else { return }
-        hasLoaded = true
-        name = profile.name
-        tags = profile.selfTags
-        bio = String(profile.bio.prefix(ProfileEditRules.bioMaxLength))
-    }
-
-    private func save() {
-        guard let profile, nameValidation.problem == nil else { return }
-        profile.name = nameValidation.name
-        profile.selfTags = tags
-        profile.bio = bio.trimmingCharacters(in: .whitespacesAndNewlines)
-        profile.profileUpdatedAt = Date()
-        try? modelContext.save()
-        userName = profile.name
-
-        if let cloudKitManager = CloudKitManager.current {
-            for group in profile.groups {
-                cloudKitManager.markForUpload(userProfile: profile, in: group)
-            }
-        }
-        Task { await UserDirectoryService.publish(profile) }
-        dismiss()
+/// Profileの全画面ビューアが開いているか。開いている間は、右スワイプでHomeへ戻らない
+/// (ビューアの右スワイプは「前の日へ」)。
+struct ProfileViewerOpenKey: PreferenceKey {
+    static let defaultValue = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
     }
 }

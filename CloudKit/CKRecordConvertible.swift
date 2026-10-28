@@ -24,6 +24,8 @@ enum AppRecordType {
     static let userDirectory = "UserDirectory"
     static let report = "Report"
     static let block = "Block"
+    /// グループの共有ゾーンに置く、小さな記録(「抜けた」)。通知ではなく、次に開いたときに読む
+    static let memberEvent = "MemberEvent"
 }
 
 /// record.recordID.zoneID.ownerNameは、レコードの所有者自身が自分のprivateCloudDatabase
@@ -91,7 +93,7 @@ extension UserProfile {
         // .deleteSelfで既に表現されているため、ここで重複させない)。
         record.parent = CKRecord.Reference(recordID: groupRecordID, action: .none)
         if includeAvatar, let profileImageData {
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).jpg")
+            let tempURL = CKAssetTempFiles.newURL()
             if (try? profileImageData.write(to: tempURL)) != nil {
                 record["avatar"] = CKAsset(fileURL: tempURL)
             }
@@ -137,7 +139,7 @@ extension UserProfile {
         // 引けるようにするため、自分のcloudKitUserRecordNameも公開しておく。
         record["cloudKitUserRecordName"] = cloudKitUserRecordName
         if let profileImageData {
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).jpg")
+            let tempURL = CKAssetTempFiles.newURL()
             if (try? profileImageData.write(to: tempURL)) != nil {
                 record["avatar"] = CKAsset(fileURL: tempURL)
             }
@@ -183,6 +185,8 @@ extension LaterGroup {
         record["groupCreatedAt"] = creationDate
         logger.debug("[GroupSync] toCKRecord: inviteCodeを設定中")
         record["inviteCode"] = inviteCode
+        record["memberLimit"] = memberLimit
+        record["colorIndex"] = colorIndex
         logger.debug("[GroupSync] toCKRecord: autoGenerateMissionを設定中")
         record["autoGenerateMission"] = autoGenerateMission
         logger.debug("[GroupSync] toCKRecord: isPrivateを設定中")
@@ -209,7 +213,7 @@ extension LaterGroup {
         // オーナーに限らず全メンバーの端末から送信され得る(EditGroupView参照)。
         logger.debug("[GroupSync] toCKRecord: iconブロック開始")
         if includeIcon, let iconImageData {
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).jpg")
+            let tempURL = CKAssetTempFiles.newURL()
             do {
                 try iconImageData.write(to: tempURL)
                 // CKAsset(fileURL:)へ渡す直前に、書き込んだファイルが実際に存在するかを
@@ -234,6 +238,8 @@ extension LaterGroup {
         name = record["name"] as? String ?? name
         creationDate = record["groupCreatedAt"] as? Date ?? creationDate
         inviteCode = record["inviteCode"] as? String ?? inviteCode
+        memberLimit = record["memberLimit"] as? Int ?? memberLimit
+        colorIndex = record["colorIndex"] as? Int ?? colorIndex
         if let asset = record["icon"] as? CKAsset, let fileURL = asset.fileURL {
             iconImageData = try? Data(contentsOf: fileURL)
         }
@@ -283,6 +289,12 @@ extension LaterPhoto {
         record["authorCloudKitUserRecordName"] = authorCloudKitUserRecordName
         record["authorNameCache"] = authorNameCache ?? owner?.name
         record["groupNameCache"] = groupNameCache
+        record["isPosted"] = isPosted
+        // モザイク用の小さな画像(投稿した写真だけ)。位置は、共有を「撮った場所」にした分だけ(丸めた値)。
+        // 空にしたとき(共有オフ)は、サーバー側の値も消える。
+        record["mosaicTiny"] = isPosted ? mosaicTiny : nil
+        record["approxLatitude"] = approxLatitude
+        record["approxLongitude"] = approxLongitude
         // PhotoNotificationService(撮影通知のCKQuerySubscription)がプッシュペイロードに
         // desiredKeysとして含めるためのスカラー値。"group"(CKRecord.Reference)自体は
         // desiredKeysで直接取得できないため、遷移先グループを特定するためだけに
@@ -292,9 +304,13 @@ extension LaterPhoto {
         // UserProfile.toCKRecordと同じ理由でparentを設定する(CKShareの階層共有に含めるため)。
         record.parent = CKRecord.Reference(recordID: groupRecordID, action: .none)
 
-        if isUnlocked {
+        // v3:「9:00に解禁 → 今日を撮ると昨日がひらく」では、撮った人の端末が翌朝に起動しているとは
+        // 限らないため、画像は撮った時点で送る。見られるかどうかは受け取った側のアプリが
+        // HomeState(撮ったか・ひらいたか)で決め、それまでは画面に出さない。
+        // 「投稿する」を選ぶまでは、画像を送らない(撮影者・時刻・タグ・場所だけが届く)。
+        if isPosted && (isUnlocked || DailyExposureRules.uploadsImageAtCapture) {
             do {
-                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).jpg")
+                let tempURL = CKAssetTempFiles.newURL()
                 do {
                     try imageData.write(to: tempURL)
                 } catch {
@@ -323,6 +339,11 @@ extension LaterPhoto {
         authorCloudKitUserRecordName = record["authorCloudKitUserRecordName"] as? String ?? authorCloudKitUserRecordName
         authorNameCache = record["authorNameCache"] as? String ?? authorNameCache
         groupNameCache = record["groupNameCache"] as? String ?? groupNameCache
+        // 項目が無い = 古いアプリから届いたレコード(撮った時点で共有していた)ので、投稿ずみ
+        isPosted = record["isPosted"] as? Bool ?? true
+        mosaicTiny = record["mosaicTiny"] as? Data
+        approxLatitude = record["approxLatitude"] as? Double
+        approxLongitude = record["approxLongitude"] as? Double
         if let asset = record["image"] as? CKAsset {
             if let fileURL = asset.fileURL {
                 do {
@@ -384,5 +405,36 @@ extension PhotoVote {
         ckZoneName = record.recordID.zoneID.zoneName
         ckZoneOwnerName = resolvedZoneOwnerName(from: record)
         ckRecordChangeTag = record.recordChangeTag
+    }
+}
+
+/// CKAsset に渡す一時ファイルの置き場。
+/// 以前は tmp 直下に UUID の .jpg を書いたまま、送信後も消していなかった(写真・アイコンの
+/// 数だけ残り続ける)。専用フォルダにまとめ、起動・フォアグラウンド復帰のときに
+/// 1日より古いものを消す。当日のファイルは送信中の可能性があるので消さない。
+enum CKAssetTempFiles {
+    private static let directory: URL = {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("LaterAssets", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }()
+
+    static func newURL() -> URL {
+        directory.appendingPathComponent("\(UUID().uuidString).jpg")
+    }
+
+    static func removeStale(now: Date = Date()) {
+        let cutoff = now.addingTimeInterval(-86_400)
+        let dir = directory
+        Task.detached(priority: .utility) {
+            let urls = (try? FileManager.default.contentsOfDirectory(
+                at: dir,
+                includingPropertiesForKeys: [.contentModificationDateKey]
+            )) ?? []
+            for url in urls {
+                let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                if modified < cutoff { try? FileManager.default.removeItem(at: url) }
+            }
+        }
     }
 }

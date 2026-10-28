@@ -102,11 +102,13 @@ final class CloudKitManager: NSObject {
 
     /// サインイン後に一度だけ呼ぶ。CKSyncEngineの起動と自動同期の開始を行う。
     func start() async {
+        SignInPerf.mark("CloudKit の準備を開始")
         do {
             currentUserRecordName = try await container.userRecordID().recordName
         } catch {
             print("CloudKitManager: failed to fetch userRecordID: \(error)")
         }
+        SignInPerf.mark("T4 iCloud の確認が終わった(userRecordID)")
 
         // 自分のUserProfile.cloudKitUserRecordNameをできるだけ早く(サインイン直後に)
         // 確定させておく。以前はグループを作成/参加するまでこのフィールドがnilのままで、
@@ -118,10 +120,12 @@ final class CloudKitManager: NSObject {
                 try? modelContext.save()
             }
             await UserDirectoryService.publish(user)
+            SignInPerf.mark("T5 ユーザーの記録を公開した(UserDirectory)")
         }
 
         if let currentUserRecordName {
             await PhotoNotificationService.setupNotificationSubscriptions(for: currentUserRecordName, container: container)
+            SignInPerf.mark("通知の登録が終わった(サブスクリプション)")
         }
 
         // 起動のたびに一度、既存の壊れたデータ(同一人物の重複UserProfileが
@@ -147,6 +151,7 @@ final class CloudKitManager: NSObject {
         sharedEngine = CKSyncEngine(sharedConfig)
 
         Self.current = self
+        SignInPerf.mark("T6 同期の準備ができた(CKSyncEngine)")
 
         // 「解禁時に一度だけチェキ加工を焼き込む」仕組みの導入前から既に解禁済みだった
         // 自分の写真を遡って焼き込む。件数次第で時間がかかり得るため、start()自体を
@@ -159,13 +164,46 @@ final class CloudKitManager: NSObject {
 
     /// グループ参加直後など、すぐにShared DBの内容を反映させたい場合に呼ぶ。
     func fetchSharedChangesNow() async {
-        try? await sharedEngine?.fetchChanges()
+        await logFetch("shared") { try await self.sharedEngine?.fetchChanges() }
+    }
+
+    /// 取得にかかった時間と、失敗の内容(CKError・retryAfterSeconds)を [SignInPerf] に出す
+    private func logFetch(_ label: String, _ body: () async throws -> Void) async {
+        let begin = CFAbsoluteTimeGetCurrent()
+        do {
+            try await body()
+            let seconds = CFAbsoluteTimeGetCurrent() - begin
+            if seconds > 2 { print(String(format: "[SignInPerf]   %@ の取得が遅い:%.2fs", label, seconds)) }
+        } catch {
+            let seconds = CFAbsoluteTimeGetCurrent() - begin
+            let ck = error as? CKError
+            print(String(format: "[SignInPerf]   %@ の取得に失敗(%.2fs) code=%@ retryAfter=%@ error=%@",
+                         label, seconds,
+                         ck.map { String($0.code.rawValue) } ?? "-",
+                         ck?.retryAfterSeconds.map { String($0) } ?? "-",
+                         String(describing: error)))
+        }
     }
 
     /// fetchSharedChangesNow()のPrivate DB版。自分がホストのグループで他メンバーの
     /// 更新(新規参加のプロフィール、撮影された写真等)をすぐに反映させたい場合に呼ぶ。
     func fetchPrivateChangesNow() async {
-        try? await privateEngine?.fetchChanges()
+        await logFetch("private") { try await self.privateEngine?.fetchChanges() }
+    }
+
+    /// Private・Shared両DBの変更を取り込み、両方とも取得できたかを返す(Homeの「昨日の光」で、
+    /// 取得できなかったことを「0人」と区別するために使う)。
+    @discardableResult
+    func fetchAllChangesNow() async -> Bool {
+        guard let privateEngine, let sharedEngine else { return false }
+        do {
+            try await sharedEngine.fetchChanges()
+            try await privateEngine.fetchChanges()
+            return true
+        } catch {
+            print("[GroupSync] fetchAllChangesNow: 取得に失敗 error=\(error)")
+            return false
+        }
     }
 
     /// sendPendingChangesNow()が呼ばれている最中かどうか。CKSyncEngine自身のデリゲート
@@ -349,7 +387,7 @@ final class CloudKitManager: NSObject {
         // 以前は全LaterPhotoをfetchしてからコード側で(isUnlocked/自分が撮影者か/
         // captureDate)をフィルタしており、端末に溜まった写真の総数(グループ数が
         // 増えるほど増加する)に比例して所要時間が伸びていた。#PredicateでDB側に
-        // 絞り込み条件を渡すことで、「解禁済み・自分が撮影者・画像まだ未アップロード・
+        // 絞り込み条件を渡すことで、「投稿ずみ・自分が撮影者・画像まだ未アップロード・
         // 直近2日以内」に一致する行だけを取得する(判定条件自体は変更していない)。
         // さらに、絞り込みが万一SQLiteレベルで効いていなかった場合の安全策として
         // fetchLimitを設け、古いものを優先するsortDescriptorと組み合わせる。
@@ -357,7 +395,7 @@ final class CloudKitManager: NSObject {
         let fetchToken = PerformanceSignpost.begin("CloudKitManager.fetchAllPhotos(resendSweep)")
         var descriptor = FetchDescriptor<LaterPhoto>(
             predicate: #Predicate<LaterPhoto> { photo in
-                photo.isUnlocked
+                photo.isPosted
                     && !photo.isImageUploaded
                     && photo.authorCloudKitUserRecordName == recordName
                     && photo.captureDate >= cutoff
@@ -832,7 +870,16 @@ final class CloudKitManager: NSObject {
     }
 
     private func apply(record: CKRecord) {
+        // 抜けたグループ(作った人は共有から外れられない)は、同期で届いても取りこまない
+        if LeftGroupsStore.contains(record.recordID.zoneID) { return }
         switch record.recordType {
+        case AppRecordType.memberEvent:
+            if let group = fetchOne(LaterGroup.self, { $0.cachedZoneID == record.recordID.zoneID }),
+               let event = MemberEventStore.event(from: record, groupID: group.id) {
+                MemberEventStore.add(event)
+                markGroupDirty(group.id)
+            }
+            return
         case AppRecordType.laterGroup:
             upsertGroup(from: record)
         case AppRecordType.userProfile:
@@ -868,6 +915,8 @@ final class CloudKitManager: NSObject {
     private func applyDeletion(recordID: CKRecord.ID, recordType: CKRecord.RecordType) {
         let recordName = recordID.recordName
         switch recordType {
+        case AppRecordType.memberEvent:
+            MemberEventStore.remove(id: recordName)
         case AppRecordType.photoVote:
             if let vote = fetchOne(PhotoVote.self, { $0.ckRecordName == recordName }) {
                 markGroupDirty(vote.groupID)
@@ -894,19 +943,32 @@ final class CloudKitManager: NSObject {
         }
     }
 
+    /// グループが終わった:一覧から消し、次に開いたとき1回だけ「終わりました」を出す
+    private func applyZoneDeletion(_ zoneID: CKRecordZone.ID) {
+        guard !LeftGroupsStore.contains(zoneID),
+              let group = fetchOne(LaterGroup.self, { $0.cachedZoneID == zoneID }) else { return }
+        EndedGroupsStore.add(.init(groupID: group.id, name: group.name, colorIndex: group.colorIndex))
+        LeftGroupsStore.add(zoneID)
+        modelContext.delete(group)
+        try? modelContext.save()
+        NotificationCenter.default.post(name: .groupEnded, object: nil)
+    }
+
     private func upsertGroup(from record: CKRecord) {
         let recordName = record.recordID.recordName
-        let group = fetchOne(LaterGroup.self, { $0.ckRecordName == recordName })
-            ?? (UUID(uuidString: recordName).map { id -> LaterGroup in
-                let g = LaterGroup(name: "")
-                g.id = id
-                return g
-            })
-        guard let group else { return }
-        group.apply(from: record)
-        if modelContext.model(for: group.persistentModelID) == nil {
-            modelContext.insert(group)
+        if let existing = fetchOne(LaterGroup.self, { $0.ckRecordName == recordName }) {
+            existing.apply(from: record)
+            return
         }
+        // 端末にまだ無いグループ:新しく作って必ず保存する。
+        // (以前は modelContext.model(for:) で「保存ずみか」を見ていたが、まだ保存していない
+        // 一時的な識別子でも nil を返さず、新しいグループが一度も保存されなかった。
+        // 入れなおした直後に、グループ・メンバー・写真がすべて取りこめない原因だった)
+        guard let id = UUID(uuidString: recordName) else { return }
+        let group = LaterGroup(name: "")
+        group.id = id
+        group.apply(from: record)
+        modelContext.insert(group)
     }
 
     private func upsertUserProfile(from record: CKRecord) {
@@ -1151,6 +1213,13 @@ extension CloudKitManager: CKSyncEngineDelegate {
 
         case .fetchedRecordZoneChanges(let changes):
             await applyFetchedChanges(changes)
+
+        case .fetchedDatabaseChanges(let changes):
+            // 共有ゾーンが消えた(グループが終わった)。自分で抜けたゾーンは除く
+            guard syncEngine === sharedEngine else { break }
+            for deletion in changes.deletions {
+                applyZoneDeletion(deletion.zoneID)
+            }
 
         case .sentRecordZoneChanges(let changes):
             if !changes.savedRecords.isEmpty {

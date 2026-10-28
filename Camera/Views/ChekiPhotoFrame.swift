@@ -240,6 +240,24 @@ enum ChekiColorGrade {
             try? jpegData.write(to: diskURL(for: cacheKey), options: .atomic)
         }
     }
+
+    /// 更新日時が cutoff より古い加工結果を、ディスクから消す。
+    /// 以前はこのフォルダを一度も掃除しておらず、写真が7日で消えても加工済みJPEGが
+    /// Caches に残り続けていた(Documents & Data が増え続ける原因の一つ)。
+    /// PhotoExpiryMaintenance.pruneExpired(起動・フォアグラウンド復帰・バックグラウンド)から呼ぶ。
+    static func removeDiskCache(olderThan cutoff: Date) {
+        let dir = diskCacheDirectory
+        Task.detached(priority: .utility) {
+            let urls = (try? FileManager.default.contentsOfDirectory(
+                at: dir,
+                includingPropertiesForKeys: [.contentModificationDateKey]
+            )) ?? []
+            for url in urls {
+                let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                if modified < cutoff { try? FileManager.default.removeItem(at: url) }
+            }
+        }
+    }
 }
 
 /// 写真ごとに固定の(でも見た目上はランダムな)光のにじみを、右上寄りのコーナーに重ねる。

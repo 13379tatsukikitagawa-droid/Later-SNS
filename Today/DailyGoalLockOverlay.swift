@@ -128,7 +128,7 @@ struct DailyGoalLockOverlay: View {
     private func startAnimation() {
         // 0. 触覚フィードバック（重い衝撃）
         let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
-        heavyImpact.impactOccurred()
+        heavyImpact.impactOccurredIfEnabled()
         
         // 1. ダークオーバーレイをフェードイン (0-0.3秒)
         withAnimation(.easeIn(duration: 0.3)) {
@@ -148,7 +148,7 @@ struct DailyGoalLockOverlay: View {
             
             // ロック音の代わりにハプティクス
             let notification = UINotificationFeedbackGenerator()
-            notification.notificationOccurred(.success)
+            notification.notificationOccurredIfEnabled(.success)
         }
         
         // 3. グレインエフェクトを追加 (0.5秒-)
@@ -174,7 +174,7 @@ struct DailyGoalLockOverlay: View {
             
             // 追加ハプティクス
             let lightImpact = UIImpactFeedbackGenerator(style: .light)
-            lightImpact.impactOccurred()
+            lightImpact.impactOccurredIfEnabled()
         }
         
         // 6. 自動遷移 (3.5秒後)

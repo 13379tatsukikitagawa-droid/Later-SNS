@@ -31,6 +31,11 @@ enum AccountDeletionService {
             modelContext.delete(group)
         }
 
+        // Mondo に並んだ自分の写真を、すべて取り下げる(公開もオフに)。
+        await MondoService.shared.withdrawAll()
+        await MainActor.run { MondoService.isPublic = false }
+        DailyOpenNotification.cancel()
+
         // Public DBの公開ディレクトリ(検索・QRプロフィール共有用)から自分を消す。
         let directoryRecordID = CKRecord.ID(recordName: "userdir_\(user.id.uuidString)")
         try? await container.publicCloudDatabase.deleteRecord(withID: directoryRecordID)

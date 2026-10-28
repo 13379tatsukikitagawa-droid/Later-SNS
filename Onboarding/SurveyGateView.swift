@@ -44,7 +44,6 @@ struct SurveyGateView: View {
                 .padding(.bottom, 40)
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private var iconBadge: some View {

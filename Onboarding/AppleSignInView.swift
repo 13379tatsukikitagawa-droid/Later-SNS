@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import AuthenticationServices
 import CoreImage.CIFilterBuiltins
+import os
 
 /// Sign in with Appleのみのシンプルなログインゲート。
 /// 成功すると appleUserID を保存し、既存のUserProfileがあればそれを、
@@ -172,6 +173,44 @@ extension AppleSignInView {
         case .failure(let error):
             return error.localizedDescription
         }
+    }
+}
+
+// MARK: - 計測([SignInPerf])
+
+/// サインインの各地点の時刻(ボタンを押した T0 からの秒数)。Release の実機で測る。
+/// Console.app などで「SignInPerf」を検索すると、区間ごとの時間が読める。
+enum SignInPerf {
+    nonisolated(unsafe) private static var start: CFAbsoluteTime?
+    nonisolated(unsafe) private static var last: CFAbsoluteTime?
+    private static let logger = Logger(subsystem: "com.tatsukikitagawa.later", category: "SignInPerf")
+
+    /// T0:ボタンを押した(計測を始める)
+    static func begin() {
+        let now = CFAbsoluteTimeGetCurrent()
+        start = now
+        last = now
+        logger.notice("[SignInPerf] T0 ボタンを押した")
+        print("[SignInPerf] T0 ボタンを押した")
+    }
+
+    /// 地点を記録(T0 からの秒数と、前の地点からの秒数)
+    static func mark(_ label: String) {
+        guard let start else { return }
+        let now = CFAbsoluteTimeGetCurrent()
+        let total = now - start
+        let delta = now - (last ?? start)
+        last = now
+        let line = String(format: "[SignInPerf] %@  +%.3fs (T0から %.3fs)", label, delta, total)
+        logger.notice("\(line, privacy: .public)")
+        print(line)
+    }
+
+    /// 計測を終える(次の画面が出た)
+    static func end(_ label: String) {
+        mark(label)
+        start = nil
+        last = nil
     }
 }
 

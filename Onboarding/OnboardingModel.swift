@@ -6,14 +6,23 @@ import UserNotifications
 
 /// 初回設定(オンボーディング)の場面。現在の場面はUserDefaultsに保存し、アプリを閉じても
 /// 続きから再開する(開幕は再開時には再生しない)。戻る操作・やり直しは用意しない。
+/// 初回設定 v2.1 の場面(7画面+メールの場面)。開幕は場面ではない(保存しない)。
 enum OnboardingStep: String, CaseIterable {
-    case meet, account, name, nameConfirm
-    case explainAsk, explainSealed, explain9, explainArrive
+    /// ① はじめる(Apple / メール)
+    case account
+    /// ② ニックネーム
+    case name
+    /// ③ Laterの一日(24時間の輪・6場面)
+    case day
+    /// ④ あなたを3つのタグで表すと(v2.1 で初回に戻した)
     case tags
-    /// 5. ルッキズム(5画面):問い → 計算 → 換算 → 責任とLaterの答え → 同意
-    case lookismRetakes, lookismCount, lookismTime, lookismAnswer, lookismConsent
-    case profilePhoto, notify, finish
-    /// 「メールで続ける」のあとの場面(アカウントの1問の延長)。本筋の順番(next)には入らない。
+    /// ⑤ 仕組みの問題(静けさのパート)
+    case quiet
+    /// ⑥ 最初の1枚(プロフィール写真)
+    case photo
+    /// ⑦ 預けました(通知のお願い)→ ようこそ → Home
+    case notify
+    /// 「メールで続ける」のあとの場面(①の延長)。本筋の順番(next)には入らない。
     case emailInput, emailSending, emailSent, emailVerifying, emailFailed
 
     /// メールでのサインインの場面か
@@ -24,145 +33,48 @@ enum OnboardingStep: String, CaseIterable {
         }
     }
 
-    /// 本筋の順番(メールの場面を除く)
-    static let mainFlow: [OnboardingStep] = allCases.filter { !$0.isEmailStep }
+    /// 本筋の順番
+    static let mainFlow: [OnboardingStep] = [.account, .name, .day, .tags, .quiet, .photo, .notify]
 
-    /// 玉のまわりの8つの点のうち、白く灯っている数(進み具合。数字は出さない)。
+    /// 玉のまわりの点の数(画面の数)
+    static let dotCount = 7
+
+    /// 玉のまわりの7つの点のうち、白く灯っている数(画面 i で i 個)
     var litDots: Int {
         switch self {
-        case .meet: return 0
         case .account: return 1
-        case .name, .nameConfirm: return 2
-        case .explainAsk, .explainSealed, .explain9, .explainArrive: return 3
+        case .name: return 2
+        case .day: return 3
         case .tags: return 4
-        case .lookismRetakes, .lookismCount, .lookismTime, .lookismAnswer, .lookismConsent: return 4
-        case .profilePhoto: return 6
+        case .quiet: return 5
+        case .photo: return 6
         case .notify: return 7
-        case .finish: return 8
-        case .emailInput, .emailSending, .emailVerifying, .emailFailed: return 1
-        // 送りました(待っている感じ)
-        case .emailSent: return 6
+        case .emailInput, .emailSending, .emailSent, .emailVerifying, .emailFailed: return 1
         }
     }
 
-    /// ルッキズムのパート(静けさのパート)。玉・点・光を消し、触覚もタイプのスキップも止める。
-    var isQuiet: Bool {
-        switch self {
-        case .lookismRetakes, .lookismCount, .lookismTime, .lookismAnswer, .lookismConsent: return true
-        default: return false
-        }
-    }
+    /// 静けさのパート(⑤だけ)。玉・光を暗くし、触覚を止める。④のタグは通常の画面。
+    var isQuiet: Bool { self == .quiet }
+
+    /// 玉が大きい(ヒーロー)場面
+    var usesHeroOrb: Bool { self == .account }
 
     var next: OnboardingStep? {
-        let flow = Self.mainFlow
-        guard let index = flow.firstIndex(of: self), index + 1 < flow.count else { return nil }
-        return flow[index + 1]
+        guard let index = Self.mainFlow.firstIndex(of: self), index + 1 < Self.mainFlow.count else { return nil }
+        return Self.mainFlow[index + 1]
     }
 }
 
-// MARK: - 場面の中身
+// MARK: - 場面の中身(タイプライター用。いまは使わない部品からだけ参照)
 
 struct OnboardingLine {
     enum Tone {
-        /// 白(静けさのパートでは#E9E9ED)
         case primary
-        /// グレー(#8E8E93)
         case secondary
     }
 
     let text: String
     var tone: Tone = .primary
-}
-
-enum OnboardingActions {
-    case primary(String)
-    case choice(yes: String, no: String)
-    case account
-    case nameInput
-    /// ボタンなし。打ち終わってから指定秒後に自動で次へ。
-    case auto(after: TimeInterval)
-    case tags
-    case hold(OnboardingHoldKind)
-    case profilePhoto
-    case notify
-    /// 5-1の選択肢(0 / 1〜2 / 3〜5 / 6〜10 / 11以上)
-    case retakeChoice
-    /// メールアドレスの入力(CTA「リンクを送る」)
-    case emailInput
-    /// 送りました(メールアプリを開く・アドレスを変える・再送)
-    case emailSent
-    /// 失敗(もう一度送る・Appleで続ける)
-    case emailFailed
-    /// ボタンなし(送信中・確認中)
-    case none
-}
-
-enum OnboardingHoldKind {
-    /// ルッキズムの最後の同意
-    case consent
-    /// 結び(Homeへ)
-    case finish
-}
-
-/// 5-1「1枚の写真を投稿するまでに、何回撮り直しますか。」の答え。答えは保存しない。
-enum RetakeAnswer: Int, CaseIterable {
-    case zero, oneToTwo, threeToFive, sixToTen, elevenOrMore
-
-    var label: String {
-        switch self {
-        case .zero: return "0"
-        case .oneToTwo: return "1〜2"
-        case .threeToFive: return "3〜5"
-        case .sixToTen: return "6〜10"
-        case .elevenOrMore: return "11以上"
-        }
-    }
-
-    /// 計算に使う代表値
-    var representative: Int {
-        switch self {
-        case .zero: return 0
-        case .oneToTwo: return 2
-        case .threeToFive: return 4
-        case .sixToTen: return 8
-        case .elevenOrMore: return 12
-        }
-    }
-}
-
-/// 5-2・5-3の計算。1日1枚、1回10秒、80年(仮の数字)。
-enum RetakeMath {
-    static let years = 80
-    static let secondsPerRetake = 10.0
-
-    /// 換算の表し方(設定1つで切り替える)
-    enum Conversion {
-        /// 日数(基本)
-        case days
-        /// 映画の本数(1本2時間)
-        case movies
-    }
-
-    static let conversion: Conversion = .days
-    static let movieHours = 2.0
-
-    /// 回数 = 撮り直し回数 × 365 × 80
-    static func totalRetakes(_ answer: RetakeAnswer) -> Int {
-        answer.representative * 365 * years
-    }
-
-    /// 5-3の文。日数 = 回数 × 10秒 ÷ 86400(映画なら、時間 ÷ 2時間)
-    static func conversionText(_ answer: RetakeAnswer) -> String {
-        let seconds = Double(totalRetakes(answer)) * secondsPerRetake
-        switch conversion {
-        case .days:
-            let days = max(1, Int((seconds / 86400).rounded()))
-            return "それは、\n約\(days.formatted())日分の時間です。\n"
-        case .movies:
-            let movies = max(1, Int((seconds / 3600 / movieHours).rounded()))
-            return "それは、映画\n約\(movies.formatted())本分の時間です。\n"
-        }
-    }
 }
 
 /// メールでのサインインがうまくいかなかった理由
@@ -203,122 +115,42 @@ enum EmailSignInFailure: Equatable {
     }
 }
 
-enum OnboardingVisual {
-    case none
-    /// 小さな枠の中央に白い点だけ(写真は出ない)
-    case sealedFrame
-    /// 「09:00」と、一斉に光る14個の点
-    case nineAM
-    /// 34個の点の輪(オレンジ→青→黄)
-    case arriveRing
-    /// 通知カードの見本
-    case notificationCard
-    /// プロフィール撮影の小さなファインダー
-    case viewfinder
-    /// リンクの確認中の輪(直径96pt、白い輪が回る)
-    case verifyingRing
-}
-
-struct OnboardingScene {
-    let lines: [OnboardingLine]
-    let actions: OnboardingActions
-    var visual: OnboardingVisual = .none
-    /// 文字の大きさ(既定27pt)。行数の多い場面だけ小さくする。
-    var fontSize: CGFloat = 27
-    /// 文の下に添える小さな出典など(等幅)。
-    var footnote: String?
-    /// 文の下で、0から一気に数え上がる数字(5-2の撮り直しの回数)
-    var countUp: Int?
-}
-
-extension OnboardingStep {
-    func scene(name: String, emailFailure: EmailSignInFailure = .network, retakes: RetakeAnswer? = nil) -> OnboardingScene {
-        switch self {
-        case .emailInput:
-            return OnboardingScene(lines: [.init(text: "メールアドレスを\n教えてください。")], actions: .emailInput, fontSize: 26)
-        case .emailSending:
-            return OnboardingScene(lines: [.init(text: "リンクを\n送っています…")], actions: .none, fontSize: 26)
-        case .emailSent:
-            return OnboardingScene(lines: [.init(text: "メールを\n送りました。")], actions: .emailSent)
-        case .emailVerifying:
-            return OnboardingScene(lines: [.init(text: "リンクを\n確認しています…")], actions: .none, visual: .verifyingRing, fontSize: 26)
-        case .emailFailed:
-            // 補足(14pt)は、見出しの下に入力欄と同じ層で出す(OnboardingFlowView.emailFailureNote)。
-            return OnboardingScene(lines: [.init(text: emailFailure.title)], actions: .emailFailed, fontSize: 26)
-        case .meet:
-            return OnboardingScene(lines: [
-                .init(text: "これから、\nいくつか質問をします。\n"),
-                .init(text: "答えをもとに、\nあなたのLaterを\n用意します。", tone: .secondary),
-            ], actions: .primary("はじめる"))
-        case .account:
-            return OnboardingScene(lines: [.init(text: "以前、Laterを\n使ったことはありますか。")], actions: .account)
-        case .name:
-            return OnboardingScene(lines: [.init(text: "Laterの中で、\nあなたを何と\n呼べばいいですか。")], actions: .nameInput)
-        case .nameConfirm:
-            return OnboardingScene(lines: [.init(text: "\(name)さん、\nよろしくお願いします。")], actions: .auto(after: 1.8))
-        case .explainAsk:
-            return OnboardingScene(lines: [.init(text: "写真を撮ったら、\nすぐに確認したいですか。")], actions: .choice(yes: "はい", no: "いいえ"))
-        case .explainSealed:
-            return OnboardingScene(lines: [.init(text: "Laterでは、\n撮った写真をすぐに\n見ることはできません。")], actions: .primary("つづける"), visual: .sealedFrame)
-        case .explain9:
-            return OnboardingScene(lines: [.init(text: "毎朝9:00、\n全員が同時に、\n1日1枚だけ撮れるように\nなります。")], actions: .primary("つづける"), visual: .nineAM)
-        case .explainArrive:
-            return OnboardingScene(lines: [.init(text: "今日の1枚を撮ると、\n昨日みんなが撮った\n写真が届きます。")], actions: .primary("つづける"), visual: .arriveRing)
-        case .tags:
-            return OnboardingScene(lines: [.init(text: "あなたを3つのタグで\n表すとしたら、何ですか。")], actions: .tags, fontSize: 25)
-        case .lookismRetakes:
-            return OnboardingScene(lines: [.init(text: "あなたは、1枚の写真を\n投稿するまでに、\n何回撮り直しますか。")], actions: .retakeChoice)
-        case .lookismCount:
-            guard let retakes, retakes != .zero else {
-                return OnboardingScene(lines: [.init(text: "あなたは、\n撮り直さない人です。")], actions: .primary("つづける"))
-            }
-            return OnboardingScene(
-                lines: [.init(text: "あなたはこれから\n80年生きるとして、")],
-                actions: .primary("つづける"),
-                footnote: "1日1枚、1回10秒として計算しています。\n80年は仮の数字です。",
-                countUp: RetakeMath.totalRetakes(retakes)
-            )
-        case .lookismTime:
-            guard let retakes, retakes != .zero else {
-                return OnboardingScene(lines: [.init(text: "それでも、多くの人は\nそうではありません。")], actions: .primary("つづける"))
-            }
-            return OnboardingScene(lines: [
-                .init(text: RetakeMath.conversionText(retakes)),
-                .init(text: "よく見られるためだけに、\n使う時間です。", tone: .secondary),
-            ], actions: .primary("つづける"))
-        case .lookismAnswer:
-            // 責任の所在とLaterの答えを1画面にまとめる(行が多いため、この場面だけ文字を小さく)。
-            return OnboardingScene(lines: [
-                .init(text: "これは、あなたの\n弱さではなく、\n比べさせる仕組みの\n問題です。\n"),
-                .init(text: "Laterでは、撮り直しも、\n加工も、いいねも\nありません。"),
-            ], actions: .primary("つづける"), fontSize: 23)
-        case .lookismConsent:
-            return OnboardingScene(lines: [.init(text: "この約束のもとで、\nはじめますか。")], actions: .hold(.consent))
-        case .profilePhoto:
-            return OnboardingScene(lines: [
-                .init(text: "あなたを表す1枚を\n撮ってください。\n"),
-                .init(text: "顔である必要はありません。", tone: .secondary),
-            ], actions: .profilePhoto, visual: .viewfinder)
-        case .notify:
-            return OnboardingScene(lines: [.init(text: "毎朝9:00に、\n撮影の開始をお知らせ\nしてもいいですか。")], actions: .notify, visual: .notificationCard)
-        case .finish:
-            return OnboardingScene(lines: [
-                .init(text: "準備ができました。\n"),
-                .init(text: "明日の朝、\nあなたの最初の1枚が\n現像されます。", tone: .secondary),
-            ], actions: .hold(.finish))
-        }
-    }
-}
-
 // MARK: - 文言
 
 enum OnboardingCopy {
-    /// 「自分を表すタグ」の候補。後で流行のタグに差し替えられるよう、データとして分けておく。
-    static let selfTagCandidates = ["朝型", "散歩", "コーヒー", "音楽", "夜型", "本", "猫", "ひとり時間", "空"]
+    /// 「自分を表すタグ」の候補(初回設定④とプロフィールの編集で使う)。一覧は SelfTagCatalog で差し替える
+    static var selfTagCandidates: [String] { SelfTagCatalog.candidates }
+    // ④
+    static let tagsTitle = "あなたを3つのタグで\n表すと、何ですか。"
+    static let tagsSub = "プロフィールに表示されます。\nあとから変えられます。"
+    static let tagAddTitle = "タグを\n追加してください。"
+    static let tagAddSub = "1〜12文字。空白は使えません。"
+    // ①
+    static let accountTitle = "今日を撮ると、\nみんなの昨日がひらく。"
+    static let accountSub = "1日1枚。7日で消える、\n友だちとだけの写真アプリ。"
+    // ②
+    static let nameTitle = "ニックネームを\n決めてください。"
+    static let nameSub = "本名でなくて大丈夫です。\nあとから変えられます。"
+    // ③
+    static let dayTitle = "Laterの一日"
+    static func daySub(name: String) -> String { "\(name)さんの一日は、こう流れます。" }
+    // ④(数字は出典から切り離さない。根拠が確認できる表現にだけ変える)
+    static let quietTitle = "比べてしまうのは、\n仕組みの問題です。"
+    static let quietStat = "約3人に1人"
+    static let quietStatBody = "体に悩んだことのある10代の女性が、\nInstagramによって悩みが悪化したと\n答えました。"
+    static let quietSource = "出典:Facebook社内調査(Instagram)2021年\nWSJ報道・米議会提出資料"
+    static let quietAnswer = "Laterには、\nいいねもフォロワー数もありません。"
+    // ⑤
+    static let photoTitle = "あなたを表す1枚を\n撮ってください。"
+    static let photoSub = "景色でも、手元でも大丈夫です。\n翌朝9:00まで、あなたにも見えません。"
+    // ⑥
+    static let notifyTitle = "預けました。"
+    static let notifySub = "写真は、明日の朝9:00に現像されます。"
+    static let notifySkippedTitle = "準備ができました。"
+    static let notifySkippedSub = "プロフィールの写真は、あとから撮れます。"
+    static let notifyNote = "毎朝9:00に、このようにお知らせします。"
 
-    /// プロフィール撮影の例(押せない、案内だけ)。
-    static let profilePhotoExamples = ["いま見えている景色", "手元", "好きなもの"]
-
+    /// 毎朝9:00の通知の本文(⑥の見本カードも、この定数を使う)
     static let dailyNotificationBody = "9:00 になりました。今日を撮れます。"
 
     static let appleSignInFailed = "Appleでのサインインができませんでした。もう一度ためしてください。"
@@ -372,9 +204,14 @@ enum OnboardingRules {
 // MARK: - 調整用の数値
 
 enum OnboardingTuning {
-    /// タイプ中の触覚を何文字ごとに鳴らすか(0なら鳴らさない)。実機でうるさければ3にするか0にする。
-    static let typingHapticEvery = 2
-    static let typingHaptic: (intensity: Float, sharpness: Float) = (0.25, 0.5)
+    /// ボタンの触覚(くっきり軽く1回)
+    static let buttonHaptic: (intensity: Float, sharpness: Float) = (0.7, 0.8)
+    /// ⑤の長押し:だんだん強く(強さ0.15→0.85、鋭さ0.2→0.55)→ 満ちたら強く1回(1.0 / 0.9)
+    static let photoHoldIntensity: ClosedRange<Float> = 0.15...0.85
+    static let photoHoldSharpness: ClosedRange<Float> = 0.2...0.55
+    static let photoCaptureHaptic: (intensity: Float, sharpness: Float) = (1.0, 0.9)
+    /// ようこその吸い込み:連続でだんだん強く
+    static let welcomeRamp: (from: Float, to: Float, sharpFrom: Float, sharpTo: Float) = (0.15, 0.8, 0.2, 0.6)
     /// ボタン(=パシャ)の触覚。ボタンとシャッターで2回鳴らさない。
     static let shutterHaptic: (intensity: Float, sharpness: Float) = (0.7, 0.8)
     static let tagHaptic: (intensity: Float, sharpness: Float) = (0.5, 0.6)
@@ -408,12 +245,61 @@ enum DailyOpenNotification {
     static let hour = DailyExposureRules.openingHour
     static let identifier = "later.daily.open"
 
-    /// 許可を求め、許可されたら毎日9:00のローカル通知を登録する。拒否されたら何もしない。
+    /// 毎朝9:00のお知らせが登録されているか(設定のトグル)
+    static func isScheduled() async -> Bool {
+        let requests = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        return requests.contains { $0.identifier == identifier }
+    }
+
+    /// 毎朝9:00のお知らせを解除する
+    static func cancel() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+    }
+
+    /// 許可のダイアログの結果。許可 / 拒否 / エラー / 時間切れ(どれでも「ようこそ」へ進む)
+    enum AuthorizationResult: String {
+        case granted, denied, failed, timedOut
+    }
+
+    /// 許可を求める。結果が `timeout` 秒たっても返らなければ、時間切れとして先へ進む(保険)。
+    static func requestAuthorization(timeout: Double = 10) async -> AuthorizationResult {
+        let once = ResumeOnce()
+        return await withCheckedContinuation { continuation in
+            Task {
+                let result: AuthorizationResult
+                do {
+                    result = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) ? .granted : .denied
+                } catch {
+                    print("[Welcome] 通知の許可でエラー: \(error)")
+                    result = .failed
+                }
+                if once.claim() { continuation.resume(returning: result) }
+            }
+            Task {
+                try? await Task.sleep(for: .seconds(timeout))
+                if once.claim() { continuation.resume(returning: .timedOut) }
+            }
+        }
+    }
+
+    /// 一度だけ resume するための目印
+    private final class ResumeOnce: @unchecked Sendable {
+        private let lock = NSLock()
+        private var done = false
+        func claim() -> Bool {
+            lock.lock(); defer { lock.unlock() }
+            if done { return false }
+            done = true
+            return true
+        }
+    }
+
+    /// 毎日9:00のローカル通知を登録する(許可されているときだけ)。「ようこそ」の演出とは独立に、待たずに呼ぶ。
     @discardableResult
-    static func requestAndSchedule() async -> Bool {
+    static func schedule() async -> Bool {
         let center = UNUserNotificationCenter.current()
-        let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
-        guard granted else { return false }
+        let settings = await center.notificationSettings()
+        guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return false }
 
         let content = UNMutableNotificationContent()
         content.body = OnboardingCopy.dailyNotificationBody
@@ -447,22 +333,8 @@ enum ProfilePhotoDevelopment {
         return calendar.date(byAdding: .day, value: 1, to: todayOpening) ?? todayOpening
     }
 
-    /// プロフィール画像の撮り直しは、1日にこの回数まで(初回設定の1枚は含めない)。
-    static let maxRetakesPerDay = 1
     /// 初めてプロフィール画像が現像され、まだその演出を見せていない(ProfileImmersiveViewで一度だけ再生する)。
     static let revealPendingKey = "profilePhotoRevealPending"
-    private static let retakeDayKey = "profilePhotoRetakeDay"
-    private static let retakeCountKey = "profilePhotoRetakeCount"
-
-    static func canRetake(now: Date = Date()) -> Bool {
-        retakesToday(now: now) < maxRetakesPerDay
-    }
-
-    private static func retakesToday(now: Date) -> Int {
-        let defaults = UserDefaults.standard
-        guard defaults.string(forKey: retakeDayKey) == ExposureDayStore.dayKey(for: now) else { return 0 }
-        return defaults.integer(forKey: retakeCountKey)
-    }
 
     static func store(_ imageData: Data, for profile: UserProfile, takenAt date: Date = Date(), context: ModelContext) {
         profile.pendingProfileImageData = imageData
@@ -470,13 +342,16 @@ enum ProfilePhotoDevelopment {
         try? context.save()
     }
 
-    /// 撮り直しの1枚を預ける(回数を数える)。
+    /// 撮りなおしの1枚を預ける。入れかわり待ちは1つだけ:もう一度撮ると、待ちの写真が差しかわる(回数の制限なし)。
     static func storeRetake(_ imageData: Data, for profile: UserProfile, takenAt date: Date = Date(), context: ModelContext) {
-        let defaults = UserDefaults.standard
-        let count = retakesToday(now: date)
-        defaults.set(ExposureDayStore.dayKey(for: date), forKey: retakeDayKey)
-        defaults.set(count + 1, forKey: retakeCountKey)
         store(imageData, for: profile, takenAt: date, context: context)
+    }
+
+    /// 入れかわり待ちの写真を捨てて、元にもどす(翌朝9:00 までのあいだだけ)
+    static func cancelPending(for profile: UserProfile, context: ModelContext) {
+        profile.pendingProfileImageData = nil
+        profile.pendingProfileImageRevealAt = nil
+        try? context.save()
     }
 
     /// 現像の時刻を過ぎていれば、プロフィール画像として反映し、参加中のグループへ同期する。
@@ -501,4 +376,12 @@ enum ProfilePhotoDevelopment {
         }
         Task { await UserDirectoryService.publish(profile) }
     }
+}
+
+// MARK: - 自分を表すタグの候補(データ)
+
+/// 「自分を表すタグ」の候補の一覧。今は固定。あとでサーバーなどから差し替えられるよう、ここに分けておく。
+/// (撮影時のハッシュタグとは別物)
+enum SelfTagCatalog {
+    static let candidates = ["朝型", "夜型", "散歩", "コーヒー", "音楽", "本", "猫", "ひとり時間", "空", "映画", "料理", "運動"]
 }

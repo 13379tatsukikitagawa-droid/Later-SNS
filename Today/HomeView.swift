@@ -1,73 +1,74 @@
 import SwiftUI
 
-/// Home画面(再設計 Step 2 + v2:状態で変わる1画面)。「今、何ができるか」を1つだけ伝える。
+/// Home画面(v3)。状態(HomeState)と時刻は TodayView が1か所で決めて渡し、ここは表示するだけ。
 ///
-/// 上から:ヘッダー(Later・時間のカプセル・アバター)→ 点の輪(みんなの昨日、260pt)→ 見出しと説明
-/// → 現像カード(預けた1枚の色と濃さ)→ グループの段。画面の下の「月」(撮る・ひらく・待つ)は、
-/// 次の画面になってふくらむため、Homeの上に重なる層としてTodayViewが持つ。
-/// 状態はHomeState.resolveで決まる。振動は「ひらく」の長押し(月)だけで使う。
+/// 上端からの位置(iPhone 15・390×844 基準):ヘッダー60 → 光の球112〜412 → 見出し432 →
+/// 現像カード536(高さ88)→ グループの見出し644 → グループの丸664。月だけは画面の下端から置くため、
+/// Homeの上に重なる層として TodayView が持つ。高さが足りない機種では、ヘッダーより下を縦に詰める。
 struct HomeView: View {
-    /// 自分が撮った写真の撮影日時。
-    let myCaptureDates: [Date]
-    /// これまでに1枚でも預けたか(写真が7日で削除された後も、記録から判定する)
-    let hasDeposited: Bool
-    /// 今日より前で、最後に預けた1枚の撮影時刻
-    let lastDepositBeforeToday: Date?
-    /// 今日、長押しで昨日をひらいたか
-    let openedToday: Bool
-    /// 昨日の枚数。nilなら取得できていない(「—」を表示する)。
-    let yesterdayCount: Int?
-    /// 日付(ExposureDay.dayKey)ごとの、写真の主要な3色
-    let tonesByDay: [String: [Color]]
-    /// MEを除いた、参加中のグループ
-    let groups: [LaterGroup]
-    /// 円をそのグループの点だけに絞っている時のグループ
-    let selectedGroupID: UUID?
-    /// タグ画面・撮影画面・仮の「昨日を見る」画面などで、Homeが覆われているか。
+    let state: HomeState
+    let now: Date
+    let light: YesterdayLight
+    let developContent: HomeDevelopCard.Content
+    /// 現像カード・あなたの光に使う、強くぼかした色だけの画像
+    let developTexture: UIImage?
+    /// 今日撮った枚数(のこりフィルムに出す)
+    var shotsToday: Int = 0
+    let tones: [Color]
+    /// ひらいたあとの光の色(昨日の写真の代表色)
+    let openedTones: [Color]
+    /// MEを除いた、参加中のグループの要約(昨日、投稿した人数)
+    let groupSummaries: [GroupSummary]
+    /// まだグループをつくれるか
+    let canCreateGroup: Bool
+    /// タグ画面・撮影画面・昨日を見る画面などで、Homeが覆われているか
     let isCovered: Bool
-    /// 月の長押し(③)の進み具合。円の色づきが同じ値を読む。
+    /// 月の長押しの進み具合(球の色づきが同じ値を読む)
     let holdModel: HoldGaugeModel
-    /// 右上のアバター(プロフィール画像。なければペルソナのアイコン)
     let avatarImage: UIImage?
     let avatarSeed: UUID?
-    /// あなたのページに、見ていない変化がある(現像が100%になった)
     let showsAvatarBadge: Bool
     let onOpenProfile: () -> Void
-    /// 現像が100%になった(アバターの白い点を点ける)。引数は、その1枚を表すキー。
-    let onDevelopFinished: (String) -> Void
-    /// グループの輪をタップした(nilなら「みんな」に戻る)
-    let onSelectGroup: (LaterGroup?) -> Void
+    /// アバターの2回タップ・長押し(今日 / 昨日の切りかえ)
+    var avatarSwitch = AvatarSwitch()
+    var avatarName = ""
+    let onDevelopTap: () -> Void
+    let onSelectGroup: (UUID) -> Void
     let onCreateGroup: () -> Void
-    /// 現在時刻。プレビューやテストでは任意の時刻を返す。
-    var clock: () -> Date = Date.init
+    var onJoinGroup: () -> Void = {}
+    /// 列の先頭の「追加」タイルを押した(追加シートを出す)
+    var onAddGroup: () -> Void = {}
+    var arrivingGroupID: UUID?
+    /// 起動アニメーションの、いまの時刻の見た目(LaunchFrame.at)。終わったら .finished
+    var launch: LaunchFrame = .finished
+    /// ウォーム起動の、0.4秒だけのきらめき(0〜1)
+    var sparkle: Double = 0
+    /// 光の球(230pt の円ぜんたい)をタップした(Mondo の入口)
+    var onOrbTap: () -> Void = {}
+    /// Mondo へのダイブ中(球は 5.5倍にふくらんで消え、ほかの要素は 320ms で消える)
+    var isDiving = false
 
     private static let homeTabIndex = 0
+    private static let baseHeight: CGFloat = 844
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// カプセルの文字の Dynamic Type の倍率(17ptで止める)
+    @State private var showsLights = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.selectedMainTabIndex) private var selectedMainTabIndex
 
-    @ScaledMetric(relativeTo: .title) private var headlineSize: CGFloat = 25
-    @ScaledMetric(relativeTo: .subheadline) private var bodySize: CGFloat = 13
-
-    @State private var now = Date()
     @State private var isOnScreen = false
-    /// 登場演出を一度だけ行うためのフラグ(撮影から戻った時などは演出をやり直さない)。
-    @State private var hasPlayedEntrance = false
+    /// 入場の開始時刻(状態が切りかわったとき・開き直したときだけ。2.8秒後に外す)
     @State private var entranceStart: Date?
-    @State private var isTextVisible = false
-    @State private var isCardVisible = false
-    @State private var isStripVisible = false
-    @State private var displayedCount = 0
-    @State private var waveStart: Date?
-    @State private var isBreathing = false
-    @State private var isCapsuleDotLit = false
-    /// 現像カードと「あなたの1点」に表示している濃さ(開くたびに0からのぼる)
-    @State private var displayedDevelop: Double = 0
-    @State private var myDotPulseStart: Date?
+    /// 常に動くもの(カードの光・オーブの波紋)の基準時刻
+    @State private var ambientStart = Date()
 
-    private var state: HomeState {
-        HomeState.resolve(now: now, myCaptureDates: myCaptureDates, hasDeposited: hasDeposited, openedToday: openedToday)
+    /// ひらいたあと(まだ撮れる more を含む)。Mondo の球の見た目を出す
+    private var isOpened: Bool {
+        switch state {
+        case .opened, .more: return true
+        default: return false
+        }
     }
 
     private var isVisible: Bool {
@@ -75,538 +76,402 @@ struct HomeView: View {
     }
 
     var body: some View {
+        if state.usesChicHome {
+            // 撮る前の今日のホームは、白 × シック(ChicHomeView)
+            ChicHomeView(
+                state: state, now: now, light: light,
+                developContent: developContent, developTexture: developTexture,
+                shotsToday: shotsToday, tones: tones,
+                groupSummaries: groupSummaries, canCreateGroup: canCreateGroup,
+                isCovered: isCovered,
+                avatarImage: avatarImage, avatarSeed: avatarSeed, showsAvatarBadge: showsAvatarBadge,
+                onOpenProfile: onOpenProfile, avatarSwitch: avatarSwitch, avatarName: avatarName,
+                onDevelopTap: onDevelopTap, onSelectGroup: onSelectGroup, onCreateGroup: onCreateGroup,
+                onJoinGroup: onJoinGroup, onAddGroup: onAddGroup, arrivingGroupID: arrivingGroupID,
+                launch: launch, onOrbTap: onOrbTap, isDiving: isDiving
+            )
+        } else {
+            darkBody
+        }
+    }
+
+    private var darkBody: some View {
         GeometryReader { proxy in
-            let fixedHeight: CGFloat = 450
-            let ringSize = min(260, max(220, proxy.size.height - fixedHeight))
-            let isCompact = proxy.size.height - fixedHeight < 220
-            VStack(spacing: 0) {
-                header
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+            let fullHeight = proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom
+            // 高さが844より低い機種は、ヘッダーより下の位置を縦に詰め、球も少し小さくする。
+            let k = min(1, max(0.72, (fullHeight - 200) / (Self.baseHeight - 200)))
+            let top = max(proxy.safeAreaInsets.top, 44)
+            let y: (CGFloat) -> CGFloat = { v in top + (v - 60) * k }
 
-                ringBlock(size: ringSize)
-                    .padding(.top, 4)
-                    .scaleEffect(isCovered ? 1.08 : (selectedGroupID == nil ? 1 : 0.92))
-                    .opacity(isCovered ? 0.25 : 1)
+            let width = proxy.size.width + proxy.safeAreaInsets.leading + proxy.safeAreaInsets.trailing
+            ZStack(alignment: .top) {
+                LaterHeader(
+                    home: .today,
+                    shotsToday: shotsToday,
+                    avatarImage: avatarImage,
+                    avatarName: avatarName,
+                    showsBadge: showsAvatarBadge,
+                    onAvatar: { if showsLights { withAnimation(.easeOut(duration: 0.25)) { showsLights = false } } else { onOpenProfile() } },
+                    onConsumption: toggleLights,
+                    avatarSwitch: avatarSwitch
+                )
+                    .environment(\.palette, .night)
+                    .environment(\.colorScheme, .dark)
+                    .frame(width: width, height: LaterHeader.height)
+                    .offset(y: top)
+                    .opacity(launch.headerOpacity * (isDiving ? 0 : 1))
+                    .animation(.easeOut(duration: 0.32), value: isDiving)
+
+                orb
+                    .overlay {
+                        OrbRipple(start: ambientStart, diameter: HomeLightOrb.Layout.diameter, isActive: ambientActive)
+                    }
+                    .scaleEffect(k)
+                    .frame(width: HomeLightOrb.Layout.box * k, height: HomeLightOrb.Layout.box * k)
+                    .offset(y: y(112))
+                    .scaleEffect(isCovered && !isDiving ? 1.08 : 1)
+                    .opacity(isCovered && !isDiving ? 0.25 : 1)
                     .animation(.easeInOut(duration: 0.45), value: isCovered)
-                    .animation(.easeInOut(duration: 0.5), value: selectedGroupID)
-                    .contentShape(Circle())
-                    .onTapGesture { if selectedGroupID != nil { onSelectGroup(nil) } }
+                    .scaleEffect(isDiving ? 5.5 : 1, anchor: UnitPoint(x: 0.5, y: y(262) / max(1, fullHeight)))
+                    .opacity(isDiving ? 0 : 1)
+                    .animation(reduceMotion ? .easeOut(duration: 0.3) : .timingCurve(0.5, 0, 0.3, 1, duration: 0.72), value: isDiving)
 
-                textBlock
-                    .frame(height: 88, alignment: .top)
+
+                TimelineView(.animation(paused: entranceStart == nil)) { context in
+                    textBlock(now: context.date)
+                }
                     .padding(.horizontal, 24)
-                    .padding(.top, 10)
-                    .opacity(isTextVisible ? 1 : 0)
-                    .offset(y: isTextVisible || reduceMotion ? 0 : 12)
+                    .frame(width: width)
+                    .offset(y: y(432) + launch.headOffset)
+                    .opacity(launch.headOpacity * (isDiving ? 0 : 1))
+                    .animation(.easeOut(duration: 0.32), value: isDiving)
 
-                developCard
-                    .frame(height: HomeDevelopCard.height)
-                    .padding(.horizontal, 28)
-                    .padding(.top, 8)
-                    .opacity(isCardVisible ? 1 : 0)
+                TimelineView(.animation(paused: entranceStart == nil)) { context in
+                    HomeDevelopCard(
+                        content: developContent,
+                        now: now,
+                        texture: developTexture,
+                        tones: tones,
+                        isAnimating: isVisible && !reduceMotion,
+                        film: (taken: shotsToday, isNight: state.isNight),
+                        onTap: onDevelopTap
+                    )
+                    .overlay {
+                        CardShimmer(start: ambientStart, isActive: ambientActive)
+                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    }
+                    .entrance(entrance(context.date, delay: 0.3, duration: 0.85), dy: reduceMotion ? 0 : 22)
+                }
+                .padding(.horizontal, 20)
+                .frame(width: width)
+                .offset(y: y(536) + launch.cardOffset)
+                .opacity(launch.cardOpacity * (isDiving ? 0 : 1))
+                    .animation(.easeOut(duration: 0.32), value: isDiving)
 
                 HomeGroupStrip(
-                    groups: groups,
-                    selectedGroupID: selectedGroupID,
-                    showsLabel: !isCompact,
-                    onSelect: { group in onSelectGroup(group.id == selectedGroupID ? nil : group) },
-                    onCreate: onCreateGroup
+                    summaries: groupSummaries,
+                    canCreate: canCreateGroup,
+                    isFrontmost: isVisible,
+                    entranceStart: entranceStart,
+                    onSelect: onSelectGroup,
+                    onCreate: onCreateGroup,
+                    onJoin: onJoinGroup,
+                    onAdd: onAddGroup,
+                    arrivingID: arrivingGroupID,
+                    shotsToday: shotsToday
                 )
-                .padding(.top, 24)
-                .opacity(isStripVisible ? 1 : 0)
-
-                // 画面の下の月(TodayViewが重ねる)の場所
-                Spacer(minLength: MoonLayout.visibleHeight + 16)
+                .frame(width: width, alignment: .leading)
+                .offset(y: y(624) + launch.groupOffset)
+                .opacity(launch.groupOpacity * (isDiving ? 0 : 1))
+                    .animation(.easeOut(duration: 0.32), value: isDiving)
             }
-            .frame(width: proxy.size.width)
+            .frame(width: width, height: fullHeight, alignment: .top)
+            .background(alignment: .top) {
+                HomeBackdrop(kind: state.kind, orbCenterY: y(262), height: fullHeight)
+                    .frame(width: width, height: fullHeight)
+                    .clipped()
+                    .opacity(launch.bgOpacity)
+            }
+            .ignoresSafeArea()
+            .lightsPanelOverlay(isOpen: $showsLights, now: now, taken: shotsToday, top: top, width: width)
         }
-        .background(HomePalette.background.ignoresSafeArea())
+        .background(Color.black.ignoresSafeArea())
         .overlay {
-            FilmGrainOverlay(opacity: 0.05, blendMode: .normal)
+            FilmGrainOverlay(opacity: 0.05 * launch.bgOpacity, blendMode: .normal)
                 .ignoresSafeArea()
+                .allowsHitTesting(false)
         }
-        .onAppear {
-            isOnScreen = true
-            now = clock()
-            playEntranceIfNeeded()
-            playDevelopRise()
-            reportDevelopFinishedIfNeeded()
-        }
+        .onAppear { isOnScreen = true }
         .onDisappear { isOnScreen = false }
-        .onChange(of: scenePhase) { _, phase in
-            // バックグラウンドから戻った時は時間が経っている可能性があるため再計算する。
-            if phase == .active { updateNow() }
+        // 入場は「状態が切りかわったとき」「アプリを開き直したとき」だけ(時計の更新・同期の再描画では流さない)
+        .onChange(of: state.kind) { _, _ in startEntrance() }
+        .onChange(of: scenePhase) { old, new in
+            if old == .background, new == .active { startEntrance() }
         }
-        .onChange(of: state) { old, new in
-            handleStateChange(from: old, to: new)
-        }
-        .onChange(of: countValue) { _, newValue in
-            withAnimation(.easeOut(duration: 0.9)) { displayedCount = newValue }
-        }
-        .onChange(of: developTarget) { old, new in
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { displayedDevelop = new }
-            // 100%になった瞬間に開いていたら、「あなたの1点」の輪が1回だけふくらんで消える(振動なし)。
-            if old < 1, new >= 1, isVisible, !reduceMotion { myDotPulseStart = Date() }
-            reportDevelopFinishedIfNeeded()
-        }
-        .task(id: isVisible) {
-            // 時刻の表示と現像の濃さは1分ごとに更新する。見えていない間は止める。
-            guard isVisible else { return }
-            updateNow()
-            while !Task.isCancelled {
-                let seconds = Calendar.current.component(.second, from: clock())
-                try? await Task.sleep(for: .seconds(Double(60 - seconds) + 0.05))
-                guard !Task.isCancelled else { return }
-                updateNow()
-            }
+        .onChange(of: isVisible) { _, visible in
+            if visible { ambientStart = Date() }
         }
     }
 
-    private func updateNow() {
-        withAnimation(.easeInOut(duration: 0.5)) { now = clock() }
+    private var ambientActive: Bool {
+        isVisible && HomeMotion.ambientAllowed(reduceMotion: reduceMotion)
     }
 
-    // MARK: - 登場・状態の切り替え
-
-    private func playEntranceIfNeeded() {
-        guard !hasPlayedEntrance else { return }
-        hasPlayedEntrance = true
-        if reduceMotion {
-            withAnimation(.easeOut(duration: 0.5)) {
-                isTextVisible = true
-                isCardVisible = true
-                isStripVisible = true
-                displayedCount = countValue
-            }
-        } else {
-            entranceStart = Date()
-            withAnimation(.easeOut(duration: 0.9)) { displayedCount = countValue }
-            withAnimation(.easeOut(duration: 0.5).delay(0.3)) { isTextVisible = true }
-            withAnimation(.easeOut(duration: 0.4).delay(0.45)) { isCardVisible = true }
-            withAnimation(.easeOut(duration: 0.4).delay(0.7)) { isStripVisible = true }
-        }
-        startIdleAnimations()
+    private func entrance(_ now: Date, delay: Double, duration: Double) -> Double {
+        HomeMotion.entrance(start: entranceStart, now: now, delay: delay, duration: duration, reduceMotion: reduceMotion)
     }
 
-    /// 開くたびに、現像カードと「あなたの1点」がいまの濃さまで0.9秒かけてのぼる。
-    private func playDevelopRise() {
-        let target = developTarget
-        guard !reduceMotion else {
-            displayedDevelop = target
-            return
-        }
-        displayedDevelop = 0
-        withAnimation(.easeOut(duration: 0.9)) { displayedDevelop = target }
-    }
-
-    private func startIdleAnimations() {
-        guard !reduceMotion else { return }
-        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) { isBreathing = true }
-        withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { isCapsuleDotLit = true }
-    }
-
-    private func handleStateChange(from old: HomeState, to new: HomeState) {
-        // 9:00ちょうどに①→②(④⑤)へ切り替わったら、点が中心から外側へ波のように光る。
-        if case .beforeOpening = old, new.canShoot, !reduceMotion {
-            waveStart = Date()
-        }
-        if case .shot = new {
-            holdModel.reset()
-        }
-        withAnimation(.easeOut(duration: 0.9)) { displayedCount = countValue }
-    }
-
-    // MARK: - ヘッダー
-
-    private var header: some View {
-        HStack {
-            Text("Later")
-                .font(.system(size: 19, weight: .bold))
-                .tracking(-0.05 * 19)
-                .foregroundStyle(.white)
-            Spacer()
-            timeCapsule
-            avatarButton
-                .padding(.leading, 12 - 4)
+    private func startEntrance() {
+        // 起動アニメーションの最中は、そちらにまかせる
+        guard launch == .finished else { return }
+        let start = Date()
+        entranceStart = start
+        DispatchQueue.main.asyncAfter(deadline: .now() + HomeMotion.entranceDuration) {
+            if entranceStart == start { entranceStart = nil }
         }
     }
 
-    /// 右上のアバター(直径36pt、タップ領域44pt)。右上の白い点は「見ていない変化がある」時だけ。
-    private var avatarButton: some View {
-        Button(action: onOpenProfile) {
-            ZStack(alignment: .topTrailing) {
-                Group {
-                    if let avatarImage {
-                        Image(uiImage: avatarImage).resizable().aspectRatio(contentMode: .fill)
-                    } else if let avatarSeed {
-                        PersonaIcon(seed: avatarSeed)
-                    } else {
-                        Circle().fill(HomePalette.surface)
-                    }
-                }
-                .frame(width: 36, height: 36)
-                .clipShape(Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.55), lineWidth: 1.5))
-                .overlay(Circle().stroke(.black, lineWidth: 2).padding(-1))
+    // MARK: - ヘッダー(LaterHeader.swift)
 
-                if showsAvatarBadge {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 9, height: 9)
-                        .overlay(Circle().stroke(.black, lineWidth: 2))
-                        .shadow(color: .white.opacity(0.7), radius: 4)
-                        .offset(x: 2, y: -2)
-                }
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(showsAvatarBadge ? "あなたのページ、新しい変化があります" : "あなたのページ")
+    private func toggleLights() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.8)) { showsLights.toggle() }
     }
 
-    /// 撮れる時間は「消灯まで 05:49」、9:00前は現在時刻(点はグレー)。
-    private var timeCapsule: some View {
-        let isOpenHours: Bool = {
-            if case .beforeOpening = state { return false }
-            if case .lightsOut = state { return false }
-            return true
-        }()
-        let label = isOpenHours ? "消灯まで \(Self.lightsOutRemaining(from: now))" : Self.clockFormatter.string(from: now)
-        return HStack(spacing: 7) {
-            Circle()
-                .fill(isOpenHours ? Color.white : HomePalette.disabledText)
-                .frame(width: 5, height: 5)
-                .opacity(isCapsuleDotLit ? 1 : 0.7)
-            Text(label)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .monospacedDigit()
-                .contentTransition(.numericText())
-                .foregroundStyle(.white)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(Capsule().fill(HomePalette.surface))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isOpenHours ? "消灯まで \(Self.spokenDuration(Self.minutesUntilLightsOut(from: now)))" : "現在 \(Self.clockFormatter.string(from: now))")
-    }
+    // MARK: - 光の球
 
-    // MARK: - 点の輪と中心
-
-    private var ringTone: HomeDotRing.Tone {
+    private var orbLook: HomeLightOrb.Look {
         switch state {
-        case .beforeOpening, .lightsOut: return .dim
-        case .canShoot, .returning, .firstDay, .shot: return .bright
-        case .opened: return .colored
+        case .night, .rest, .dawn: return .closed
+        case .deciding, .ready: return .ready
+        case .opened, .more: return .opened
+        case .first: return .first
         }
     }
 
-    private var countValue: Int { yesterdayCount ?? 0 }
-
-    private func ringBlock(size: CGFloat) -> some View {
+    private var orb: some View {
         TimelineView(.animation(paused: !holdModel.isMoving)) { context in
             let openProgress: Double = {
-                if case .shot = state { return holdModel.progress(at: context.date) }
+                if case .ready = state { return holdModel.progress(at: context.date) }
                 return 0
             }()
-            ZStack {
-                Circle()
-                    .fill(glowColor(openProgress: openProgress))
-                    .frame(width: size * 0.84, height: size * 0.84)
-                    .blur(radius: 52)
-                    .animation(.easeInOut(duration: 0.5), value: ringTone)
+            HomeLightOrb(
+                look: orbLook,
+                light: light,
+                tones: openedTones,
+                myColor: hasMyLight ? HomePalette.orange : nil,
+                openProgress: openProgress,
+                isAnimating: isVisible && !reduceMotion,
+                launch: launch,
+                myLightCap: hasShotToday ? 1 : 0.6,
+                sparkle: sparkle,
+                showsMondo: isOpened
+            )
+            .contentShape(Circle().size(width: HomeLightOrb.Layout.diameter, height: HomeLightOrb.Layout.diameter)
+                .offset(x: (HomeLightOrb.Layout.box - HomeLightOrb.Layout.diameter) / 2, y: (HomeLightOrb.Layout.box - HomeLightOrb.Layout.diameter) / 2))
+            .onTapGesture(perform: onOrbTap)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint(isOpened ? "Mondo に入ります" : "")
+        }
+    }
 
-                HomeDotRing(
-                    count: min(countValue, HomeDotRing.Layout.capacity),
-                    tone: ringTone,
-                    isAnimating: isVisible && !reduceMotion,
-                    entranceStart: entranceStart,
-                    waveStart: waveStart,
-                    openProgress: openProgress,
-                    myDot: myDot
-                )
-                .scaleEffect(size / HomeDotRing.diameter)
-                .frame(width: size, height: size)
+    /// 今日の1枚をまだ撮っていない(dawn)。起動で、あなたの光をうすく(上限0.6)
+    private var hasShotToday: Bool {
+        if case .dawn = state { return false }
+        return true
+    }
 
-                centerLabel(openProgress: openProgress)
+    /// あなたの光:預けた1枚が現像中・現像ずみの時だけ
+    private var hasMyLight: Bool {
+        switch developContent {
+        case .developing, .developed: return true
+        case .rest, .first: return false
+        }
+    }
+
+    // MARK: - 見出しと補足
+
+    private func textBlock(now: Date) -> some View {
+        let lines = Self.headline(state).components(separatedBy: "\n")
+        let blur: CGFloat = reduceMotion ? 0 : 12
+        let dy: CGFloat = reduceMotion ? 0 : 12
+        return VStack(spacing: 10) {
+            VStack(spacing: 28 * 0.28 - 6) {
+                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                    Text(line)
+                        .entrance(entrance(now, delay: Double(index) * 0.14, duration: 0.95), blur: blur, dy: dy)
+                }
             }
-            .frame(width: size, height: size)
-        }
-    }
-
-    private func glowColor(openProgress: Double) -> Color {
-        switch ringTone {
-        case .dim: return .white.opacity(0.03)
-        case .colored: return HomePalette.orange.opacity(0.14)
-        case .bright:
-            // 長押しでひらいている間は、白から薄いオレンジへ。
-            guard openProgress > 0 else { return .white.opacity(0.07) }
-            return Color(red: 1, green: 1 - 0.38 * openProgress, blue: 1 - 0.63 * openProgress).opacity(0.07 + 0.07 * openProgress)
-        }
-    }
-
-    private func centerLabel(openProgress: Double) -> some View {
-        let (number, caption) = centerTexts(openProgress: openProgress)
-        return VStack(spacing: 7) {
-            Text(number)
-                .font(.system(size: 38, weight: .bold))
-                .tracking(-0.05 * 38)
-                .monospacedDigit()
-                .contentTransition(.numericText(value: Double(displayedCount)))
-                .foregroundStyle(.white)
-            Text(caption)
-                .font(.system(size: 9.5, weight: .regular, design: .monospaced))
-                .tracking(0.14 * 9.5)
-                .foregroundStyle(.white.opacity(0.5))
-                .multilineTextAlignment(.center)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(centerAccessibilityLabel)
-    }
-
-    private func centerTexts(openProgress: Double) -> (String, String) {
-        switch state {
-        case .beforeOpening(let opensAt):
-            return ("09:00", "まで \(Self.hoursMinutes(Self.minutesUntil(opensAt, from: now)))")
-        case .lightsOut:
-            return ("09:00", "明日、はじまる")
-        default:
-            guard let yesterdayCount else { return ("—", "昨日の枚数を確認できません") }
-            if yesterdayCount == 0 { return ("0", "昨日は、まだ誰も撮っていません") }
-            let number = displayedCount.formatted(.number.grouping(.automatic))
-            switch state {
-            case .shot:
-                if holdModel.isDone { return (number, "枚の昨日が、ひらいた") }
-                return (number, openProgress > 0.5 ? "枚の昨日が、ひらきかけている" : "枚の昨日が、現像ずみ")
-            case .opened:
-                return (number, "枚の昨日が、ひらいた")
-            default:
-                return (number, "枚の昨日が、閉じている")
-            }
-        }
-    }
-
-    private var centerAccessibilityLabel: String {
-        switch state {
-        case .beforeOpening(let opensAt):
-            return "撮影は9時にはじまります。あと\(Self.spokenDuration(Self.minutesUntil(opensAt, from: now)))。"
-        case .lightsOut:
-            return "今日の撮影は終わりました。明日9時にはじまります。"
-        default:
-            guard let yesterdayCount else { return "昨日の枚数を確認できません。" }
-            if yesterdayCount == 0 { return "昨日は、まだ誰も撮っていません。" }
-            let formatted = yesterdayCount.formatted(.number.grouping(.automatic))
-            switch state {
-            case .shot: return "昨日の写真、\(formatted)枚が現像されました。長押しでひらきます。"
-            case .opened: return "昨日の写真、\(formatted)枚がひらいています。"
-            default: return "昨日の写真、\(formatted)枚が閉じています。今日を撮ると、ひらきます。"
-            }
-        }
-    }
-
-    // MARK: - 見出しと説明
-
-    private var textBlock: some View {
-        VStack(spacing: 8) {
-            Text(headline)
-                .font(.system(size: headlineSize, weight: .bold))
-                .tracking(-0.045 * headlineSize)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.6)
-                .foregroundStyle(.white)
-
-            Text(description)
-                .font(.system(size: bodySize))
-                .tracking(-0.01 * bodySize)
+            .font(.system(size: 28, weight: .bold))
+            .tracking(-0.05 * 28)
+            .multilineTextAlignment(.center)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .foregroundStyle(.white)
+            .accessibilityElement(children: .combine)
+            Text(Self.subline(state))
+                .font(.system(size: 13))
                 .multilineTextAlignment(.center)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .foregroundStyle(HomePalette.subText)
+                .entrance(entrance(now, delay: 0.4, duration: 0.95), blur: blur, dy: dy)
         }
-        .id(state.kind)
-        .transition(.opacity)
-        .animation(.easeInOut(duration: 0.5), value: state.kind)
         .frame(maxWidth: .infinity)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
-    private var headline: String {
+    static func headline(_ state: HomeState) -> String {
         switch state {
-        case .beforeOpening, .lightsOut: return "今日は、まだ\nはじまっていません。"
-        case .canShoot, .returning, .firstDay: return "今日を撮ると、\nみんなの昨日がひらく。"
-        case .shot: return "昨日が、\n現像されました。"
-        case .opened: return "昨日が、\nひらいています。"
+        case .night: return "おやすみ。\n朝に、仕上がります。"
+        case .rest: return "今日は、\nおやすみ。"
+        case .dawn: return "今日を撮ると、\n昨日がひらく。"
+        case .deciding: return "昨日の1枚、\nどうする?"
+        case .ready: return "昨日が、\nひらけます。"
+        case .opened, .more: return "昨日を、\nひらきました。"
+        case .first: return "はじめまして。\n今日を撮ってみよう。"
         }
     }
 
-    private var description: String {
+    static func subline(_ state: HomeState) -> String {
         switch state {
-        case .beforeOpening: return "撮影は 9:00 から。"
-        case .lightsOut: return "今日の撮影は、おしまいです。"
-        case .canShoot: return "あなたの昨日の1枚も、同時にひらきます。"
-        case .returning: return "お休みしても、何も失いません。"
-        case .firstDay: return "はじめての1枚を、預けましょう。"
-        case .shot: return "長押しで、みんなの昨日がひらく。"
-        case .opened: return "今日の1枚は、明日の朝に仕上がります。"
+        case .night: return "9:00になると、また撮れます。"
+        case .rest: return "あしたの朝9:00から、また撮れます。"
+        case .dawn: return "昨日の光が、まだ閉じています。"
+        case .deciding: return "選ぶと、みんなの昨日がひらけます。"
+        case .ready: return "長押しで、みんなの昨日がひらく。"
+        case .opened: return "今日の1枚は、あしたの朝に仕上がります。"
+        case .more(_, let remaining): return "あと \(remaining) こま、撮れます。"
+        case .first: return "あしたの朝に、今日の1枚がひらきます。"
         }
-    }
-
-    // MARK: - 現像
-
-    /// 現像カードに出す1枚。撮った後は今日の1枚、それ以外は最後に預けた1枚。
-    private var developSubject: DevelopSubject? {
-        let calendar = Calendar.current
-        switch state {
-        case .shot(let at), .opened(let at):
-            return DevelopSubject(kind: .today, capturedAt: at, tones: tones(for: at))
-        case .firstDay:
-            return nil
-        default:
-            guard let last = lastDepositBeforeToday else { return nil }
-            let isYesterday = calendar.isDateInYesterday(last)
-            let kind: DevelopSubject.Kind
-            if case .returning = state {
-                kind = .waiting(last)
-            } else {
-                kind = isYesterday ? .yesterday : .waiting(last)
-            }
-            return DevelopSubject(kind: kind, capturedAt: last, tones: tones(for: last))
-        }
-    }
-
-    private func tones(for date: Date) -> [Color] {
-        let key = ExposureDayStore.dayKey(for: date)
-        let tones = tonesByDay[key] ?? []
-        return tones.count >= 3 ? tones : DevelopProgress.defaultTones
-    }
-
-    /// 現在時刻と撮影時刻から計算した濃さ(保存しない)
-    private var developTarget: Double {
-        guard let subject = developSubject else { return 0 }
-        return DevelopProgress.progress(capturedAt: subject.capturedAt, now: now)
-    }
-
-    @ViewBuilder
-    private var developCard: some View {
-        switch state {
-        case .firstDay:
-            HomeDevelopCard(subject: nil, progress: 0)
-        default:
-            if let subject = developSubject {
-                HomeDevelopCard(subject: subject, progress: displayedDevelop)
-                    .id(subject.capturedAt)
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: 0.5), value: subject.capturedAt)
-            } else {
-                Color.clear
-            }
-        }
-    }
-
-    /// 現像が100%になったら、アバターの白い点を点ける(その1枚につき1度)。
-    private func reportDevelopFinishedIfNeeded() {
-        guard let subject = developSubject, developTarget >= 1 else { return }
-        onDevelopFinished(String(Int(subject.capturedAt.timeIntervalSince1970)))
-    }
-
-    /// 円の中の「あなたの1点」。預けた1枚がない時(⑤)は出さない。
-    private var myDot: HomeDotRing.MyDot? {
-        guard let subject = developSubject else { return nil }
-        let p = displayedDevelop
-        return HomeDotRing.MyDot(color: DevelopProgress.developed(subject.tones[0], p), progress: p, pulseStart: myDotPulseStart)
-    }
-
-    // MARK: - 時刻の表記
-
-    private static let clockFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "HH:mm"
-        return formatter
-    }()
-
-    private static func minutesUntil(_ date: Date, from now: Date) -> Int {
-        max(0, Int(ceil(date.timeIntervalSince(now) / 60)))
-    }
-
-    private static func minutesUntilLightsOut(from now: Date) -> Int {
-        Int((DailyExposureRules.remainingUntilLightsOut(from: now) ?? 0) / 60)
-    }
-
-    private static func lightsOutRemaining(from now: Date) -> String {
-        hoursMinutes(minutesUntilLightsOut(from: now))
-    }
-
-    /// 「01:18」
-    private static func hoursMinutes(_ minutes: Int) -> String {
-        String(format: "%02d:%02d", minutes / 60, minutes % 60)
-    }
-
-    /// 「1時間18分」
-    private static func spokenDuration(_ minutes: Int) -> String {
-        let hours = minutes / 60, rest = minutes % 60
-        if hours == 0 { return "\(rest)分" }
-        return rest == 0 ? "\(hours)時間" : "\(hours)時間\(rest)分"
     }
 }
 
-// MARK: - プレビュー(時刻と撮影状況を差し込んで状態を確認する)
-
-private struct HomeViewPreview: View {
-    let now: Date
-    let captures: [Date]
-    let count: Int?
-    var openedToday = false
-    @State private var holdModel = HoldGaugeModel()
+/// 画面全体の、状態ごとのやわらかい光(黒の上の楕円グラデーション。下から1つ・球のうしろに1つ)。
+/// 切りかえは1秒のクロスフェード。
+struct HomeBackdrop: View {
+    let kind: String
+    let orbCenterY: CGFloat
+    let height: CGFloat
 
     var body: some View {
-        HomeView(
-            myCaptureDates: captures,
-            hasDeposited: !captures.isEmpty,
-            lastDepositBeforeToday: captures.filter { $0 < Calendar.current.startOfDay(for: now) }.max(),
-            openedToday: openedToday,
-            yesterdayCount: count,
-            tonesByDay: [:],
-            groups: [],
-            selectedGroupID: nil,
-            isCovered: false,
-            holdModel: holdModel,
-            avatarImage: nil,
-            avatarSeed: UUID(),
-            showsAvatarBadge: true,
-            onOpenProfile: {},
-            onDevelopFinished: { _ in },
-            onSelectGroup: { _ in },
-            onCreateGroup: {},
-            clock: { now }
-        )
+        let colors = Self.colors(kind)
+        ZStack(alignment: .top) {
+            Color.black
+                .frame(maxWidth: .infinity)
+            Ellipse()
+                .fill(RadialGradient(colors: [colors.orb, .clear], center: .center, startRadius: 0, endRadius: 220))
+                .frame(width: 440, height: 400)
+                .offset(y: orbCenterY - 200)
+            Ellipse()
+                .fill(RadialGradient(colors: [colors.bottom, .clear], center: .center, startRadius: 0, endRadius: 300))
+                .frame(width: 640, height: 420)
+                .offset(y: height - 170)
+        }
+        .frame(height: height)
+        .animation(.easeInOut(duration: 1), value: kind)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    static func colors(_ kind: String) -> (orb: Color, bottom: Color) {
+        switch kind {
+        case "night": return (Color(hex: "4A4FB0").opacity(0.22), Color(hex: "3A3F9E").opacity(0.32))
+        case "rest": return (Color(hex: "3A4060").opacity(0.18), Color(hex: "2B3150").opacity(0.26))
+        case "dawn": return (Color(hex: "FF9A4D").opacity(0.16), Color(hex: "FF8A3D").opacity(0.3))
+        case "ready", "deciding": return (Color(hex: "FF8F7A").opacity(0.2), Color(hex: "FF7E6B").opacity(0.34))
+        case "opened", "more": return (Color(hex: "BFD6FF").opacity(0.16), Color(hex: "A8C8FF").opacity(0.28))
+        default: return (Color.white.opacity(0.08), Color.white.opacity(0.12))
+        }
+    }
+}
+
+// MARK: - プレビュー(6つの状態)
+
+private struct HomeViewPreview: View {
+    let state: HomeState
+    let content: HomeDevelopCard.Content
+    var light: YesterdayLight = .count(128)
+    let now: Date
+    @State private var holdModel = HoldGaugeModel()
+    @State private var haptics = ExposureHaptics()
+
+    var body: some View {
+        ZStack {
+            HomeView(
+                state: state,
+                now: now,
+                light: light,
+                developContent: content,
+                developTexture: nil,
+                tones: DevelopProgress.defaultTones,
+                openedTones: DevelopProgress.defaultTones,
+                groupSummaries: [],
+                canCreateGroup: true,
+                isCovered: false,
+                holdModel: holdModel,
+                avatarImage: nil,
+                avatarSeed: UUID(),
+                showsAvatarBadge: false,
+                onOpenProfile: {},
+                onDevelopTap: {},
+                onSelectGroup: { _ in },
+                onCreateGroup: {}
+            )
+            GeometryReader { proxy in
+                HomeMoon(
+                    mode: Self.mode(state.moonPlan(yesterday: light)),
+                    screenSize: proxy.size,
+                    holdModel: holdModel,
+                    haptics: haptics,
+                    textOpacity: 1,
+                    isInteractive: true,
+                    onTap: {},
+                    onHoldComplete: {}
+                )
+                .position(MoonLayout.center(in: proxy.size))
+            }
+            .ignoresSafeArea()
+        }
+    }
+
+    static func mode(_ plan: HomeState.MoonPlan) -> HomeMoon.Mode {
+        switch plan {
+        case .locked(let t, let s): return .dim(title: t, subtitle: s)
+        case .shoot: return .tap(title: "今日を撮る", subtitle: "タップ", tone: .warm)
+        case .decide: return .tap(title: "昨日の1枚を選ぶ", subtitle: "タップ", tone: .decide)
+        case .open: return .hold
+        case .review: return .tap(title: "昨日をもう一度見る", subtitle: "タップ", tone: .cool)
+        }
     }
 }
 
 private func previewDate(dayOffset: Int = 0, _ hour: Int, _ minute: Int) -> Date {
     let calendar = Calendar.current
-    let today = calendar.startOfDay(for: Date())
-    let day = calendar.date(byAdding: .day, value: dayOffset, to: today)!
+    let day = calendar.date(byAdding: .day, value: dayOffset, to: calendar.startOfDay(for: Date()))!
     return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)!
 }
 
-#Preview("① 9:00前") {
-    HomeViewPreview(now: previewDate(7, 42), captures: [previewDate(dayOffset: -1, 18, 11)], count: 1284)
+#Preview("night") {
+    HomeViewPreview(state: .night, content: .developing(capturedAt: previewDate(dayOffset: -1, 20, 10), isNight: true), now: previewDate(6, 40))
 }
 
-#Preview("② 撮れる") {
-    HomeViewPreview(now: previewDate(18, 11), captures: [previewDate(dayOffset: -1, 20, 5)], count: 1284)
+#Preview("rest") {
+    HomeViewPreview(state: .rest, content: .rest, now: previewDate(6, 40))
 }
 
-#Preview("③ 撮った後") {
-    HomeViewPreview(now: previewDate(18, 30), captures: [previewDate(18, 11)], count: 1284)
+#Preview("dawn") {
+    HomeViewPreview(state: .dawn, content: .developed(capturedAt: previewDate(dayOffset: -1, 18, 11)), now: previewDate(9, 6))
 }
 
-#Preview("④ お休み明け") {
-    HomeViewPreview(now: previewDate(12, 0), captures: [previewDate(dayOffset: -3, 21, 40)], count: 12)
+#Preview("ready") {
+    HomeViewPreview(state: .ready(shotAt: previewDate(9, 8)), content: .developing(capturedAt: previewDate(9, 8), isNight: false), now: previewDate(14, 20))
 }
 
-#Preview("⑤ はじめての日") {
-    HomeViewPreview(now: previewDate(12, 0), captures: [], count: 0)
+#Preview("opened") {
+    HomeViewPreview(state: .opened(shotAt: previewDate(9, 8)), content: .developing(capturedAt: previewDate(9, 8), isNight: false), now: previewDate(14, 20))
+}
+
+#Preview("first") {
+    HomeViewPreview(state: .first, content: .first, light: .count(0), now: previewDate(12, 0))
 }
