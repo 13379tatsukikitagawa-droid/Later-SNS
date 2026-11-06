@@ -219,6 +219,7 @@
 		E3A100000000000000000002 /* FilmCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A100000000000000000001 /* FilmCounter.swift */; };
 		E3EEF64028A1411C946C4CB7 /* CachedPhotoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5EFC40A96147C5B9E6B7DC /* CachedPhotoImage.swift */; };
 		E4A000000000000000000002 /* HomeV17Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000001 /* HomeV17Model.swift */; };
+		E4A000000000000000000024 /* HomeV22.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000023 /* HomeV22.swift */; };
 		E4A000000000000000000004 /* HomeV17Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000003 /* HomeV17Sections.swift */; };
 		E4A000000000000000000006 /* GlobeDotsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000005 /* GlobeDotsData.swift */; };
 		E4A000000000000000000008 /* MondoGeo.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000007 /* MondoGeo.swift */; };
@@ -485,6 +486,7 @@
 		E3A000000000000000000009 /* MEAndCalendar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MEAndCalendar.swift; sourceTree = "<group>"; };
 		E3A100000000000000000001 /* FilmCounter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilmCounter.swift; sourceTree = "<group>"; };
 		E4A000000000000000000001 /* HomeV17Model.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV17Model.swift; sourceTree = "<group>"; };
+		E4A000000000000000000023 /* HomeV22.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV22.swift; sourceTree = "<group>"; };
 		E4A000000000000000000003 /* HomeV17Sections.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV17Sections.swift; sourceTree = "<group>"; };
 		E4A000000000000000000005 /* GlobeDotsData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobeDotsData.swift; sourceTree = "<group>"; };
 		E4A000000000000000000007 /* MondoGeo.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MondoGeo.swift; sourceTree = "<group>"; };
@@ -835,6 +837,7 @@
 				E3A000000000000000000003 /* DevelopPager.swift */,
 				E4A000000000000000000001 /* HomeV17Model.swift */,
 				E4A000000000000000000003 /* HomeV17Sections.swift */,
+				E4A000000000000000000023 /* HomeV22.swift */,
 				E4A000000000000000000021 /* OpeningV21.swift */,
 				E4A000000000000000000005 /* GlobeDotsData.swift */,
 				E4A000000000000000000007 /* MondoGeo.swift */,
@@ -1313,6 +1316,7 @@
 				E3A000000000000000000004 /* DevelopPager.swift in Sources */,
 				E4A000000000000000000002 /* HomeV17Model.swift in Sources */,
 				E4A000000000000000000004 /* HomeV17Sections.swift in Sources */,
+				E4A000000000000000000024 /* HomeV22.swift in Sources */,
 				E4A000000000000000000022 /* OpeningV21.swift in Sources */,
 				E4A000000000000000000006 /* GlobeDotsData.swift in Sources */,
 				E4A000000000000000000008 /* MondoGeo.swift in Sources */,

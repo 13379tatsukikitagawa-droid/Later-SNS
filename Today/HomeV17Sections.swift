@@ -305,10 +305,6 @@ struct V17FilmSection: View {
                                 }
                             }
                             .position(x: x, y: y + 137 / 2)
-                            // 撮ったチェキが とんでくる先(画面の座標)
-                            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { rect in
-                                landing.slotFrames[frame.index] = rect
-                            }
                     }
                 }
             }

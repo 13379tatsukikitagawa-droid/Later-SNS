@@ -367,17 +367,21 @@ enum TodayFilmRules {
     }
 
     /// 月のことば:0枚「今日を 撮る」/ 1〜2枚「もう 1枚 撮る」/ 3枚「今日は おしまい」
+    /// v22:0こま「今日を撮る」/ 1〜2こま「もう1枚 撮る」/ 3こま「9:00に、ひらきます」
     static func moonTitle(shots: Int) -> String {
         switch shots {
-        case ..<1: return "今日を 撮る"
-        case frameCount...: return "今日は、ここまで"
-        default: return "もう 1枚 撮る"
+        case ..<1: return "今日を撮る"
+        case frameCount...: return "9:00に、ひらきます"
+        default: return "もう1枚 撮る"
         }
     }
 
+    /// v22:「●●○  のこり 2こま」(のこりの ● は橙で描く)/ 3こま「今日は、ここまで」
     static func moonSubtitle(shots: Int) -> String {
-        let left = max(0, frameCount - shots)
-        return left == 0 ? "あしたの 9:00 に ひらく" : "のこり \(left)こま"
+        let used = min(frameCount, max(0, shots))
+        let left = frameCount - used
+        guard left > 0 else { return "今日は、ここまで" }
+        return String(repeating: "●", count: left) + String(repeating: "○", count: used) + "  のこり \(left)こま"
     }
 
     /// 撮った時刻「23:41」

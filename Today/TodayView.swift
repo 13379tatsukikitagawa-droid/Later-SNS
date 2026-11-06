@@ -1234,7 +1234,8 @@ struct TodayView: View {
             },
             launchGlowOpacity: launch.moonGlowOpacity,
             launchGlowScale: launch.moonGlowScale,
-            chic: isChicHome
+            chic: isChicHome,
+            restful: FilmCounter.shared.remaining == 0 && !state.isNight
         )
         .id(plan)
         .scaleEffect(moonScale, anchor: .center)

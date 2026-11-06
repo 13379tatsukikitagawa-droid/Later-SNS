@@ -4,7 +4,8 @@ import SwiftUI
 /// 幅330/390の円の、上の84ptだけが画面に見える。押すと、月がふくらんで次の画面になる。
 enum MoonLayout {
     /// 見えている円弧の高さ(画面の下端から)
-    static let visibleHeight: CGFloat = 84
+    /// v22:上のふちは 742pt(844 の画面)= 下から 102
+    static let visibleHeight: CGFloat = 102
     /// ホームインジケーターとの重なりが気になる時に、月を上げる量(12〜20ptで調整)
     static let lift: CGFloat = 0
 
@@ -90,6 +91,8 @@ struct HomeMoon: View {
     var launchGlowScale: Double = 1
     /// 白 × シックのホーム(白い背景の上:夜の月は灰青、にじみは上向きのラベンダー+ピーチ、文字はインク)
     var chic = false
+    /// v22:3こま撮った昼。藤いろに落ちつく(光の なでるは止まる)
+    var restful = false
 
     @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -159,6 +162,14 @@ struct HomeMoon: View {
 
             ZStack(alignment: .top) {
                 switch mode {
+                case .dim where restful:
+                    shape.fill(LinearGradient(stops: [
+                        .init(color: Color(hex: "FBFBFE"), location: 0),
+                        .init(color: Color(hex: "EEEDF8"), location: 0.1),
+                        .init(color: Color(hex: "CFCBEE"), location: 0.24),
+                        .init(color: Color(hex: "B4AEE6"), location: 0.4),
+                    ], startPoint: .top, endPoint: .bottom))
+                    shape.strokeBorder(.white.opacity(0.7), lineWidth: 1.2)
                 case .dim where chic:
                     shape.fill(ChicMoon.nightGradient)
                     shape.strokeBorder(.black.opacity(0.06), lineWidth: 1)
@@ -187,7 +198,11 @@ struct HomeMoon: View {
                     shape.fill(MoonLayout.readyGradient)
                     shape.strokeBorder(.white.opacity(0.6), lineWidth: 1.5)
                 }
-                label(color: textColor)
+                // v22:7秒ごとに、光が一度だけ なでる(左 → 右・ななめの白い帯)
+                if case .tap = mode, !reduceMotion {
+                    MoonGlint(diameter: diameter)
+                }
+                label(color: restful ? MoonLayout.ink : textColor)
             }
             .frame(width: diameter, height: diameter)
             .clipShape(shape)
@@ -292,7 +307,7 @@ struct HomeMoon: View {
                     .frame(height: 22)
                     .padding(.top, 28 - 11)
                 if let subtitle = subtitleText(progress: p), !dynamicTypeSize.isAccessibilitySize {
-                    Text(subtitle)
+                    MoonSubtitle(text: subtitle)
                         .font(.system(size: 9.5, design: .monospaced))
                         .tracking(0.14 * 9.5)
                         .monospacedDigit()
@@ -373,5 +388,43 @@ private struct DisabledWhenDim: ViewModifier {
 
     func body(content: Content) -> some View {
         content.accessibilityAddTraits(isDim ? [.isButton] : [])
+    }
+}
+
+
+/// v22:月の下の字。先頭の「●」(のこり)は橙、「○」(使った)は そのまま
+private struct MoonSubtitle: View {
+    let text: String
+
+    var body: some View {
+        let dots = text.prefix { $0 == "●" }
+        let rest = text.dropFirst(dots.count)
+        return (Text(String(dots)).foregroundColor(Color(hex: "FF5A1A")) + Text(String(rest)))
+    }
+}
+
+/// v22:7秒ごとに一度だけ、ななめの白い帯が 月を なでる(soft-light)
+private struct MoonGlint: View {
+    let diameter: CGFloat
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
+            let p = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 7) / 7
+            // 0〜55% は休み、55〜100% で 左 → 右
+            let k = max(0, (p - 0.55) / 0.45)
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0.42),
+                .init(color: .white.opacity(0.55), location: 0.5),
+                .init(color: .clear, location: 0.58),
+            ], startPoint: UnitPoint(x: 0, y: 0.35), endPoint: UnitPoint(x: 1, y: 0.65))
+            .frame(width: diameter * 2.6, height: diameter)
+            .offset(x: diameter * (1.3 - 1.6 * k))
+            .blendMode(.softLight)
+            .opacity(k > 0 && k < 1 ? 1 : 0)
+        }
+        .frame(width: diameter, height: diameter)
+        .clipped()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }

@@ -161,24 +161,25 @@ struct LaterHeader: View {
         .dynamicTypeSize(.large)
     }
 
-    /// today / yesterday。古い言葉は6pt上へ消え、新しい言葉は6pt下から上がる(0.35秒)。動きを減らす設定では0.2秒のクロスフェード。
+    /// v22:「today / yesterday」の文字ボタン(セリフ斜体 16pt。いまの方は #6E6E73、もう一方は #C2C1C7)。押すと もう一方のホームへ(sel)
     private var homeLabel: some View {
-        let word = home == .today ? "today" : "yesterday"
-        let transition: AnyTransition = reduceMotion
-            ? .opacity
-            : .asymmetric(
-                insertion: .opacity.combined(with: .offset(y: 6)),
-                removal: .opacity.combined(with: .offset(y: -6))
-            )
-        return ZStack(alignment: .leading) {
-            Text(word)
-                .font(HeaderFont.label())
-                .foregroundStyle(palette.sub)
-                .id(home)
-                .transition(transition)
+        Button {
+            Haptics.play(.detent)
+            avatarSwitch.onSwitch()
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text("today").foregroundStyle(home == .today ? Color(hex: "6E6E73") : Color(hex: "C2C1C7"))
+                Text("/").font(.system(size: 13)).foregroundStyle(Color(hex: "DADADF"))
+                Text("yesterday").foregroundStyle(home == .yesterday ? Color(hex: "6E6E73") : Color(hex: "C2C1C7"))
+            }
+            .font(.system(size: 16, design: .serif).italic())
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
         }
-        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .easeInOut(duration: 0.35), value: home)
-        .accessibilityHidden(true)
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.96))
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: home)
+        .accessibilityLabel(home == .today ? "いまは 今日のホーム。押すと 昨日のホームへ" : "いまは 昨日のホーム。押すと 今日のホームへ")
     }
 
     // MARK: 「消灯まで」の行
