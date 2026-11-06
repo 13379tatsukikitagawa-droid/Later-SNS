@@ -212,11 +212,11 @@
 		E2A000000000000000000004 /* HomeLayerSocial.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000000000000000000003 /* HomeLayerSocial.swift */; };
 		E2A000000000000000000006 /* HomeLayerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000000000000000000005 /* HomeLayerViews.swift */; };
 		E2A000000000000000000008 /* HomeLayerSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000000000000000000007 /* HomeLayerSheets.swift */; };
-		E3A000000000000000000002 /* LaterTodayHome.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A000000000000000000001 /* LaterTodayHome.swift */; };
 		E3A000000000000000000004 /* DevelopPager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A000000000000000000003 /* DevelopPager.swift */; };
 		E3A000000000000000000006 /* FriendsHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A000000000000000000005 /* FriendsHub.swift */; };
 		E3A000000000000000000008 /* Fonts/YuseiMagic-Later.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E3A000000000000000000007 /* Fonts/YuseiMagic-Later.ttf */; };
 		E3A00000000000000000000A /* MEAndCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A000000000000000000009 /* MEAndCalendar.swift */; };
+		E3A100000000000000000002 /* FilmCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A100000000000000000001 /* FilmCounter.swift */; };
 		E3EEF64028A1411C946C4CB7 /* CachedPhotoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5EFC40A96147C5B9E6B7DC /* CachedPhotoImage.swift */; };
 		E4A000000000000000000002 /* HomeV17Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000001 /* HomeV17Model.swift */; };
 		E4A000000000000000000004 /* HomeV17Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000003 /* HomeV17Sections.swift */; };
@@ -479,11 +479,11 @@
 		E2A000000000000000000003 /* HomeLayerSocial.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeLayerSocial.swift; sourceTree = "<group>"; };
 		E2A000000000000000000005 /* HomeLayerViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeLayerViews.swift; sourceTree = "<group>"; };
 		E2A000000000000000000007 /* HomeLayerSheets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeLayerSheets.swift; sourceTree = "<group>"; };
-		E3A000000000000000000001 /* LaterTodayHome.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LaterTodayHome.swift; sourceTree = "<group>"; };
 		E3A000000000000000000003 /* DevelopPager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevelopPager.swift; sourceTree = "<group>"; };
 		E3A000000000000000000005 /* FriendsHub.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendsHub.swift; sourceTree = "<group>"; };
 		E3A000000000000000000007 /* Fonts/YuseiMagic-Later.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/YuseiMagic-Later.ttf"; sourceTree = "<group>"; };
 		E3A000000000000000000009 /* MEAndCalendar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MEAndCalendar.swift; sourceTree = "<group>"; };
+		E3A100000000000000000001 /* FilmCounter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilmCounter.swift; sourceTree = "<group>"; };
 		E4A000000000000000000001 /* HomeV17Model.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV17Model.swift; sourceTree = "<group>"; };
 		E4A000000000000000000003 /* HomeV17Sections.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV17Sections.swift; sourceTree = "<group>"; };
 		E4A000000000000000000005 /* GlobeDotsData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobeDotsData.swift; sourceTree = "<group>"; };
@@ -597,6 +597,7 @@
 				F9225E138AAFBC38D95F1276 /* CaptureRequestStore.swift */,
 				4F2CF92F275B089847890306 /* ExposureHaptics.swift */,
 				D55E83A29FD094B16A771FDE /* DailyExposure.swift */,
+				E3A100000000000000000001 /* FilmCounter.swift */,
 				E4A00000000000000000000D /* RetroLook.swift */,
 				E4A00000000000000000000F /* LaterVideoStore.swift */,
 				E4A000000000000000000011 /* ShotLanding.swift */,
@@ -832,7 +833,6 @@
 				E3A000000000000000000009 /* MEAndCalendar.swift */,
 				E3A000000000000000000005 /* FriendsHub.swift */,
 				E3A000000000000000000003 /* DevelopPager.swift */,
-				E3A000000000000000000001 /* LaterTodayHome.swift */,
 				E4A000000000000000000001 /* HomeV17Model.swift */,
 				E4A000000000000000000003 /* HomeV17Sections.swift */,
 				E4A000000000000000000021 /* OpeningV21.swift */,
@@ -1311,7 +1311,6 @@
 				E3A00000000000000000000A /* MEAndCalendar.swift in Sources */,
 				E3A000000000000000000006 /* FriendsHub.swift in Sources */,
 				E3A000000000000000000004 /* DevelopPager.swift in Sources */,
-				E3A000000000000000000002 /* LaterTodayHome.swift in Sources */,
 				E4A000000000000000000002 /* HomeV17Model.swift in Sources */,
 				E4A000000000000000000004 /* HomeV17Sections.swift in Sources */,
 				E4A000000000000000000022 /* OpeningV21.swift in Sources */,
@@ -1402,6 +1401,7 @@
 				C089CAD995F2374F1F7E0519 /* CaptureRequestStore.swift in Sources */,
 				AF28ECC8E62CE129DE0FEF60 /* ExposureHaptics.swift in Sources */,
 				0535108159820B2BDDA4B567 /* DailyExposure.swift in Sources */,
+				E3A100000000000000000002 /* FilmCounter.swift in Sources */,
 				E4A00000000000000000000E /* RetroLook.swift in Sources */,
 				E4A000000000000000000010 /* LaterVideoStore.swift in Sources */,
 				E4A000000000000000000012 /* ShotLanding.swift in Sources */,

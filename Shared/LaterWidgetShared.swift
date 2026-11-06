@@ -52,14 +52,33 @@ struct LaterWidgetSnapshot: Codable, Equatable {
 
 // MARK: - 日の区切り(9:00 開始・24:00 消灯。「今日」は 9:00〜翌 8:59)
 
-enum LaterWidgetDay {
+/// 「その日」を決める、ただ1つの関数。撮れる時間は 9:00〜24:00、0:00〜9:00 は前の日の続き(おやすみ)。
+/// フィルムの数え(FilmCounter)・ホームの窓(DailyWindow)・ウィジェットは、すべてここの key を使う。
+enum LaterDay {
     static let openingHour = 9
+
+    /// いまの「その日」が始まった 9:00(0:00〜8:59 は、前の日の 9:00)
+    static func start(of now: Date, calendar: Calendar = .current) -> Date {
+        let today = calendar.startOfDay(for: now)
+        let nine = calendar.date(byAdding: .minute, value: openingHour * 60, to: today) ?? today
+        if now >= nine { return nine }
+        let previous = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        return calendar.date(byAdding: .minute, value: openingHour * 60, to: previous) ?? previous
+    }
+
+    /// 「yyyy-MM-dd」(その日の 9:00 の日付)
+    static func key(for now: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: start(of: now, calendar: calendar))
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+}
+
+enum LaterWidgetDay {
+    static let openingHour = LaterDay.openingHour
 
     /// いまの「今日」が始まった 9:00
     static func start(of now: Date, calendar: Calendar = .current) -> Date {
-        let nine = calendar.date(bySettingHour: openingHour, minute: 0, second: 0, of: now) ?? now
-        if now >= nine { return nine }
-        return calendar.date(byAdding: .day, value: -1, to: nine) ?? nine
+        LaterDay.start(of: now, calendar: calendar)
     }
 
     /// 消灯(24:00)
@@ -75,9 +94,7 @@ enum LaterWidgetDay {
     }
 
     static func key(for now: Date, calendar: Calendar = .current) -> String {
-        let start = start(of: now, calendar: calendar)
-        let parts = calendar.dateComponents([.year, .month, .day], from: start)
-        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+        LaterDay.key(for: now, calendar: calendar)
     }
 
     /// 日数の差(key の日付どうし)

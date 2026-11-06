@@ -221,7 +221,6 @@ struct HomeView: View {
             } header: {
                 LaterHeader(
                     home: .today,
-                    shotsToday: shotsToday,
                     avatarImage: avatarImage,
                     avatarName: avatarName,
                     showsBadge: showsAvatarBadge,
@@ -235,7 +234,7 @@ struct HomeView: View {
                     .animation(.easeOut(duration: 0.32), value: isDiving)
             }
             .ignoresSafeArea()
-            .lightsPanelOverlay(isOpen: $showsLights, now: now, taken: shotsToday, top: top, width: width)
+            .lightsPanelOverlay(isOpen: $showsLights, now: now, top: top, width: width)
         }
         .background(Color.black.ignoresSafeArea())
         .overlay {

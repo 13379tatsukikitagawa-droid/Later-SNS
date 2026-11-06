@@ -334,7 +334,6 @@ struct HomeV5Container: View {
 
                 LaterHeader(
                     home: .yesterday,
-                    shotsToday: shotsToday,
                     avatarImage: avatarImage,
                     avatarName: currentUser?.name ?? "",
                     showsBadge: showsAvatarBadge,
@@ -352,7 +351,6 @@ struct HomeV5Container: View {
                 if showsLightsPanel, calendarPath.isEmpty {
                     LightsPanel(
                         now: now,
-                        taken: shotsToday,
                         width: min(300, proxy.size.width - 44),
                         onClose: { setLightsPanel(false) }
                     )

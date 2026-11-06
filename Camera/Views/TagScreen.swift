@@ -362,6 +362,8 @@ struct TagScreen: View {
     @State private var flights: [TapeFlightItem] = []
     @State private var slotFrames: [Int: CGRect] = [:]
     @State private var showRefuse = false
+    /// 断りの一言(タグが多い / 今日は、ここまで)
+    @State private var refuseText = ""
 
     private static let space = "tagScreen"
     private var colors: CaptureColors { .for(palette) }
@@ -450,7 +452,7 @@ struct TagScreen: View {
         }
         .overlay(alignment: .bottom) {
             if showRefuse {
-                Text("タグは \(TagRules.maxCount)つまで")
+                Text(refuseText)
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(colors.bg.color)
                     .padding(.horizontal, 18)
@@ -664,7 +666,7 @@ struct TagScreen: View {
 
     private var ctaButtons: some View {
         VStack(spacing: 6) {
-            CaptureShutterButton(enabled: canShoot, reduceMotion: reduceMotion, ink: colors.ink.color, bg: colors.bg.color) {
+            CaptureShutterButton(enabled: canShoot, reduceMotion: reduceMotion, ink: colors.ink.color, bg: colors.bg.color, onRefused: refuseShoot) {
                 start(withTags: !tags.isEmpty || !trimmedInput.isEmpty)
             }
             .modifier(Stagger(phase: stage, inDelay: 620, outIndex: 10, reduceMotion: reduceMotion))
@@ -750,8 +752,7 @@ struct TagScreen: View {
     private func refuse(word: String?) {
         // v14:4つ目 = warn +「タグは 3つまで」
         Haptics.play(.warn)
-        showRefuse = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { showRefuse = false }
+        showMessage("タグは \(TagRules.maxCount)つまで")
         if let word {
             shakeCounts[word, default: 0] += 1
         } else {
@@ -779,6 +780,19 @@ struct TagScreen: View {
         land(isSecond: tags.count == 2)
     }
 
+    /// 一言を1.6秒だけ出す
+    private func showMessage(_ text: String) {
+        refuseText = text
+        showRefuse = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { if refuseText == text { showRefuse = false } }
+    }
+
+    /// のこりが 0 のときの「撮る」:触覚(warn)+「今日は、ここまで」
+    private func refuseShoot() {
+        Haptics.play(.warn)
+        showMessage("今日は、ここまで")
+    }
+
     private func start(withTags: Bool) {
         guard canShoot, !leaving else { return }
         inputFocused = false
@@ -804,6 +818,8 @@ struct CaptureShutterButton: View {
     let reduceMotion: Bool
     let ink: Color
     let bg: Color
+    /// のこりがなくて押せないとき(触覚と一言は呼び出し側)
+    var onRefused: () -> Void = {}
     let action: () -> Void
 
     static let diameter: CGFloat = 116
@@ -813,7 +829,7 @@ struct CaptureShutterButton: View {
     var body: some View {
         Button {
             guard enabled else {
-                Haptics.play(.warn)
+                onRefused()
                 return
             }
             Haptics.play(.pop)

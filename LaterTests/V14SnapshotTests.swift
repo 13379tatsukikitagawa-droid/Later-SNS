@@ -52,9 +52,6 @@ struct V14SnapshotTests {
             try await shoot(LaterCalendarView(onClose: {}).environment(\.palette, palette).modelContainer(container), name: "calendar-\(tag)", dir: dir)
             try await shoot(FriendsHubView(myName: "たつき", friends: friends, groups: [], onClose: {}).environment(\.palette, palette).modelContainer(container), name: "friends-\(tag)", dir: dir)
             try await shoot(DevelopPager(shots: shots, now: now, startIndex: 1, onClose: {}).background(Color(hex: "1B1B1F")), name: "pager-\(tag)", dir: dir)
-            var data = HomeLayerData()
-            data.friends = friends
-            try await shoot(ScrollView { LaterTodayHome(state: .ready(shotAt: now), now: now, shots: shots, data: data, actions: HomeLayerActions(), isActive: false, onOpenShot: { _ in }, onShoot: {}, onOpenMe: {}, onFriend: { _ in }, onInvite: {}).padding(.top, 100) }.background(palette.bg).environment(\.palette, palette), name: "today-\(tag)", dir: dir)
         }
     }
 }

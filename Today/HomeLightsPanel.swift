@@ -58,8 +58,6 @@ struct LightsPanelDim: View {
 /// 右上のピルの下に出る「消灯まで / ひらくまで」のパネル。
 struct LightsPanel: View {
     let now: Date
-    /// Home のフィルムと同じ、直近の窓で撮った枚数
-    let taken: Int
     let width: CGFloat
     let onClose: () -> Void
 
@@ -71,7 +69,11 @@ struct LightsPanel: View {
             .combined(with: .offset(y: -8))
     }
 
+    /// 撮った数は FilmCounter だけを見る(ピル・Home のフィルムと同じ数)
+    private let film = FilmCounter.shared
+
     var body: some View {
+        let taken = film.used
         let c = DailyWindow.capsule(now: now)
         let parts = DailyWindow.capsuleParts(now: now)
         let progress = LightsPanelLogic.progress(now: now)

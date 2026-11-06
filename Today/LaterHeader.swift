@@ -97,8 +97,8 @@ struct LaterHeader: View {
     }
 
     let home: HomeKind
-    /// 直近の窓で撮った枚数(フィルムの残りを出す)
-    var shotsToday = 0
+    /// フィルムの残りは FilmCounter だけを見る
+    private let film = FilmCounter.shared
     var avatarImage: UIImage?
     var avatarName = ""
     var showsBadge = false
@@ -119,8 +119,9 @@ struct LaterHeader: View {
         ZStack(alignment: .topLeading) {
             topRow
                 .padding(.top, 8)
+            let remaining = film.remaining
             TimelineView(LaterHeaderSchedule(active: tickActive)) { context in
-                consumption(now: clock(), tick: context.date)
+                consumption(now: clock(), tick: context.date, remaining: remaining)
             }
             .padding(.top, 49)
         }
@@ -182,11 +183,10 @@ struct LaterHeader: View {
 
     // MARK: 「消灯まで」の行
 
-    private func consumption(now: Date, tick: Date) -> some View {
+    private func consumption(now: Date, tick: Date, remaining: Int) -> some View {
         let capsule = DailyWindow.capsule(now: now)
         let label = DailyWindow.capsuleParts(now: now).label
         let lastHour = LaterHeaderTime.isLastHour(now: now)
-        let remaining = FilmRoll.shotsRemaining(shotsToday: shotsToday)
         let timeText = LaterHeaderTime.text(now: now)
         let pulseOn = lastHour && !reduceMotion && tickActive
         let dim = pulseOn && Int(tick.timeIntervalSinceReferenceDate) % 2 != 0
@@ -253,7 +253,7 @@ struct LaterHeader: View {
 
 extension View {
     /// 「消灯まで」の行から光のパネルをひらく(暗幕つき)。top はヘッダーの上端(安全領域の高さ)。
-    func lightsPanelOverlay(isOpen: Binding<Bool>, now: Date, taken: Int, top: CGFloat, width: CGFloat) -> some View {
+    func lightsPanelOverlay(isOpen: Binding<Bool>, now: Date, top: CGFloat, width: CGFloat) -> some View {
         overlay {
             ZStack(alignment: .topLeading) {
                 if isOpen.wrappedValue {
@@ -262,7 +262,6 @@ extension View {
                         .transition(.opacity)
                     LightsPanel(
                         now: now,
-                        taken: taken,
                         width: min(300, width - 44),
                         onClose: { withAnimation(.easeOut(duration: 0.25)) { isOpen.wrappedValue = false } }
                     )

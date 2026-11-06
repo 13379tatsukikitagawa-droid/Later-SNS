@@ -116,7 +116,6 @@ struct ChicHomeView: View {
 
                 LaterHeader(
                     home: .today,
-                    shotsToday: shotsToday,
                     avatarImage: avatarImage,
                     avatarName: avatarName,
                     showsBadge: showsAvatarBadge,
@@ -135,7 +134,7 @@ struct ChicHomeView: View {
                     .allowsHitTesting(false)
             }
             .frame(width: width, height: fullHeight)
-            .lightsPanelOverlay(isOpen: $showsLights, now: now, taken: shotsToday, top: top, width: width)
+            .lightsPanelOverlay(isOpen: $showsLights, now: now, top: top, width: width)
         }
         .onChange(of: state.kind) { _, _ in
             // 状態が変わったら、いちばん上から(撮ったチェキが物干しへ とんでいる間は、今日の film のまま)

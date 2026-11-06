@@ -17,8 +17,6 @@ struct CaptureFlow: View {
         case capture
     }
 
-    /// 今日、すでに撮った数(ホームの「のこり○こま」と同じ元データ)
-    var shotsToday: Int = 0
     /// タグの画面・撮影画面の「戻る」(Home に戻る)
     var onCancel: () -> Void = {}
     /// 撮影後の動きが終わった。撮った写真(日付スタンプは焼きつけない)・タグ(# なし 0〜2個)・
@@ -64,8 +62,9 @@ struct CaptureFlow: View {
     /// v20:写真 / 動画
     @State private var mode: CaptureMode = .photo
 
-    private var left: Int { FilmRoll.shotsRemaining(shotsToday: shotsToday) }
-    private var shotIndex: Int { min(FilmRoll.shotsPerDay, shotsToday + 1) }
+    /// のこりは FilmCounter だけを見る(シャッターが切れた瞬間に減る。ホームの「のこり」と同じ数)
+    private let film = FilmCounter.shared
+    private var left: Int { film.remaining }
     private var colors: CaptureColors { .for(palette) }
 
     var body: some View {
@@ -128,7 +127,7 @@ struct CaptureFlow: View {
                     mode: $mode,
                     onBack: cancel,
                     onEditTags: backToTags,
-                    onPhoto: { shutter(layout: layout) },
+                    onPhoto: { source in shutter(layout: layout, source: source) },
                     onRecorded: { video in recorded(video, layout: layout) }
                 )
                 .allowsHitTesting(step == .capture && shotStart == nil)
@@ -282,11 +281,16 @@ struct CaptureFlow: View {
     /// 長押しが 1.0 になった / 音量ボタン2回 / VoiceOver の操作。
     /// 撮った写真は一度も見せない:ブリンク → フラッシュ → ミルク色のチェキに入れかえ、0.78秒でホームへ引きつぐ。
     /// 保存は、写真が返った時点で1回だけ(見せる動きとは つなげない)
-    private func shutter(layout: CaptureLayout) {
+    private func shutter(layout: CaptureLayout, source: ShutterSource) {
         guard step == .capture, shotStart == nil else { return }
+        // シャッターが切れた瞬間に、のこりを1つ減らす(保存・アップロードの成否は関係ない)
+        guard film.consume(captureID: UUID(), source: source == .volume ? "volume" : "screen") else {
+            Haptics.play(.warn)
+            return
+        }
         transitionToken = UUID()
         expandCopy = false
-        let number = shotIndex   // 保存のあと shotsToday が変わっても、この1枚の番号は変えない
+        let number = max(1, min(FilmRoll.shotsPerDay, film.used))   // 何こめか(この1枚の番号は変えない)
         let tags = shotTags
         let places = placeProvider
         let finish = onFinish
@@ -322,7 +326,13 @@ struct CaptureFlow: View {
     /// v20:録った動画(1秒以上)。保存は今すぐ(見せる動きとは つなげない)。見た目は穴あきのミルク色のチェキで、ホームへ
     private func recorded(_ video: RecordedVideo, layout: CaptureLayout) {
         guard shotStart == nil else { return }
-        let number = shotIndex
+        // 止めた瞬間(1秒以上)に、のこりを1つ減らす
+        guard film.consume(captureID: UUID(), source: "movie") else {
+            Haptics.play(.warn)
+            try? FileManager.default.removeItem(at: video.url)
+            return
+        }
+        let number = max(1, min(FilmRoll.shotsPerDay, film.used))
         onFinishVideo(video, shotTags, placeProvider.placeName, number)
         shotIsVideo = (true, video.duration)
         shotStart = Date()

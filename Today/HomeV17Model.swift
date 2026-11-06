@@ -156,12 +156,12 @@ enum HomeV17Rules {
         var id: Int { index }
     }
 
-    static func filmFrames(shots: [Date], state: HomeState) -> [FilmFrame] {
+    static func filmFrames(shots: [Date], state: HomeState, canShootMore: Bool = true) -> [FilmFrame] {
         let taken = Array(shots.sorted().prefix(3))
         var frames: [FilmFrame] = taken.enumerated().map { .shot(index: $0, takenAt: $1) }
         for i in taken.count..<3 {
             if state.isNight { frames.append(.rest(index: i)) }
-            else if i == taken.count && state.canShoot { frames.append(.next(index: i)) }
+            else if i == taken.count && state.canShoot && canShootMore { frames.append(.next(index: i)) }
             else { frames.append(.later(index: i)) }
         }
         return frames

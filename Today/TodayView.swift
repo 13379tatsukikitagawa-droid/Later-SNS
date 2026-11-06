@@ -218,7 +218,8 @@ struct TodayView: View {
             myCaptureDates: myCaptureDates,
             hasDeposited: hasDeposited,
             openedWindowKey: openedWindowKey.isEmpty ? nil : openedWindowKey,
-            yesterdayDecision: YesterdayDecision.resolve(yesterdayOwnPosted: yesterdayOwnPhotos(at: date).map(\.isPosted))
+            yesterdayDecision: YesterdayDecision.resolve(yesterdayOwnPosted: yesterdayOwnPhotos(at: date).map(\.isPosted)),
+            filmUsed: FilmCounter.shared.used
         )
     }
 
@@ -262,10 +263,22 @@ struct TodayView: View {
         )
     }
 
-    /// 直近の窓で撮った枚数(同じ1枚のグループごとの複製は数えない。上限は FilmRoll.shotsPerDay)
-    private var shotsInLatestWindow: Int {
-        let window = DailyWindow.latest(for: clock())
-        return FilmRoll.distinctShotCount(myCaptureDates.filter { $0 >= window.open && $0 < window.close })
+    /// 今日、シャッターを切った数(FilmCounter。切った瞬間に増え、保存の成否では戻らない。上限は FilmRoll.shotsPerDay)
+    private var filmUsed: Int { FilmCounter.shared.used }
+
+    /// のこりが 0 のとき、撮影の入口(月・今日を撮る・ショートカットなど)をことわる:触覚(warn)+「今日は、ここまで」。
+    /// ことわったら true
+    private func refuseIfFilmEmpty() -> Bool {
+        guard FilmCounter.shared.remaining == 0 else { return false }
+        Haptics.play(.warn)
+        presentToast("今日は、ここまで")
+        return true
+    }
+
+    /// 今日(直近の窓)、保存ずみの自分の写真の撮影ごとのキー。FilmCounter に合わせる(昔の写真・ほかの端末の撮影も数に入る)
+    private func reconcileFilm() {
+        FilmCounter.shared.refresh()
+        FilmCounter.shared.reconcile(savedKeys: todayShots.map(\.id))
     }
 
     /// 昨日の光(件数だけを数える。昨日の写真の画像はHomeで取得しない)。
@@ -401,7 +414,7 @@ struct TodayView: View {
             remoteImage: mondoImageLoader,
             everyoneHasPhotos: !groupItems(.everyone).isEmpty,
             isReloading: yesterdayScope == .mondo && mondoLoad == .loading,
-            showsTodayCard: shotsInLatestWindow > 0
+            showsTodayCard: filmUsed > 0
         )
     }
 
@@ -454,7 +467,7 @@ struct TodayView: View {
                 light: WorldCountStore.shared.light,
                 developContent: developContent,
                 developTexture: developTexture,
-                shotsToday: shotsInLatestWindow,
+                shotsToday: filmUsed,
                 tones: developTones,
                 openedTones: DevelopProgress.defaultTones,
                 groupSummaries: groupSummaries,
@@ -503,7 +516,7 @@ struct TodayView: View {
                     state: state,
                     now: now,
                     haptics: haptics,
-                    shotsToday: shotsInLatestWindow,
+                    shotsToday: filmUsed,
                     currentUser: currentUser,
                     sharedGroups: sharedGroups,
                     canCreateGroup: canCreateGroup,
@@ -625,7 +638,6 @@ struct TodayView: View {
             // 撮影画面。月のタップでひらく。
             if screen == .shoot {
                 CaptureFlow(
-                    shotsToday: shotsInLatestWindow,
                     onCancel: {
                         // 月のふくらみの途中でも、戻るはかならず反応させる
                         isMoonAnimating = false
@@ -821,6 +833,7 @@ struct TodayView: View {
             haptics.prepare()
             showNextEndedGroup()
             now = clock()
+            reconcileFilm()
             openYesterdayForGroupHome()
             beginLaunchIfNeeded()
         }
@@ -988,12 +1001,16 @@ struct TodayView: View {
         }
         .onChange(of: state) { _, _ in syncWidget() }
         .onChange(of: openedWindowKey) { _, _ in syncWidget() }
-        .onChange(of: myCaptureDates.count) { _, _ in syncWidget() }
+        .onChange(of: myCaptureDates.count) { _, _ in
+            reconcileFilm()
+            syncWidget()
+        }
         .onChange(of: captureRequest.pendingRequestID) { _, newValue in
             guard newValue != nil else { return }
             captureRequest.pendingRequestID = nil
             guard screen == .home else { return }
             if homeState(at: clock()).canShoot {
+                if refuseIfFilmEmpty() { return }
                 if usesV5Home { openShootV5() } else { expandMoon(to: .shoot) }
             } else if usesV5Home {
                 // もう撮れない・時間外:カードで知らせる
@@ -1171,6 +1188,7 @@ struct TodayView: View {
     }
 
     private func updateNow() {
+        FilmCounter.shared.refresh()   // 9:00 をまたいだら、のこりを 3 にもどす
         withAnimation(.easeInOut(duration: 0.5)) { now = clock() }
     }
 
@@ -1197,7 +1215,9 @@ struct TodayView: View {
                 // 押した瞬間の時刻で判定しなおす(表示中の状態が古い可能性があるため)。
                 let current = homeState(at: clock()).moonPlan(yesterday: yesterdayLight)
                 switch current {
-                case .shoot: expandMoon(to: .shoot)
+                case .shoot:
+                    // のこりがなければ、ひらかない(触覚+「今日は、ここまで」)
+                    if !refuseIfFilmEmpty() { expandMoon(to: .shoot) }
                 case .decide:
                     Haptics.play(.tick)  // v17:ごく軽く1回
                     openDecision(playsUnlock: false)
@@ -1207,9 +1227,9 @@ struct TodayView: View {
             },
             onHoldComplete: { openYesterday(scope: .everyone) },
             onDimTap: {
-                if shotsInLatestWindow >= TodayFilmRules.frameCount && !state.isNight {
+                if FilmCounter.shared.remaining == 0 && !state.isNight {
                     Haptics.play(.warn)
-                    presentToast("今日は おしまい。あしたの 9:00 に ひらく")
+                    presentToast("今日は、ここまで")
                 } else if case .locked(let title, _) = plan { presentLockedToast(title) }
             },
             launchGlowOpacity: launch.moonGlowOpacity,
@@ -1227,13 +1247,17 @@ struct TodayView: View {
         switch plan {
         case .locked(let title, let subtitle):
             // 3枚撮った昼:「今日は おしまい」(うすく。押すと warn)
-            if shotsInLatestWindow >= TodayFilmRules.frameCount && !state.isNight {
-                return .dim(title: TodayFilmRules.moonTitle(shots: shotsInLatestWindow), subtitle: TodayFilmRules.moonSubtitle(shots: shotsInLatestWindow))
+            if FilmCounter.shared.remaining == 0 && !state.isNight {
+                return .dim(title: TodayFilmRules.moonTitle(shots: filmUsed), subtitle: TodayFilmRules.moonSubtitle(shots: filmUsed))
             }
             return .dim(title: title, subtitle: subtitle)
         case .shoot:
-            // v14:0枚「今日を 撮る」/ 1〜2枚「もう 1枚 撮る ・ のこり Nフレーム」
-            return .tap(title: TodayFilmRules.moonTitle(shots: shotsInLatestWindow), subtitle: TodayFilmRules.moonSubtitle(shots: shotsInLatestWindow), tone: .warm)
+            // のこりが 0 なら、うすく(押すと warn +「今日は、ここまで」)
+            if FilmCounter.shared.remaining == 0 {
+                return .dim(title: TodayFilmRules.moonTitle(shots: filmUsed), subtitle: TodayFilmRules.moonSubtitle(shots: filmUsed))
+            }
+            // v14:0枚「今日を 撮る」/ 1〜2枚「もう 1枚 撮る ・ のこり Nこま」
+            return .tap(title: TodayFilmRules.moonTitle(shots: filmUsed), subtitle: TodayFilmRules.moonSubtitle(shots: filmUsed), tone: .warm)
         case .decide: return .tap(title: "昨日の1枚を選ぶ", subtitle: "タップ", tone: .decide)
         case .open: return .hold
         case .review: return .tap(title: "昨日をもう一度見る", subtitle: "タップ", tone: .cool)
@@ -1536,7 +1560,7 @@ struct TodayView: View {
             return
         }
         // その日の最初の1枚:月の中心から光が広がり、光の下で2画面に切りかわる(2枚目以降は光なし)
-        if shotsInLatestWindow == 1, !reduceMotion {
+        if filmUsed == 1, !reduceMotion {
             playFirstShotLight()
             return
         }
@@ -1785,7 +1809,7 @@ struct TodayView: View {
     private func openCameraFromAccessibility() {
         guard screen == .home, !isHomeCovered, !isMoonAnimating, launchClock == nil else { return }
         let state = homeState(at: clock())
-        guard CameraOpenRule.canOpen(canShoot: state.canShoot, shotsToday: shotsInLatestWindow) else {
+        guard CameraOpenRule.canOpen(canShoot: state.canShoot, shotsToday: filmUsed) else {
             showCameraDenied(deniedDecision(for: state), feedback: false)
             return
         }
@@ -1882,7 +1906,7 @@ struct TodayView: View {
         return HomeLayerBuilder.make(
             state: state,
             now: now,
-            shotsToday: shotsInLatestWindow,
+            shotsToday: filmUsed,
             me: currentUser,
             myRecordName: CloudKitManager.current?.currentUserRecordName ?? currentUser?.cloudKitUserRecordName,
             groups: sharedGroups,
@@ -1928,6 +1952,7 @@ struct TodayView: View {
             shoot: {
                 // 月と同じく、タグ画面(撮影の流れ)へ
                 guard screen == .home, !isMoonAnimating, homeState(at: clock()).canShoot else { return }
+                if refuseIfFilmEmpty() { return }
                 expandMoon(to: .shoot)
             },
             openMondo: {

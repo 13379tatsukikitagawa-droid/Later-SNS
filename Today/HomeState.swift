@@ -79,12 +79,14 @@ extension HomeState {
     ///   - openedWindowKey: 最後に長押しで昨日をひらいた窓(DailyWindow.key)。直近の窓と同じ時だけ
     ///     「ひらいた」とみなすため、窓が変わる9:00ちょうどで必ずリセットされる。
     ///   - yesterdayDecision: 昨日の窓の自分の1枚の決定。昨日の自分の1枚がなければnil。
+    ///   - filmUsed: 今日シャッターを切った数(FilmCounter.used)。「あと○こま」はこれで決める。
     static func resolve(
         now: Date,
         myCaptureDates: [Date],
         hasDeposited: Bool,
         openedWindowKey: String?,
         yesterdayDecision: YesterdayDecision? = nil,
+        filmUsed: Int? = nil,
         calendar: Calendar = .current
     ) -> HomeState {
         let latest = DailyWindow.latest(for: now, calendar: calendar)
@@ -103,7 +105,8 @@ extension HomeState {
             let opened = openedWindowKey == DailyWindow.key(for: now, calendar: calendar)
             guard opened else { return .ready(shotAt: shotInLatest) }
             // ひらいたあと、3こま目まで残りがあれば、また撮れる
-            let remaining = FilmRoll.shotsRemaining(shotsToday: FilmRoll.distinctShotCount(shotsInLatest))
+            // 数えるのは FilmCounter(filmUsed)。渡されなければ保存ずみの写真から(テスト・プレビュー用)
+            let remaining = FilmRoll.shotsRemaining(shotsToday: max(filmUsed ?? 0, FilmRoll.distinctShotCount(shotsInLatest)))
             return remaining > 0 ? .more(shotAt: shotInLatest, remaining: remaining) : .opened(shotAt: shotInLatest)
         }
 
@@ -162,7 +165,7 @@ enum DailyWindow {
 
     /// 直近の窓を表すキー(窓がひらいた日の「yyyy-MM-dd」)
     static func key(for now: Date, calendar: Calendar = .current) -> String {
-        ExposureDayStore.dayKey(for: latest(for: now, calendar: calendar).open, calendar: calendar)
+        LaterDay.key(for: now, calendar: calendar)
     }
 
     /// 時間のカプセル:昼は24:00(消灯)まで、夜は9:00(ひらく)までの残り分(秒は切り捨て。
@@ -293,3 +296,94 @@ struct DevelopSubject: Equatable {
     let capturedAt: Date
     let tones: [Color]
 }
+
+// MARK: - データ
+
+/// 今日撮った1枚(本物の写真データは持たない。時刻と街だけ)
+struct TodayShot: Identifiable, Equatable {
+    let id: String
+    let takenAt: Date
+    let city: String?
+}
+
+enum TodayFilmRules {
+    /// 1日のコマ数
+    static var frameCount: Int { FilmRoll.shotsPerDay }
+
+    enum Frame: Equatable, Identifiable {
+        /// 撮った(index は 0 から)
+        case shot(TodayShot, index: Int)
+        /// 次に撮る枠(オレンジの点線「＋ 撮る」)
+        case next(index: Int)
+        /// その先の枠(白い点線「あとで」)
+        case later(index: Int)
+
+        var id: String {
+            switch self {
+            case .shot(let shot, _): return "shot-\(shot.id)"
+            case .next(let i): return "next-\(i)"
+            case .later(let i): return "later-\(i)"
+            }
+        }
+    }
+
+    /// 3つの枠。撮った分 → 次の1枠 → のこりは「あとで」。撮れない時間なら「次」はなし
+    static func frames(shots: [TodayShot], canShoot: Bool) -> [Frame] {
+        let taken = Array(shots.sorted { $0.takenAt < $1.takenAt }.prefix(frameCount))
+        var result: [Frame] = taken.enumerated().map { .shot($1, index: $0) }
+        for index in taken.count..<frameCount {
+            result.append(index == taken.count && canShoot ? .next(index: index) : .later(index: index))
+        }
+        return result
+    }
+
+    /// 枠の傾き(-3° / 0° / +3°)
+    static func tilt(index: Int) -> Double { [-3, 0, 3][min(max(index, 0), 2)] }
+
+    /// つぎの 9:00(今日の写真がひらく時刻)
+    static func nextRevealDate(after now: Date, calendar: Calendar = .current) -> Date {
+        PhotoDevelop.developDate(takenAt: now, calendar: calendar)
+    }
+
+    /// 「あと 16時間 30分」(分は切り上げ:0分にならない)
+    static func remaining(now: Date, calendar: Calendar = .current) -> (hours: Int, minutes: Int) {
+        let seconds = max(0, nextRevealDate(after: now, calendar: calendar).timeIntervalSince(now))
+        let minutes = Int((seconds / 60).rounded(.up))
+        return (minutes / 60, minutes % 60)
+    }
+
+    static func remainingText(now: Date, calendar: Calendar = .current) -> String {
+        let r = remaining(now: now, calendar: calendar)
+        return r.hours > 0 ? "あと \(r.hours)時間 \(r.minutes)分" : "あと \(r.minutes)分"
+    }
+
+    /// 朝焼けアーチの太陽:最初に撮った時刻 → つぎの 9:00 までの進み(0〜1)。撮っていなければ nil
+    static func archProgress(shots: [TodayShot], now: Date, calendar: Calendar = .current) -> Double? {
+        guard let first = shots.map(\.takenAt).min() else { return nil }
+        let reveal = PhotoDevelop.developDate(takenAt: first, calendar: calendar)
+        let total = reveal.timeIntervalSince(first)
+        guard total > 0 else { return 1 }
+        return min(1, max(0, now.timeIntervalSince(first) / total))
+    }
+
+    /// 月のことば:0枚「今日を 撮る」/ 1〜2枚「もう 1枚 撮る」/ 3枚「今日は おしまい」
+    static func moonTitle(shots: Int) -> String {
+        switch shots {
+        case ..<1: return "今日を 撮る"
+        case frameCount...: return "今日は、ここまで"
+        default: return "もう 1枚 撮る"
+        }
+    }
+
+    static func moonSubtitle(shots: Int) -> String {
+        let left = max(0, frameCount - shots)
+        return left == 0 ? "あしたの 9:00 に ひらく" : "のこり \(left)こま"
+    }
+
+    /// 撮った時刻「23:41」
+    static func timeText(_ date: Date) -> String {
+        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
+    }
+}
+

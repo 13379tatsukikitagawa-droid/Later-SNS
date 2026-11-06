@@ -48,8 +48,8 @@ struct V14Tests {
     @Test func 月のことばと_あと何時間() {
         #expect(TodayFilmRules.moonTitle(shots: 0) == "今日を 撮る")
         #expect(TodayFilmRules.moonTitle(shots: 1) == "もう 1枚 撮る")
-        #expect(TodayFilmRules.moonSubtitle(shots: 1) == "のこり 2フレーム")
-        #expect(TodayFilmRules.moonTitle(shots: 3) == "今日は おしまい")
+        #expect(TodayFilmRules.moonSubtitle(shots: 1) == "のこり 2こま")
+        #expect(TodayFilmRules.moonTitle(shots: 3) == "今日は、ここまで")
         let r = TodayFilmRules.remaining(now: date(0, 16, 30))
         #expect(r.hours == 16 && r.minutes == 30)
         #expect(TodayFilmRules.nextRevealDate(after: date(0, 16, 30)) == date(1, 9))

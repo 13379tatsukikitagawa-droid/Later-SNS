@@ -26,7 +26,7 @@ struct CaptureV21SnapshotTests {
             for mode in [CaptureMode.photo, .video] {
                 let layout = CaptureLayout(size: size, safeTop: top, safeBottom: bottom)
                 let view = CaptureScreenV21(camera: CaptureCameraModel(), layout: layout, tags: ["雨の日", "放課後", "帰り道"], place: "渋谷区", left: 2,
-                                            mode: .constant(mode), onBack: {}, onEditTags: {}, onPhoto: {}, onRecorded: { _ in })
+                                            mode: .constant(mode), onBack: {}, onEditTags: {}, onPhoto: { _ in }, onRecorded: { _ in })
                 try await shoot(view, size: size, name: "capture-\(label)-\(mode.rawValue)", dir: dir)
             }
         }

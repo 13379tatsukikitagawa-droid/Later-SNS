@@ -19,7 +19,7 @@ struct CaptureScreenV21: View {
     let onBack: () -> Void
     let onEditTags: () -> Void
     /// 写真が撮れた(長押し 1.5秒・音量ボタン長押し・VoiceOver)
-    let onPhoto: () -> Void
+    let onPhoto: (ShutterSource) -> Void
     /// 動画を とめた(1秒以上のこった)
     let onRecorded: (RecordedVideo) -> Void
 
@@ -485,11 +485,12 @@ struct CaptureScreenV21: View {
 
     private func appear() {
         gesture.mode = mode
-        gesture.canStart = { camera.status == .ready && !camera.isCapturing && left > 0 }
+        // のこりは FilmCounter を、そのつど見る(この関数の中の left は古くなる)
+        gesture.canStart = { camera.status == .ready && !camera.isCapturing && FilmCounter.shared.remaining > 0 }
         gesture.onRefused = {
-            if left <= 0 { show("今日は、ここまで") }
+            if FilmCounter.shared.remaining <= 0 { show("今日は、ここまで") }
         }
-        gesture.onPhoto = { _ in onPhoto() }
+        gesture.onPhoto = { source in onPhoto(source) }
         gesture.onStartRecording = {
             camera.recorder.setActive(true)
             camera.recorder.startRecording(audio: hasAudio)

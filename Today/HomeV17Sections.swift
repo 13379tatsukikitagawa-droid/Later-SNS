@@ -253,6 +253,8 @@ struct V17FilmSection: View {
     let actions: HomeV17Actions
 
     @State private var swings: [Int: Int] = [:]
+    /// 数と「のこり」は FilmCounter だけを見る
+    private let film = FilmCounter.shared
 
     /// 動画のこまの長さ(とんでいる最中の こまは、引きついだ長さ)
     private func videoDuration(_ frame: HomeV17Rules.FilmFrame) -> Double? {
@@ -269,7 +271,7 @@ struct V17FilmSection: View {
         return shots + [Date()]
     }
 
-    private var frames: [HomeV17Rules.FilmFrame] { HomeV17Rules.filmFrames(shots: shownShots, state: state) }
+    private var frames: [HomeV17Rules.FilmFrame] { HomeV17Rules.filmFrames(shots: shownShots, state: state, canShootMore: film.remaining > 0) }
 
     /// とんでいる最中の こまは、まだ出さない(とんでいるチェキと重ならないように)
     private func isFlying(_ index: Int) -> Bool {
@@ -280,7 +282,7 @@ struct V17FilmSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             V17SectionHeader(kicker: "TODAY'S FILM ・ \(HomeV17Rules.dotDate(HomeV17Rules.filmDay(now: now)))",
-                             title: "今日の", accent: "film", number: "\(min(3, shots.count)) / 3", ink: ink)
+                             title: "今日の", accent: "film", number: "\(film.used) / 3", ink: ink)
             GeometryReader { proxy in
                 let w = proxy.size.width
                 ZStack(alignment: .topLeading) {
@@ -323,7 +325,7 @@ struct V17FilmSection: View {
             HStack {
                 Text("撮った写真は、9:00 まで ミルク色")
                 Spacer(minLength: 8)
-                Text(state.isNight ? "NEXT ・ 9:00" : "のこり \(max(0, 3 - shots.count))")
+                Text(state.isNight ? "NEXT ・ 9:00" : "のこり \(film.remaining)")
             }
             .font(V17Font.mono(9.5))
             .tracking(0.14 * 9.5)
@@ -1774,7 +1776,7 @@ struct HomeV17Stack: View {
         case .day:
             V17DaySection(now: now, ink: ink)
         case .words:
-            V17WordsSection(mode: HomeV17Rules.wordsMode(state: state, shotsToday: data.shots.count),
+            V17WordsSection(mode: HomeV17Rules.wordsMode(state: state, shotsToday: max(FilmCounter.shared.used, data.shots.count)),
                             words: data.words, countries: data.countries, ink: ink, actions: actions)
         case .friends:
             if let bump {

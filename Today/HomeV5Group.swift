@@ -800,3 +800,403 @@ enum TileImageLoader {
         return decoded
     }
 }
+
+// MARK: - スクロールで出てくる(v14:下から 34pt + 0.96倍 → spring 0.55 / 0.7。出るたび pop)
+
+struct ScrollReveal: ViewModifier {
+    /// 同時に出るものは 70ms ずつずらす
+    var index: Int = 0
+    /// これが変わると、もう一度出る(タブを開き直したとき)
+    var token: Int = 0
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        let visible = shown || reduceMotion
+        content
+            .opacity(visible ? 1 : 0)
+            .offset(y: visible ? 0 : 34)
+            .scaleEffect(visible ? 1 : 0.96)
+            .onScrollVisibilityChange(threshold: 0.18) { isVisible in
+                guard isVisible, !shown else { return }
+                let delay = Double(index % 4) * 0.07
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    guard !shown else { return }
+                    Haptics.play(.pop)
+                    if reduceMotion { shown = true } else { withAnimation(.spring(response: 0.55, dampingFraction: 0.7)) { shown = true } }
+                }
+            }
+            .onChange(of: token) { _, _ in shown = false }
+    }
+}
+
+extension View {
+    func scrollReveal(_ index: Int = 0, token: Int = 0) -> some View { modifier(ScrollReveal(index: index, token: token)) }
+}
+
+
+// MARK: - 今日のみんな(リング)
+
+struct TodayFriendsSection: View {
+    let state: HomeState
+    let data: HomeLayerData
+    let actions: HomeLayerActions
+    let onFriend: (HomeFriend) -> Void
+    let onInvite: () -> Void
+
+    @Environment(\.palette) private var palette
+    @State private var knocks = KnockStore.shared
+    @State private var focusedID: String?
+    @State private var tick = ScrollTickHaptics()
+    /// つよく つついた相手(リングがぐらっと揺れる)
+    @State private var shaken: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("今日のみんな")
+                    .font(.system(size: 22, weight: .heavy))
+                    .tracking(-0.03 * 22)
+                    .foregroundStyle(palette.ink)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Text("\(data.friends.count) / \(FriendRules.maxFriends)")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundStyle(palette.groupAdd.note)
+            }
+            .padding(.horizontal, 22)
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: 14) {
+                    ForEach(data.friends) { friend in
+                        TodayFriendRing(
+                            friend: friend,
+                            status: HomeLayerRules.friendStatus(state: state, friend: friend, knockedToday: knocks.hasKnocked(friend.id, window: data.windowKey)),
+                            shaking: shaken == friend.id,
+                            onOpen: { onFriend(friend) },
+                            onKnock: { strong in
+                                actions.knock(friend)
+                                if strong {
+                                    shaken = friend.id
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { if shaken == friend.id { shaken = nil } }
+                                }
+                            }
+                        )
+                        .id(friend.id)
+                    }
+                    Button {
+                        Haptics.play(.pop)
+                        onInvite()
+                    } label: {
+                        VStack(spacing: 6) {
+                            Circle()
+                                .fill(LinearGradient(colors: GroupAddColors.sunset, startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .overlay(Image(systemName: "plus").font(.system(size: 26, weight: .light)).foregroundStyle(.white))
+                                .frame(width: 70, height: 70)
+                            Text("呼ぶ").font(.system(size: 12.5, weight: .bold)).foregroundStyle(palette.ink)
+                            Text("つながる").font(.system(size: 10.5, weight: .bold)).foregroundStyle(palette.groupAdd.note).frame(height: 24)
+                        }
+                        .frame(width: 76)
+                    }
+                    .buttonStyle(SquishButtonStyle())
+                    .accessibilityLabel("ともだちを呼ぶ")
+                }
+                .scrollTargetLayout()
+                .padding(.horizontal, 22)
+                .padding(.vertical, 12)
+            }
+            .scrollIndicators(.hidden)
+            .scrollClipDisabled()
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $focusedID, anchor: .leading)
+            .padding(.vertical, -12)
+            .onChange(of: focusedID) { _, id in tick.step(id) }
+        }
+    }
+}
+
+/// 1人ぶん:撮った人は朝焼けリング +「撮った」、まだの人は点線 +「つつく」(長押しで ためて つつく)
+private struct TodayFriendRing: View {
+    let friend: HomeFriend
+    let status: HomeLayerRules.FriendStatus
+    let shaking: Bool
+    let onOpen: () -> Void
+    let onKnock: (_ strong: Bool) -> Void
+
+    @Environment(\.palette) private var palette
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Button(action: onOpen) {
+                ZStack {
+                    if status == .shot {
+                        Circle().fill(AngularGradient(colors: [Color(hex: "FFD60A"), Color(hex: "FF6A1A"), Color(hex: "FF7AB6"), Color(hex: "FFD60A")], center: .center, startAngle: .degrees(200), endAngle: .degrees(560)))
+                    } else {
+                        Circle().strokeBorder(Color(hex: "A9A9B3"), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
+                    }
+                    LayerAvatar(data: friend.avatarData, seed: friend.seed, name: friend.name)
+                        .frame(width: 60, height: 60)
+                        .saturation(status == .shot ? 1 : 0.55)
+                        .overlay(Circle().strokeBorder(palette.bg, lineWidth: 3))
+                }
+                .frame(width: 70, height: 70)
+                .keyframeAnimator(initialValue: 0.0, trigger: shaking) { content, angle in
+                    content.rotationEffect(.degrees(angle))
+                } keyframes: { _ in
+                    KeyframeTrack {
+                        if shaking && !reduceMotion {
+                            LinearKeyframe(-12, duration: 0.08)
+                            LinearKeyframe(10, duration: 0.1)
+                            LinearKeyframe(-7, duration: 0.1)
+                            LinearKeyframe(4, duration: 0.1)
+                            SpringKeyframe(0, duration: 0.25)
+                        } else {
+                            LinearKeyframe(0, duration: 0.01)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(SquishButtonStyle())
+            .accessibilityLabel(friend.name + (status == .shot ? "、撮った" : "、まだ"))
+
+            Text(friend.name)
+                .font(.system(size: 12.5, weight: .bold))
+                .foregroundStyle(palette.ink)
+                .lineLimit(1)
+            Group {
+                switch status {
+                case .shot:
+                    HStack(spacing: 5) {
+                        Circle().fill(LinearGradient(colors: GroupAddColors.sunset, startPoint: .leading, endPoint: .trailing)).frame(width: 6, height: 6)
+                        Text("撮った")
+                    }
+                    .font(.system(size: 10.5, weight: .bold))
+                    .foregroundStyle(LayerFriendColors.shotText(night: palette.isNight))
+                case .canKnock:
+                    ChargeKnockButton(name: friend.name, onKnock: onKnock)
+                case .knocked:
+                    Text("つついた")
+                        .font(.system(size: 10.5, weight: .heavy))
+                        .foregroundStyle(palette.groupAdd.note)
+                        .padding(.horizontal, 10)
+                        .frame(height: 24)
+                        .background(Capsule().fill(palette.fill))
+                case .notYet:
+                    Text("まだ").font(.system(size: 10.5, weight: .bold)).foregroundStyle(palette.groupAdd.note)
+                case .resting:
+                    Text("おやすみ").font(.system(size: 10.5, weight: .bold)).foregroundStyle(palette.groupAdd.note)
+                }
+            }
+            .frame(height: 24)
+        }
+        .frame(width: 76)
+    }
+}
+
+/// ためて つつく(v14 2-B ②・Buzz 風)。タップ = ふつうに つつく(heart 弱)。
+/// 長押し:ボタンが震えながら強くなる(240ms ごとに tick → 0.9秒から thud)。0.9秒こえて離す = つよく(rumble)。
+struct ChargeKnockButton: View {
+    let name: String
+    let onKnock: (_ strong: Bool) -> Void
+
+    @Environment(\.palette) private var palette
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pressStart: Date?
+    @State private var beatTask: Task<Void, Never>?
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: pressStart == nil)) { context in
+            let charge = ChargeKnock.charge(since: pressStart, now: context.date)
+            let wobble = reduceMotion || pressStart == nil ? 0 : sin(context.date.timeIntervalSinceReferenceDate * 60) * (0.6 + 2.4 * charge)
+            Text(charge >= 1 ? "つよく!" : "つつく")
+                .font(.system(size: 10.5, weight: .heavy))
+                .foregroundStyle(palette.bg)
+                .padding(.horizontal, 10)
+                .frame(height: 24)
+                .background(Capsule().fill(charge >= 1 ? Color(hex: "FF6A1A") : palette.ink))
+                .scaleEffect(1 + 0.18 * charge)
+                .offset(x: wobble)
+        }
+        .contentShape(Capsule().inset(by: -10))
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in if pressStart == nil { begin() } }
+                .onEnded { _ in end() }
+        )
+        .accessibilityElement()
+        .accessibilityLabel("\(name)を つつく")
+        .accessibilityHint("長押しで、つよく つつく")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { onKnock(false); Haptics.play(.heart, intensity: 0.6) }
+        .accessibilityAction(named: "つよく つつく") { onKnock(true); Haptics.play(.rumble) }
+    }
+
+    private func begin() {
+        pressStart = Date()
+        Haptics.prepare(.tick)
+        beatTask?.cancel()
+        beatTask = Task { @MainActor in
+            var beats = 0
+            while !Task.isCancelled, let start = pressStart {
+                try? await Task.sleep(for: .seconds(ChargeKnock.beatInterval))
+                guard !Task.isCancelled, pressStart != nil else { return }
+                beats += 1
+                Haptics.play(Date().timeIntervalSince(start) >= ChargeKnock.strongAfter ? .thud : .tick, gap: 0)
+            }
+        }
+    }
+
+    private func end() {
+        let strong = ChargeKnock.isStrong(since: pressStart, now: Date())
+        beatTask?.cancel()
+        beatTask = nil
+        pressStart = nil
+        if strong {
+            Haptics.play(.rumble)
+        } else {
+            Haptics.play(.heart, intensity: 0.6)
+        }
+        onKnock(strong)
+    }
+}
+
+/// ためて つつく の決まり(テストで確かめる)
+enum ChargeKnock {
+    /// これより長く押して離すと「つよく」
+    static let strongAfter: TimeInterval = 0.9
+    /// 長押し中の tick の間隔
+    static let beatInterval: TimeInterval = 0.24
+
+    static func charge(since start: Date?, now: Date) -> Double {
+        guard let start else { return 0 }
+        return min(1, max(0, now.timeIntervalSince(start) / strongAfter))
+    }
+
+    static func isStrong(since start: Date?, now: Date) -> Bool {
+        guard let start else { return false }
+        // 小数の誤差で 0.9秒ちょうどを取りこぼさない
+        return now.timeIntervalSince(start) >= strongAfter - 0.0005
+    }
+}
+
+
+// MARK: - ME カード
+
+/// 黒地に巨大な「ME」+ フィルム3枚がふわふわ浮く。タップで ME 画面(円形に広がる)。
+/// ME 画面が広がりはじめる位置(最後に押した ME カードの中心。nil ならアバターのあたり)
+@MainActor
+enum MERevealOrigin {
+    static var point: CGPoint?
+}
+
+struct MECard: View {
+    @State private var frameCenter: CGPoint = .zero
+    let caption: String
+    let film: [HomeFilmDay]
+    let isActive: Bool
+    let onTap: () -> Void
+
+    @Environment(\.palette) private var palette
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// 浮かせる3枚(仕上がった写真だけ。なければ色の札)
+    private var thumbs: [Data?] {
+        let photos: [Data?] = film.compactMap { day in
+            if case .photo(let data) = day.kind { return data }
+            return nil
+        }
+        return Array((photos + [nil, nil, nil]).prefix(3))
+    }
+
+    var body: some View {
+        Button {
+            Haptics.play(.pop)
+            MERevealOrigin.point = frameCenter
+            onTap()
+        } label: {
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 32, style: .continuous).fill(palette.ink)
+                Text("ME")
+                    .font(.system(size: 64, weight: .heavy))
+                    .tracking(-0.07 * 64)
+                    .foregroundStyle(palette.bg)
+                    .padding(.leading, 22)
+                    .padding(.top, 12)
+                Text(caption)
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .tracking(0.14 * 11)
+                    .foregroundStyle(palette.bg.opacity(0.75))
+                    .padding(.leading, 24)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 20)
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion || !isActive)) { context in
+                    let t = context.date.timeIntervalSinceReferenceDate
+                    HStack(alignment: .top, spacing: 8) {
+                        ForEach(0..<3, id: \.self) { i in
+                            let phase = reduceMotion ? 0 : sin((t + Double(i) * 1.5) / 4.5 * 2 * .pi)
+                            METhumb(data: thumbs[i], index: i)
+                                .frame(width: 66, height: 90)
+                                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                                .shadow(color: .black.opacity(0.5), radius: 8, y: 6)
+                                .offset(y: [0, 14, 4][i] - 3 * phase)
+                                .rotationEffect(.degrees(phase))
+                        }
+                    }
+                    .rotationEffect(.degrees(-7))
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.top, 18)
+                .offset(x: 10)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(palette.bg)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(18)
+            }
+            .frame(height: 168)
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .shadow(color: .black.opacity(0.35), radius: 20, y: 14)
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+        .onGeometryChange(for: CGPoint.self) { proxy in
+            let f = proxy.frame(in: .global)
+            return CGPoint(x: f.midX, y: f.midY)
+        } action: { frameCenter = $0 }
+        .accessibilityLabel("ME。\(caption)")
+        .accessibilityHint("自分の画面をひらく")
+    }
+}
+
+private struct METhumb: View {
+    let data: Data?
+    let index: Int
+
+    var body: some View {
+        if let data, let image = LayerImageCache.avatar(data, key: "me-card-\(index)-\(data.count)") {
+            Image(uiImage: image).resizable().scaledToFill()
+        } else {
+            LinearGradient(colors: ChekiFrameColors.placeholder(index), startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+}
+
+enum ChekiFrameColors {
+    static func placeholder(_ index: Int) -> [Color] {
+        let sets: [[String]] = [["FFB27A", "FF6A8A", "6C5BA8"], ["9AD0E8", "E9F1E4", "F2B56B"], ["2C3E6B", "E6709A", "FFC27A"]]
+        return sets[index % sets.count].map { Color(hex: $0) }
+    }
+}
+
+// MARK: - ともだちの決まり
+
+enum FriendRules {
+    /// 友達の上限(v14 確定)
+    static let maxFriends = 12
+    static let fullMessage = "ともだちは \(maxFriends)人まで"
+
+    /// つながれるか(自分・相手の、どちらかが 12人なら、つながれない)
+    static func canConnect(myCount: Int, theirCount: Int) -> Bool {
+        myCount < maxFriends && theirCount < maxFriends
+    }
+}
