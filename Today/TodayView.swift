@@ -46,6 +46,8 @@ struct TodayView: View {
     @State private var openLightOpacity = 0.0
     /// 月が動いている間は操作を受けつけない(二重のタップを防ぐ)
     @State private var isMoonAnimating = false
+    /// 月の ふくらむ / ちぢむ の 切りかえ番号(のこったタイマーが、あとの切りかえを こわさないように)
+    @State private var moonToken = UUID()
     /// タグ画面の各要素をずらして入れる時の、開始までの遅れ(nilなら演出なし)
     @State private var shootEntranceDelay: Double?
     @State private var holdModel = HoldGaugeModel()
@@ -1270,6 +1272,8 @@ struct TodayView: View {
     private func expandMoon(to target: Screen) {
         guard !isMoonAnimating, screen == .home else { return }
         isMoonAnimating = true
+        let token = UUID()
+        moonToken = token
 
         if reduceMotion {
             shootEntranceDelay = nil
@@ -1288,6 +1292,7 @@ struct TodayView: View {
         withAnimation(.easeOut(duration: 0.2)) { moonTextOpacity = 0 }
         withAnimation(.timingCurve(0.62, 0, 0.28, 1, duration: 0.76)) { moonScale = fullScale }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            guard moonToken == token else { return }
             shootEntranceDelay = 0.05
             // 画面の切りかえは、アニメーションに乗せない(月を消すアニメーションの進みに、タグ画面の表示を
             // まかせると、進まなかったときに月のグラデだけが残る)。タグ画面は黒い地で、すぐ月の上に出る。
@@ -1296,7 +1301,7 @@ struct TodayView: View {
             withTransaction(instant) { screen = target }
             withAnimation(.easeOut(duration: 0.52)) { moonOpacity = 0 }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.22) { isMoonAnimating = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.22) { if moonToken == token { isMoonAnimating = false } }
     }
 
     /// 長押しが1.2秒に達した:ひらいた記録を残し、オレンジの光が画面をおおって(700ms・約22倍)、
@@ -1355,6 +1360,8 @@ struct TodayView: View {
     /// 「×」で、月が縮んでHomeに戻る(640ms)。入力中のタグは下書きとして残る。
     private func shrinkMoonBack() {
         guard !isMoonAnimating, screen != .home else { return }
+        let token = UUID()
+        moonToken = token
         if usesV5Home {
             // 撮影後の Home:撮影画面が左へ引っこむ(視差効果を減らす が入っているときは、フェード)
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
@@ -1389,7 +1396,7 @@ struct TodayView: View {
         withAnimation(.easeOut(duration: 0.455).delay(0.245)) { homeOpacity = 1 }
         withAnimation(.easeOut(duration: 0.3).delay(0.34)) { bottomFadeOpacity = 1 }
         withAnimation(.easeOut(duration: 0.3).delay(0.5)) { moonTextOpacity = 1 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { isMoonAnimating = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { if moonToken == token { isMoonAnimating = false } }
     }
 
     /// 複数グループをまたぐ画面なので、Private/Shared両DBの変更をまとめて取り込む。

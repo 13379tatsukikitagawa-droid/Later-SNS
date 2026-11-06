@@ -269,6 +269,24 @@ struct CaptureFlow: View {
             isLeavingTags = false
             navBusy = false
         }
+        // ウォッチドッグ:1.3秒たっても 切りかえが おわっていなければ、撮影画面へ 強制的に そろえる
+        after(1.3) {
+            guard navBusy || isLeavingTags || expandCopy else { return }
+            resetTransition()
+            step = .capture
+        }
+    }
+
+    /// 進行中の 切りかえを ぜんぶ 取り消す(のこった タイマーは token で 止まる)。
+    /// I(v22):これをしないと、撮影へ ひろがる途中で タグ画面へ もどったとき、のこったタイマーが
+    /// あとから step = .capture にしたり、もどったタグ画面が「去る途中」(透明・タップ無視)のまま のこる
+    private func resetTransition() {
+        transitionToken = UUID()
+        isLeavingTags = false
+        expandCopy = false
+        expanded = false
+        copyOpacity = 1
+        navBusy = false
     }
 
     /// 長押しが 1.0 になった / 音量ボタン2回 / VoiceOver の操作。
@@ -313,6 +331,7 @@ struct CaptureFlow: View {
     /// タグのカプセルをタップ:タグ画面へもどる(なおす)
     private func backToTags() {
         guard shotStart == nil else { return }
+        resetTransition()
         withAnimation(.easeOut(duration: 0.3)) { step = .tags }
     }
 
@@ -341,8 +360,7 @@ struct CaptureFlow: View {
 
     /// 戻る・閉じる:動きの途中でも、すぐやめて Home へ
     private func cancel() {
-        transitionToken = UUID()
-        navBusy = false
+        resetTransition()
         camera.stop()
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         onCancel()

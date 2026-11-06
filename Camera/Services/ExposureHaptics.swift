@@ -71,7 +71,8 @@ final class ExposureHaptics {
         foregroundObserver = nil
         try? holdPlayer?.stop(atTime: CHHapticTimeImmediate)
         holdPlayer = nil
-        engine?.stop()
+        // 画面を とじる途中で メインを ふさがないよう、止めるのは 非同期で
+        engine?.stop(completionHandler: { _ in })
         engine = nil
         isEngineRunning = false
     }
