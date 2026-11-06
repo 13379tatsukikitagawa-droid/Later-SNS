@@ -42,7 +42,11 @@ struct MarqueeRow: View {
     let shakeCounts: [String: Int]
     /// タップした。位置は、名前つきの座標(coordinateSpaceName)で渡す
     var coordinateSpaceName: String
+    /// v22 H:白と黒の ガラスの まる(カラフルなテープを使わない)
+    var glass = false
     var onTap: (String, CGPoint) -> Void = { _, _ in }
+    /// さわって 止めた(tick)
+    var onHold: () -> Void = {}
 
     @State private var paused = false
     @State private var pausedAt: Date?
@@ -72,7 +76,7 @@ struct MarqueeRow: View {
             .offset(x: CGFloat(x))
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: 46)
+        .frame(height: glass ? 56 : 46)
         .clipped()
         .contentShape(Rectangle())
         .simultaneousGesture(
@@ -88,7 +92,7 @@ struct MarqueeRow: View {
     private var tapeSet: some View {
         HStack(spacing: 10) {
             ForEach(words, id: \.self) { word in
-                DymoTape(kind: .word(word), selected: selected.contains(word), tilted: true)
+                chip(word)
                     .modifier(ShakeEffect(animatableData: CGFloat(shakeCounts[word] ?? 0)))
                     .animation(.linear(duration: 0.28), value: shakeCounts[word] ?? 0)
                     .padding(.vertical, 6)
@@ -100,9 +104,20 @@ struct MarqueeRow: View {
         }
     }
 
+    @ViewBuilder
+    private func chip(_ word: String) -> some View {
+        if glass {
+            TagGlassChip(text: TagDictionary.display(word), style: .glass, large: true)
+                .opacity(selected.contains(word) ? 0.3 : 1)
+        } else {
+            DymoTape(kind: .word(word), selected: selected.contains(word), tilted: true)
+        }
+    }
+
     private func pause() {
         resumeToken = UUID()
         guard pausedAt == nil else { return }
+        onHold()
         pausedAt = Date()
         paused = true
     }

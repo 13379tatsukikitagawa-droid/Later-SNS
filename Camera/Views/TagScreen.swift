@@ -1,10 +1,9 @@
 // TagScreen.swift
-// 撮影の前のタグ画面(6章)。昼は白・夜は黒。
-// - 主役はカラフルなダイモテープ。ほかは白と黒、うすい文字だけ
-// - プレビュー帯(撮影画面では、こう見えます)に、場所テープ+タグ2枠
-// - 書く欄(最初から見えている)・3段の横流れ(MarqueeRow)
+// 撮影の前のタグ画面(v22 H)。白と黒(と その間の灰)だけ。カラフルな色は使わない。
+// - ガラスのカード:# 入力 ・ 0 / 3 ・ つけずに撮る / 撮る。えらんだタグは カードの上に 1行(白と黒を 交互)
+// - いま、よく選ばれている:1列で流れる(MarqueeRow・ガラスの まる)
 // - 場所は自動(市区町村だけ。緯度経度は持たない・保存しない)
-// - タグは2つまで(TagRules.maxCount)。その日の下書きは TagDraft(UserDefaults・日ごと)
+// - タグは3つまで(TagRules.maxCount)。その日の下書きは TagDraft(UserDefaults・日ごと)
 
 import SwiftUI
 import CoreLocation
@@ -33,7 +32,7 @@ enum TagDictionary {
 
 enum TagRules {
     /// 選べるタグの数(場所は別に自動で1つ)。あとで3に戻すときは、ここだけ直す
-    static let maxCount = 2
+    static let maxCount = 3
     static let maxLength = 16
 
     /// 先頭の「#」「＃」と前後の空白を取り、16文字までに切る
@@ -177,16 +176,7 @@ private struct ArcFlight: ViewModifier, Animatable {
     }
 }
 
-/// はがれて落ちる(少し持ちあがり、右下に傾いて落ちる)
-private struct Peel: ViewModifier {
-    let on: Bool
-    func body(content: Content) -> some View {
-        content
-            .rotationEffect(.degrees(on ? 14 : 0), anchor: .topLeading)
-            .offset(x: on ? 10 : 0, y: on ? 26 : 0)
-            .opacity(on ? 0 : 1)
-    }
-}
+// MARK: - 飛んでいるタグ
 
 private struct TapeFlightItem: Identifiable, Equatable {
     let id = UUID()
@@ -196,256 +186,137 @@ private struct TapeFlightItem: Identifiable, Equatable {
     var launched = false
 }
 
-// MARK: - プレビュー帯(主役)
-
-/// 撮影画面では、こう見えます。流れの「カード → ファインダー」のコピーでも同じものを使う
-struct TagPreviewCard: View {
-    enum Slot: Equatable {
-        case tag(String)
-        case draft(String)
-        case empty
-        /// 飛んでいる途中(枠は空のまま見せる)
-        case incoming
-    }
-
-    let colors: CaptureColors
-    let place: String?
-    let slots: [Slot]
-    var glow: Bool = false
-    var wobble: Int = 0
-    var showsLabel = true
-    var reduceMotion = false
-    var onTapTag: (String) -> Void = { _ in }
-    var onSlotFrame: (Int, CGRect) -> Void = { _, _ in }
-    var coordinateSpaceName: String = "tagScreen"
-
-    @State private var breathe = false
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
-        ZStack(alignment: .topLeading) {
-            shape.fill(colors.card.color)
-
-            // 下の方の、サンライズ色のにじみ(5秒でゆっくり明るさが上下)
-            ZStack {
-                RadialGradient(colors: [PaletteHex(rgb: 0xFF6A1A).color.opacity(0.55), .clear], center: UnitPoint(x: 0.3, y: 1.1), startRadius: 0, endRadius: 150)
-                RadialGradient(colors: [PaletteHex(rgb: 0xFF7AB6).color.opacity(0.4), .clear], center: UnitPoint(x: 0.75, y: 1.15), startRadius: 0, endRadius: 140)
-                RadialGradient(colors: [PaletteHex(rgb: 0xFFD60A).color.opacity(0.25), .clear], center: UnitPoint(x: 0.5, y: 1.3), startRadius: 0, endRadius: 120)
-            }
-            .opacity(breathe ? 1 : 0.65)
-            .clipShape(shape)
-            .allowsHitTesting(false)
-
-            if showsLabel {
-                Text("撮影画面では、こう見えます")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.55))
-                    .padding(.leading, 16)
-                    .padding(.top, 14)
-            }
-
-            // 1行のまま。入りきらないときは横に流せる(折り返さない)
-            ScrollView(.horizontal) {
-            HStack(spacing: 9) {
-                if let place {
-                    DymoTape(kind: .place(place))
-                        .modifier(WobbleEffect(trigger: wobble, enabled: !reduceMotion))
-                }
-                ForEach(Array(slots.enumerated()), id: \.offset) { index, slot in
-                    slotView(slot, index: index)
-                }
-            }
-            .fixedSize()
-            .padding(.leading, 16)
-            .padding(.trailing, 16)
-            }
-            .scrollIndicators(.hidden)
-            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            .padding(.bottom, 16)
-        }
-        .overlay(shape.strokeBorder(colors.cardStroke.color, lineWidth: 1))
-        .overlay(
-            // 貼れた瞬間、ふちが一瞬オレンジに光る(520ms)
-            shape.strokeBorder(CaptureTint.orange, lineWidth: 2)
-                .shadow(color: CaptureTint.orange.opacity(0.8), radius: 6)
-                .opacity(glow ? 1 : 0)
-                .animation(glow ? .easeOut(duration: 0.08) : .easeOut(duration: 0.44), value: glow)
-                .allowsHitTesting(false)
-        )
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) { breathe = true }
-        }
-    }
-
-    @ViewBuilder
-    private func slotView(_ slot: Slot, index: Int) -> some View {
-        ZStack {
-            switch slot {
-            case .draft(let text):
-                DymoTape(kind: .draft(text))
-            case .empty, .incoming:
-                DymoTape(kind: .empty)
-            case .tag:
-                DymoTape(kind: .empty).opacity(0)
-            }
-            if case .tag(let word) = slot {
-                DymoTape(kind: .word(word), maxWidth: 118)
-                    .modifier(WobbleEffect(trigger: wobble, enabled: !reduceMotion))
-                    .onTapGesture { onTapTag(word) }
-                    .id(word)
-                    .transition(.asymmetric(
-                        insertion: reduceMotion ? .opacity : .scale(scale: 0.6).combined(with: .opacity),
-                        removal: reduceMotion ? .opacity : .modifier(active: Peel(on: true), identity: Peel(on: false))
-                    ))
-                    .accessibilityLabel("\(word)、はずす")
-                    .accessibilityAddTraits(.isButton)
-            }
-        }
-        .fixedSize()
-        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(coordinateSpaceName)) } action: { onSlotFrame(index, $0) }
-    }
-}
-
-/// プレビューのテープが、ぶるっとゆれる(±4°、340ms)
-private struct WobbleEffect: ViewModifier {
-    let trigger: Int
-    let enabled: Bool
-
-    func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: 0.0, trigger: trigger) { view, angle in
-            view.rotationEffect(.degrees(enabled ? angle : 0))
-        } keyframes: { _ in
-            LinearKeyframe(-4, duration: 0.085)
-            LinearKeyframe(4, duration: 0.085)
-            LinearKeyframe(-2, duration: 0.085)
-            LinearKeyframe(0, duration: 0.085)
-        }
-    }
-}
-
 // MARK: - 画面
 
+/// v22 H:撮影前の タグ画面(いまのアプリの形 ・ 白と黒だけ)。見本:later_v22.html の「タグ画面」(390×844)。
+/// ✕ → 今日を撮る前に / 今日は、どんな日? / 撮る前に、えらぶ。3つまで。→ ガラスのカード(# 入力・0 / 3・つけずに撮る / 撮る)
+/// → いま、よく選ばれている(1列で流れる)。キーボードの すぐ上、右に「追加」。
 struct TagScreen: View {
-    /// 今日のこり(0 のときは「撮影へ」「つけずに撮る」を押せない)
+    /// 今日のこり(0 のときは「撮る」「つけずに撮る」を押せない)
     let left: Int
     let haptics: ExposureHaptics
     /// 選んだタグ(# なし)。持ち主は CaptureFlow(2こめ以降の引きつぎ・下書き)
     @Binding var tags: [String]
     let place: String?
-    /// 「撮影へ」でカードがひろがっている間(ほかの部分を上へうすく)
+    /// 「撮る」でカードがひろがっている間(ほかの部分を上へうすく)
     var leaving = false
     /// カードのコピーを CaptureFlow が上に出している間、もとのカードを隠す
     var hidesCard = false
-    /// プレビュー帯の位置(画面の座標 .global)
+    /// カードの位置(画面の座標 .global)
     var onCardFrame: (CGRect) -> Void = { _ in }
-    /// 戻る(Home へ)
+    /// とじる(Home へ)
     var onClose: () -> Void = {}
-    /// 「撮影へ」(true)/「つけずに撮る」(false)
+    /// 「撮る」(true)/「つけずに撮る」(false)
     var onStart: (_ withTags: Bool) -> Void = { _ in }
 
-    @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
 
     @State private var phase: TagScreenPhase = .hidden
     @State private var input = ""
     @FocusState private var inputFocused: Bool
-    @State private var rows: [[String]] = []
-    @State private var rowPhases: [Double] = [0, 0, 0]
+    @State private var popular: [String] = []
+    @State private var rowPhase = Double.random(in: 0..<1)
     @State private var shakeCounts: [String: Int] = [:]
-    @State private var fieldShake = 0
-    @State private var wobble = 0
-    @State private var glow = false
+    @State private var cardShake = 0
+    @State private var sheen = 0
     @State private var incoming: Set<String> = []
     @State private var flights: [TapeFlightItem] = []
-    @State private var slotFrames: [Int: CGRect] = [:]
+    @State private var chipsEnd: CGPoint = .zero
     @State private var showRefuse = false
-    /// 断りの一言(タグが多い / 今日は、ここまで)
     @State private var refuseText = ""
+    @State private var placeholder = "雨の日"
+    @State private var placeholderTask: Task<Void, Never>?
 
     private static let space = "tagScreen"
-    private var colors: CaptureColors { .for(palette) }
+    private static let examples = ["雨の日", "放課後", "いい匂い", "部活", "帰り道", "テスト前"]
     private var trimmedInput: String { TagRules.clean(input) }
     private var isFull: Bool { tags.count >= TagRules.maxCount }
     private var canShoot: Bool { left > 0 }
     private var stage: TagScreenPhase { leaving ? .leaving : phase }
 
     var body: some View {
-        ZStack {
-            colors.bg.color.ignoresSafeArea()
+        ZStack(alignment: .topLeading) {
+            TagScreenBackground().ignoresSafeArea()
 
             GeometryReader { proxy in
-            let compact = proxy.size.height < 560
-            VStack(alignment: .leading, spacing: 0) {
-                topBar
-                    .modifier(Stagger(phase: stage, inDelay: 0, outIndex: 0, reduceMotion: reduceMotion))
-                    .padding(.horizontal, 20)
+                let compact = proxy.size.height < 640
+                VStack(alignment: .leading, spacing: 0) {
+                    closeButton
+                        .padding(.leading, 18)
+                        .padding(.top, 7)
+                        .modifier(Stagger(phase: stage, inDelay: 0, outIndex: 0, reduceMotion: reduceMotion))
 
-                if !compact {
-                Text("today's mood")
-                    .font(CaptureFont.serifItalic(19))
-                    .foregroundStyle(colors.sub.color)
-                    .padding(.top, 12)
-                    .padding(.horizontal, 28)
-                    .modifier(Stagger(phase: stage, inDelay: 100, outIndex: 1, reduceMotion: reduceMotion))
+                    Text("今日を撮る前に")
+                        .font(.system(size: 10.5, weight: .semibold)).tracking(0.06 * 10.5)
+                        .foregroundStyle(Color(hex: "8E8E95"))
+                        .padding(.leading, 28)
+                        .padding(.top, compact ? 14 : 28)
+                        .modifier(Stagger(phase: stage, inDelay: 80, outIndex: 1, reduceMotion: reduceMotion))
+                    Text("今日は、どんな日?")
+                        .font(.system(size: 30, weight: .black)).tracking(-0.04 * 30)
+                        .foregroundStyle(.white)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .padding(.leading, 26)
+                        .padding(.top, 5)
+                        .modifier(Stagger(phase: stage, inDelay: 150, outIndex: 2, reduceMotion: reduceMotion))
+                        .accessibilityAddTraits(.isHeader)
+                    Text("撮る前に、えらぶ。\(TagRules.maxCount)つまで。")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundStyle(Color(hex: "9A9AA2"))
+                        .padding(.leading, 28)
+                        .padding(.top, 8)
+                        .modifier(Stagger(phase: stage, inDelay: 220, outIndex: 3, reduceMotion: reduceMotion))
+
+                    card
+                        .padding(.horizontal, 18)
+                        .padding(.top, 14)
+
+                    Text("いま、よく選ばれている")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color(hex: "8E8E95"))
+                        .padding(.leading, 28)
+                        .padding(.top, 24)
+                        .modifier(Stagger(phase: stage, inDelay: 420, outIndex: 5, reduceMotion: reduceMotion))
+                    words
+                        .padding(.top, 8)
+                        .modifier(Stagger(phase: stage, inDelay: 480, outIndex: 6, reduceMotion: reduceMotion, dx: 60, dy: 0))
+                    Spacer(minLength: 0)
                 }
+                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+                .clipped()
+            }
+            // キーボードが出ても、画面の組み立てを押しあげない
+            .ignoresSafeArea(.keyboard, edges: .bottom)
 
-                headline
-                    .padding(.top, 2)
-                    .padding(.horizontal, 28)
-
-                if !compact {
-                Text("撮る前に、ひとこと。\(TagRules.maxCount)つまで。\n場所は、自動で入ります。")
-                    .font(.system(size: 13, weight: .medium))
-                    .lineSpacing(3)
-                    .foregroundStyle(colors.sub.color)
-                    .padding(.top, 10)
-                    .padding(.horizontal, 28)
-                    .modifier(Stagger(phase: stage, inDelay: 300, outIndex: 4, reduceMotion: reduceMotion))
-                }
-
-                previewCard
-                    .frame(height: compact ? 92 : 108)
-                    .padding(.horizontal, 20)
-                    .padding(.top, compact ? 10 : 18)
-
-                writeField
-                    .padding(.horizontal, 20)
-                    .padding(.top, compact ? 10 : 18)
-                    .modifier(Stagger(phase: stage, inDelay: 440, outIndex: 5, reduceMotion: reduceMotion))
-
+            // キーボードの すぐ上、右に「追加」(書いたことばが あるときだけ はっきり)
+            VStack {
+                Spacer()
                 HStack {
-                    Text("きぶん・こと")
-                        .font(.system(size: 11.5, weight: .bold))
                     Spacer()
-                    Text("ながれることばを、さわると止まります")
-                        .font(.system(size: 11, weight: .medium))
+                    Button(action: commitInput) {
+                        Text("追加")
+                            .font(.system(size: 13, weight: .heavy))
+                            .foregroundStyle(Color(hex: "111111"))
+                            .padding(.horizontal, 20)
+                            .frame(height: 38)
+                            .background(Capsule().fill(.white))
+                    }
+                    .buttonStyle(SquishButtonStyle(pressedScale: 0.94))
+                    .opacity(trimmedInput.isEmpty || isFull ? 0.55 : 1)
+                    .accessibilityLabel("タグを追加")
                 }
-                .foregroundStyle(colors.sub.color)
-                .padding(.horizontal, 28)
-                .padding(.top, 16)
-                .modifier(Stagger(phase: stage, inDelay: 500, outIndex: 6, reduceMotion: reduceMotion))
+                .padding(.trailing, 18)
+                .padding(.bottom, 10)
+            }
+            .opacity(inputFocused ? 1 : 0)
+            .offset(y: inputFocused ? 0 : 12)
+            .allowsHitTesting(inputFocused)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: inputFocused)
 
-                words
-                    .padding(.top, 6)
-                Spacer(minLength: 0)
-            }
-            // 幅は画面の幅だけ(流れる帯が長くても、カードや書く欄を右へ押し出さない)
-            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
-            .clipped()
-            }
-            // v14 ④:撮影ボタンは画面の下(下端から 46pt)。中身がのびても、キーボードが出ても押し出されない
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                ctaButtons
-                    .frame(maxWidth: .infinity)
-                    .background(colors.bg.color.ignoresSafeArea(edges: .bottom))
-            }
-
-            // 飛んでいるテープのコピー(いちばん上)
+            // 飛んでいるタグのコピー(いちばん上)
             ForEach(flights) { flight in
-                DymoTape(kind: .word(flight.word))
+                TagGlassChip(text: TagDictionary.display(flight.word), style: .white)
                     .modifier(ArcFlight(progress: flight.launched ? 1 : 0, from: flight.from, to: flight.to))
                     .allowsHitTesting(false)
             }
@@ -454,179 +325,152 @@ struct TagScreen: View {
             if showRefuse {
                 Text(refuseText)
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(colors.bg.color)
+                    .foregroundStyle(Color(hex: "111111"))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 11)
-                    .background(Capsule().fill(colors.ink.color))
-                    .padding(.bottom, 200)
+                    .background(Capsule().fill(.white))
+                    .padding(.bottom, 140)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
                     .allowsHitTesting(false)
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showRefuse)
         .coordinateSpace(name: Self.space)
-        .foregroundStyle(colors.ink.color)
-        // キーボードが出ても、画面の組み立てを押しあげない(書く欄はキーボードより上にある)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .preferredColorScheme(.dark)
         .onAppear(perform: appear)
+        .onDisappear { placeholderTask?.cancel() }
+        .onChange(of: inputFocused) { _, focused in
+            if focused {
+                haptics.captureFeather()
+                placeholderTask?.cancel()
+                placeholder = ""
+            } else if input.isEmpty {
+                startPlaceholder()
+            }
+        }
+        .onChange(of: tags.count) { _, _ in
+            if isFull { placeholderTask?.cancel(); placeholder = "\(TagRules.maxCount)つ えらびました" }
+            else if !inputFocused && input.isEmpty && placeholderTask == nil { startPlaceholder() }
+        }
     }
 
-    // MARK: 上の行
+    // MARK: 上
 
-    private var topBar: some View {
-        HStack {
-            Button(action: close) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(colors.ink.color)
-                    .frame(width: 40, height: 40)
-                    .background(Circle().fill(colors.fill.color))
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("戻る")
+    private var closeButton: some View {
+        Button(action: close) {
+            Image(systemName: "xmark")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 46, height: 46)
+                .background(Circle().fill(.white.opacity(0.1)))
+                .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.92))
+        .accessibilityLabel("とじる")
+    }
 
-            Spacer()
+    // MARK: カード
 
-            HStack(spacing: 7) {
-                HStack(spacing: 3) {
-                    ForEach(0..<FilmRoll.shotsPerDay, id: \.self) { index in
-                        let used = index < FilmRoll.shotsPerDay - left
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(used ? CaptureTint.used : CaptureTint.orange)
-                            .frame(width: 9, height: 12)
-                            .scaleEffect(phase == .hidden && !reduceMotion ? 0.2 : 1)
-                            .animation(FlowMotion.spring.delay(0.05 + Double(index) * 0.07), value: phase)
+    private var card: some View {
+        let shape = RoundedRectangle(cornerRadius: 30, style: .continuous)
+        return ZStack(alignment: .topLeading) {
+            TagGlassCardBackground(sheen: sheen, reduceMotion: reduceMotion)
+
+            if !tags.isEmpty || place != nil {
+                TagChipRow(place: place, tags: tags, hidden: incoming, onTapTag: remove)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 14)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.space)) } action: { rect in
+                        chipsEnd = CGPoint(x: min(rect.maxX + 30, rect.minX + 260), y: rect.midY)
                     }
+            }
+
+            HStack(spacing: 6) {
+                Text("#")
+                    .font(.system(size: 34, weight: .heavy))
+                    .foregroundStyle(.white.opacity(0.4))
+                TextField("", text: $input, prompt: Text(placeholder).foregroundStyle(.white.opacity(0.28)))
+                    .font(.system(size: 32, weight: .bold))
+                    .tracking(-0.02 * 32)
+                    .foregroundStyle(.white)
+                    .tint(.white)
+                    .focused($inputFocused)
+                    .submitLabel(.done)
+                    .onSubmit(commitInput)
+                    .disabled(isFull || leaving)
+                    .onChange(of: input) { _, value in
+                        if value.count > TagRules.maxLength + 1 { input = String(value.prefix(TagRules.maxLength + 1)) }
+                        // 空白か改行で、タグになる
+                        if let last = value.last, last == " " || last == "　" || last == "\n" { commitInput() }
+                    }
+                    .accessibilityLabel("じぶんの言葉で タグ")
+            }
+            .frame(height: 48)
+            .padding(.leading, 22)
+            .padding(.trailing, 18)
+            .padding(.top, (!tags.isEmpty || place != nil) ? 52 : 36)
+
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("\(tags.count) / \(TagRules.maxCount)")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced)).tracking(0.06 * 11)
+                        .foregroundStyle(Color(hex: "8E8E95"))
+                        .contentTransition(.numericText())
+                    Text("空白か改行で、タグになります")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Color(hex: "6E6E76"))
                 }
-                Text("のこり \(left)")
-                    .font(CaptureFont.mono(11))
+                Spacer(minLength: 8)
+                shootButton
             }
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(Capsule().fill(colors.fill.color))
-            .padding(.trailing, 2)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("のこり \(left) こま")
+            .padding(.leading, 22)
+            .padding(.trailing, 14)
+            .padding(.bottom, 14)
+            .frame(maxHeight: .infinity, alignment: .bottom)
         }
-        .padding(.top, 4)
-    }
-
-    /// 見出し。行ごとに下からマスクで切りあがる
-    private var headline: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            headlineLine("今日は、", delay: 150, outIndex: 2)
-            headlineLine("どんな日?", delay: 230, outIndex: 3)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private func headlineLine(_ text: String, delay: Double, outIndex: Int) -> some View {
-        Text(text)
-            .font(CaptureFont.heading(36))
-            .tracking(-1.8)
-            .lineLimit(1)
-            .frame(height: 42, alignment: .leading)
-            .offset(y: stage == .hidden && !reduceMotion ? 44 : (stage == .leaving && !reduceMotion ? -14 : 0))
-            .opacity(stage == .shown ? 1 : (stage == .hidden && !reduceMotion ? 1 : 0))
-            .animation(stage == .leaving ? FlowMotion.out(0.24).delay(Double(outIndex) * 0.014)
-                       : FlowMotion.out(0.6).delay(reduceMotion ? 0 : delay / 1000), value: stage)
-            .clipped()
-    }
-
-    // MARK: プレビュー帯
-
-    private var previewSlots: [TagPreviewCard.Slot] {
-        var slots: [TagPreviewCard.Slot] = []
-        var draftShown = false
-        for index in 0..<TagRules.maxCount {
-            if index < tags.count {
-                let word = tags[index]
-                slots.append(incoming.contains(word) ? .incoming : .tag(word))
-            } else if !draftShown, !trimmedInput.isEmpty {
-                slots.append(.draft(trimmedInput))
-                draftShown = true
-            } else {
-                slots.append(.empty)
-            }
-        }
-        return slots
-    }
-
-    private var previewCard: some View {
-        TagPreviewCard(
-            colors: colors,
-            place: place,
-            slots: previewSlots,
-            glow: glow,
-            wobble: wobble,
-            reduceMotion: reduceMotion,
-            onTapTag: { remove($0) },
-            onSlotFrame: { index, frame in slotFrames[index] = frame },
-            coordinateSpaceName: Self.space
-        )
+        .frame(height: 152)
+        .clipShape(shape)
+        .contentShape(shape)
+        .onTapGesture { if !isFull && !leaving { inputFocused = true } }
+        .modifier(ShakeEffect(animatableData: CGFloat(cardShake)))
+        .animation(.linear(duration: 0.28), value: cardShake)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { onCardFrame($0) }
         .opacity(hidesCard ? 0 : 1)
-        .modifier(Stagger(phase: phase, inDelay: 360, outIndex: 0, reduceMotion: reduceMotion))
+        .modifier(Stagger(phase: phase, inDelay: 300, outIndex: 4, reduceMotion: reduceMotion))
     }
 
-    // MARK: 書く欄
-
-    private var writeField: some View {
-        let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-        return HStack(spacing: 8) {
-            Text("#")
-                .font(CaptureFont.hand(22))
-                .foregroundStyle(CaptureTint.orange)
-            TextField("", text: $input, prompt: Text("じぶんの言葉で、かく").foregroundStyle(colors.sub.color.opacity(0.8)))
-                .font(CaptureFont.hand(18))
-                .foregroundStyle(colors.ink.color)
-                .focused($inputFocused)
-                .submitLabel(.done)
-                .onSubmit(commitInput)
-                .onChange(of: input) { _, value in
-                    if value.count > TagRules.maxLength + 1 { input = String(value.prefix(TagRules.maxLength + 1)) }
-                }
-                .onChange(of: inputFocused) { _, focused in
-                    if focused { haptics.captureFeather() }
-                }
-            if !trimmedInput.isEmpty {
-                Button(action: commitInput) {
-                    Text("追加")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(colors.ctaText.color)
-                        .padding(.horizontal, 16)
-                        .frame(height: 38)
-                        .background(Capsule().fill(colors.ctaBG.color))
-                }
-                .buttonStyle(.plain)
-                .transition(.scale(scale: 0.8).combined(with: .opacity))
-            }
+    /// 右下:「つけずに撮る」(うすいガラス)→ タグを1つ以上えらぶと 白地・黒字の「撮る」(ばねで 少し大きく)
+    private var shootButton: some View {
+        let has = !tags.isEmpty
+        return Button {
+            guard canShoot else { return refuseShoot() }
+            Haptics.play(.click)
+            start(withTags: has || !trimmedInput.isEmpty)
+        } label: {
+            Text(has ? "撮る" : "つけずに撮る")
+                .font(.system(size: 14, weight: .heavy)).tracking(0.02 * 14)
+                .foregroundStyle(!canShoot ? Color(hex: "6E6E76") : (has ? Color(hex: "111111") : .white))
+                .padding(.horizontal, has ? 30 : 20)
+                .frame(height: 46)
+                .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(!canShoot ? Color.white.opacity(0.06) : (has ? Color.white : Color.white.opacity(0.14))))
+                .contentTransition(.opacity)
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 8)
-        .frame(height: 54)
-        .background(shape.fill(colors.bg.color))
-        .overlay(shape.strokeBorder(inputFocused ? colors.ink.color : colors.line.color, lineWidth: 1.5))
-        .shadow(color: CaptureTint.orange.opacity(inputFocused ? 0.28 : 0), radius: 4)
-        .animation(.easeOut(duration: 0.18), value: inputFocused)
-        .animation(.easeOut(duration: 0.18), value: trimmedInput.isEmpty)
-        .modifier(ShakeEffect(animatableData: CGFloat(fieldShake)))
-        .animation(.linear(duration: 0.28), value: fieldShake)
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.95))
+        .animation(.spring(response: 0.32, dampingFraction: 0.55), value: has)
+        .accessibilityLabel(!canShoot ? "今日は ここまで" : (has ? "撮る" : "タグを つけずに 撮る"))
     }
 
-    // MARK: ことばの流れ
+    // MARK: よく選ばれている(1列・左右が ふわっと消える)
 
     @ViewBuilder
     private var words: some View {
         if voiceOver {
-            // VoiceOver のときは流れを止めて、ふつうの一覧にする
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 10, alignment: .leading)], alignment: .leading, spacing: 8) {
-                ForEach(TagDictionary.all, id: \.self) { word in
-                    Button {
-                        toggle(word, at: .zero)
-                    } label: {
-                        DymoTape(kind: .word(word), selected: tags.contains(word))
+                ForEach(popular, id: \.self) { word in
+                    Button { toggle(word, at: .zero) } label: {
+                        TagGlassChip(text: TagDictionary.display(word), style: .glass, large: true).opacity(tags.contains(word) ? 0.3 : 1)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(tags.contains(word) ? "\(word)、選択中" : word)
@@ -634,88 +478,95 @@ struct TagScreen: View {
             }
             .padding(.horizontal, 28)
         } else {
-            VStack(spacing: 2) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-                    MarqueeRow(
-                        words: row,
-                        secondsPerLoop: reduceMotion ? MarqueeMath.reducedSeconds : MarqueeMath.rowSeconds[index % 3],
-                        reversed: MarqueeMath.rowReversed[index % 3],
-                        phase: rowPhases[index % 3],
-                        selected: tags,
-                        shakeCounts: shakeCounts,
-                        coordinateSpaceName: Self.space,
-                        onTap: { word, location in toggle(word, at: location) }
-                    )
-                    // 上段は右から、中段は左から、下段は右から、すべって入る
-                    .modifier(Stagger(phase: stage, inDelay: 520 + Double(index) * 80, outIndex: 7 + index,
-                                      reduceMotion: reduceMotion, dx: index == 1 ? -60 : 60, dy: 0))
-                }
-            }
+            MarqueeRow(
+                words: popular,
+                secondsPerLoop: reduceMotion ? MarqueeMath.reducedSeconds : MarqueeMath.rowSeconds[0],
+                reversed: false,
+                phase: rowPhase,
+                selected: tags,
+                shakeCounts: shakeCounts,
+                coordinateSpaceName: Self.space,
+                glass: true,
+                onTap: { word, location in toggle(word, at: location) },
+                onHold: { Haptics.play(.tick) }
+            )
+            .frame(height: 56)
             .mask(
                 LinearGradient(stops: [
                     .init(color: .clear, location: 0),
-                    .init(color: .black, location: 0.07),
-                    .init(color: .black, location: 0.93),
+                    .init(color: .black, location: 0.08),
+                    .init(color: .black, location: 0.92),
                     .init(color: .clear, location: 1),
                 ], startPoint: .leading, endPoint: .trailing)
             )
         }
     }
 
-    // MARK: ボタン
-
-    private var ctaButtons: some View {
-        VStack(spacing: 6) {
-            CaptureShutterButton(enabled: canShoot, reduceMotion: reduceMotion, ink: colors.ink.color, bg: colors.bg.color, onRefused: refuseShoot) {
-                start(withTags: !tags.isEmpty || !trimmedInput.isEmpty)
-            }
-            .modifier(Stagger(phase: stage, inDelay: 620, outIndex: 10, reduceMotion: reduceMotion))
-            Text(canShoot ? "撮る" : "今日は おしまい")
-                .font(.system(size: 13, weight: .heavy))
-                .lineLimit(1)
-                .fixedSize()
-                .foregroundStyle(colors.ink.color)
-                .accessibilityHidden(true)
-        }
-        .padding(.top, 10)
-        .padding(.bottom, 46 - 24)
-    }
-
     // MARK: 動きとルール
 
     private func appear() {
-        // ひらくたびに、ならびと各段のはじまり位置をランダムにする
-        if rows.isEmpty {
-            // v14:流れる帯は 2段(逆向き)
-            rows = MarqueeMath.rows(TagDictionary.all.shuffled(), rowCount: 2)
-            rowPhases = (0..<3).map { _ in Double.random(in: 0..<1) }
+        if popular.isEmpty {
+            // 昨日の世界で 多かったことば → たりない分は いつものことば(同じものは 1回だけ)
+            var list: [String] = []
+            for word in WorldWordsStore.words(now: Date()) + TagDictionary.all.shuffled() {
+                let clean = TagRules.clean(word)
+                if !clean.isEmpty, !list.contains(clean) { list.append(clean) }
+                if list.count >= 14 { break }
+            }
+            popular = list
         }
+        startPlaceholder()
         DispatchQueue.main.async { phase = .shown }
     }
 
-    /// 流れのテープ(または VoiceOver の一覧)をタップ:選ぶ / 選び済みならはずす
+    /// プレースホルダー:「雨の日」→ 例が 打たれては 消える
+    private func startPlaceholder() {
+        placeholderTask?.cancel()
+        guard !isFull else { placeholder = "\(TagRules.maxCount)つ えらびました"; return }
+        placeholder = Self.examples[0]
+        guard !reduceMotion else { placeholderTask = nil; return }
+        placeholderTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.2))
+            var index = 1
+            while !Task.isCancelled {
+                let word = Self.examples[index % Self.examples.count]
+                for n in 1...word.count {
+                    placeholder = String(word.prefix(n))
+                    try? await Task.sleep(for: .milliseconds(95))
+                    if Task.isCancelled { return }
+                }
+                try? await Task.sleep(for: .seconds(1.4))
+                for n in stride(from: word.count - 1, through: 0, by: -1) {
+                    placeholder = String(word.prefix(n))
+                    try? await Task.sleep(for: .milliseconds(40))
+                    if Task.isCancelled { return }
+                }
+                try? await Task.sleep(for: .milliseconds(250))
+                index += 1
+            }
+        }
+    }
+
+    /// 流れのタグをタップ:カードへ ひゅっと飛んで入る(sel → pop)/ 選び済みなら はずす
     private func toggle(_ word: String, at location: CGPoint) {
         guard !leaving else { return }
         if tags.contains(word) {
-            remove(word)
+            Haptics.play(.warn)
             return
         }
         guard TagRules.canAdd(word, to: tags) else {
             if isFull { refuse(word: word) }
             return
         }
-        let index = tags.count
-        let isSecond = index == 1
-        let target = slotFrames[index].map { CGPoint(x: $0.minX + 40, y: $0.midY) }
-
-        if reduceMotion || target == nil || location == .zero {
-            withAnimation(FlowMotion.spring) { tags.append(word) }
-            land(isSecond: isSecond)
+        Haptics.play(.detent)
+        if reduceMotion || location == .zero || chipsEnd == .zero {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.6)) { tags.append(word) }
+            land()
             return
         }
         incoming.insert(word)
         tags.append(word)
-        let flight = TapeFlightItem(word: word, from: location, to: target!)
+        let flight = TapeFlightItem(word: word, from: location, to: chipsEnd)
         flights.append(flight)
         DispatchQueue.main.async {
             withAnimation(FlowMotion.io(0.42)) {
@@ -724,47 +575,50 @@ struct TagScreen: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) {
             withAnimation(.spring(response: 0.32, dampingFraction: 0.5)) { _ = incoming.remove(word) }
-            land(isSecond: isSecond)
+            land()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.44) {
             flights.removeAll { $0.id == flight.id }
         }
     }
 
-    /// 着地:ふちが一瞬光る + ポン / カチッ
-    private func land(isSecond: Bool) {
-        // v14:タグを選ぶ = pop / 3つ目 = thud
-        Haptics.play(tags.count >= TagRules.maxCount ? .thud : .pop)
-        glow = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { glow = false }
+    /// 入った:pop / 3つ そろった:success + 光が すっと なでる + キーボードを とじる
+    private func land() {
+        if tags.count >= TagRules.maxCount {
+            Haptics.play(.success)
+            sheen += 1
+            inputFocused = false
+        } else {
+            Haptics.play(.pop)
+        }
     }
 
     private func remove(_ word: String) {
         guard !leaving else { return }
-        haptics.captureFeather()
+        Haptics.play(.soft)
         incoming.remove(word)
-        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .easeIn(duration: 0.36)) {
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .easeIn(duration: 0.26)) {
             tags.removeAll { $0 == word }
         }
     }
 
-    /// 3つ目:震える + プレビューの2枚がぶるっとゆれる + やわらかく2回
+    /// 4つ目:warn + カードが ゆれる +「タグは 3つまで」
     private func refuse(word: String?) {
-        // v14:4つ目 = warn +「タグは 3つまで」
         Haptics.play(.warn)
         showMessage("タグは \(TagRules.maxCount)つまで")
-        if let word {
-            shakeCounts[word, default: 0] += 1
-        } else {
-            fieldShake += 1
-        }
-        wobble += 1
+        if let word { shakeCounts[word, default: 0] += 1 }
+        cardShake += 1
     }
 
     private func commitInput() {
-        let tag = trimmedInput
-        guard !tag.isEmpty else { return }
+        let tag = TagRules.clean(input.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard !tag.isEmpty else {
+            if !input.isEmpty { input = "" }
+            return
+        }
         if tags.contains(tag) {
+            Haptics.play(.warn)
+            cardShake += 1
             input = ""
             return
         }
@@ -772,24 +626,23 @@ struct TagScreen: View {
             refuse(word: nil)
             return
         }
-        // 点線のテープが、そのまま本物になってぽんと出る
         withAnimation(.spring(response: 0.32, dampingFraction: 0.5)) {
             tags.append(tag)
             input = ""
         }
-        land(isSecond: tags.count == 2)
+        land()
     }
 
-    /// 一言を1.6秒だけ出す
     private func showMessage(_ text: String) {
         refuseText = text
         showRefuse = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { if refuseText == text { showRefuse = false } }
     }
 
-    /// のこりが 0 のときの「撮る」:触覚(warn)+「今日は、ここまで」
+    /// のこりが 0 のとき:warn +「今日は、ここまで」+ ゆれる
     private func refuseShoot() {
         Haptics.play(.warn)
+        cardShake += 1
         showMessage("今日は、ここまで")
     }
 
@@ -804,78 +657,143 @@ struct TagScreen: View {
     }
 
     private func close() {
+        Haptics.play(.soft)
         inputFocused = false
         onClose()
     }
 }
 
-// MARK: - 撮影ボタン(v14 ④)
+// MARK: - 白と黒の部品(タグ画面と、撮影画面へ ひろがる カードのコピーで使う)
 
-/// 直径 116pt の朝焼けの丸 + 中にレンズ + 外側に呼吸するリング(2.6秒)。
-/// 押すと 0.9倍 → 離すと弾む。押した瞬間、光がぶわっと広がる(0.7秒)+ 白いフラッシュ。
-struct CaptureShutterButton: View {
-    let enabled: Bool
-    let reduceMotion: Bool
-    let ink: Color
-    let bg: Color
-    /// のこりがなくて押せないとき(触覚と一言は呼び出し側)
-    var onRefused: () -> Void = {}
-    let action: () -> Void
+/// 背景:#0B0B0D に、上だけ ごく うすく #202023
+struct TagScreenBackground: View {
+    var body: some View {
+        ZStack {
+            Color(hex: "0B0B0D")
+            RadialGradient(colors: [Color(hex: "202023"), Color(hex: "0B0B0D").opacity(0)], center: .top, startRadius: 0, endRadius: 420)
+                .scaleEffect(x: 1.8, y: 1, anchor: .top)
+        }
+    }
+}
 
-    static let diameter: CGFloat = 116
-    @State private var burst = false
-    @State private var flash = false
+/// ガラスのカードの地(白 6% ・ 白 14% の細いふち ・ 細かい ノイズ)+ 3つ そろったときの 光の なで
+struct TagGlassCardBackground: View {
+    var sheen = 0
+    var reduceMotion = false
 
     var body: some View {
-        Button {
-            guard enabled else {
-                onRefused()
-                return
+        let shape = RoundedRectangle(cornerRadius: 30, style: .continuous)
+        ZStack {
+            shape.fill(.white.opacity(0.06))
+            TagNoise().opacity(0.07).clipShape(shape)
+            shape.strokeBorder(.white.opacity(0.14), lineWidth: 1)
+            if sheen > 0 && !reduceMotion {
+                TagSheen().id(sheen).clipShape(shape)
             }
-            Haptics.play(.pop)
-            if reduceMotion {
-                action()
-                return
-            }
-            withAnimation(.easeOut(duration: 0.7)) { burst = true }
-            withAnimation(.easeOut(duration: 0.08)) { flash = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { withAnimation(.easeOut(duration: 0.5)) { flash = false } }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { action() }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { burst = false }
-        } label: {
-            ZStack {
-                TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { context in
-                    let t = context.date.timeIntervalSinceReferenceDate
-                    let b = reduceMotion ? 0 : (1 - cos(t * 2 * .pi / 2.6)) / 2
-                    Circle()
-                        .strokeBorder(ink, lineWidth: 3)
-                        .scaleEffect(1 + 0.07 * b)
-                        .opacity(1 - 0.55 * b)
-                }
-                Circle()
-                    .fill(RadialGradient(colors: [Color(hex: "FFD6A8"), Color(hex: "FF6A1A"), Color(hex: "FF3D7F")], center: UnitPoint(x: 0.32, y: 0.26), startRadius: 0, endRadius: 70))
-                    .overlay(Circle().strokeBorder(bg, lineWidth: 3))
-                    .padding(10)
-                    .shadow(color: Color(hex: "FF503C").opacity(0.55), radius: 15, y: 10)
-                    .scaleEffect(burst ? 24 : 1)
-                    .opacity(burst ? 0 : 1)
-                Circle()
-                    .fill(RadialGradient(colors: [.white, Color(hex: "BBCCDD"), Color(hex: "333355")], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 20))
-                    .frame(width: 34, height: 34)
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.35), lineWidth: 6).padding(-6))
-                    .opacity(burst ? 0 : 1)
-            }
-            .frame(width: Self.diameter, height: Self.diameter)
-            .opacity(enabled ? 1 : 0.4)
         }
-        .buttonStyle(SquishButtonStyle(pressedScale: 0.9))
-        .overlay {
-            Color.white
-                .opacity(flash ? 0.95 : 0)
-                .frame(width: 2000, height: 3000)
-                .allowsHitTesting(false)
+        .background(.ultraThinMaterial.opacity(0.4), in: shape)
+        .allowsHitTesting(false)
+    }
+}
+
+private struct TagSheen: View {
+    @State private var x: CGFloat = -1
+    var body: some View {
+        GeometryReader { proxy in
+            LinearGradient(colors: [.clear, .white.opacity(0.28), .clear], startPoint: .leading, endPoint: .trailing)
+                .frame(width: proxy.size.width * 0.5)
+                .rotationEffect(.degrees(18))
+                .offset(x: x * proxy.size.width * 1.3)
         }
-        .accessibilityLabel(enabled ? "撮る" : "今日は おしまい")
-        .accessibilityHint("撮影の画面へ進みます。タグがなくても撮れます")
+        .onAppear { withAnimation(.easeInOut(duration: 0.7)) { x = 1 } }
+    }
+}
+
+/// こまかい 白の つぶ(固定の たね)
+private struct TagNoise: View {
+    var body: some View {
+        Canvas { ctx, size in
+            var rng = SeededRandom(seed: 9)
+            var path = Path()
+            let count = Int(size.width * size.height / 30)
+            for _ in 0..<count {
+                let x = Double(rng.next() % 10_000) / 10_000 * size.width
+                let y = Double(rng.next() % 10_000) / 10_000 * size.height
+                path.addRect(CGRect(x: x, y: y, width: 1, height: 1))
+            }
+            ctx.fill(path, with: .color(.white))
+        }
+    }
+}
+
+/// タグの まる(白=黒い字 / 黒=白い字・白いふち / ガラス=流れる ことば / 場所=うすい白)
+struct TagGlassChip: View {
+    enum Style { case white, black, glass, place }
+    let text: String
+    let style: Style
+    var large = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if style == .place {
+                Image(systemName: "mappin").font(.system(size: 10, weight: .bold))
+            }
+            Text(text).lineLimit(1)
+        }
+        .font(.system(size: large ? 16 : (style == .place ? 12 : 12.5), weight: large ? .bold : .heavy))
+        .foregroundStyle(style == .white ? Color(hex: "111111") : .white)
+        .padding(.horizontal, large ? 20 : (style == .place ? 9 : 10))
+        .frame(height: large ? 44 : 30)
+        .background {
+            switch style {
+            case .white: Capsule().fill(Color(hex: "F4F4F6"))
+            case .black: Capsule().fill(Color(hex: "141416")).overlay(Capsule().strokeBorder(.white.opacity(0.55), lineWidth: 1.3))
+            case .glass: Capsule().fill(.white.opacity(0.1)).overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1))
+            case .place: Capsule().fill(.white.opacity(0.12))
+            }
+        }
+        .fixedSize()
+    }
+}
+
+/// カードの上の 1行:場所(自動)+ えらんだタグ(白と黒を 交互)
+struct TagChipRow: View {
+    let place: String?
+    let tags: [String]
+    var hidden: Set<String> = []
+    var onTapTag: ((String) -> Void)?
+
+    var body: some View {
+        HStack(spacing: 5) {
+            if let place {
+                TagGlassChip(text: place, style: .place)
+                    .accessibilityLabel("場所 \(place)")
+            }
+            ForEach(Array(tags.enumerated()), id: \.element) { index, tag in
+                TagGlassChip(text: TagDictionary.display(tag), style: index % 2 == 0 ? .white : .black)
+                    .opacity(hidden.contains(tag) ? 0 : 1)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    .onTapGesture { onTapTag?(tag) }
+                    .accessibilityLabel("\(tag)。タップで はずす")
+                    .accessibilityAddTraits(.isButton)
+            }
+        }
+        .frame(height: 30)
+    }
+}
+
+/// 撮影画面へ ひろがる カードのコピー(中身は 見た目だけ)
+struct TagCardFace: View {
+    let place: String?
+    let tags: [String]
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Color(hex: "0B0B0D")
+            TagGlassCardBackground()
+            TagChipRow(place: place, tags: tags)
+                .padding(.horizontal, 18)
+                .padding(.top, 14)
+        }
     }
 }

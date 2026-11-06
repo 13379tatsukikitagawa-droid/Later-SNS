@@ -85,7 +85,7 @@ struct CaptureFlowLogicTests {
     // MARK: TagRules
 
     @Test func tagRulesCleanAndLimit() {
-        #expect(TagRules.maxCount == 2)
+        #expect(TagRules.maxCount == 3)
         #expect(TagRules.clean("  #ねむい ") == "ねむい")
         #expect(TagRules.clean("＃＃ 空") == "空")
         #expect(TagRules.clean("a#b") == "a#b")
@@ -93,7 +93,8 @@ struct CaptureFlowLogicTests {
         #expect(!TagRules.canAdd("", to: []))
         #expect(!TagRules.canAdd("空", to: ["空"]))
         #expect(TagRules.canAdd("空", to: ["朝"]))
-        #expect(!TagRules.canAdd("空", to: ["朝", "電車"]))
+        #expect(TagRules.canAdd("空", to: ["朝", "電車"]))
+        #expect(!TagRules.canAdd("空", to: ["朝", "電車", "夕方"]))
     }
 
     @Test func dictionaryIsMostlyEmotions() {

@@ -156,18 +156,9 @@ struct CaptureFlow: View {
     /// ひろがるカードのコピー(画面の最上位。もとのカードは動かさない)
     private func cardCopy(_ layout: CaptureLayout) -> some View {
         let rect = expanded ? layout.finder : cardFrame
-        let slots: [TagPreviewCard.Slot] = (0..<TagRules.maxCount).map { index in
-            index < shotTags.count ? .tag(shotTags[index]) : .empty
-        }
-        return TagPreviewCard(
-            colors: colors,
-            place: placeProvider.placeName,
-            slots: expanded ? shotTags.map { .tag($0) } : slots,
-            showsLabel: !expanded,
-            reduceMotion: true
-        )
+        return TagCardFace(place: placeProvider.placeName, tags: shotTags)
         .frame(width: rect.width, height: rect.height)
-        .clipShape(RoundedRectangle(cornerRadius: expanded ? 28 : 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: expanded ? 28 : 30, style: .continuous))
         .position(x: rect.midX, y: rect.midY)
         .frame(width: layout.size.width, height: layout.size.height, alignment: .topLeading)
         .ignoresSafeArea()
@@ -177,29 +168,31 @@ struct CaptureFlow: View {
 
     private var restView: some View {
         ZStack(alignment: .topLeading) {
-            colors.bg.color.ignoresSafeArea()
+            TagScreenBackground().ignoresSafeArea()
             VStack(spacing: 10) {
                 Text("おやすみの時間")
                     .font(CaptureFont.heading(26))
                 Text("9:00 になると、また撮れます")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(colors.sub.color)
+                    .foregroundStyle(Color(hex: "9A9AA2"))
             }
-            .foregroundStyle(colors.ink.color)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Button(action: cancel) {
-                Image(systemName: "chevron.left")
+                Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(colors.ink.color)
-                    .frame(width: 40, height: 40)
-                    .background(Circle().fill(colors.fill.color))
+                    .foregroundStyle(.white)
+                    .frame(width: 46, height: 46)
+                    .background(Circle().fill(.white.opacity(0.1)))
+                    .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("戻る")
-            .padding(.leading, 20)
-            .padding(.top, 4)
+            .accessibilityLabel("とじる")
+            .padding(.leading, 18)
+            .padding(.top, 7)
         }
+        .preferredColorScheme(.dark)
     }
 
     // MARK: 流れ
