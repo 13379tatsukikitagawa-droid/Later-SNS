@@ -58,6 +58,7 @@ struct ChicHomeView: View {
     @State private var groupsIn = true
     @State private var headCircle = 1.0
     @State private var guideClosed = HomeFirstDay.guideClosed
+    @State private var showsDevelop = false
 
     private static let homeTabIndex = 0
     /// 月の見えている高さ(84)+ 余白
@@ -136,6 +137,10 @@ struct ChicHomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openingFinished)) { _ in
             playIntro()
         }
+        .fullScreenCover(isPresented: $showsDevelop) {
+            HomeDevelopViewer(shots: v17.shots, videoDurations: v17.videoDurations, used: FilmCounter.shared.used, tones: tones, now: now,
+                              onClose: { showsDevelop = false }, onShoot: v17Actions.shoot)
+        }
         .confirmationDialog(
             bump?.pending.map { "「\($0.name)」と つながる?" } ?? "",
             isPresented: Binding(get: { bump?.pending != nil }, set: { if !$0, bump?.pending != nil { bump?.cancel() } }),
@@ -181,7 +186,7 @@ struct ChicHomeView: View {
                 .opacity(headIn ? 1 : 0)
                 .id("headline-\(used)-\(initial)")
 
-            HomeTodayCard(used: used, initial: initial, now: now, onTap: scrollToFilm)
+            HomeTodayCard(used: used, initial: initial, now: now, onTap: openDevelop)
                 .padding(.horizontal, 18)
                 .padding(.top, 12)
                 .offset(y: cardIn ? 0 : 24)
@@ -233,6 +238,11 @@ struct ChicHomeView: View {
         } else {
             Haptics.play(.warn)
         }
+    }
+
+    /// v22 G:今日のカード → 現像ビューが 下から せり上がる
+    private func openDevelop() {
+        showsDevelop = true
     }
 
     private func scrollToFilm() {

@@ -429,7 +429,7 @@ struct HomeTodayCard: View {
             KeyframeTrack { CubicKeyframe(1.04, duration: 0.12); SpringKeyframe(1, duration: 0.3) }
         }
         .onChange(of: landing.landedToken) { _, _ in bounce += 1 }
-        .accessibilityLabel("\(text.title)。\(text.sub)。今日 \(used)こま。押すと 今日の film へ")
+        .accessibilityLabel("\(text.title)。\(text.sub)。今日 \(used)こま。押すと 現像ビューへ")
     }
 
     private var cheki: some View {
