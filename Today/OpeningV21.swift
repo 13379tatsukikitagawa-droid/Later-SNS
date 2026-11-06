@@ -110,7 +110,7 @@ struct OpeningV21View: View {
             // 橙の点 → 白 → Home(0.4秒)
             ZStack {
                 Color(hex: "07070A").opacity(max(0, 1 - t / 0.15))
-                Color(hex: "FFFDFA").opacity(t < 0.15 ? t / 0.15 : max(0, 1 - (t - 0.2) / 0.2))
+                Color.white.opacity(t < 0.15 ? t / 0.15 : max(0, 1 - (t - 0.2) / 0.2))
                 Circle().fill(Color(hex: "FF8A2A")).frame(width: 12, height: 12).opacity(max(0, 1 - t / 0.15))
             }
         } else {
@@ -120,7 +120,7 @@ struct OpeningV21View: View {
                 // 0〜1.0:まっ黒(Launch Screen と同じ)→ 1.0 で白い紙へ
                 Color(hex: "07070A").opacity(paper ? 0 : 1)
                 if paper {
-                    HomeV21Paper(isActive: false, height: size.height)
+                    HomeGlowBackground()
                 }
                 if !paper { finder(t: t, size: size) }
                 if paper { cheki(t: t, size: size) }
@@ -311,4 +311,33 @@ enum OpeningEase {
 extension Notification.Name {
     /// オープニングが終わった(Home の登場を流す)
     static let openingFinished = Notification.Name("openingFinished")
+}
+
+/// Home の うしろ:まっ白(ChicColor.paper)に、やわらかい光が 2つ(右上に だいだい・左下に ラベンダー)。
+/// ぼかしは つかわず、放射状のグラデーションで。ゆっくり ただよう(14秒・17秒)。
+struct HomeGlowBackground: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { context in
+                let t = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
+                let a = t / 14 * 2 * .pi
+                let b = t / 17 * 2 * .pi
+                ZStack {
+                    ChicColor.paper
+                    bloom(Color(hex: "FF8A2A"), opacity: 0.34)
+                        .position(x: geo.size.width - 40 + 24 * cos(a), y: 90 + 20 * sin(a))
+                    bloom(Color(hex: "B9A4F0"), opacity: 0.26)
+                        .position(x: 40 + 22 * sin(b), y: geo.size.height - 120 + 24 * cos(b))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func bloom(_ color: Color, opacity: Double) -> some View {
+        RadialGradient(colors: [color.opacity(opacity), color.opacity(0)], center: .center, startRadius: 0, endRadius: 190)
+            .frame(width: 380, height: 380)
+    }
 }

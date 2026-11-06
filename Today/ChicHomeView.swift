@@ -51,7 +51,7 @@ struct ChicHomeView: View {
     /// 長押しでためている間の揺れ
     @State private var feel = HomeV17Feel()
     @State private var scrollPosition = ScrollPosition(edge: .top)
-    /// v21:Home の登場(チェキが ひもに ぶらさがる・見出しが ぴょん・丸が ぐるっ)
+    /// オープニングが おわった合図の回数(Home の登場に あとで使う。いまは使わない)
     @State private var introToken = 0
 
     private static let homeTabIndex = 0
@@ -85,37 +85,22 @@ struct ChicHomeView: View {
             ZStack(alignment: .top) {
                 // v17:1画面目(v8 のまま)の下に、区画がつづく。ヘッダーと月は動かない
                 ScrollView(.vertical) {
-                    // v21 D:1画面目は 洗濯ひもと チェキ・世界の光・見出し(素材で見せる)。スクロールした先は グループ
                     VStack(spacing: 0) {
-                        HomeV21Hero(
+                        firstPage(top: top, width: width, fullHeight: fullHeight, ringSide: ringSide, compact: compact)
+                            .frame(width: width, height: pageHeight, alignment: .top)
+                        HomeV17Stack(
                             state: state,
                             now: now,
-                            shots: v17.shots,
-                            videoDurations: v17.videoDurations,
-                            width: width,
-                            height: max(fullHeight, 800 * min(1, fullHeight / 844)),
-                            headerBottom: top + LaterHeader.height,
-                            isActive: isVisible,
-                            introToken: introToken,
-                            onShoot: v17Actions.shoot,
-                            onOrb: onOrbTap,
-                            onToast: v17Actions.toast
+                            data: v17,
+                            actions: v17Actions,
+                            feel: feel,
+                            bump: bump,
+                            isActive: isVisible
                         )
                         .frame(width: width)
                         .opacity(isDiving ? 0 : 1)
-                        HomeV21Groups(
-                            summaries: groupSummaries,
-                            canCreate: canCreateGroup,
-                            isFrontmost: isVisible,
-                            shotsToday: shotsToday,
-                            onSelect: onSelectGroup,
-                            onCreate: onCreateGroup,
-                            onJoin: onJoinGroup,
-                            onAdd: onAddGroup
-                        )
-                        .frame(width: width, alignment: .leading)
-                        Color.clear.frame(height: 250)
                     }
+                    .modifier(V17Rattle(feel: feel))
                 }
                 .scrollPosition($scrollPosition)
                 .scrollIndicators(.hidden)
@@ -126,7 +111,7 @@ struct ChicHomeView: View {
                     scroll.offset = y
                 }
 
-                V17HeaderGlass(scroll: scroll, tint: Color(hex: "FFFDFA"), height: top + LaterHeader.height + 16, lineY: top + LaterHeader.height + 4)
+                V17HeaderGlass(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, height: top + LaterHeader.height + 16, lineY: top + LaterHeader.height + 4)
                     .allowsHitTesting(false)
 
                 LaterHeader(
@@ -145,7 +130,7 @@ struct ChicHomeView: View {
                 .animation(.easeOut(duration: 0.32), value: isDiving)
 
                 // 月の上の白いグラデーション(スクロールしたときだけ)と、「SCROLL」のヒント
-                V17BottomChrome(scroll: scroll, tint: Color(hex: "FFFDFA"), ink: Color(hex: "111111"), showsCue: false)
+                V17BottomChrome(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, ink: palette.isNight ? Color.white : Color(hex: "111111"), showsCue: launch == .finished && !isDiving)
                     .frame(width: width, height: fullHeight)
                     .allowsHitTesting(false)
             }
@@ -158,13 +143,13 @@ struct ChicHomeView: View {
             scrollPosition.scrollTo(edge: .top)
         }
         .onChange(of: FilmLanding.shared.scrollToken) { _, _ in
-            // v21:撮ったら、チェキが ひもに とまる所が見えるよう、ヒーローの一番上へ(アニメなし)
-            var instant = Transaction()
-            instant.disablesAnimations = true
-            withTransaction(instant) { scrollPosition.scrollTo(edge: .top) }
+            // v18.2:撮ったら、今日の film が見える位置まで 0.4秒で
+            withAnimation(.easeInOut(duration: reduceMotion ? 0.01 : 0.4)) {
+                scrollPosition.scrollTo(id: HomeV17Section.film.rawValue, anchor: UnitPoint(x: 0.5, y: 0.35))
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openingFinished)) { _ in
-            // オープニングのあと:Home の登場
+            // オープニングのあと:Home の登場(あとで使う。いまは合図だけ)
             introToken += 1
         }
         .confirmationDialog(
@@ -178,8 +163,11 @@ struct ChicHomeView: View {
             Text("相手の画面でも、きいています")
         }
         .background {
-            // v21 D:あたたかい白い紙(光のにじみ・フィルムの番号・粒子)
-            HomeV21Paper(isActive: isVisible, height: 900).ignoresSafeArea()
+            if palette.isNight {
+                ChicNightBackground().ignoresSafeArea()
+            } else {
+                ChicColor.paper.ignoresSafeArea()
+            }
         }
         .ignoresSafeArea()
         .onAppear { isOnScreen = true }
