@@ -104,6 +104,8 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
     private let photoOutput = AVCapturePhotoOutput()
     private let movieOutput = AVCaptureMovieFileOutput()
     private var captureCompletion: ((Data?) -> Void)?
+    /// 撮影の世代(メインスレッドだけ)。タイムアウトが、次の撮影を誤って止めないための印
+    private var captureToken = 0
     private var recordingFinished: ((RecordedClip?) -> Void)?
     private var recordingStartedAt: Date?
 
@@ -121,6 +123,8 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
     @Published private(set) var canRecordVideo = false
     /// セッションが動いている(最初の映像が流れ始めた)か。幕を開ける合図に使う。
     @Published private(set) var isRunning = false
+    /// 起動して3秒たっても映像が来ない(「もう一度ためす」を出す合図)
+    @Published private(set) var isStalled = false
     /// カメラの許可がない(拒否・制限)
     @Published private(set) var isAccessDenied = false
     /// 現在アクティブなカメラ(前面/背面)。switchCamera()で切り替わる。
@@ -133,6 +137,14 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
                            name: AVCaptureSession.wasInterruptedNotification, object: session)
         center.addObserver(forName: AVCaptureSession.didStartRunningNotification, object: session, queue: .main) { [weak self] _ in
             self?.isRunning = true
+            self?.isStalled = false
+        }
+        // 実行中のエラー・中断の終わり:動かしたいままなら、キューに積み直す
+        center.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: .main) { [weak self] _ in
+            self?.restartIfWanted()
+        }
+        center.addObserver(forName: AVCaptureSession.interruptionEndedNotification, object: session, queue: .main) { [weak self] _ in
+            self?.restartIfWanted()
         }
         center.addObserver(forName: AVCaptureSession.didStopRunningNotification, object: session, queue: .main) { [weak self] _ in
             self?.isRunning = false
@@ -142,6 +154,7 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
     /// 準備(タグ画面が開いた時・撮影画面が開いた時)。ブロックせず、仕事をキューに積むだけ。何度呼んでもよい。
     func configure() {
         wantsRunning = true
+        armStallTimer()
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             isAccessDenied = false
@@ -172,6 +185,28 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
             }
         } else {
             enqueueStart()
+        }
+    }
+
+    /// 「もう一度ためす」:組み立てがまだなら、やり直して起動する
+    func retry() {
+        isStalled = false
+        wantsRunning = true
+        armStallTimer()
+        enqueueStart()
+    }
+
+    private func restartIfWanted() {
+        guard wantsRunning, AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
+        enqueueStart()
+    }
+
+    /// 3秒たっても映像が流れ始めなければ、止まった合図を出す(許可待ち・拒否のときは出さない)。
+    private func armStallTimer() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+            guard let self, self.wantsRunning, !self.isRunning, !self.isAccessDenied, !self.isRequestingAccess,
+                  AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
+            self.isStalled = true
         }
     }
 
@@ -304,16 +339,34 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
     }
 
     /// 撮影。フラッシュは、対応していれば自動(.auto)だけ。出力への指示はセッションキューで行う。
+    /// セッションが止まっている・5秒たっても返事が来ないときは、nil(失敗)で必ず1回返す。
     func capturePhoto(completion: @escaping (Data?) -> Void) {
         captureCompletion = completion
+        captureToken &+= 1
+        let token = captureToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            self?.failCapture(token: token, reason: "5秒たっても完了が来ない")
+        }
         sessionQueue.async { [weak self] in
             guard let self else { return }
+            guard self.session.isRunning else {
+                DispatchQueue.main.async { self.failCapture(token: token, reason: "セッションが止まっている") }
+                return
+            }
             let settings = AVCapturePhotoSettings()
             if self.queuePosition == .back, self.photoOutput.supportedFlashModes.contains(.auto) {
                 settings.flashMode = .auto
             }
             self.photoOutput.capturePhoto(with: settings, delegate: self)
         }
+    }
+
+    /// メインスレッドで、まだ待っている撮影があれば、失敗として返す(すでに返事があれば何もしない)。
+    private func failCapture(token: Int, reason: String) {
+        guard captureToken == token, let completion = captureCompletion else { return }
+        print("[PhotoSave Error] 撮影を中止: \(reason)")
+        captureCompletion = nil
+        completion(nil)
     }
 }
 

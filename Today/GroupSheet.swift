@@ -141,7 +141,7 @@ struct GroupSheet: View {
     private var header: some View {
         HStack(spacing: 16) {
             ZStack {
-                GroupFace(iconData: summary.iconData, initial: summary.initial, auraIndex: summary.auraIndex, diameter: 56)
+                GroupFace(iconData: summary.iconData, initial: summary.initial, auraIndex: summary.auraIndex, diameter: 56, mosaic: summary.faceMosaic, mosaicKey: summary.faceMosaicKey)
                 // まわりに12個の点。メンバー数ぶんが白く光る
                 GroupLightRing(memberCount: GroupRingMath.maxDots, posted: min(GroupRingMath.maxDots, summary.memberCount), diameter: 84)
             }

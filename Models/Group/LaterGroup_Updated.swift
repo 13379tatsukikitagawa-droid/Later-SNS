@@ -20,6 +20,10 @@ class LaterGroup {
     var memberLimit: Int = GroupMembershipPolicy.maxMembersPerGroup
     /// 顔の色(GroupPalette の番号)。-1 なら未設定(IDから決める)
     var colorIndex: Int = -1
+    /// 顔のしゅるい:"aura"(色)/ "photo"(みんなが撮った今日の写真。まだ1枚もない日は色)
+    var faceStyle: String = GroupFaceStyle.aura
+    /// 顔に、名前の1文字目を入れるか
+    var showsInitial: Bool = true
     /// 自分がこのグループを作った・入った時刻(端末だけ)。Home の列は新しい順(入ったグループが先頭)
     var joinedAt: Date?
     /// 合言葉(サーバーが発行。「くじら472」)と有効期限。端末だけに持つ(期限がきたら引きなおす)

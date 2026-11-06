@@ -23,7 +23,12 @@ struct ThemeClockTests {
         #expect(ThemeClock.isNight(date(0, 0), calendar: tokyo))
         #expect(ThemeClock.isNight(date(8, 59), calendar: tokyo))
         #expect(!ThemeClock.isNight(date(9, 0), calendar: tokyo))
-        #expect(!ThemeClock.isNight(date(23, 59), calendar: tokyo))
+        #expect(!ThemeClock.isNight(date(16, 30), calendar: tokyo))
+        #expect(!ThemeClock.isNight(date(20, 59), calendar: tokyo))
+        // 21:00〜 は黒(v14 確定)
+        #expect(ThemeClock.isNight(date(21, 0), calendar: tokyo))
+        #expect(ThemeClock.isNight(date(22, 0), calendar: tokyo))
+        #expect(ThemeClock.isNight(date(23, 59), calendar: tokyo))
     }
 
     @Test func refreshAppliesWhenUnlocked() {
@@ -54,8 +59,11 @@ struct ThemeClockTests {
     @Test func nextChangeIsNearestMidnightOrNine() {
         let s1 = ThemeClock.secondsUntilNextChange(from: date(8, 0), calendar: tokyo)
         #expect(abs(s1 - 3600.5) < 0.01)
-        let s2 = ThemeClock.secondsUntilNextChange(from: date(23, 0), calendar: tokyo)
+        let s2 = ThemeClock.secondsUntilNextChange(from: date(20, 0), calendar: tokyo)
         #expect(abs(s2 - 3600.5) < 0.01)
+        // 23:00 → つぎは 9:00(10時間後)
+        let s3 = ThemeClock.secondsUntilNextChange(from: date(23, 0), calendar: tokyo)
+        #expect(abs(s3 - 36000.5) < 0.01)
     }
 
     @Test func paletteHexConstants() {

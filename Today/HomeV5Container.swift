@@ -29,6 +29,11 @@ struct HomeV5Container: View {
     var locked = false
     /// アバターの2回タップ・長押し(今日 / 昨日の切りかえ)
     var avatarSwitch = AvatarSwitch()
+    /// v14 ②:グループのタブの上の「ともだち」と ME カード
+    var friendsData: HomeLayerData = .empty
+    var friendsActions = HomeLayerActions()
+    var onFriend: (HomeFriend) -> Void = { _ in }
+    var onInviteFriend: () -> Void = {}
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -264,7 +269,7 @@ struct HomeV5Container: View {
                                 dayKey: dayKey,
                                 isActive: isCalm && tab == .mondo,
                                 topInset: top + Self.headerExtra,
-                                onTick: { haptics.playPattern(HomeHapticPattern.globeTick) },
+                                onTick: {}, // v14:触覚は V5Globe の中で Haptics.tick(12°ごと・55ms)
                                 onSettings: { showsMondoSettings = true },
                                 onRetry: { Task { await loader.load(now: now, blocked: MondoService.blockedMondoIDs(blockedUsers), force: true) } },
                                 onOpenTag: openTagFeed,
@@ -299,7 +304,13 @@ struct HomeV5Container: View {
                                 litTileIDs: litTileIDs,
                                 onOpenAnnounced: openAnnouncedGroup,
                                 scrollToTopToken: groupTop,
-                                locked: locked
+                                locked: locked,
+                                friendsState: state,
+                                friendsData: friendsData,
+                                friendsActions: friendsActions,
+                                onFriend: onFriend,
+                                onInviteFriend: onInviteFriend,
+                                onOpenMe: onOpenProfile
                             ),
                             safeBottom: proxy.safeAreaInsets.bottom
                         )
@@ -675,7 +686,12 @@ struct HomeV5Container: View {
                 tinyKey: tile.id,
                 label: section.name,
                 counter: TagFeed.counterText(index: offset, total: section.tiles.count),
-                lamp: groupLamp(section: section, tile: tile, isUnlocked: unlocked)
+                lamp: groupLamp(section: section, tile: tile, isUnlocked: unlocked),
+                authorName: tile.authorName,
+                city: tile.city,
+                // 自分の写真には「見えなくする・通報する」を出さない
+                authorRecordName: tile.isMine ? nil : tile.authorRecordName,
+                photoRecordName: tile.isMine ? nil : tile.photoRecordName
             )
         }
         present(pages: pages, start: start, at: point)
@@ -729,7 +745,14 @@ struct HomeV5Container: View {
     }
 
     /// カレンダーのタブ:NavigationStack の一番上のページ。戻るボタンはない(日をひらくと1段だけ push され、標準の「‹ カレンダー」で戻る)
+    /// v14 ⑦:新しいカレンダー(88pt の月・3:4 の日・ピークカード・月スクラバー)。
+    /// 以前のカレンダー(LampCalendarView + 発表された一枚の日ページ)は legacyCalendarTab に残す
     private func calendarTab(topInset: CGFloat) -> some View {
+        LaterCalendarView()
+            .padding(.top, topInset - 20)
+    }
+
+    private func legacyCalendarTab(topInset: CGFloat) -> some View {
         NavigationStack(path: $calendarPath) {
             LampCalendarView(
                 now: now,

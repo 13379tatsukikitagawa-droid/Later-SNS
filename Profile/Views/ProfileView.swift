@@ -213,7 +213,7 @@ struct ProfileView: View {
     private func pinnedPhotoCard(_ photo: LaterPhoto) -> some View {
         ZStack(alignment: .topTrailing) {
             Group {
-                if let uiImage = UIImage(data: photo.imageData) {
+                if PhotoDevelop.isDeveloped(takenAt: photo.captureDate, now: Date()), let uiImage = UIImage(data: photo.imageData) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)

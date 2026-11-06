@@ -72,6 +72,41 @@ DEFINE SCHEMA
         GRANT READ TO "_world"
     );
 
+    RECORD TYPE Friendship (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        createdAt       TIMESTAMP,
+        fromName        STRING,
+        fromUserId      STRING QUERYABLE,
+        toUserId        STRING QUERYABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE GroupInviteCard (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        createdAt       TIMESTAMP,
+        fromName        STRING,
+        fromUserId      STRING QUERYABLE,
+        groupName       STRING,
+        memberCount     INT64,
+        shareURL        STRING,
+        toUserId        STRING QUERYABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
     RECORD TYPE GroupMessage (
         "___createTime" TIMESTAMP,
         "___createdBy"  REFERENCE,
@@ -98,6 +133,7 @@ DEFINE SCHEMA
         "___recordID"               REFERENCE,
         autoGenerateMission         INT64 QUERYABLE SORTABLE,
         colorIndex                  INT64,
+        faceStyle                   STRING,
         currentDailyMission         STRING,
         groupCreatedAt              TIMESTAMP QUERYABLE SORTABLE,
         icon                        ASSET,
@@ -105,6 +141,7 @@ DEFINE SCHEMA
         isPrivate                   INT64 QUERYABLE SORTABLE,
         lastUnlockAt                TIMESTAMP QUERYABLE SORTABLE,
         memberLimit                 INT64,
+        showsInitial                INT64,
         name                        STRING QUERYABLE SEARCHABLE SORTABLE,
         ownerCloudKitUserRecordName STRING QUERYABLE SEARCHABLE SORTABLE,
         personalDailyTargetCount    INT64 QUERYABLE SORTABLE,
@@ -125,6 +162,7 @@ DEFINE SCHEMA
         authorNameCache              STRING QUERYABLE SEARCHABLE SORTABLE,
         caption                      STRING QUERYABLE SEARCHABLE SORTABLE,
         captureDate                  TIMESTAMP QUERYABLE SORTABLE,
+        durationSeconds              DOUBLE,
         group                        REFERENCE QUERYABLE,
         groupIDString                STRING QUERYABLE SEARCHABLE SORTABLE,
         groupNameCache               STRING QUERYABLE SEARCHABLE SORTABLE,
@@ -137,6 +175,7 @@ DEFINE SCHEMA
         approxLongitude              DOUBLE,
         tags                         LIST<STRING> QUERYABLE SEARCHABLE,
         unlockDate                   TIMESTAMP QUERYABLE SORTABLE,
+        video                        ASSET,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
@@ -189,6 +228,7 @@ DEFINE SCHEMA
         firebaseEmail          STRING,
         firebaseUID            STRING,
         group                  REFERENCE QUERYABLE,
+        knockOff               INT64,
         name                   STRING QUERYABLE SEARCHABLE SORTABLE,
         selfTags               LIST<STRING> QUERYABLE SEARCHABLE,
         username               STRING QUERYABLE SEARCHABLE SORTABLE,
@@ -288,6 +328,7 @@ DEFINE SCHEMA
         groupRef        REFERENCE,
         memberId        STRING,
         memberName      STRING,
+        targetId        STRING,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"

@@ -38,10 +38,20 @@ struct MainNavigationView: View {
                     .simultaneousGesture(openProfileSwipe(width: width))
                     .onPreferenceChange(HomeNoSwipeRegionKey.self) { homeNoSwipeRegions = $0 }
 
-                ProfileFilmView(onBack: { show(.home) })
+                // v14 ③:ME 画面。タップした位置(ME カード・アバター)から円形に広がって出る(0.7秒)。
+                // 戻るときは、薄くなりながら縮む(0.4秒)。プロフィールの編集・設定は ME の「プロフィール」から
+                MEScreenV19(
+                    onBack: { show(.home) },
+                    onShoot: {
+                        // Home に戻って、撮影の流れ(タグ → 撮影)をひらく
+                        show(.home)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            CaptureRequestStore.shared.pendingRequestID = UUID()
+                        }
+                    }
+                )
                     .frame(width: width)
-                    .offset(x: screen == .profile || reduceMotion ? 0 : width)
-                    .opacity(screen == .profile ? 1 : 0)
+                    .modifier(CircleReveal(isOpen: screen == .profile, origin: MERevealOrigin.point ?? CGPoint(x: width - 44, y: 90)))
                     .allowsHitTesting(screen == .profile)
                     .simultaneousGesture(swipe(toward: .home))
                     .accessibilityHidden(screen != .profile)

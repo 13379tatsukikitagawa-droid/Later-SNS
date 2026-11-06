@@ -20,8 +20,11 @@ struct SettingsMenuView: View {
 
     @State private var haptics = ExposureHaptics()
     @State private var notificationOn = false
-    @State private var hapticsOn = AppHapticsSetting.isEnabled
+    @State private var hapticsLevel = AppHapticsSetting.level
+    @State private var tapToRecord = RetroSettings.tapToRecord
+    @State private var videoStamp = RetroSettings.stampOn
     @State private var mondoOn = MondoService.isPublic
+    @State private var knockOn = !KnockSetting.isOff
     @State private var showingNotificationDenied = false
     @State private var showingSignOutConfirm = false
     @State private var showingDeletion = false
@@ -194,10 +197,34 @@ struct SettingsMenuView: View {
                     .accessibilityLabel("9:00 のお知らせ")
             }
             SettingsDivider()
-            SettingsRow(icon: "hand.tap", title: "触覚", note: "撮る・ひらく・えらぶ のときだけ") {
-                Toggle("触覚", isOn: Binding(get: { hapticsOn }, set: setHaptics))
+            SettingsRow(icon: "hand.tap", title: "バイブ", note: "さわったところが、ふるえる(スクロールでは鳴らない)") {
+                Menu {
+                    Picker("バイブ", selection: Binding(get: { hapticsLevel }, set: setHaptics)) {
+                        ForEach(AppHapticsSetting.Level.allCases) { level in
+                            Text(level == .strong ? "つよめ(標準)" : level.title).tag(level)
+                        }
+                    }
+                } label: {
+                    SettingsValue(hapticsLevel.title, chevron: true)
+                }
+                .accessibilityLabel("バイブ、\(hapticsLevel.title)")
+            }
+            SettingsDivider()
+            SettingsRow(icon: "video", title: "録画", note: "体がきついときは、タップで はじめる・とめる") {
+                Menu {
+                    Picker("録画", selection: Binding(get: { tapToRecord }, set: { tapToRecord = $0; RetroSettings.tapToRecord = $0; Haptics.play(.tick) })) {
+                        Text("長押し").tag(false)
+                        Text("タップで はじめる・とめる").tag(true)
+                    }
+                } label: {
+                    SettingsValue(tapToRecord ? "タップ" : "長押し", chevron: true)
+                }
+                .accessibilityLabel("録画、\(tapToRecord ? "タップ" : "長押し")")
+            }
+            SettingsDivider()
+            SettingsRow(icon: "calendar.badge.clock", title: "動画の日付スタンプ", note: "右下の橙の日付") {
+                Toggle("動画の日付スタンプ", isOn: Binding(get: { videoStamp }, set: { videoStamp = $0; RetroSettings.stampOn = $0; Haptics.play(.tick) }))
                     .toggleStyle(MonoToggleStyle())
-                    .accessibilityLabel("触覚")
             }
             SettingsDivider()
             SettingsRow(icon: "square.grid.2x2", title: "ウィジェットの置き方", action: { showingWidgetSetup = true }) {
@@ -213,6 +240,12 @@ struct SettingsMenuView: View {
                 Toggle("Mondo に写真を出す", isOn: Binding(get: { mondoOn }, set: setMondo))
                     .toggleStyle(MonoToggleStyle())
                     .accessibilityLabel("Mondo に写真を出す")
+            }
+            SettingsDivider()
+            SettingsRow(icon: "hand.tap", title: "ノックを受けとる", note: "まだ撮っていない日に、ともだちからトントンと届きます") {
+                Toggle("ノックを受けとる", isOn: Binding(get: { knockOn }, set: setKnock))
+                    .toggleStyle(MonoToggleStyle())
+                    .accessibilityLabel("ノックを受けとる")
             }
         }
         SettingsSection(title: "安全") {
@@ -296,13 +329,25 @@ struct SettingsMenuView: View {
         }
     }
 
-    private func setHaptics(_ on: Bool) {
-        // ON にしたときは、鳴らしてから知らせる。OFF のあとは、アプリ全体で鳴らさない
-        AppHapticsSetting.isEnabled = on
-        hapticsOn = on
-        if on {
+    private func setHaptics(_ level: AppHapticsSetting.Level) {
+        // 鳴らしてから知らせる(新しい強さで)。オフのあとは、アプリ全体で鳴らさない
+        AppHapticsSetting.level = level
+        hapticsLevel = level
+        if level != .off {
             haptics.prepare()
-            choose()
+            Haptics.play(.pop, gap: 0)
+        }
+    }
+
+    /// ノックを受けない:プロフィール(グループの共有ゾーン)に載せ、相手のボタンを出さないようにする
+    private func setKnock(_ on: Bool) {
+        choose()
+        knockOn = on
+        KnockSetting.isOff = !on
+        guard let profile else { return }
+        profile.knockOff = !on
+        if let manager = CloudKitManager.current {
+            for group in sharedGroups { manager.markForUpload(userProfile: profile, in: group) }
         }
     }
 

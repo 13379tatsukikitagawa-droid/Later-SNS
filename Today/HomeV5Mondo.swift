@@ -38,6 +38,84 @@ final class MondoV5Loader {
 
 // MARK: - 地球
 
+// MARK: - 地球儀の回転(v14 ①)
+
+typealias GlobeVector = (x: Double, y: Double, z: Double)
+
+/// 3×3 の回転行列(行優先)。R = Rx(dy)·Ry(dx)·R でかけ足す(モックの rot() と同じ)
+enum GlobeRotation {
+    static let identity: [Double] = [1, 0, 0, 0, 1, 0, 0, 0, 1]
+
+    static func rx(_ a: Double) -> [Double] { let c = cos(a), s = sin(a); return [1, 0, 0, 0, c, -s, 0, s, c] }
+    static func ry(_ a: Double) -> [Double] { let c = cos(a), s = sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c] }
+
+    static func multiply(_ a: [Double], _ b: [Double]) -> [Double] {
+        var o = [Double](repeating: 0, count: 9)
+        for i in 0..<3 { for j in 0..<3 { o[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j] } }
+        return o
+    }
+
+    static func apply(_ m: [Double], _ v: GlobeVector) -> GlobeVector {
+        (m[0] * v.x + m[1] * v.y + m[2] * v.z, m[3] * v.x + m[4] * v.y + m[5] * v.z, m[6] * v.x + m[7] * v.y + m[8] * v.z)
+    }
+
+    /// ドラッグ(dx:横 → 縦軸まわり / dy:縦 → 横軸まわり)を、いまの回転にかけ足す
+    static func step(_ r: [Double], dx: Double, dy: Double) -> [Double] {
+        multiply(multiply(rx(dy), ry(dx)), r)
+    }
+
+    /// 最初の向き(少し傾けて日本のあたり)
+    static let initial: [Double] = multiply(ry(-2.4), multiply(rx(-0.5), identity))
+}
+
+/// 回転・慣性(×0.95/フレーム)・自動のゆっくり斜め回転・12°ごとの tick
+@MainActor @Observable
+final class GlobeSpinner {
+    var matrix: [Double] = GlobeRotation.initial
+    var velocity: (dx: Double, dy: Double) = (0, 0)
+    var dragging = false
+    @ObservationIgnored private var accumulated: Double = 0
+    @ObservationIgnored private var wasCoasting = false
+
+    static let tickStep = 12.0 * .pi / 180
+    static let friction = 0.95
+
+    func rotate(dx: Double, dy: Double, onTick: () -> Void) {
+        matrix = GlobeRotation.step(matrix, dx: dx, dy: dy)
+        accumulated += hypot(dx, dy)
+        while accumulated >= Self.tickStep {
+            accumulated -= Self.tickStep
+            Haptics.play(.tick, gap: 0.055)
+            onTick()
+        }
+    }
+
+    /// 60fps で、慣性 → 止まったら soft → 触っていなければ ゆっくり斜めに自動回転
+    func run(autoSpin: Bool, onTick: @escaping () -> Void) async {
+        var t = 0.0
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(16))
+            t += 1.0 / 60
+            guard !dragging else { continue }
+            let speed = hypot(velocity.dx, velocity.dy)
+            if speed > 0.0004 {
+                rotate(dx: velocity.dx, dy: velocity.dy, onTick: onTick)
+                velocity = (velocity.dx * Self.friction, velocity.dy * Self.friction)
+                wasCoasting = true
+            } else {
+                if wasCoasting {
+                    wasCoasting = false
+                    Haptics.play(.soft)
+                }
+                velocity = (0, 0)
+                if autoSpin {
+                    matrix = GlobeRotation.step(matrix, dx: 0.0032 / 2, dy: sin(t / 3) * 0.0012 / 2)
+                }
+            }
+        }
+    }
+}
+
 /// フィボナッチ球(約725点)。1周 約60秒。奥の点ほどうすく小さく。指でなぞって回せる(約12°ごとに触覚)。
 /// 白いガラスの球体+細い縁。その中に、写真が光る点(約46個)がまたたく。光る点は1つの Canvas にまとめて描く。
 struct V5Globe: View {
@@ -47,9 +125,10 @@ struct V5Globe: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.palette) private var palette
-    @State private var manualAngle: Double = 0
-    @State private var lastTranslation: CGFloat = 0
-    @State private var tickRemainder: Double = 0
+    /// v14 ①:回転は 3×3 行列で持ち、毎回かけ足す(yaw / pitch の2つの角度では持たない)
+    @State private var spinner = GlobeSpinner()
+    @State private var lastTranslation: CGSize = .zero
+    @AppStorage("mondo.globeHintSeen") private var hintSeen = false
 
     /// 地球の大きさは、画面の幅から決める(固定の数字にしない)
     static func diameter(forWidth width: CGFloat) -> CGFloat {
@@ -114,8 +193,7 @@ struct V5Globe: View {
             glow
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !animate)) { context in
                 let t = context.date.timeIntervalSinceReferenceDate
-                let auto = animate ? t * 2 * .pi / 60 : 0
-                let angle = auto + manualAngle
+                let m = spinner.matrix
                 Canvas { ctx, size in
                     let c = CGPoint(x: size.width / 2, y: size.height / 2)
                     let radius = min(size.width, size.height) / 2 - 1
@@ -143,11 +221,24 @@ struct V5Globe: View {
                         ))
                         ctx.stroke(body, with: .color(Color(hex: "111111").opacity(0.18)), lineWidth: 1)
                     }
+                    // 3本の大円(経線・赤道・もう1本の経線):縦にも回っているのが分かる
+                    for k in 0..<3 {
+                        var path = Path()
+                        var on = false
+                        for i in 0...96 {
+                            let a = Double(i) / 96 * 2 * .pi
+                            let v: GlobeVector = k == 0 ? (cos(a), 0, sin(a)) : (k == 1 ? (cos(a), sin(a), 0) : (0, cos(a), sin(a)))
+                            let r = GlobeRotation.apply(m, v)
+                            guard r.z >= 0 else { on = false; continue }
+                            let pt = CGPoint(x: c.x + CGFloat(r.x) * radius, y: c.y - CGFloat(r.y) * radius)
+                            if on { path.addLine(to: pt) } else { path.move(to: pt); on = true }
+                        }
+                        ctx.stroke(path, with: .color(ink.opacity(0.16)), lineWidth: 0.9)
+                    }
+                    _ = tilt
                     for (index, p) in Self.points.enumerated() {
-                        let x = p.x * cos(angle) + p.z * sin(angle)
-                        let z0 = -p.x * sin(angle) + p.z * cos(angle)
-                        let y = p.y * cos(tilt) - z0 * sin(tilt)
-                        let z = p.y * sin(tilt) + z0 * cos(tilt)
+                        let rotated = GlobeRotation.apply(m, (p.x, p.y, p.z))
+                        let x = rotated.x, y = rotated.y, z = rotated.z
                         let depth = (z + 1) / 2
                         let point = CGPoint(x: c.x + CGFloat(x) * radius, y: c.y - CGFloat(y) * radius)
                         if let phase = Self.glints[index] {
@@ -177,21 +268,42 @@ struct V5Globe: View {
         .background(GeometryReader { proxy in
             Color.clear.preference(key: HomeNoSwipeRegionKey.self, value: [proxy.frame(in: .global)])
         })
+        .overlay(alignment: .bottom) {
+            // 初回だけ「ドラッグで ぐるぐる」。触ったら消す
+            if !hintSeen {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 12, weight: .bold))
+                    Text("ドラッグで ぐるぐる").font(.system(size: 10.5, weight: .bold, design: .monospaced)).tracking(0.14 * 10.5)
+                }
+                .foregroundStyle(palette.groupAdd.note)
+                .offset(y: 26)
+                .transition(.opacity)
+                .allowsHitTesting(false)
+            }
+        }
         .gesture(
             DragGesture(minimumDistance: 4)
                 .onChanged { value in
-                    let delta = value.translation.width - lastTranslation
-                    lastTranslation = value.translation.width
-                    let rotation = Double(delta) / Double(diameter) * 2.2
-                    manualAngle += rotation
-                    tickRemainder += abs(rotation)
-                    while tickRemainder >= Self.tickStep {
-                        tickRemainder -= Self.tickStep
-                        onTick()
+                    if !spinner.dragging {
+                        spinner.dragging = true
+                        lastTranslation = .zero
+                        Haptics.play(.soft)
+                        if !hintSeen { withAnimation(.easeOut(duration: 0.4)) { hintSeen = true } }
                     }
+                    // 横の移動 → 縦軸まわり、縦の移動 → 横軸まわり
+                    let dx = Double(value.translation.width - lastTranslation.width) / Double(diameter) * 2.2
+                    let dy = Double(value.translation.height - lastTranslation.height) / Double(diameter) * 2.2
+                    lastTranslation = value.translation
+                    spinner.rotate(dx: dx, dy: dy, onTick: onTick)
+                    spinner.velocity = (dx, dy)
                 }
-                .onEnded { _ in lastTranslation = 0 }
+                .onEnded { _ in
+                    spinner.dragging = false
+                    lastTranslation = .zero
+                    if hypot(spinner.velocity.dx, spinner.velocity.dy) > 0.01 { Haptics.play(.soft) }
+                }
         )
+        .task(id: animate) { await spinner.run(autoSpin: animate, onTick: onTick) }
         .consumesTap()
         .accessibilityHidden(true)
     }
@@ -565,19 +677,30 @@ struct HomeV5MondoPage: View {
     var locked = false
 
     @Environment(\.palette) private var palette
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// v19:さわれる地球儀
+    @State private var globe = GlobeController()
+    @State private var toast: String?
+
+    private var summaryEntries: [MondoEntry] {
+        if case .ready(let s) = phase { return s.entries }
+        return []
+    }
 
     var body: some View {
         let globeTop = topInset + 48
         return GeometryReader { geo in
         ScrollViewReader { reader in
+        ZStack(alignment: .bottom) {
         ScrollView(.vertical) {
             VStack(spacing: 0) {
-                MondoGlobeStage(
+                MondoGlobeStageV19(
+                    controller: globe,
                     width: geo.size.width,
                     diameter: V5Globe.pageDiameter(forWidth: geo.size.width),
-                    isActive: isActive,
+                    screenHeight: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom,
                     locked: locked,
-                    onTick: onTick
+                    isActive: isActive
                 )
                 .visualEffect { content, proxy in
                     // スクロールで、上へ動きながら小さく(scale 1 → .78)・うすくなる(360ptで消える)
@@ -589,8 +712,10 @@ struct HomeV5MondoPage: View {
                 }
                 .padding(.top, globeTop)
 
+                Group {
                 titleBlock
                     .padding(.top, 10)
+                    .offset(y: globe.isZoomed ? 20 : 0)
 
                 MondoBand(
                     width: geo.size.width,
@@ -600,6 +725,13 @@ struct HomeV5MondoPage: View {
                     isActive: isActive
                 )
                 .padding(.top, 8)
+
+                // v19:場所チップ(「どこかへ」+ 光が多い順)
+                if !globe.lights.isEmpty {
+                    MondoPlaceChips(controller: globe)
+                        .frame(height: 44)
+                        .padding(.top, 12)
+                }
 
                 // 昨日の一枚(幅 = 画面の幅 - 56)
                 if let announced {
@@ -621,6 +753,10 @@ struct HomeV5MondoPage: View {
                             .padding(.top, 30)
                     }
                 }
+                }
+                // 跳んでいる間・着いたあとは、文字・帯・チップ・ボタンを消す
+                .opacity(globe.isZoomed ? 0 : 1)
+                .allowsHitTesting(!globe.isZoomed)
             }
             .padding(.bottom, 130)
             // 中身の幅は、画面の幅と同じ1つだけ(中の写真・文字が広くても、横にずれない)
@@ -628,11 +764,71 @@ struct HomeV5MondoPage: View {
             .id("v5top")
         }
         .scrollIndicators(.hidden)
+        .scrollDisabled(globe.isZoomed)
         .onChange(of: scrollToTopToken) { _, _ in
             withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5top", anchor: .top) }
         }
+        .onChange(of: globe.isZoomed) { _, zoomed in
+            if zoomed { withAnimation(.easeInOut(duration: 0.35)) { reader.scrollTo("v5top", anchor: .top) } }
+        }
+
+        // 着いたら、下からカードがうかぶ
+        if globe.cardOpen, let light = globe.selected {
+            MondoPlaceCard(
+                light: light,
+                entries: light.entryIDs.compactMap { id in summaryEntries.first { $0.id == id } },
+                locked: locked,
+                onClose: { globe.close(quick: false) },
+                onNext: { globe.jumpNext() },
+                onOpenPhoto: { entry, point in
+                    let list = Array(summaryEntries.prefix(MondoConfig.maxCards))
+                    if let index = list.firstIndex(where: { $0.id == entry.id }) { onOpenAll(point, index) }
+                },
+                onToast: { show($0) }
+            )
+            .id(light.id)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 14)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .zIndex(2)
+        }
+
+        if let toast {
+            Text(toast)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(GlassCapsule())
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, topInset + 8)
+                .transition(.opacity.combined(with: .offset(y: -12)))
+                .allowsHitTesting(false)
+                .zIndex(3)
         }
         }
+        .animation(.spring(response: 0.55, dampingFraction: 0.82), value: globe.cardOpen)
+        .animation(.easeOut(duration: 0.3), value: toast)
+        }
+        }
+        // 跳んでいる間・着いたあとは、タブバーを下へ隠す
+        .toolbar(globe.isZoomed ? .hidden : .visible, for: .tabBar)
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: globe.isZoomed)
+        .onAppear { syncGlobe() }
+        .onChange(of: summaryEntries.map(\.id)) { _, _ in syncGlobe() }
+        .onChange(of: isActive) { _, active in if active { globe.start() } else { globe.stop() } }
+        .onDisappear { globe.stop() }
+    }
+
+    private func syncGlobe() {
+        globe.reduceMotion = reduceMotion
+        globe.lights = MondoGeo.lights(from: summaryEntries)
+        if isActive { globe.start() }
+    }
+
+    private func show(_ message: String) {
+        toast = message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.9) { if toast == message { toast = nil } }
     }
 
     // MARK: 見出し
@@ -941,5 +1137,63 @@ private struct AllCard: View {
         .onSpatialTap(perform: onOpen)
         .allowsHitTesting(!locked)
         .accessibilityLabel("\(entry.tags.map { "#\($0)" }.joined(separator: " "))の昨日の1枚")
+    }
+}
+
+
+// MARK: - v19 の地球儀の舞台
+
+/// 地球儀(Canvas は画面の高さぶん大きく描く:拡大しても切れない)+ 照準 + 落書き。
+/// ふだんは丸の中だけ さわれる。拡大中は画面ぜんぶ(ほかの所をおすと、とじる)。
+struct MondoGlobeStageV19: View {
+    let controller: GlobeController
+    let width: CGFloat
+    let diameter: CGFloat
+    let screenHeight: CGFloat
+    let locked: Bool
+    let isActive: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let h = diameter + 12
+        let radius = Double(diameter) / 2
+        let canvasHeight = screenHeight * 2
+        let running = isActive && !reduceMotion
+        ZStack(alignment: .topLeading) {
+            ZStack(alignment: .topLeading) {
+                FloatingDoodle(running: running, delay: 0) { ChicDoodle(kind: .star, width: 34) }
+                    .position(x: 40, y: 30)
+                FloatingDoodle(running: running, delay: 0.5) { ChicDoodle(kind: .wave, width: 58) }
+                    .position(x: width - 50, y: 34)
+                FloatingDoodle(running: running, delay: 1.0) { MondoSunDoodle(width: 36) }
+                    .position(x: width - 34, y: h * 0.58)
+                FloatingDoodle(running: running, delay: 1.5) { ChicDoodle(kind: .dots, width: 30) }
+                    .position(x: 38, y: h - 30)
+            }
+            .frame(width: width, height: h, alignment: .topLeading)
+            .opacity((locked ? 0.5 : 1) * (controller.isZoomed ? 0 : 0.55))
+            .allowsHitTesting(false)
+
+            Color.clear
+                .frame(width: width, height: h)
+                .overlay {
+                    GlobeCanvasV19(controller: controller, radius: radius)
+                        .frame(width: width, height: canvasHeight)
+                        .contentShape(controller.isZoomed ? AnyShape(Rectangle()) : AnyShape(Circle().size(width: diameter, height: diameter).offset(x: (width - diameter) / 2, y: (canvasHeight - diameter) / 2)))
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { controller.dragChanged($0, radius: radius) }
+                                .onEnded { controller.dragEnded($0, center: CGPoint(x: width / 2, y: canvasHeight / 2), radius: radius) }
+                        )
+                        .accessibilityElement()
+                        .accessibilityLabel("地球儀。きのう撮られた場所が \(controller.lights.count) か所 光っています")
+                        .accessibilityHint("下の場所の ボタンから、その場所へ 跳べます")
+                }
+            GlobeCrosshair(controller: controller)
+                .position(x: width / 2, y: h / 2 + 11)
+        }
+        .frame(width: width, height: h)
+        .zIndex(1)
     }
 }

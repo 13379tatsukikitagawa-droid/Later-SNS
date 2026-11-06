@@ -186,14 +186,22 @@ enum ChekiColorGrade {
     @MainActor
     static func bakeIntoImageData(_ photo: LaterPhoto) async {
         guard !photo.isColorGraded else { return }
+        // v20:動画のポスターは RETRO-8 の加工ずみ。チェキの加工(写真 = ふわっと)とは混ぜない
+        if photo.isVideo {
+            photo.isColorGraded = true
+            return
+        }
         let data = photo.imageData
         guard !data.isEmpty else { return }
         let token = PerformanceSignpost.begin("ChekiColorGrade.bakeIntoImageData", detail: "bytes=\(data.count)")
         let seed = FilmEmulation.seed(for: data)
+        // 夜(21:00〜9:00)の撮影は、フラッシュの表現(中心を明るく、周りを落とす)
+        var configuration = FilmEmulation.Configuration.default
+        configuration.nightFlash = FilmEmulation.isNightShot(photo.captureDate)
         let result = await Task.detached(priority: .userInitiated) { () -> Data? in
             guard let sourceImage = UIImage(data: data), let cgImage = sourceImage.cgImage else { return nil }
             let ciImage = CIImage(cgImage: cgImage).oriented(CGImagePropertyOrientation(sourceImage.imageOrientation))
-            let processed = FilmEmulation.process(ciImage, seed: seed)
+            let processed = FilmEmulation.process(ciImage, configuration: configuration, seed: seed)
             guard let outputCGImage = context.createCGImage(processed, from: ciImage.extent) else { return nil }
             return UIImage(cgImage: outputCGImage).jpegData(compressionQuality: 0.9)
         }.value

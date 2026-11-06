@@ -85,13 +85,10 @@ enum ChicTilt {
 }
 
 extension HomeState {
-    /// 白 × シックのホームで見せる状態(撮る前:first・dawn と、月が出る夜の night・rest)
-    var usesChicHome: Bool {
-        switch self {
-        case .first, .dawn, .night, .rest: return true
-        default: return false
-        }
-    }
+    /// 今日のホームは、どの状態でも「白 × シック」(ChicHomeView)。黒/白は ThemeClock(時刻)だけで決める。
+    /// v14:以前は撮ったあと(deciding / ready / opened / more)だけ黒いホーム(HomeView.darkBody)に切りかえていて、
+    /// 「撮影すると黒くなる」原因になっていた。
+    var usesChicHome: Bool { true }
 }
 
 // MARK: - 落書き(デモのSVGのパスをそのまま写した Shape)

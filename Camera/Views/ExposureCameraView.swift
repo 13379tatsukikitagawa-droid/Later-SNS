@@ -108,6 +108,19 @@ struct ExposureCameraView: View {
                     )
                 }
 
+                if camera.isStalled, !camera.isRunning, !camera.isAccessDenied, phase != .failed {
+                    VStack(spacing: 16) {
+                        Spacer()
+                        Text("カメラを開けませんでした")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(.white)
+                        Button("もう一度ためす") { camera.retry() }
+                            .buttonStyle(.bordered)
+                            .tint(.white)
+                        Spacer()
+                    }
+                }
+
                 if phase == .failed {
                     ExposedNoticeView(
                         title: "預けられませんでした",
@@ -444,7 +457,7 @@ struct ExposureCameraView: View {
             .font(.system(size: 15, weight: .heavy))
             .lineLimit(1)
             .background(GeometryReader { geometry in
-                Color.clear.preference(key: CameraTagChipFrameKey.self, value: [tag: geometry.frame(in: .named(TagBeforeShootView.coordinateSpace))])
+                Color.clear.preference(key: CameraTagChipFrameKey.self, value: [tag: geometry.frame(in: .named("shootFlow"))])
             })
     }
 

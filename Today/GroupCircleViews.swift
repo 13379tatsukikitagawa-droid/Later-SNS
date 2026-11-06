@@ -32,6 +32,8 @@ struct GroupCircle: View {
     var discScale: CGFloat = 1
     /// 写真の「現像」(0 = ぼかし・うす白・低い彩度 → 1 = くっきり)
     var develop: Double = 1
+    /// まわりの点と線の色(白い地の画面では濃い色を渡す)
+    var ringInk: Color = .white
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var rotationStart = Date()
@@ -94,7 +96,7 @@ struct GroupCircle: View {
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let radius = diameter / 2 - 6
             context.stroke(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)),
-                           with: .color(.white.opacity(0.08)), lineWidth: 1)
+                           with: .color(ringInk.opacity(ringInk == .white ? 0.08 : 0.16)), lineWidth: 1)
             let total = GroupPalette.clampLimit(memberLimit)
             for i in 0..<total {
                 let angle = GroupRingMath.angle(index: i, total: total) + rotation
@@ -105,7 +107,7 @@ struct GroupCircle: View {
                 }
                 if i < litCount {
                     var r: CGFloat = 3
-                    var color = Color.white
+                    var color = ringInk
                     var opacity = 1.0
                     if let sparkleTime {
                         // 到着のあと、0.07秒ずつ遅れて、半径 +1.6pt
@@ -118,7 +120,7 @@ struct GroupCircle: View {
                         let t = now.timeIntervalSince(popStart)
                         let grow = min(1, max(0, t / 0.9))
                         r *= grow < 0.35 ? 0.2 + 2.5 * (grow / 0.35) : 2.7 - 1.7 * HomeMotion.ease((grow - 0.35) / 0.65)
-                        color = grow < 0.6 ? Color(hex: "FFB26E") : .white
+                        color = grow < 0.6 ? Color(hex: "FFB26E") : ringInk
                         let ringU = min(1, max(0, t / 1.2))
                         if ringU < 1 {
                             let rr = 3 * (1 + 5 * ringU)
@@ -129,7 +131,7 @@ struct GroupCircle: View {
                     context.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2)), with: .color(color.opacity(opacity)))
                 } else {
                     let r: CGFloat = 2
-                    context.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2)), with: .color(.white.opacity(0.24)))
+                    context.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2)), with: .color(ringInk.opacity(ringInk == .white ? 0.24 : 0.32)))
                 }
             }
         }

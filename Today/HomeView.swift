@@ -47,6 +47,16 @@ struct HomeView: View {
     var onOrbTap: () -> Void = {}
     /// Mondo へのダイブ中(球は 5.5倍にふくらんで消え、ほかの要素は 320ms で消える)
     var isDiving = false
+    /// 下へつづく層の中身と操作(HomeLayerModel.swift)
+    var layerData: HomeLayerData = .empty
+    var layerActions = HomeLayerActions()
+    /// v14:今日撮った1枚(時刻と街だけ)と、撮った枠をタップしたとき(現像ページャーのその枚数目)
+    var todayShots: [TodayShot] = []
+    var onOpenShot: (Int) -> Void = { _ in }
+    /// v17:下へつづく区画
+    var v17: HomeV17Data = .empty
+    var v17Actions = HomeV17Actions()
+    var bump: V17Bump?
 
     private static let homeTabIndex = 0
     private static let baseHeight: CGFloat = 844
@@ -58,6 +68,8 @@ struct HomeView: View {
     @Environment(\.selectedMainTabIndex) private var selectedMainTabIndex
 
     @State private var isOnScreen = false
+    /// 層のスクロール位置(0 = いまのホームと同じ画面)
+    @State private var scrollOffset: CGFloat = 0
     /// 入場の開始時刻(状態が切りかわったとき・開き直したときだけ。2.8秒後に外す)
     @State private var entranceStart: Date?
     /// 常に動くもの(カードの光・オーブの波紋)の基準時刻
@@ -88,7 +100,10 @@ struct HomeView: View {
                 onOpenProfile: onOpenProfile, avatarSwitch: avatarSwitch, avatarName: avatarName,
                 onDevelopTap: onDevelopTap, onSelectGroup: onSelectGroup, onCreateGroup: onCreateGroup,
                 onJoinGroup: onJoinGroup, onAddGroup: onAddGroup, arrivingGroupID: arrivingGroupID,
-                launch: launch, onOrbTap: onOrbTap, isDiving: isDiving
+                launch: launch, onOrbTap: onOrbTap, isDiving: isDiving,
+                layerData: layerData, layerActions: layerActions,
+                todayShots: todayShots, onOpenShot: onOpenShot,
+                v17: v17, v17Actions: v17Actions, bump: bump
             )
         } else {
             darkBody
@@ -102,26 +117,19 @@ struct HomeView: View {
             let k = min(1, max(0.72, (fullHeight - 200) / (Self.baseHeight - 200)))
             let top = max(proxy.safeAreaInsets.top, 44)
             let y: (CGFloat) -> CGFloat = { v in top + (v - 60) * k }
+            let headerTop = LaterHeader.topInset(proxy)
 
             let width = proxy.size.width + proxy.safeAreaInsets.leading + proxy.safeAreaInsets.trailing
+            // 1ページ目(いまのホーム)と、下へつづく層。いっしょにスクロールする(月は TodayView の層で、動かない)
+            HomeScrollShell(
+                pageHeight: fullHeight,
+                width: width,
+                headerTop: headerTop,
+                glassTint: .black,
+                canPeek: isVisible && launch == .finished && !isDiving,
+                offset: $scrollOffset
+            ) {
             ZStack(alignment: .top) {
-                LaterHeader(
-                    home: .today,
-                    shotsToday: shotsToday,
-                    avatarImage: avatarImage,
-                    avatarName: avatarName,
-                    showsBadge: showsAvatarBadge,
-                    onAvatar: { if showsLights { withAnimation(.easeOut(duration: 0.25)) { showsLights = false } } else { onOpenProfile() } },
-                    onConsumption: toggleLights,
-                    avatarSwitch: avatarSwitch
-                )
-                    .environment(\.palette, .night)
-                    .environment(\.colorScheme, .dark)
-                    .frame(width: width, height: LaterHeader.height)
-                    .offset(y: top)
-                    .opacity(launch.headerOpacity * (isDiving ? 0 : 1))
-                    .animation(.easeOut(duration: 0.32), value: isDiving)
-
                 orb
                     .overlay {
                         OrbRipple(start: ambientStart, diameter: HomeLightOrb.Layout.diameter, isActive: ambientActive)
@@ -180,6 +188,8 @@ struct HomeView: View {
                     arrivingID: arrivingGroupID,
                     shotsToday: shotsToday
                 )
+                // 撮ったあとのホームは黒い面なので、グループも夜の色で描く
+                .environment(\.palette, .night)
                 .frame(width: width, alignment: .leading)
                 .offset(y: y(624) + launch.groupOffset)
                 .opacity(launch.groupOpacity * (isDiving ? 0 : 1))
@@ -187,10 +197,42 @@ struct HomeView: View {
             }
             .frame(width: width, height: fullHeight, alignment: .top)
             .background(alignment: .top) {
+                // 下の光を 1ページ目の端で切らない(切ると、層との間に段差が出る)。
+                // 下へ 360pt のばして、マスクで上から下へ、なめらかに消す
                 HomeBackdrop(kind: state.kind, orbCenterY: y(262), height: fullHeight)
-                    .frame(width: width, height: fullHeight)
-                    .clipped()
+                    .frame(width: width, height: fullHeight + 360, alignment: .top)
+                    .mask(
+                        LinearGradient(stops: [
+                            .init(color: .black, location: 0),
+                            .init(color: .black, location: fullHeight / (fullHeight + 360)),
+                            .init(color: .clear, location: 1),
+                        ], startPoint: .top, endPoint: .bottom)
+                    )
+                    .frame(width: width, height: fullHeight, alignment: .top)
                     .opacity(launch.bgOpacity)
+                    .allowsHitTesting(false)
+            }
+            } layers: {
+                HomeLayerStack(state: state, now: now, shotsToday: shotsToday, data: layerData, actions: layerActions, isActive: isVisible)
+                    .environment(\.palette, .night)
+                    .environment(\.colorScheme, .dark)
+                    .opacity(isDiving ? 0 : 1)
+                    .animation(.easeOut(duration: 0.32), value: isDiving)
+            } header: {
+                LaterHeader(
+                    home: .today,
+                    shotsToday: shotsToday,
+                    avatarImage: avatarImage,
+                    avatarName: avatarName,
+                    showsBadge: showsAvatarBadge,
+                    onAvatar: { if showsLights { withAnimation(.easeOut(duration: 0.25)) { showsLights = false } } else { onOpenProfile() } },
+                    onConsumption: toggleLights,
+                    avatarSwitch: avatarSwitch
+                )
+                    .environment(\.palette, .night)
+                    .environment(\.colorScheme, .dark)
+                    .opacity(launch.headerOpacity * (isDiving ? 0 : 1))
+                    .animation(.easeOut(duration: 0.32), value: isDiving)
             }
             .ignoresSafeArea()
             .lightsPanelOverlay(isOpen: $showsLights, now: now, taken: shotsToday, top: top, width: width)
@@ -269,7 +311,11 @@ struct HomeView: View {
             )
             .contentShape(Circle().size(width: HomeLightOrb.Layout.diameter, height: HomeLightOrb.Layout.diameter)
                 .offset(x: (HomeLightOrb.Layout.box - HomeLightOrb.Layout.diameter) / 2, y: (HomeLightOrb.Layout.box - HomeLightOrb.Layout.diameter) / 2))
-            .onTapGesture(perform: onOrbTap)
+            .onTapGesture {
+                // 層を見ているあいだ(40pt より下)は、玉のタップで MONDO へ行かない
+                guard scrollOffset <= LayerMotion.orbTapLimit else { return }
+                onOrbTap()
+            }
             .accessibilityAddTraits(.isButton)
             .accessibilityHint(isOpened ? "Mondo に入ります" : "")
         }
@@ -359,6 +405,7 @@ struct HomeBackdrop: View {
         ZStack(alignment: .top) {
             Color.black
                 .frame(maxWidth: .infinity)
+                .frame(height: height)
             Ellipse()
                 .fill(RadialGradient(colors: [colors.orb, .clear], center: .center, startRadius: 0, endRadius: 220))
                 .frame(width: 440, height: 400)
@@ -368,7 +415,7 @@ struct HomeBackdrop: View {
                 .frame(width: 640, height: 420)
                 .offset(y: height - 170)
         }
-        .frame(height: height)
+        .frame(height: height, alignment: .top)
         .animation(.easeInOut(duration: 1), value: kind)
         .allowsHitTesting(false)
         .accessibilityHidden(true)

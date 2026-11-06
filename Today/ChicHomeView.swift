@@ -30,6 +30,15 @@ struct ChicHomeView: View {
     var launch: LaunchFrame = .finished
     var onOrbTap: () -> Void = {}
     var isDiving = false
+    /// 下へつづく層の中身と操作(HomeLayerModel.swift)
+    var layerData: HomeLayerData = .empty
+    var layerActions = HomeLayerActions()
+    var todayShots: [TodayShot] = []
+    var onOpenShot: (Int) -> Void = { _ in }
+    /// v17:下へつづく区画の中身と操作
+    var v17: HomeV17Data = .empty
+    var v17Actions = HomeV17Actions()
+    var bump: V17Bump?
 
     @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -37,6 +46,11 @@ struct ChicHomeView: View {
     @Environment(\.selectedMainTabIndex) private var selectedMainTabIndex
     @State private var isOnScreen = false
     @State private var showsLights = false
+    /// スクロール位置(ここを読む小さな View だけが、スクロールのたびに描きなおされる)
+    @State private var scroll = HomeV17Scroll()
+    /// 長押しでためている間の揺れ
+    @State private var feel = HomeV17Feel()
+    @State private var scrollPosition = ScrollPosition(edge: .top)
 
     private static let homeTabIndex = 0
     /// 月の見えている高さ(84)+ 余白
@@ -57,14 +71,47 @@ struct ChicHomeView: View {
         GeometryReader { proxy in
             let fullHeight = proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom
             let width = proxy.size.width + proxy.safeAreaInsets.leading + proxy.safeAreaInsets.trailing
-            let top = max(proxy.safeAreaInsets.top, 44)
+            let top = LaterHeader.topInset(proxy)
             let compact = fullHeight < 720
-            let bottomBlock: CGFloat = groupSummaries.isEmpty ? 64 : 130
+            let bottomBlock: CGFloat = groupSummaries.isEmpty ? 160 : 210
             let headBlock: CGFloat = compact ? 92 : 112
             let reserved: CGFloat = LaterHeader.height + headBlock + HomeDevelopCard.height + bottomBlock + Self.moonReserve + 56
             let ringSide = min(300, max(170, fullHeight - top - reserved))
+            // 背の低い端末(SE)で輪が最小でも入りきらないときは、1画面目を少し長くして、下の区画と重ならないようにする
+            let pageHeight = max(fullHeight, top + reserved + ringSide)
 
-            VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                // v17:1画面目(v8 のまま)の下に、区画がつづく。ヘッダーと月は動かない
+                ScrollView(.vertical) {
+                    VStack(spacing: 0) {
+                        firstPage(top: top, width: width, fullHeight: fullHeight, ringSide: ringSide, compact: compact)
+                            .frame(width: width, height: pageHeight, alignment: .top)
+                        HomeV17Stack(
+                            state: state,
+                            now: now,
+                            data: v17,
+                            actions: v17Actions,
+                            feel: feel,
+                            bump: bump,
+                            isActive: isVisible
+                        )
+                        .frame(width: width)
+                        .opacity(isDiving ? 0 : 1)
+                    }
+                    .modifier(V17Rattle(feel: feel))
+                }
+                .scrollPosition($scrollPosition)
+                .scrollIndicators(.hidden)
+                .scrollDisabled(launch != .finished)
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    geometry.contentOffset.y + geometry.contentInsets.top
+                } action: { _, y in
+                    scroll.offset = y
+                }
+
+                V17HeaderGlass(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, height: top + LaterHeader.height + 16, lineY: top + LaterHeader.height + 4)
+                    .allowsHitTesting(false)
+
                 LaterHeader(
                     home: .today,
                     shotsToday: shotsToday,
@@ -75,49 +122,39 @@ struct ChicHomeView: View {
                     onConsumption: toggleLights,
                     avatarSwitch: avatarSwitch
                 )
-                .opacity(launch.headerOpacity)
+                .frame(width: width, height: LaterHeader.height)
+                .padding(.top, top)
+                .opacity(launch.headerOpacity * (isDiving ? 0 : 1))
+                .animation(.easeOut(duration: 0.32), value: isDiving)
 
-                Spacer(minLength: 0)
-
-                ring(side: ringSide, width: width)
-                    .opacity(launch.bgOpacity)
-
-                Spacer(minLength: 0)
-
-                textBlock(compact: compact)
-                    .padding(.horizontal, 24)
-                    .offset(y: launch.headOffset)
-                    .opacity(launch.headOpacity)
-
-                Spacer(minLength: 8)
-
-                HomeDevelopCard(
-                    content: developContent,
-                    now: now,
-                    texture: developTexture,
-                    tones: tones,
-                    isAnimating: false,
-                    film: (taken: shotsToday, isNight: state.isNight),
-                    onTap: onDevelopTap,
-                    chic: true
-                )
-                .padding(.horizontal, 20)
-                .offset(y: launch.cardOffset)
-                .opacity(launch.cardOpacity)
-
-                Spacer(minLength: 10)
-
-                bottomBlockView
-                    .offset(y: launch.groupOffset)
-                    .opacity(launch.groupOpacity)
-
-                Color.clear.frame(height: Self.moonReserve)
+                // 月の上の白いグラデーション(スクロールしたときだけ)と、「SCROLL」のヒント
+                V17BottomChrome(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, ink: palette.isNight ? Color.white : Color(hex: "111111"), showsCue: launch == .finished && !isDiving)
+                    .frame(width: width, height: fullHeight)
+                    .allowsHitTesting(false)
             }
-            .padding(.top, top)
-            .frame(width: width, height: fullHeight, alignment: .top)
-            .opacity(isDiving ? 0 : 1)
-            .animation(.easeOut(duration: 0.32), value: isDiving)
+            .frame(width: width, height: fullHeight)
             .lightsPanelOverlay(isOpen: $showsLights, now: now, taken: shotsToday, top: top, width: width)
+        }
+        .onChange(of: state.kind) { _, _ in
+            // 状態が変わったら、いちばん上から(撮ったチェキが物干しへ とんでいる間は、今日の film のまま)
+            guard FilmLanding.shared.pending == nil else { return }
+            scrollPosition.scrollTo(edge: .top)
+        }
+        .onChange(of: FilmLanding.shared.scrollToken) { _, _ in
+            // v18.2:撮ったら、今日の film が見える位置まで 0.4秒で
+            withAnimation(.easeInOut(duration: reduceMotion ? 0.01 : 0.4)) {
+                scrollPosition.scrollTo(id: HomeV17Section.film.rawValue, anchor: UnitPoint(x: 0.5, y: 0.35))
+            }
+        }
+        .confirmationDialog(
+            bump?.pending.map { "「\($0.name)」と つながる?" } ?? "",
+            isPresented: Binding(get: { bump?.pending != nil }, set: { if !$0, bump?.pending != nil { bump?.cancel() } }),
+            titleVisibility: .visible
+        ) {
+            Button("つながる") { bump?.confirm() }
+            Button("やめる", role: .cancel) { bump?.cancel() }
+        } message: {
+            Text("相手の画面でも、きいています")
         }
         .background {
             if palette.isNight {
@@ -131,6 +168,52 @@ struct ChicHomeView: View {
         .onDisappear { isOnScreen = false }
     }
 
+    /// 1画面目(v8):輪 → 見出し → チェキのカード → 参加する / つくる・グループの列 → 月のぶんの余白
+    private func firstPage(top: CGFloat, width: CGFloat, fullHeight: CGFloat, ringSide: CGFloat, compact: Bool) -> some View {
+        VStack(spacing: 0) {
+            Color.clear.frame(height: LaterHeader.height)
+
+            Spacer(minLength: 0)
+
+            ring(side: ringSide, width: width)
+                .opacity(launch.bgOpacity)
+
+            Spacer(minLength: 0)
+
+            textBlock(compact: compact)
+                .padding(.horizontal, 24)
+                .offset(y: launch.headOffset)
+                .opacity(launch.headOpacity)
+
+            Spacer(minLength: 8)
+
+            HomeDevelopCard(
+                content: developContent,
+                now: now,
+                texture: developTexture,
+                tones: tones,
+                isAnimating: false,
+                film: (taken: shotsToday, isNight: state.isNight),
+                onTap: onDevelopTap,
+                chic: true
+            )
+            .padding(.horizontal, 20)
+            .offset(y: launch.cardOffset)
+            .opacity(launch.cardOpacity)
+
+            Spacer(minLength: 10)
+
+            bottomBlockView
+                .offset(y: launch.groupOffset)
+                .opacity(launch.groupOpacity)
+
+            Color.clear.frame(height: Self.moonReserve)
+        }
+        .padding(.top, top)
+        .opacity(isDiving ? 0 : 1)
+        .animation(.easeOut(duration: 0.32), value: isDiving)
+    }
+
     // MARK: - 輪と落書き
 
     private var dateText: String { HomeDevelopCard.stampText(now) }
@@ -138,16 +221,25 @@ struct ChicHomeView: View {
     private func ring(side: CGFloat, width: CGFloat) -> some View {
         let scale = side / 300
         return ZStack {
-            ZStack(alignment: .topLeading) {
-                if palette.isNight { ChicNightSphere() }
-                ringRotating
-                doodles
+            // オーブと文字の輪は、スクロールの 0.22倍だけ下にずれ(奥行き)、文字の輪は回る
+            V17Parallax(scroll: scroll) {
+                ZStack {
+                    ZStack(alignment: .topLeading) {
+                        if palette.isNight { ChicNightSphere() }
+                        V17ScrollTurn(scroll: scroll) { ringRotating }
+                    }
+                    .frame(width: 300, height: 300, alignment: .topLeading)
+                    .scaleEffect(scale)
+                    .frame(width: 300 * scale, height: 300 * scale)
+                    orbHit
+                        .frame(width: 230 * scale, height: 230 * scale)
+                }
             }
-            .frame(width: 300, height: 300, alignment: .topLeading)
-            .scaleEffect(scale)
-            .frame(width: 300 * scale, height: 300 * scale)
-            orbHit
-                .frame(width: 230 * scale, height: 230 * scale)
+            doodles
+                .frame(width: 300, height: 300, alignment: .topLeading)
+                .scaleEffect(scale)
+                .frame(width: 300 * scale, height: 300 * scale)
+                .allowsHitTesting(false)
         }
         .frame(width: width, height: side)
     }
@@ -193,7 +285,11 @@ struct ChicHomeView: View {
         centerLabel
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Circle())
-            .onTapGesture(perform: onOrbTap)
+            .onTapGesture {
+                // 下の区画を見ているあいだ(40pt より下)は、玉のタップで MONDO へ行かない
+                guard scroll.offset <= LayerMotion.orbTapLimit else { return }
+                onOrbTap()
+            }
             .opacity(launch.countOpacity)
             .animation(.easeInOut(duration: 0.6), value: light)
             .accessibilityElement(children: .ignore)
@@ -286,45 +382,21 @@ struct ChicHomeView: View {
 
     // MARK: - ボタン / グループ
 
-    @ViewBuilder
+    /// グループ(v13 ⑤):帯や四角をしかずに、白地・黒地のどちらにも、そのままのせる(0個のときは2つのボタン)
     private var bottomBlockView: some View {
-        if groupSummaries.isEmpty {
-            HStack(spacing: 10) {
-                Button(action: onJoinGroup) {
-                    ChicActionLabel(icon: "qrcode", title: "参加する", note: "合言葉・QR・リンク", filled: false)
-                }
-                .buttonStyle(PressScaleStyle(scale: 0.97, duration: 0.15))
-                .accessibilityLabel("グループに参加する。合言葉・QR・リンク")
-                Button(action: onCreateGroup) {
-                    ChicActionLabel(icon: "plus", title: "つくる", note: "4〜8人のグループ", filled: true)
-                }
-                .buttonStyle(PressScaleStyle(scale: 0.97, duration: 0.15))
-                .accessibilityLabel("グループをつくる。4〜8人のグループ")
-            }
-            .padding(.horizontal, 20)
-        } else {
-            // 既存のグループの列は白地用に作り直していないので、濃い面にのせて、そのまま使う(フェーズ2で作り直す)
-            HomeGroupStrip(
-                summaries: groupSummaries,
-                canCreate: canCreateGroup,
-                isFrontmost: isVisible,
-                entranceStart: nil,
-                onSelect: onSelectGroup,
-                onCreate: onCreateGroup,
-                onJoin: onJoinGroup,
-                onAdd: onAddGroup,
-                arrivingID: arrivingGroupID,
-                shotsToday: shotsToday
-            )
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 10)
-            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(palette.isNight ? palette.fill : ChicColor.ink))
-            .overlay {
-                if palette.isNight { RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(palette.line, lineWidth: 1) }
-            }
-            .padding(.horizontal, 12)
-            .environment(\.colorScheme, .dark)
-        }
+        HomeGroupStrip(
+            summaries: groupSummaries,
+            canCreate: canCreateGroup,
+            isFrontmost: isVisible,
+            entranceStart: nil,
+            onSelect: onSelectGroup,
+            onCreate: onCreateGroup,
+            onJoin: onJoinGroup,
+            onAdd: onAddGroup,
+            arrivingID: arrivingGroupID,
+            shotsToday: shotsToday
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

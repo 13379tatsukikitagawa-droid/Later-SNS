@@ -5,6 +5,8 @@ import SwiftUI
 /// (解除はPinsエリア側のxボタン/長押しで行う)。残り枠数を超えては選択できない。
 struct PinPhotoPickerView: View {
     let photos: [LaterPhoto]
+    /// 仕上がる前(撮ったあとの最初の 9:00 まで)の写真は、選ばせない・見せない
+    private var visiblePhotos: [LaterPhoto] { photos.filter { PhotoDevelop.isDeveloped(takenAt: $0.captureDate, now: Date()) } }
     let alreadyPinnedIDs: Set<UUID>
     let remainingSlots: Int
     let onConfirm: (_ newlyPinnedIDs: [UUID]) -> Void
@@ -41,11 +43,11 @@ struct PinPhotoPickerView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 4)
 
-                    if photos.isEmpty {
+                    if visiblePhotos.isEmpty {
                         emptyState
                     } else {
                         LazyVGrid(columns: Self.columns, spacing: Self.gridSpacing) {
-                            ForEach(photos, id: \.id) { photo in
+                            ForEach(visiblePhotos, id: \.id) { photo in
                                 photoCell(photo, cellSize: cellSize(for: proxy.size.width))
                             }
                         }

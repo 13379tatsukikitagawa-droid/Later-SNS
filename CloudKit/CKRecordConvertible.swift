@@ -82,6 +82,7 @@ extension UserProfile {
         record["firebaseUID"] = firebaseUID
         record["firebaseEmail"] = firebaseEmail
         record["selfTags"] = selfTags.isEmpty ? nil : selfTags
+        record["knockOff"] = knockOff ? 1 as Int64 : 0 as Int64
         record["group"] = CKRecord.Reference(recordID: groupRecordID, action: .deleteSelf)
         // CKShare(rootRecord: groupRecord)は階層共有(record.parentで連なるレコードのみが
         // 共有対象になる)方式のため、上のrecord["group"](通常のカスタムフィールド参照)とは
@@ -109,6 +110,7 @@ extension UserProfile {
         firebaseUID = record["firebaseUID"] as? String ?? firebaseUID
         firebaseEmail = record["firebaseEmail"] as? String ?? firebaseEmail
         selfTags = record["selfTags"] as? [String] ?? []
+        knockOff = (record["knockOff"] as? Int64 ?? 0) != 0
         if let asset = record["avatar"] as? CKAsset, let fileURL = asset.fileURL {
             profileImageData = try? Data(contentsOf: fileURL)
         }
@@ -187,6 +189,8 @@ extension LaterGroup {
         record["inviteCode"] = inviteCode
         record["memberLimit"] = memberLimit
         record["colorIndex"] = colorIndex
+        record["faceStyle"] = faceStyle
+        record["showsInitial"] = showsInitial ? 1 as Int64 : 0 as Int64
         logger.debug("[GroupSync] toCKRecord: autoGenerateMissionを設定中")
         record["autoGenerateMission"] = autoGenerateMission
         logger.debug("[GroupSync] toCKRecord: isPrivateを設定中")
@@ -240,6 +244,8 @@ extension LaterGroup {
         inviteCode = record["inviteCode"] as? String ?? inviteCode
         memberLimit = record["memberLimit"] as? Int ?? memberLimit
         colorIndex = record["colorIndex"] as? Int ?? colorIndex
+        faceStyle = record["faceStyle"] as? String ?? faceStyle
+        if let initialFlag = record["showsInitial"] as? Int64 { showsInitial = initialFlag != 0 }
         if let asset = record["icon"] as? CKAsset, let fileURL = asset.fileURL {
             iconImageData = try? Data(contentsOf: fileURL)
         }
@@ -295,6 +301,8 @@ extension LaterPhoto {
         record["mosaicTiny"] = isPosted ? mosaicTiny : nil
         record["approxLatitude"] = approxLatitude
         record["approxLongitude"] = approxLongitude
+        // v20 動画:長さ(写真は空のまま)
+        record["durationSeconds"] = durationSeconds
         // PhotoNotificationService(撮影通知のCKQuerySubscription)がプッシュペイロードに
         // desiredKeysとして含めるためのスカラー値。"group"(CKRecord.Reference)自体は
         // desiredKeysで直接取得できないため、遷移先グループを特定するためだけに
@@ -318,6 +326,10 @@ extension LaterPhoto {
                     throw error
                 }
                 record["image"] = CKAsset(fileURL: tempURL)
+                // v20 動画:本体も、ポスター(image)と同じ条件で送る。端末のファイルが残っている間だけ
+                if isVideo, let videoURL = LaterVideoStore.localURL(for: self) {
+                    record["video"] = CKAsset(fileURL: videoURL)
+                }
             } catch {
                 // 画像の設定だけを失敗させ、caption等の他フィールドは最低限送信できるように
                 // ここで止める。record["image"]を設定しないまま(isUnlocked=falseの時と
@@ -344,6 +356,8 @@ extension LaterPhoto {
         mosaicTiny = record["mosaicTiny"] as? Data
         approxLatitude = record["approxLatitude"] as? Double
         approxLongitude = record["approxLongitude"] as? Double
+        // v20 動画:長さだけ持つ。本体(video)は、タップしたときに LaterVideoStore.fetch で取る
+        durationSeconds = record["durationSeconds"] as? Double
         if let asset = record["image"] as? CKAsset {
             if let fileURL = asset.fileURL {
                 do {

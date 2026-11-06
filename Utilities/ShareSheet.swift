@@ -111,3 +111,61 @@ final class ShareLinkItemSource: NSObject, UIActivityItemSource {
     }
 }
 
+
+// MARK: - グループの招待(v13)
+
+/// グループの招待を共有するときの中身。ただの文字(String)を渡すと、共有シートの左上が「A」(文字)になるため、
+/// LPLinkMetadata で Later のアイコン(Assets の LaterShareIcon・1024px・角丸なし)とリンクを渡す。
+final class GroupInviteItemSource: NSObject, UIActivityItemSource {
+    let groupName: String
+    let passphrase: String?
+    let url: URL
+
+    init(groupName: String, passphrase: String?, url: URL) {
+        self.groupName = groupName
+        self.passphrase = passphrase
+        self.url = url
+    }
+
+    /// 共有シートの見出し:「{グループ名}」に招待されました。
+    static func title(groupName: String) -> String {
+        "「\(groupName)」に招待されました。"
+    }
+
+    /// 共有する本文:
+    /// 「{グループ名}」に招待されました。
+    /// 合言葉:{合言葉}
+    /// {招待リンク}
+    static func text(groupName: String, passphrase: String?, url: URL) -> String {
+        var lines = [title(groupName: groupName)]
+        if let passphrase, !passphrase.isEmpty { lines.append("合言葉:\(passphrase)") }
+        lines.append(url.absoluteString)
+        return lines.joined(separator: "\n")
+    }
+
+    private var text: String { Self.text(groupName: groupName, passphrase: passphrase, url: url) }
+
+    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
+        text
+    }
+
+    func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
+        text
+    }
+
+    func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
+        Self.title(groupName: groupName)
+    }
+
+    func activityViewControllerLinkMetadata(_ activityViewController: UIActivityViewController) -> LPLinkMetadata? {
+        let metadata = LPLinkMetadata()
+        metadata.title = Self.title(groupName: groupName)
+        metadata.originalURL = url
+        metadata.url = url
+        if let icon = UIImage(named: "LaterShareIcon") {
+            metadata.iconProvider = NSItemProvider(object: icon)
+            metadata.imageProvider = NSItemProvider(object: icon)
+        }
+        return metadata
+    }
+}

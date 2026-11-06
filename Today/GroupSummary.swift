@@ -14,11 +14,16 @@ struct GroupSummary: Identifiable, Equatable {
     let postedYesterday: Int
     /// 人数の上限(4〜8)
     var memberLimit: Int = GroupMembershipPolicy.maxMembersPerGroup
+    /// 顔に名前の1文字目を入れるか
+    var showsInitial = true
+    /// 顔が「みんなの写真」のとき:今日いちばん新しい1枚のモザイク(写真そのものは出さない)。なければ色
+    var faceMosaic: Data?
+    var faceMosaicKey = ""
 
     var isFull: Bool { memberCount >= memberLimit }
     var openSeats: Int { max(0, memberLimit - memberCount) }
     var allPosted: Bool { memberCount > 0 && postedYesterday >= memberCount }
-    var initial: String { String(name.trimmingCharacters(in: .whitespaces).prefix(1)) }
+    var initial: String { showsInitial ? String(name.trimmingCharacters(in: .whitespaces).prefix(1)) : "" }
     /// 「3 / 8」
     var countText: String { "\(postedYesterday) / \(memberCount)" }
     var spokenSummary: String { "\(name)、メンバー\(memberCount)人のうち\(postedYesterday)人が昨日投稿しました" }
@@ -81,6 +86,9 @@ enum GroupRingMath {
         [Color(hex: "D9A3FF"), Color(hex: "FF9ECF"), Color(hex: "6B5BD6")],
         // 6つめはグレー(自動では選ばない。「色だけ」で手で選んだときだけ)
         [Color(hex: "B8B8C0"), Color(hex: "7C7C86"), Color(hex: "3A3A42")],
+        // 7・8つめ(グループ作成 v12 の8色。自動では選ばない)
+        [Color(hex: "FF9C8A"), Color(hex: "FF5D73"), Color(hex: "B23A62")],
+        [Color(hex: "D7EC7A"), Color(hex: "7FC77A"), Color(hex: "3E8E5A")],
     ]
 
     /// MEを除いた参加中のグループから、要約を作る(並び順は呼び出し側のまま。投稿数では並べない)
@@ -95,10 +103,28 @@ enum GroupRingMath {
                 auraIndex: GroupPalette.isValid(group.colorIndex) ? group.colorIndex : aura,
                 memberCount: max(1, group.deduplicatedMemberIDs.count),
                 postedYesterday: postedYesterday(in: group, now: now),
-                memberLimit: GroupPalette.clampLimit(group.memberLimit)
+                memberLimit: GroupPalette.clampLimit(group.memberLimit),
+                showsInitial: group.showsInitial,
+                faceMosaic: faceMosaic(for: group, now: now)?.mosaicTiny,
+                faceMosaicKey: faceMosaic(for: group, now: now)?.imageCacheKey ?? ""
             )
         }
     }
+
+    /// 顔が「みんなの写真」のグループの、今日(直近の窓)いちばん新しい1枚
+    static func faceMosaic(for group: LaterGroup, now: Date) -> LaterPhoto? {
+        guard group.faceStyle == GroupFaceStyle.photo else { return nil }
+        let window = DailyWindow.latest(for: now)
+        return group.photos
+            .filter { $0.captureDate >= window.open && $0.captureDate < window.close && $0.mosaicTiny != nil }
+            .max { $0.captureDate < $1.captureDate }
+    }
+}
+
+/// グループの顔のしゅるい
+enum GroupFaceStyle {
+    static let aura = "aura"
+    static let photo = "photo"
 }
 
 // MARK: - 色・名前・人数の上限

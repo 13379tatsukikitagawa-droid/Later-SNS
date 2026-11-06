@@ -392,7 +392,8 @@ final class WorldCountStore {
     /// 集計の更新前(9:00〜9:10)・通信できないときは、最後に取得した数をそのまま出す(空にしない)。
     func refreshIfNeeded(now: Date, blocked: Set<String> = []) async {
         let yesterday = MondoWindow.yesterdayKey(now: now)
-        guard dayKey != yesterday, !inFlight else { return }
+        // ことば(今日のホームの層)をまだ持っていない日も、1回だけ取りに行く
+        guard dayKey != yesterday || !WorldWordsStore.hasDay(yesterday), !inFlight else { return }
         if let lastAttempt, now.timeIntervalSince(lastAttempt) < Self.retryInterval, lastAttempt <= now { return }
         lastAttempt = now
         inFlight = true
@@ -407,6 +408,7 @@ final class WorldCountStore {
         count = summary.lightCount
         countryCount = summary.countryCount
         dayKey = summary.dayKey
+        WorldWordsStore.record(summary)
         let cached = Cached(dayKey: summary.dayKey, count: summary.lightCount, countryCount: summary.countryCount)
         if let data = try? JSONEncoder().encode(cached) {
             UserDefaults.standard.set(data, forKey: Self.key)

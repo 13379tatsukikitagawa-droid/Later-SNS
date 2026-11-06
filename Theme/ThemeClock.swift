@@ -6,7 +6,8 @@ nonisolated enum ThemeOverride: String, Sendable {
     case automatic, day, night
 }
 
-/// 時刻から昼夜(0:00–8:59 は夜、9:00–23:59 は昼)を決める。毎秒のタイマーは使わない。
+/// 時刻だけから昼夜を決める(21:00〜翌8:59 は夜=黒、9:00〜20:59 は昼=白)。
+/// 撮影したか・画面の種類では決めない。境目の数字は nightStartHour / dayStartHour の1か所だけ。毎秒のタイマーは使わない。
 @MainActor @Observable
 final class ThemeClock {
     static let overrideKey = "theme.debugOverride"
@@ -27,8 +28,14 @@ final class ThemeClock {
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private let defaults: UserDefaults
 
+    /// 黒になる時刻(21:00)
+    nonisolated static let nightStartHour = 21
+    /// 白にもどる時刻(9:00)
+    nonisolated static let dayStartHour = 9
+
     nonisolated static func isNight(_ date: Date, calendar: Calendar = .current) -> Bool {
-        calendar.component(.hour, from: date) < 9
+        let hour = calendar.component(.hour, from: date)
+        return hour >= nightStartHour || hour < dayStartHour
     }
 
     init(now: Date = .now, defaults: UserDefaults = .standard) {
@@ -64,7 +71,8 @@ final class ThemeClock {
 
     private func apply(_ next: ThemeMode) {
         guard next != mode else { return }
-        withAnimation(.easeInOut(duration: next == .night ? 0.6 : 1.2)) {
+        // 画面を見ている間に 21:00 / 9:00 をまたいだら、0.4秒で切りかえる
+        withAnimation(.easeInOut(duration: 0.4)) {
             mode = next
         }
     }
@@ -77,9 +85,9 @@ final class ThemeClock {
 
     // MARK: - スケジュール
 
-    /// 次の 0:00 か 9:00 までの秒数
+    /// 次の 21:00 か 9:00 までの秒数
     nonisolated static func secondsUntilNextChange(from date: Date, calendar: Calendar = .current) -> TimeInterval {
-        let hours = [0, 9]
+        let hours = [nightStartHour, dayStartHour]
         let dates = hours.compactMap {
             calendar.nextDate(after: date, matching: DateComponents(hour: $0, minute: 0, second: 0),
                               matchingPolicy: .nextTime)

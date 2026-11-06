@@ -67,12 +67,24 @@ struct TodayView: View {
     /// 空の GROUP 画面のステッカーから開いたとき、最初から入れておくグループ名
     @State private var newGroupPrefill: String?
     /// グループのシート
+    @Environment(\.palette) private var palette
     @State private var sheetGroup: LaterGroup?
     /// いま入ったグループ(Home の列に「ぽんと入る」)
     @State private var arrivingGroupID: UUID?
     /// グループの招待の QR(画面いっぱいに重ねる)
     @State private var inviteQR: (url: URL, aura: Int)?
     @State private var showingDevelopSheet = false
+    /// v14 ⑤:ともだち(呼ぶ / グループに えらぶ / とどいた)
+    @State private var showingFriendsHub = false
+    /// v18.2:撮ったチェキが、物干しへ とんでいる間
+    @State private var shotFlight: (handOff: ShotHandOff, start: Date)?
+    @State private var ejectRamp = HapticRamp()
+    /// v17:ふって つながった人(公開 DB の Friendship)
+    @State private var bumpFriends: [BumpFriend] = BumpFriendStore.cached
+    /// v17:ホームの「ふって つながる」
+    @State private var bump = V17Bump()
+    /// 現像ページャーで開く枚数目(v14 ⑧)
+    @State private var developPage = 0
     /// グループの設定(グループの画面の上に重ねる。「←」でもどる)
     @State private var settingsGroup: LaterGroup?
     /// 抜ける(確認 → 長押し → 抜ける動き)
@@ -83,6 +95,8 @@ struct TodayView: View {
     /// 昨日を見る画面の範囲
     @State private var yesterdayScope: YesterdayScope = .everyone
     @State private var syncStatus: SyncStatus = .loading
+    /// 撮った1枚の保存(端末)。ホームへもどるときに、終わっているかを見る
+    @State private var shotSaveTask: Task<Bool, Never>?
     @State private var developTexture: UIImage?
     /// 起動アニメーションの1本の時計(nilなら出していない・終わった)
     @State private var launchClock: LaunchClock?
@@ -93,6 +107,10 @@ struct TodayView: View {
     @State private var wasInBackground = false
     /// Mondo へのダイブ中(光の球に吸い込まれる)
     @State private var isDivingToMondo = false
+    /// 層の「昨日の世界のことば」からひらく、Mondo のことばページ
+    @State private var mondoInitialTag: String?
+    /// 層の「昨日のみんな」からひらいた1枚(ビューアの先頭に置く)
+    @State private var yesterdayLeadID: String?
     /// ビューアの「Mondo」の範囲の取得
     @State private var mondoLoad: MondoLoad = .idle
     /// 撮った瞬間の合図(撮影後の Home v5:写真が右上のアバターへ飛び、1.4秒後に GROUP の解禁)
@@ -158,13 +176,28 @@ struct TodayView: View {
 
     private var userGroups: [LaterGroup] {
         guard let user = currentUser else { return [] }
-        return groups.filter { $0.members.contains(where: { $0.id == user.id }) }
+        let userID = user.id
+        return groups.filter { $0.members.contains(where: { $0.id == userID }) }
     }
 
     /// MEを除いた、参加中のグループ
     private var sharedGroups: [LaterGroup] {
         // 新しく作った・入ったグループが先頭(投稿数では並べない)
         userGroups.filter { !$0.isPersonalSpace }.sorted { ($0.joinedAt ?? $0.creationDate) > ($1.joinedAt ?? $1.creationDate) }
+    }
+
+    /// 今日(直近の窓)撮った1枚ずつ(時刻と街だけ。グループごとの複製は1つにまとめる)
+    private var todayShots: [TodayShot] {
+        guard let user = currentUser else { return [] }
+        let window = DailyWindow.latest(for: now)
+        var seen = Set<String>()
+        return user.photos
+            .filter { $0.captureDate >= window.open && $0.captureDate < window.close }
+            .sorted { $0.captureDate < $1.captureDate }
+            .compactMap { photo -> TodayShot? in
+                guard seen.insert(photo.dedupeKey).inserted else { return nil }
+                return TodayShot(id: photo.dedupeKey, takenAt: photo.captureDate, city: photo.locationName)
+            }
     }
 
     private var myCaptureDates: [Date] {
@@ -333,8 +366,12 @@ struct TodayView: View {
             guard case .loaded(let entries) = mondoLoad else { return nil }
             return entries.map(MondoViewer.item)
         }
-        let items = groupItems(yesterdayScope)
+        var items = groupItems(yesterdayScope)
         if items.isEmpty, syncStatus == .failed, yesterdayScope != .mine { return nil }
+        // 層の「昨日のみんな」から押した1枚から、ひらく
+        if let lead = yesterdayLeadID, let index = items.firstIndex(where: { $0.id == lead }) {
+            items.insert(items.remove(at: index), at: 0)
+        }
         return items
     }
 
@@ -399,8 +436,13 @@ struct TodayView: View {
 
     /// 画面の中身(型チェックを軽くするため、修飾子の列 body とは分けている)
     private var rootStack: some View {
-        ZStack {
-            (isChicHome && screen == .home ? Color.white : Color.black).ignoresSafeArea()
+        // グループの絞りこみは重い(全グループ × メンバー)。毎フレーム動く TimelineView の中で
+        // 何度も計算しないよう、ここで1回だけ求める。
+        let sharedGroups = self.sharedGroups
+        let groupSummaries = GroupRingMath.summaries(for: sharedGroups, now: now)
+        let canCreateGroup = sharedGroups.count < GroupMembershipPolicy.maxGroupsPerUser
+        return ZStack {
+            (isChicHome && screen == .home ? palette.bg : Color.black).ignoresSafeArea()
 
             if rendersToday {
             TimelineView(.animation(paused: launchClock == nil && sparkleStart == nil)) { context in
@@ -414,7 +456,7 @@ struct TodayView: View {
                 tones: developTones,
                 openedTones: DevelopProgress.defaultTones,
                 groupSummaries: groupSummaries,
-                canCreateGroup: sharedGroups.count < GroupMembershipPolicy.maxGroupsPerUser,
+                canCreateGroup: canCreateGroup,
                 isCovered: isHomeCovered,
                 holdModel: holdModel,
                 avatarImage: currentUser?.profileImageData.flatMap(UIImage.init(data:)),
@@ -423,7 +465,7 @@ struct TodayView: View {
                 onOpenProfile: onOpenProfile,
                 avatarSwitch: avatarSwitch,
                 avatarName: currentUser?.name ?? "",
-                onDevelopTap: { showingDevelopSheet = true },
+                onDevelopTap: { developPage = 0; showingDevelopSheet = true },
                 onSelectGroup: { id in sheetGroup = sharedGroups.first { $0.id == id } },
                 onCreateGroup: { newGroupPrefill = nil; showingNewGroup = true },
                 onJoinGroup: {
@@ -434,7 +476,17 @@ struct TodayView: View {
                 launch: launchFrame(at: context.date),
                 sparkle: sparkle(at: context.date),
                 onOrbTap: tapOrb,
-                isDiving: isDivingToMondo
+                isDiving: isDivingToMondo,
+                layerData: layerData(sharedGroups: sharedGroups),
+                layerActions: layerActions(sharedGroups: sharedGroups),
+                todayShots: todayShots,
+                onOpenShot: { index in
+                    developPage = index
+                    showingDevelopSheet = true
+                },
+                v17: v17Data(sharedGroups: sharedGroups),
+                v17Actions: v17Actions(sharedGroups: sharedGroups),
+                bump: bump
             )
             }
             .opacity(homeOpacity)
@@ -452,7 +504,7 @@ struct TodayView: View {
                     shotsToday: shotsInLatestWindow,
                     currentUser: currentUser,
                     sharedGroups: sharedGroups,
-                    canCreateGroup: sharedGroups.count < GroupMembershipPolicy.maxGroupsPerUser,
+                    canCreateGroup: canCreateGroup,
                     avatarImage: currentUser?.profileImageData.flatMap(UIImage.init(data:)),
                     showsAvatarBadge: !avatarBadgePending.isEmpty,
                     isCovered: isHomeCovered,
@@ -468,7 +520,10 @@ struct TodayView: View {
                         NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.scan)
                     },
                     locked: yesterdayLocked,
-                    avatarSwitch: avatarSwitch
+                    avatarSwitch: avatarSwitch,
+                    friendsData: layerData(sharedGroups: sharedGroups),
+                    friendsActions: layerActions(sharedGroups: sharedGroups),
+                    onInviteFriend: { showingFriendsHub = true }
                 )
                 .opacity(v5Opacity * (irisMode == .fade ? irisFade : 1))
                 // カメラの絞り:アバターの中心から広がる円の中だけ、昨日のホームを見せる
@@ -495,7 +550,7 @@ struct TodayView: View {
                 yesterdayViewer
                 .transition(.opacity)
             case .mondo:
-                MondoRootView(now: now, haptics: haptics, onClose: closeMondo)
+                MondoRootView(now: now, haptics: haptics, initialTag: mondoInitialTag, onClose: closeMondo)
                     .transition(.opacity)
             case .decide:
                 decideView
@@ -533,6 +588,15 @@ struct TodayView: View {
                 .allowsHitTesting(false)
                 .ignoresSafeArea()
 
+            // v18.2:撮ったチェキが、物干しへ とぶ
+            if let shotFlight {
+                ShotFlightOverlay(handOff: shotFlight.handOff, start: shotFlight.start, reduceMotion: reduceMotion) {
+                    shotLanded(shotFlight.handOff)
+                }
+                .id(shotFlight.handOff.id)
+                .zIndex(5)
+            }
+
             // ひらく瞬間の、画面をおおうオレンジの光
             GeometryReader { proxy in
                 Circle()
@@ -548,14 +612,24 @@ struct TodayView: View {
 
             // 撮影画面。月のタップでひらく。
             if screen == .shoot {
-                ShootFlowView(
+                CaptureFlow(
                     shotsToday: shotsInLatestWindow,
-                    entranceDelay: shootEntranceDelay,
-                    onCaptured: saveExposure,
-                    onFinished: finishExposure,
-                    onClose: shrinkMoonBack
+                    onCancel: {
+                        // 月のふくらみの途中でも、戻るはかならず反応させる
+                        isMoonAnimating = false
+                        shrinkMoonBack()
+                    },
+                    onFinish: { photo, tags, place, shotIndex in
+                        // 写真が返った時点で1回だけ。保存だけ行う(見せる動きとは つなげない)
+                        saveCapturedShot(photo: photo, tags: tags, place: place, shotIndex: shotIndex)
+                    },
+                    onShot: { handOff in landShot(handOff) },
+                    onCaptureFailed: {
+                        FilmLanding.shared.pending = nil
+                        presentToast("撮れませんでした。もう一度")
+                    },
+                    onFinishVideo: { video, tags, place, _ in saveCapturedVideo(video, tags: tags, place: place) }
                 )
-                .simultaneousGesture(closeShootSwipe)
                 .transition(
                     !usesV5Home ? .opacity.combined(with: .scale(scale: 1.06))
                         : (reduceMotion ? .opacity : .asymmetric(
@@ -630,7 +704,7 @@ struct TodayView: View {
             }
 
             if let group = sheetGroup {
-                BottomSheetContainer(topInset: 150, onClose: { sheetGroup = nil }) {
+                BottomSheetContainer(topInset: 150, onClose: { LayerHaptics.soft(); sheetGroup = nil }) {
                     GroupSheet(
                         group: group,
                         summary: groupSummaries.first { $0.id == group.id }
@@ -709,14 +783,19 @@ struct TodayView: View {
                     fill: AnyShapeStyle(LinearGradient(colors: [Color(hex: "1B1B1F"), Color(hex: "0C0C0E")], startPoint: .top, endPoint: .bottom)),
                     onClose: { showingDevelopSheet = false }
                 ) {
-                    DevelopSheet(
-                        capturedAt: at,
-                        isDeveloped: state == .dawn,
-                        now: now,
-                        texture: developTexture,
-                        tones: developTones,
-                        haptics: haptics
-                    )
+                    if state != .dawn && !todayShots.isEmpty {
+                        // v14 ⑧:今日撮った枚数ぶん(1〜3枚)をめくれる。撮った枠からは、その枚数目で開く
+                        DevelopPager(shots: todayShots, now: now, startIndex: developPage, onClose: { showingDevelopSheet = false })
+                    } else {
+                        DevelopSheet(
+                            capturedAt: at,
+                            isDeveloped: state == .dawn,
+                            now: now,
+                            texture: developTexture,
+                            tones: developTones,
+                            haptics: haptics
+                        )
+                    }
                 }
                 .zIndex(10)
             }
@@ -732,6 +811,16 @@ struct TodayView: View {
             now = clock()
             openYesterdayForGroupHome()
             beginLaunchIfNeeded()
+        }
+        .task(id: currentUser?.id) {
+            // 層:2日より古いノックを消す・送りそこねた👍を送る
+            if let user = currentUser { KnockSetting.isOff = user.knockOff }
+            await KnockStore.shared.prune()
+            await LampGroupSync.flush(groups: sharedGroups)
+        }
+        .task(id: currentUser?.id) {
+            // 前回、保存しきれなかった1枚(撮影後に時間切れ・アプリ終了)を、もう一度保存する
+            await retryPendingShots()
         }
         .task(id: now) {
             // 世界の光:昨日の数を1回だけ取りに行く(その日の窓の間はキャッシュ)。ネットワークは待たない
@@ -846,7 +935,7 @@ struct TodayView: View {
                 .allowsHitTesting(false)
                 .animation(.easeInOut(duration: 0.3), value: showingAddGroupSheet)
         }
-        .sheet(isPresented: $showingAddGroupSheet) {
+        .sheet(isPresented: $showingAddGroupSheet, onDismiss: { LayerHaptics.soft() }) {
             GroupAddSheet(
                 groupCount: sharedGroups.count,
                 onJoin: { chooseFromAddSheet { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.scan) } },
@@ -854,16 +943,32 @@ struct TodayView: View {
             )
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { addSheetHeight = $0 }
             .presentationDetents([.height(addSheetHeight)])
-            .presentationBackground(.ultraThinMaterial)
+            // 背景・文字・アイコンは、すべて Palette(昼:白 / 夜:#1C1C1F)から。すりガラス+白い文字はやめる
+            .presentationBackground(palette.groupAdd.sheet)
             .presentationCornerRadius(34)
             .presentationDragIndicator(.hidden)
-            .environment(\.colorScheme, .dark)
+            .environment(\.palette, palette)
+            .environment(\.colorScheme, palette.isNight ? .dark : .light)
+        }
+        .fullScreenCover(isPresented: $showingFriendsHub) {
+            FriendsHubView(
+                myName: currentUser?.name ?? "",
+                friends: layerData(sharedGroups: sharedGroups).friends,
+                groups: sharedGroups,
+                onClose: { showingFriendsHub = false }
+            )
+            .environment(\.palette, palette)
         }
         .fullScreenCover(isPresented: $showingNewGroup) {
             NewGroupFlowView(initialName: newGroupPrefill) { showingNewGroup = false }
         }
         // ウィジェット:撮影・昨日をひらく・日付が変わる(状態が変わる)たびに、値を書いて更新
         .onAppear { syncWidget() }
+        .task { await refreshBumpFriends() }
+        .onReceive(NotificationCenter.default.publisher(for: .bumpFriendsChanged)) { _ in
+            bumpFriends = BumpFriendStore.cached
+            Task { await refreshBumpFriends() }
+        }
         .onChange(of: state) { _, _ in syncWidget() }
         .onChange(of: openedWindowKey) { _, _ in syncWidget() }
         .onChange(of: myCaptureDates.count) { _, _ in syncWidget() }
@@ -1067,7 +1172,7 @@ struct TodayView: View {
                 switch current {
                 case .shoot: expandMoon(to: .shoot)
                 case .decide:
-                    haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+                    Haptics.play(.tick)  // v17:ごく軽く1回
                     openDecision(playsUnlock: false)
                 case .review: viewYesterday(scope: .everyone)
                 case .open, .locked: updateNow()
@@ -1075,7 +1180,10 @@ struct TodayView: View {
             },
             onHoldComplete: { openYesterday(scope: .everyone) },
             onDimTap: {
-                if case .locked(let title, _) = plan { presentLockedToast(title) }
+                if shotsInLatestWindow >= TodayFilmRules.frameCount && !state.isNight {
+                    Haptics.play(.warn)
+                    presentToast("今日は おしまい。あしたの 9:00 に ひらく")
+                } else if case .locked(let title, _) = plan { presentLockedToast(title) }
             },
             launchGlowOpacity: launch.moonGlowOpacity,
             launchGlowScale: launch.moonGlowScale,
@@ -1090,8 +1198,15 @@ struct TodayView: View {
 
     private func moonMode(for plan: HomeState.MoonPlan) -> HomeMoon.Mode {
         switch plan {
-        case .locked(let title, let subtitle): return .dim(title: title, subtitle: subtitle)
-        case .shoot: return .tap(title: "今日を撮る", subtitle: "タップ", tone: .warm)
+        case .locked(let title, let subtitle):
+            // 3枚撮った昼:「今日は おしまい」(うすく。押すと warn)
+            if shotsInLatestWindow >= TodayFilmRules.frameCount && !state.isNight {
+                return .dim(title: TodayFilmRules.moonTitle(shots: shotsInLatestWindow), subtitle: TodayFilmRules.moonSubtitle(shots: shotsInLatestWindow))
+            }
+            return .dim(title: title, subtitle: subtitle)
+        case .shoot:
+            // v14:0枚「今日を 撮る」/ 1〜2枚「もう 1枚 撮る ・ のこり Nフレーム」
+            return .tap(title: TodayFilmRules.moonTitle(shots: shotsInLatestWindow), subtitle: TodayFilmRules.moonSubtitle(shots: shotsInLatestWindow), tone: .warm)
         case .decide: return .tap(title: "昨日の1枚を選ぶ", subtitle: "タップ", tone: .decide)
         case .open: return .hold
         case .review: return .tap(title: "昨日をもう一度見る", subtitle: "タップ", tone: .cool)
@@ -1122,7 +1237,11 @@ struct TodayView: View {
         withAnimation(.timingCurve(0.62, 0, 0.28, 1, duration: 0.76)) { moonScale = fullScale }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             shootEntranceDelay = 0.05
-            screen = target
+            // 画面の切りかえは、アニメーションに乗せない(月を消すアニメーションの進みに、タグ画面の表示を
+            // まかせると、進まなかったときに月のグラデだけが残る)。タグ画面は黒い地で、すぐ月の上に出る。
+            var instant = Transaction()
+            instant.disablesAnimations = true
+            withTransaction(instant) { screen = target }
             withAnimation(.easeOut(duration: 0.52)) { moonOpacity = 0 }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.22) { isMoonAnimating = false }
@@ -1177,6 +1296,7 @@ struct TodayView: View {
 
     private func closeYesterday() {
         holdModel.reset()
+        yesterdayLeadID = nil
         shrinkMoonBack()
     }
 
@@ -1234,7 +1354,7 @@ struct TodayView: View {
 
     // MARK: - 撮影した1枚の保存
 
-    private func saveExposure(imageData: Data, exposureStart: Date, tags: [String], locationName: String?) -> Bool {
+    private func saveExposure(imageData: Data, exposureStart: Date, tags: [String], locationName: String?, extras: ExposureDayStore.Extras? = nil) -> Bool {
         guard let user = currentUser else { return false }
         do {
             try DailyExposureStore.save(
@@ -1244,7 +1364,8 @@ struct TodayView: View {
                 locationName: locationName,
                 user: user,
                 groups: userGroups,
-                context: context
+                context: context,
+                dayExtras: extras
             )
             return true
         } catch {
@@ -1253,10 +1374,134 @@ struct TodayView: View {
         }
     }
 
+    /// 新しい撮影の流れ(CaptureFlow)で撮れた1枚を保存する(onFinish。アバターに届いた瞬間に1回だけ)。
+    /// 重い処理(JPEG・縮小・色)は、写真が返った時点からメインの外で始まっている(ShotEncoder)。
+    /// 端末への保存(SwiftData)が先。CloudKit への送信は DailyExposureStore の中で裏のキューへ。画面は送信を待たない。
+    /// 保存しきれなかったときのために、先にファイルへおいておき(PendingShotStore)、次の起動で再試行する。
+    private func saveCapturedShot(photo: UIImage, tags: [String], place: String?, shotIndex: Int) {
+        let captureDate = Date()
+        let background = BackgroundTaskBox.begin(name: "later.saveShot")
+        shotSaveTask = Task { @MainActor in
+            defer { background.end() }
+            guard let encoded = await ShotEncoder.encoded(for: photo) else {
+                print("[PhotoSave Error] 撮った1枚を、保存の形にできませんでした")
+                return false
+            }
+            CaptureSignpost.mark("encoded")
+            let meta = PendingShotStore.Meta(id: UUID(), captureDate: captureDate, tags: tags, place: place)
+            let data = encoded.imageData
+            let wrote = await Task.detached(priority: .userInitiated) { PendingShotStore.write(imageData: data, meta: meta) }.value
+            let extras = ExposureDayStore.Extras(colorHex: encoded.colorHex, thumbnailData: encoded.thumbnailData, toneHexes: encoded.toneHexes)
+            let ok = saveExposure(imageData: data, exposureStart: captureDate, tags: tags, locationName: place, extras: extras)
+            CaptureSignpost.mark("saved", ok ? "ok" : "failed")   // ③ 写真が返る → 保存
+            if ok, wrote {
+                let id = meta.id
+                Task.detached(priority: .utility) { PendingShotStore.remove(id) }
+            }
+            if !ok { presentToast("写真は、あとで保存します") }   // ユーザーは止めない(次の起動で再試行)
+            return ok
+        }
+    }
+
+    /// v20:録った動画を保存する(ポスター = 最初のコマ・加工ずみ JPEG を image に、本体は端末のファイル → CloudKit の video)
+    private func saveCapturedVideo(_ video: RecordedVideo, tags: [String], place: String?) {
+        let captureDate = Date()
+        Task { @MainActor in
+            guard let name = try? LaterVideoStore.adopt(video.url) else {
+                presentToast("動画を、保存できませんでした")
+                FilmLanding.shared.pending = nil
+                return
+            }
+            let poster = video.poster
+            let made = await Task.detached(priority: .userInitiated) { ShotEncoder.dayExtras(from: poster) }.value
+            let extras = ExposureDayStore.Extras(colorHex: made.colorHex, thumbnailData: made.thumbnailData, toneHexes: made.toneHexes)
+            guard let user = currentUser else { return }
+            do {
+                try DailyExposureStore.save(
+                    imageData: poster,
+                    captureDate: captureDate,
+                    tags: tags,
+                    locationName: place,
+                    user: user,
+                    groups: userGroups,
+                    context: context,
+                    dayExtras: extras,
+                    video: (name, video.duration)
+                )
+            } catch {
+                LaterVideoStore.deleteLocal(name)
+                FilmLanding.shared.pending = nil
+                presentToast("動画を、保存できませんでした")
+            }
+        }
+    }
+
+    /// v18.2:撮ったチェキを引きついで、毎回ホームへもどる(確認の画面・文字は出さない)。
+    /// 今日の film まで自動でスクロールし、物干しの空きこまへ とばす(ShotFlightOverlay)
+    private func landShot(_ handOff: ShotHandOff) {
+        let landing = FilmLanding.shared
+        landing.pending = (handOff.index, handOff.isVideo, handOff.duration)
+        landing.scrollToken &+= 1
+        shotFlight = (handOff, Date())
+        withAnimation(.easeOut(duration: reduceMotion ? 0.2 : 0.3)) {
+            screen = .home
+            moonScale = 1
+            moonOpacity = 1
+            moonTextOpacity = 1
+            homeOpacity = 1
+            bottomFadeOpacity = 1
+        }
+        now = clock()
+        Haptics.play(.soft)
+        // 1.08 秒:チェキが送られる(ジーッ)
+        DispatchQueue.main.asyncAfter(deadline: .now() + ShotTiming.flyStart - ShotTiming.handOff) {
+            ejectRamp.start()
+            ejectRamp.update(0.4)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { ejectRamp.stop() }
+        }
+    }
+
+    /// テープでとまった(トン)。3こめなら、3枚が順にゆれて success
+    private func shotLanded(_ handOff: ShotHandOff) {
+        Haptics.play(.land)
+        let landing = FilmLanding.shared
+        landing.landedIndex = handOff.index
+        landing.landedToken &+= 1
+        shotFlight = nil
+        if handOff.index >= FilmRoll.shotsPerDay - 1 {
+            for i in 0..<3 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + Double(i) * 0.22) {
+                    landing.landedIndex = i
+                    landing.landedToken &+= 1
+                    Haptics.play(.tick, gap: 0)
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.25) { Haptics.play(.success) }
+        }
+    }
+
+    /// 前回、保存しきれなかった1枚を保存する(期限切れ・すでに保存ずみのものは捨てる)
+    private func retryPendingShots() async {
+        guard currentUser != nil else { return }
+        let items = await Task.detached(priority: .utility) { PendingShotStore.loadAll() }.value
+        for item in items {
+            let date = item.meta.captureDate
+            if DailyExposureRules.isExpired(capturedAt: date) || myCaptureDates.contains(date) {
+                PendingShotStore.remove(item.meta.id)
+                continue
+            }
+            let data = item.imageData
+            let extras = await Task.detached(priority: .utility) { ShotEncoder.dayExtras(from: data) }.value
+            let ok = saveExposure(imageData: data, exposureStart: date, tags: item.meta.tags, locationName: item.meta.place,
+                                  extras: ExposureDayStore.Extras(colorHex: extras.colorHex, thumbnailData: extras.thumbnailData, toneHexes: extras.toneHexes))
+            if ok { PendingShotStore.remove(item.meta.id) }
+        }
+    }
+
     /// 「預けました」を見せ終えた。黒い幕を残したまま撮影画面を外してHomeに戻し(状態は ready)、
     /// 幕をゆっくり(0.6秒)フェードさせる。Homeにもどった瞬間に、ごく軽く1回。
-    private func finishExposure() {
-        if isDeciding(homeState(at: clock())) {
+    private func finishExposure(allowsDecision: Bool = true) {
+        if allowsDecision, isDeciding(homeState(at: clock())) {
             finishExposureIntoDecision()
             return
         }
@@ -1278,7 +1523,7 @@ struct TodayView: View {
             bottomFadeOpacity = 1
             now = clock()
         }
-        haptics.playTransient(intensity: 0.25, sharpness: 0.3)
+        Haptics.play(.soft)  // v17:もどる
         withAnimation(.easeOut(duration: 0.6).delay(0.05)) {
             isShowingExposureVeil = false
         }
@@ -1444,7 +1689,7 @@ struct TodayView: View {
         isFinishingDecision = false
         decideSnapshot = nil
         if let toast {
-            haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+            Haptics.play(.tick)  // v17:ごく軽く1回
             presentToast(toast)
         }
     }
@@ -1557,7 +1802,7 @@ struct TodayView: View {
         case .enter:
             diveIntoMondo()
         case .locked(let title, let message):
-            haptics.playSoftDouble()
+            Haptics.play(.double)  // v17:まだできないこと
             presentToast(title + "\n" + message)
         }
     }
@@ -1566,7 +1811,7 @@ struct TodayView: View {
     /// 560msの時点で、次の画面(ようこそ or Mondo トップ)が下から静かに出る。途中のタップは無視する。
     private func diveIntoMondo() {
         isMoonAnimating = true
-        haptics.playTransient(intensity: 0.3, sharpness: 0.4)
+        Haptics.play(.click)  // v17:Mondo へ
         if reduceMotion {
             withAnimation(.easeInOut(duration: 0.3)) {
                 screen = .mondo
@@ -1591,6 +1836,7 @@ struct TodayView: View {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) { isDivingToMondo = false }
+        mondoInitialTag = nil
         withAnimation(.easeOut(duration: 0.3)) { screen = .home }
         withAnimation(.easeOut(duration: 0.5)) {
             homeOpacity = 1
@@ -1598,11 +1844,139 @@ struct TodayView: View {
         }
     }
 
+    // MARK: - 下へつづく層(HomeLayerModel / HomeLayerViews)
+
+    /// 層の中身。今日のホームを描くときだけ、1回だけ組み立てる
+    private func layerData(sharedGroups: [LaterGroup]) -> HomeLayerData {
+        let state = self.state
+        return HomeLayerBuilder.make(
+            state: state,
+            now: now,
+            shotsToday: shotsInLatestWindow,
+            me: currentUser,
+            myRecordName: CloudKitManager.current?.currentUserRecordName ?? currentUser?.cloudKitUserRecordName,
+            groups: sharedGroups,
+            exposureDays: exposureDays,
+            blocked: Set(blockedUsers.map(\.blockedCloudKitUserRecordName)),
+            words: WorldWordsStore.words(now: now),
+            picks: AnnouncedPickStore.shared.picks
+        )
+    }
+
+    // MARK: - v17 の区画
+
+    private func v17Data(sharedGroups: [LaterGroup]) -> HomeV17Data {
+        let current = clock()
+        let layer = layerData(sharedGroups: sharedGroups)
+        let words = WorldWordsStore.entries(now: current)
+        let window = DailyWindow.latest(for: current)
+        var durations: [Date: Double] = [:]
+        for photo in currentUser?.photos ?? [] where photo.isVideo && photo.captureDate >= window.open && photo.captureDate < window.close {
+            durations[photo.captureDate] = photo.durationSeconds
+        }
+        return HomeV17Data(
+            shots: todayShots.map(\.takenAt),
+            videoDurations: durations,
+            words: words.words,
+            countries: words.countries,
+            friends: HomeV17Rules.friends(
+                group: layer.friends,
+                bump: bumpFriends,
+                counts: HomeV17Rules.shotCounts(groups: sharedGroups, now: current),
+                myID: CloudKitManager.current?.currentUserRecordName
+            )
+        )
+    }
+
+    private func v17Actions(sharedGroups: [LaterGroup]) -> HomeV17Actions {
+        let layer = layerActions(sharedGroups: sharedGroups)
+        bump.myName = { currentUser?.name ?? "" }
+        bump.friendCount = { bumpFriends.count }
+        bump.onToast = { presentToast($0) }
+        return HomeV17Actions(
+            toast: { presentToast($0) },
+            shoot: {
+                // 月と同じく、タグ画面(撮影の流れ)へ
+                guard screen == .home, !isMoonAnimating, homeState(at: clock()).canShoot else { return }
+                expandMoon(to: .shoot)
+            },
+            openMondo: {
+                // アイコン2回タップと同じ開き方(昨日のホームへ)
+                switchHome(to: .yesterday)
+            },
+            knock: layer.knock,
+            openFriends: { showingFriendsHub = true }
+        )
+    }
+
+    /// ふって つながった人を読みなおす
+    private func refreshBumpFriends() async {
+        let list = await FriendCloud.connections()
+        bumpFriends = list
+    }
+
+    private func layerActions(sharedGroups: [LaterGroup]) -> HomeLayerActions {
+        HomeLayerActions(
+            toast: { presentToast($0) },
+            openYesterdayPhoto: { groupID, itemID in openYesterdayFromLayer(groupID: groupID, itemID: itemID) },
+            openWord: { openMondoWord($0) },
+            knock: { friend in
+                let window = DailyWindow.key(for: clock())
+                let name = currentUser?.name ?? ""
+                Task {
+                    let result = await KnockStore.shared.knock(friend, window: window, groups: sharedGroups, myName: name)
+                    switch result {
+                    case .sent: presentToast("トントン。")
+                    case .already: presentToast("今日は、もうノックしました")
+                    case .failed: presentToast("送れませんでした。つながってから、もう一度")
+                    }
+                }
+            },
+            shoot: {
+                // フィルムの「+ きょう撮る」:撮影の流れをひらく
+                CaptureRequestStore.shared.pendingRequestID = UUID()
+            },
+            openFriends: { showingFriendsHub = true },
+            inviteLink: { id in
+                guard let group = sharedGroups.first(where: { $0.id == id }) else { return nil }
+                return try? await GroupInviteService.link(for: group, context: context)
+            },
+            createGroup: {
+                newGroupPrefill = nil
+                showingNewGroup = true
+            },
+            flushThumbs: { await LampGroupSync.flush(groups: sharedGroups) }
+        )
+    }
+
+    /// 層の「昨日のみんな」の1枚:今あるビューア(そのグループの範囲)を、その写真からひらく
+    private func openYesterdayFromLayer(groupID: UUID, itemID: String) {
+        guard screen == .home, !isMoonAnimating else { return }
+        LayerHaptics.light()
+        yesterdayLeadID = itemID
+        yesterdayScope = .group(groupID)
+        sheetGroup = nil
+        expandMoon(to: .yesterday)
+    }
+
+    /// 層の「昨日の世界のことば」:Mondo のことばページをひらく(玉へのダイブではなく、静かにフェード)
+    private func openMondoWord(_ tag: String) {
+        guard screen == .home, !isMoonAnimating, launchClock == nil else { return }
+        mondoInitialTag = tag
+        isMoonAnimating = true
+        withAnimation(.easeInOut(duration: 0.3)) {
+            screen = .mondo
+            homeOpacity = 0
+            bottomFadeOpacity = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { isMoonAnimating = false }
+    }
+
     // MARK: - ロック中の月のお知らせ
 
     /// やわらかく2回(強さ0.4・鋭さ0.2、間90ms)+ 2.3秒だけお知らせ。
     private func presentLockedToast(_ text: String) {
-        haptics.playSoftDouble()
+        Haptics.play(.double)  // v17:まだできないこと
         presentToast(text)
     }
 
@@ -1624,7 +1998,7 @@ struct TodayView: View {
 
     /// 追加シートで選んだ:ごく軽く1回(えらぶ)→ シートを閉じてから、いつもの画面へ
     private func chooseFromAddSheet(_ open: @escaping () -> Void) {
-        haptics.playTransient(intensity: 0.3, sharpness: 0.5)
+        Haptics.play(.tick)  // v17:ごく軽く1回(えらぶ)
         showingAddGroupSheet = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: open)
     }

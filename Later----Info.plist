@@ -24,9 +24,17 @@
 	<array>
 		<string>message</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>「ふって つながる」で、すぐ近くにいる ともだちの端末を さがすために使います。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_later-bump._tcp</string>
+		<string>_later-bump._udp</string>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Caveat-Bold.ttf</string>
+		<string>YuseiMagic-Later.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

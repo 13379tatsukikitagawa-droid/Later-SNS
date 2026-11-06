@@ -371,12 +371,15 @@ struct ProfileEditScreen: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .onChange(of: tagDraft) { _, value in
-                        let cleaned = String(value.filter { $0 != "#" && $0 != "＃" && !$0.isWhitespace }.prefix(OnboardingRules.tagMaxLength))
+                        // 文字数ではここで切らない(変換中の日本語がこわれる)。長さは足すときに決める
+                        let cleaned = String(value.filter { $0 != "#" && $0 != "＃" && !$0.isWhitespace })
                         if cleaned != value { tagDraft = cleaned }
                     }
                     .onSubmit {
-                        if let tag = OnboardingRules.normalizedTag(tagDraft) { addTag(tag) }
+                        if let tag = OnboardingRules.normalizedTag(String(tagDraft.prefix(OnboardingRules.tagMaxLength))) { addTag(tag) }
                         tagDraft = ""
+                        // そのままもう1つ打てる
+                        if tags.count < OnboardingRules.maxSelfTags { DispatchQueue.main.async { isTagFocused = true } }
                     }
                     .accessibilityLabel("タグ、入力欄")
             }

@@ -874,6 +874,8 @@ final class CloudKitManager: NSObject {
         if LeftGroupsStore.contains(record.recordID.zoneID) { return }
         switch record.recordType {
         case AppRecordType.memberEvent:
+            // 今日のホームの層の「ノック」(文字なし)。自分あてなら1回だけ知らせる
+            if KnockInbox.handle(record: record, myRecordName: currentUserRecordName) { return }
             if let group = fetchOne(LaterGroup.self, { $0.cachedZoneID == record.recordID.zoneID }),
                let event = MemberEventStore.event(from: record, groupID: group.id) {
                 MemberEventStore.add(event)

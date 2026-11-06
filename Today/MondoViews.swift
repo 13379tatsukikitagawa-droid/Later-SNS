@@ -7,6 +7,8 @@ import SwiftUI
 struct MondoRootView: View {
     let now: Date
     let haptics: ExposureHaptics
+    /// ひらいたら、すぐにこのことばのページを出す(今日のホームの層から)
+    var initialTag: String? = nil
     let onClose: () -> Void
 
     private enum Load: Equatable {
@@ -96,6 +98,7 @@ struct MondoRootView: View {
         .offset(y: isShown ? 0 : 24)
         .onAppear {
             showingWelcome = !mondoSeen
+            tagPage = initialTag
             withAnimation(.easeOut(duration: 0.35)) { isShown = true }
         }
         .task { await reload() }

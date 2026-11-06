@@ -20,6 +20,11 @@ struct V5GroupTile: Identifiable, Equatable {
     let isMine: Bool
     /// 灯の対象になる写真の名前(CloudKit の recordName。まだなければ端末の id)
     var photoRecordName: String? = nil
+    /// チェキ フィードの頭:撮った人の名前・街
+    var authorName: String? = nil
+    var city: String? = nil
+    /// 撮った人(通報・見えなくするの対象)
+    var authorRecordName: String? = nil
 }
 
 /// 1グループぶんの区画
@@ -71,7 +76,10 @@ enum GroupSections {
                     imageData: photo.imageData.isEmpty ? nil : photo.imageData,
                     capturedAt: photo.captureDate,
                     isMine: isMine,
-                    photoRecordName: photo.ckRecordName ?? photo.id.uuidString
+                    photoRecordName: photo.ckRecordName ?? photo.id.uuidString,
+                    authorName: photo.owner?.name,
+                    city: photo.locationName,
+                    authorRecordName: photo.authorCloudKitUserRecordName
                 ))
             }
             let others = tiles.filter { !$0.isMine }.map(\.id)
@@ -101,6 +109,7 @@ enum GroupSections {
 // MARK: - 画面
 
 struct HomeV5GroupPage: View {
+    @Environment(\.palette) private var palette
     let sections: [GroupSectionModel]
     let isActive: Bool
     let haptics: ExposureHaptics
@@ -127,6 +136,13 @@ struct HomeV5GroupPage: View {
     var scrollToTopToken = 0
     /// 今日を撮る前に昨日のホームをひらいた:昨日のタイルはぼかして、ロックする
     var locked = false
+    /// v14 ②:上の「ともだち」と ME カード
+    var friendsState: HomeState = .first
+    var friendsData: HomeLayerData = .empty
+    var friendsActions = HomeLayerActions()
+    var onFriend: (HomeFriend) -> Void = { _ in }
+    var onInviteFriend: () -> Void = {}
+    var onOpenMe: () -> Void = {}
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -142,6 +158,8 @@ struct HomeV5GroupPage: View {
     @State private var played: Set<String> = []
     @State private var pendingIDs: [String] = []
     @State private var unlockTask: Task<Void, Never>?
+    /// タブを開き直すたびに増やす(ブロックが、もう一度下から出てくる)
+    @State private var revealToken = 0
 
     private var targetIDs: [String] {
         sections.flatMap { section in section.tiles.map(\.id).filter(section.unlockedIDs.contains) }
@@ -150,16 +168,25 @@ struct HomeV5GroupPage: View {
     var body: some View {
         ScrollViewReader { reader in
         ScrollView(.vertical) {
-            LazyVStack(spacing: 16) {
-                if sections.isEmpty {
-                    GroupEmptyYouthView(
-                        userName: userName,
-                        isActive: isActive,
-                        onCreate: onCreateGroup,
-                        onJoin: onJoinGroup
-                    )
+            // v14 ②:1本の縦並び(ZStack や .offset で重ねない)。
+            // ともだち → ME → グループ → つくる → 参加する。画面に入ったら下から出てくる(タブを開き直すたびに、もう一度)
+            VStack(spacing: 12) {
+                TodayFriendsSection(state: friendsState, data: friendsData, actions: friendsActions, onFriend: onFriend, onInvite: onInviteFriend)
+                    .padding(.horizontal, -V5.edge)
+                    .scrollReveal(0, token: revealToken)
+                MECard(caption: "きのうの まい ・ 7日で きえる", film: friendsData.film, isActive: isActive, onTap: onOpenMe)
+                    .scrollReveal(1, token: revealToken)
+                if !sections.isEmpty {
+                    Text("グループ")
+                        .font(.system(size: 28, weight: .heavy))
+                        .tracking(-0.05 * 28)
+                        .foregroundStyle(palette.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 12)
+                        .accessibilityAddTraits(.isHeader)
+                        .scrollReveal(2, token: revealToken)
                 }
-                ForEach(sections) { section in
+                ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
                     GroupSectionView(
                         section: section,
                         levels: levels,
@@ -177,13 +204,10 @@ struct HomeV5GroupPage: View {
                         onCycleLocation: { onCycleLocation(section.id) }
                     )
                     .v5Locked(locked)
-                    .scrollTransition(.interactive) { content, phase in
-                        content
-                            .scaleEffect(1 - 0.05 * abs(phase.value))
-                            .opacity(1 - 0.3 * abs(phase.value))
-                    }
+                    .scrollReveal(3 + index, token: revealToken)
                 }
-                if !sections.isEmpty { addTile }
+                createJoinButtons
+                    .scrollReveal(3 + sections.count, token: revealToken)
             }
             .padding(.horizontal, V5.edge)
             .padding(.top, topInset + 52)
@@ -210,6 +234,7 @@ struct HomeV5GroupPage: View {
         .onChange(of: sections.map(\.shotToday)) { _, _ in noticeShots() }
         .onChange(of: shotEvent?.id) { _, _ in syncUnlocks() }
         .onChange(of: isActive) { _, active in
+            if active { revealToken += 1 }
             if active, !pendingIDs.isEmpty { playPending() }
         }
         .onDisappear { unlockTask?.cancel() }
@@ -232,26 +257,52 @@ struct HomeV5GroupPage: View {
         .padding(.vertical, 30)
     }
 
-    private var addTile: some View {
-        Button(action: onAdd) {
-            HStack(spacing: 10) {
-                Image(systemName: "plus")
-                    .font(.system(size: 18, weight: .semibold))
-                Text(canCreate ? "つくる ・ 入る" : "入る")
-                    .font(.system(size: 14, weight: .semibold))
+    /// 「つくる」(黒・主役)と「参加する」(白 + 枠線)。色を完全に分ける。どちらも高さ 80pt 以上
+    private var createJoinButtons: some View {
+        VStack(spacing: 10) {
+            Button {
+                Haptics.play(.pop)
+                TapConsumption.mark()
+                if canCreate { onCreateGroup(nil) } else { Haptics.play(.warn) }
+            } label: {
+                bigRow(title: "つくる", note: canCreate ? "ともだちを えらぶだけ" : "グループは \(GroupMembershipPolicy.maxGroupsPerUser)個まで", primary: true)
             }
-            .foregroundStyle(ChicColor.ink)
-            .frame(maxWidth: .infinity)
-            .frame(height: 78)
-            .background(
-                RoundedRectangle(cornerRadius: 36, style: .continuous)
-                    .fill(ChicColor.fill)
-            )
-            .contentShape(Rectangle())
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            .opacity(canCreate ? 1 : 0.45)
+            .accessibilityLabel("グループをつくる")
+            Button {
+                Haptics.play(.pop)
+                TapConsumption.mark()
+                onJoinGroup()
+            } label: {
+                bigRow(title: "参加する", note: "合言葉 か 招待カードで", primary: false)
+            }
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            .accessibilityLabel("グループに参加する")
         }
-        .buttonStyle(.plain)
-        .consumesTap()
-        .accessibilityLabel("グループをつくる、または入る")
+        .padding(.top, 6)
+    }
+
+    private func bigRow(title: String, note: String, primary: Bool) -> some View {
+        HStack(spacing: 14) {
+            Circle()
+                .fill(primary ? AnyShapeStyle(LinearGradient(colors: GroupAddColors.sunset, startPoint: .topLeading, endPoint: .bottomTrailing)) : AnyShapeStyle(palette.fill))
+                .overlay(Image(systemName: primary ? "plus" : "arrow.right").font(.system(size: 20, weight: .bold)).foregroundStyle(primary ? Color.white : palette.ink))
+                .frame(width: 48, height: 48)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 18, weight: .heavy))
+                Text(note).font(.system(size: 12.5)).opacity(primary ? 0.78 : 1)
+            }
+            .foregroundStyle(primary ? palette.bg : palette.ink)
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 80)
+        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(primary ? palette.ink : palette.bg))
+        .overlay {
+            if !primary { RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(palette.groupAdd.secondaryLine, lineWidth: 1.5) }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     // MARK: 解禁の動き

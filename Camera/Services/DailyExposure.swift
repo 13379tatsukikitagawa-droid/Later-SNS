@@ -1,6 +1,28 @@
 import Foundation
 import SwiftData
 
+/// 撮った写真を「見せてよいか」の、ただ1つの判定(Later の約束)。
+/// 撮った写真は、撮ったあとで最初に来る 9:00(端末の時刻)まで、自分にも見せない(現像中)。
+/// Home の「じぶん」・Profile・グループの画面は、必ずここを使う。
+/// ※ 端末の時計に頼っている(時計を進めると早く見える)。いまはそれを許す。
+enum PhotoDevelop {
+    /// 仕上がる時刻:takenAt のあとで、最初に来る 9:00(9:00 ちょうどに撮ったら、次の日の 9:00)
+    static func developDate(takenAt: Date, calendar: Calendar = .current) -> Date {
+        let sameDay = DailyExposureRules.window(for: takenAt, calendar: calendar).open
+        if takenAt < sameDay { return sameDay }
+        let nextDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: takenAt)) ?? takenAt
+        return DailyExposureRules.window(for: nextDay, calendar: calendar).open
+    }
+
+    /// 仕上がったか(now が仕上がる時刻を過ぎているか)
+    static func isDeveloped(takenAt: Date, now: Date, calendar: Calendar = .current) -> Bool {
+        now >= developDate(takenAt: takenAt, calendar: calendar)
+    }
+
+    /// まだ開けないものを押したときの、短い一言
+    static let lockedNote = "あしたの朝、仕上がります"
+}
+
 /// 「今日の1枚」の撮影ルール(Later 基本ルール 再設計版 §2・§3)。
 /// 実機で調整・変更しやすいよう、数値はすべてここに集める。
 enum DailyExposureRules {
@@ -111,6 +133,8 @@ enum PhotoExpiryMaintenance {
         guard !expired.isEmpty else { return 0 }
         for photo in expired {
             cloudKitManager?.markForDelete(photo: photo)
+            // v20 動画:本体も、ポスター(image)と同じタイミングで消す(えらんだ1つは MEPickStore に写しがある)
+            LaterVideoStore.deleteLocal(photo.videoFileName)
             context.delete(photo)
         }
         try? context.save()
@@ -135,7 +159,9 @@ enum DailyExposureStore {
         locationName: String?,
         user: UserProfile,
         groups: [LaterGroup],
-        context: ModelContext
+        context: ModelContext,
+        dayExtras: ExposureDayStore.Extras? = nil,
+        video: (fileName: String, duration: Double)? = nil
     ) throws {
         guard !groups.isEmpty else { throw SaveError.noDestination }
 
@@ -152,6 +178,11 @@ enum DailyExposureStore {
             photo.groupID = group.id
             photo.groupNameCache = group.name
             photo.mosaicTiny = mosaicTiny
+            // v20 動画:ポスター(最初のコマ)は imageData。本体は端末のファイル(グループごとの写しで同じファイルを指す)
+            if let video {
+                photo.durationSeconds = video.duration
+                photo.videoFileName = video.fileName
+            }
             // 位置の共有を「撮った場所」にしたグループだけ、丸めた位置を添える
             GroupLocationService.stamp(photo, groupID: group.id, isPersonalSpace: group.isPersonalSpace)
             // 撮った時点では画像以外だけを届ける。画像は翌日「投稿する」を選んだときに送る。
@@ -168,7 +199,8 @@ enum DailyExposureStore {
             throw error
         }
         // プロフィールの「預けた日々」用に、その日の記録(色・小さなサムネイル)を1度だけ作る。
-        ExposureDayStore.record(imageData: imageData, captureDate: captureDate, locationName: locationName, context: context)
+        // 色・サムネイルが先に(メインの外で)作ってあれば、それを使う(メインで写真をデコードしない)
+        ExposureDayStore.record(imageData: imageData, captureDate: captureDate, locationName: locationName, context: context, extras: dayExtras)
 
         // Mondo への公開は、翌日「投稿する」を選んだとき(YesterdayPostStore.post)。
 

@@ -371,6 +371,12 @@ final class LampBoard {
         return outcome
     }
 
+    /// 送り終えた変更を、保留から外す(そのあとに同じ灯が変わっていれば残す)
+    func markSent(_ change: LampPendingChange) {
+        pending.removeAll { $0 == change }
+        LampStorage.savePending(pending, defaults: defaults)
+    }
+
     /// 古い灯を捨てる(起動・復帰のとき)
     func prune(now: Date = Date()) {
         let kept = LampStorage.pruned(lamps, now: now)

@@ -1265,6 +1265,8 @@ struct OnboardingFlowView: View {
     /// リンクを送る:キーボードを閉じて「送っています…」へ。10秒たっても終わらなければ失敗へ。
     private func sendEmailLink() {
         print("[EmailSignIn] tapped")
+        // 送信中に押されても、二重に送らない
+        guard step != .emailSending else { return }
         guard isEmailValid else {
             showEmailError()
             return
@@ -1319,9 +1321,9 @@ struct OnboardingFlowView: View {
     /// 失敗のあと:期限切れ・別の端末で開いた時は入力へ。それ以外は、もう一度送る。
     private func retryAfterFailure() {
         switch emailFailure {
-        case .expiredLink, .missingEmail:
+        case .expiredLink, .missingEmail, .invalidEmail:
             go(to: .emailInput)
-        case .network, .tooManyRequests:
+        case .network, .tooManyRequests, .providerDisabled, .other:
             if isEmailValid { sendEmailLink() } else { go(to: .emailInput) }
         }
     }

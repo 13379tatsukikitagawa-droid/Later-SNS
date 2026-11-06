@@ -203,3 +203,13 @@ struct DigitDial: View {
         .background(Circle().fill(.black.opacity(0.32)))
     }
 }
+
+/// 枠が小さく左右に揺れる(±5pt・0.3秒)。
+struct ShakeEffect: GeometryEffect {
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let offset = 5 * sin(animatableData * .pi * 4)
+        return ProjectionTransform(CGAffineTransform(translationX: offset, y: 0))
+    }
+}

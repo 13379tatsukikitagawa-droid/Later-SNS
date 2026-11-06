@@ -1,3 +1,4 @@
+import ImageIO
 import Foundation
 import SwiftData
 import UIKit
@@ -39,16 +40,27 @@ enum ExposureDayStore {
         return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
     }
 
+    /// 先に(メインの外で)作っておいた、記録の値
+    struct Extras {
+        var colorHex: String?
+        var thumbnailData: Data?
+        var toneHexes: [String]
+    }
+
     /// 撮った1枚から、その日の記録を作る(すでにあれば何もしない)。
-    static func record(imageData: Data, captureDate: Date, locationName: String?, context: ModelContext) {
+    static func record(imageData: Data, captureDate: Date, locationName: String?, context: ModelContext, extras: Extras? = nil) {
         let key = dayKey(for: captureDate)
         let descriptor = FetchDescriptor<ExposureDay>(predicate: #Predicate { $0.dayKey == key })
         guard (try? context.fetch(descriptor).first) == nil else { return }
         let day = ExposureDay(dayKey: key, captureDate: captureDate)
         day.locationName = locationName
-        if let image = UIImage(data: imageData) {
+        if let extras {
+            day.colorHex = extras.colorHex
+            day.thumbnailData = extras.thumbnailData
+            day.toneHexes = extras.toneHexes
+        } else if let image = UIImage(data: imageData) {
             day.colorHex = PhotoColor.centerColorHex(of: image)
-            day.thumbnailData = PhotoColor.thumbnailData(of: image)
+            day.thumbnailData = PhotoColor.thumbnailData(fromData: imageData) ?? PhotoColor.thumbnailData(of: image)
             day.toneHexes = PhotoColor.toneHexes(of: image)
         }
         context.insert(day)
@@ -65,6 +77,17 @@ enum ExposureDayStore {
                let image = UIImage(data: photo.imageData) {
                 day.toneHexes = PhotoColor.toneHexes(of: image)
             }
+        }
+        // 向きを落として作ったサムネイル(90度たおれる)を、端末に残っている写真から1回だけ作りなおす
+        let orientationKey = "exposureDay.thumbnailOrientationFixed.v13"
+        if !UserDefaults.standard.bool(forKey: orientationKey) {
+            for day in days {
+                if let photo = user.photos.first(where: { dayKey(for: $0.captureDate) == day.dayKey }),
+                   let thumbnail = PhotoColor.thumbnailData(fromData: photo.imageData) {
+                    day.thumbnailData = thumbnail
+                }
+            }
+            UserDefaults.standard.set(true, forKey: orientationKey)
         }
         let existing = Set(days.map(\.dayKey))
         var seen = existing
@@ -178,6 +201,20 @@ nonisolated enum PhotoColor {
         let axis = widestAxis(box)
         let values = box.map { component($0, axis) }
         return (values.max() ?? 0) - (values.min() ?? 0)
+    }
+
+    /// カード用の小さなサムネイル(長辺320px)を、元の写真のデータから作る。
+    /// 向き(EXIF)をピクセルに焼きこむ(kCGImageSourceCreateThumbnailWithTransform)。
+    /// UIImage を経由すると、preparingForDisplay() などで向きが落ちて、90度たおれることがあった。
+    static func thumbnailData(fromData data: Data, maxDimension: CGFloat = 320) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxDimension,
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: cg).jpegData(compressionQuality: 0.7)
     }
 
     /// カード用の小さなサムネイル(長辺320px)。

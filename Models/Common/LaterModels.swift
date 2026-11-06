@@ -42,6 +42,10 @@ final class UserProfile {
     /// 撮影時のハッシュタグ(LaterPhoto.tags)とは別物。
     var selfTags: [String] = []
 
+    /// 「ノックを受けない」(今日のホームの層:まだ撮っていない友だちへの、文字なしの知らせ)。
+    /// グループの共有ゾーンの UserProfile に載せ、ノックする側がボタンを出さないのに使う。
+    var knockOff: Bool = false
+
     /// 初回設定で撮ったプロフィール画像。翌朝9:00の現像(pendingProfileImageRevealAt)までは
     /// 本人にも見せないため、profileImageDataとは別に端末内だけで保持する
     /// (ProfilePhotoDevelopment.promoteIfDue参照)。
@@ -131,6 +135,15 @@ final class LaterPhoto {
     /// 撮影地の地名(逆ジオコーディング結果、市区町村名程度)。位置情報の許可が無い/
     /// 取得に失敗した場合はnil(CameraLocationNameProvider参照)。
     var locationName: String?
+
+    /// v20 動画:長さ(秒)。写真なら nil。CloudKit の LaterPhoto.durationSeconds(DOUBLE・省略可)
+    var durationSeconds: Double?
+    /// v20 動画:端末の中の動画ファイル名(LaterVideoStore のフォルダ)。写真・まだ取っていない動画は nil。
+    /// 動画の本体は、タップしたときに取る(一覧はポスター = imageData だけ)
+    var videoFileName: String?
+
+    /// 動画か(長さがあるもの)
+    var isVideo: Bool { (durationSeconds ?? 0) > 0 }
 
     /// 解禁前の表示に使う、とても小さな画像(22 × 48 px の PNG・数KB)。フィルム加工後の画像から作る。
     /// 解禁前の GROUP のモザイクは、これだけを使う(高解像度の本体は使わない)。

@@ -86,6 +86,16 @@ private enum HeaderFont {
 struct LaterHeader: View {
     static let height: CGFloat = 80
 
+    /// ヘッダーの上端(安全領域の高さ)。昨日のホーム(HomeV5Container)は安全領域の中に置くので、
+    /// 今日のホームも同じ値にそろえる。Safe Area を無視する親の中では proxy が 0 になるため、窓の値も見る。
+    static func topInset(_ proxy: GeometryProxy) -> CGFloat {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+        let window = (windows.first(where: \.isKeyWindow) ?? windows.first)?.safeAreaInsets.top ?? 0
+        return max(proxy.safeAreaInsets.top, window)
+    }
+
     let home: HomeKind
     /// 直近の窓で撮った枚数(フィルムの残りを出す)
     var shotsToday = 0

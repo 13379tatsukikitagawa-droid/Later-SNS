@@ -1,82 +1,187 @@
 import SwiftUI
 import SwiftData
-import PhotosUI
 import UIKit
 
-// MARK: - グループ作成(3ステップ)
+// MARK: - グループ作成(3ステップ・v12)
 
-/// グループ作成:① 名前 → ② 顔 → [グループをつくる] → ③ できた+呼ぶ。下から上がる全画面で開く。
-/// ①は左上の ✕ で閉じる(入力は破棄・確認なし)。②の左上は「←」(①へ)。
-/// グループが CloudKit に作られるのは、②の「グループをつくる」を押した瞬間だけ。③には戻る・✕ がない。
+// ① 名前 → ② 顔 → ③ 呼ぶ。上に進みのバー。昼は白・夜は黒(ThemeClock の palette にしたがう)。
+// グループが CloudKit に作られるのは、③の「つくって、リンクを送る」「あとで呼ぶ」を押した瞬間だけ。
+// 合言葉・リンクは、つくったあとに決まる(重ならないものをサーバーに登録するため)。
+
+// MARK: 名前の決めごと(画面を持たない)
+
+enum GroupCreateName {
+    static let maxLength = 12
+
+    static let seeds = ["帰り道の4人", "朝活ぐみ", "しずかな会", "ゼミ", "部活", "クラス"]
+
+    enum Status: Equatable {
+        case empty
+        /// 12文字をこえた(こえた文字数)
+        case over(Int)
+        case ok
+    }
+
+    /// 入力中:改行だけ取る。文字数では切らない(変換中の文字が消えるため)
+    static func clean(_ input: String) -> String {
+        input.filter { !$0.isNewline }
+    }
+
+    /// 確定:前後の空白(半角・全角)を取る
+    static func finalize(_ input: String) -> String {
+        clean(input).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// 文字数は書記素で数える(絵文字も1文字)
+    static func count(_ input: String) -> Int { finalize(input).count }
+
+    static func status(_ input: String) -> Status {
+        let n = count(input)
+        if n == 0 { return .empty }
+        if n > maxLength { return .over(n - maxLength) }
+        return .ok
+    }
+
+    static func buttonTitle(_ status: Status) -> String {
+        switch status {
+        case .empty: return "名前を いれてね"
+        case .over(let n): return "\(n)文字、へらしてね"
+        case .ok: return "つぎへ"
+        }
+    }
+
+    /// もう使っている名前は出さない
+    static func seeds(excluding names: [String]) -> [String] {
+        let used = Set(names.map(finalize))
+        return seeds.filter { !used.contains($0) }
+    }
+
+    static func initial(_ input: String) -> String {
+        String(finalize(input).prefix(1))
+    }
+}
+
+// MARK: 色(昼は白・夜は黒。文字と背景のコントラスト比 4.5 以上)
+
+struct GroupCreateColors {
+    let night: Bool
+
+    var bg: Color { night ? Color(hex: "000000") : Color(hex: "FFFFFF") }
+    var ink: Color { night ? Color(hex: "FFFFFF") : Color(hex: "111114") }
+    var sub: Color { night ? Color(hex: "A9A9B1") : Color(hex: "5F5F66") }
+    var field: Color { night ? Color(hex: "1C1C1F") : Color(hex: "F3F3F6") }
+    var placeholder: Color { night ? Color(hex: "8E8E96") : Color(hex: "6B6B73") }
+    var line: Color { night ? Color(hex: "4A4A50") : Color(hex: "C9C9D1") }
+    var primaryBg: Color { night ? Color(hex: "FFFFFF") : Color(hex: "111114") }
+    var primaryText: Color { night ? Color(hex: "111114") : Color(hex: "FFFFFF") }
+    var disabledBg: Color { night ? Color(hex: "2C2C30") : Color(hex: "E3E3E8") }
+    var disabledText: Color { night ? Color(hex: "A9A9B1") : Color(hex: "5F5F66") }
+    var accent: Color { night ? Color(hex: "FF8A3D") : Color(hex: "FF6A1A") }
+    var warn: Color { night ? Color(hex: "FF7A66") : Color(hex: "D93A28") }
+
+    static let lineWidth: CGFloat = 1.5
+}
+
+// MARK: - 本体
+
 struct NewGroupFlowView: View {
     /// 最初から入れておくグループ名(空の GROUP 画面のステッカーから。nil なら空)
     var initialName: String? = nil
+    /// 見た目の確認用:はじめのステップ(1・2。3 は「できました」)
+    var startStep: Int = 1
     let onClose: () -> Void
 
-    private enum Step: Int { case name = 1, face, invite }
-    private enum FaceTab: String, CaseIterable { case photo, camera, colorOnly }
+    /// ① 名前 → ② 顔と人数(ここで「つくる」)→ できました(合言葉・リンク)。進みの棒は2本
+    private enum Step: Int { case name = 1, face, done }
+    private static let stepCount = 2
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.palette) private var palette
     @Query private var profiles: [UserProfile]
 
     @State private var step: Step = .name
     @State private var name = ""
-    @State private var memberLimit = GroupMembershipPolicy.maxMembersPerGroup
-    /// 手で選んだ色(nil なら名前から決める)
-    @State private var chosenColor: Int?
-    @FocusState private var isNameFocused: Bool
+    @State private var isComposing = false
+    @State private var isNameFocused = false
+    @State private var keyboardUp = false
+    @State private var scrollHeight: CGFloat = 600
+    @State private var fieldShake = 0
+    @State private var buttonShake = 0
+    @State private var wasOver = false
     @State private var discBump = false
 
-    @State private var faceTab: FaceTab = .photo
-    @State private var recent = RecentPhotos()
-    @State private var sourceImage: UIImage?
-    @State private var faceScale: CGFloat = 1
-    @State private var faceOffset: CGSize = .zero
-    @State private var dragBase: CGSize?
-    @State private var tone: FaceTone = .original
-    @State private var preview: UIImage?
-    @State private var develop: Double = 1
-    @State private var isPickingAlbum = false
-    @State private var pickerItem: PhotosPickerItem?
-    @State private var isShowingCamera = false
+    @State private var faceStyle = GroupFaceStyle.aura
+    /// 手で選んだ色(nil なら名前から決める)
+    @State private var chosenColor: Int?
+    @State private var showsInitial = true
+    @State private var memberLimit = GroupMembershipPolicy.maxMembersPerGroup
 
     @State private var isCreating = false
     @State private var burst = false
     @State private var burstExpanded = false
     @State private var errorMessage: String?
     @State private var createdGroup: LaterGroup?
-    @State private var popStart: Date?
-    @State private var popIndex = 0
-    @State private var inviteAppeared = false
+    /// 作ったあと:前の完了画面(GroupCreatedShareView)を出す
+    @State private var showingCreatedShare = false
+    @State private var createdShareURL: URL?
+    /// iCloud の容量不足で、写真だけ除いて作れたときの注意文言
+    @State private var createdWarning: String?
+    @State private var passphrase: String?
+    @State private var inviteLink: URL?
+    @State private var shareItems: ShareItems?
+    @State private var copied: String?
+    @State private var doneAppeared = false
     @State private var haptics = ExposureHaptics()
 
-    private static let nameSuggestions = ["帰り道の4人", "朝活ぐみ", "しずかな会"]
-    private static let warmText = Color(hex: "FFB078")
+    private struct ShareItems: Identifiable {
+        let id = UUID()
+        let items: [Any]
+    }
 
+    private var colors: GroupCreateColors { GroupCreateColors(night: palette.isNight) }
     private var currentUser: UserProfile? { UserProfile.current(from: profiles) }
-    private var finalName: String { GroupNameRules.finalize(name) }
+    private var finalName: String { GroupCreateName.finalize(name) }
+    private var nameStatus: GroupCreateName.Status { GroupCreateName.status(name) }
     private var colorIndex: Int { chosenColor ?? GroupPalette.index(forName: finalName) }
-    private var initial: String { GroupNameRules.initial(of: name) }
+    private var shownInitial: String { showsInitial ? GroupCreateName.initial(name) : "" }
+    private var myGroupNames: [String] { currentUser?.groups.filter { !$0.isPersonalSpace }.map(\.name) ?? [] }
+    /// 10個のときは、つくらせない
+    private var isFull: Bool { myGroupNames.count >= GroupMembershipPolicy.maxGroupsPerUser && createdGroup == nil }
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color.black.ignoresSafeArea()
-            auraBackground
+            colors.bg.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
-                ScrollView {
-                    content
-                        .id(step)
-                        .transition(.opacity)
-                        .padding(.bottom, 24)
+                GeometryReader { proxy in
+                    ScrollViewReader { reader in
+                        ScrollView {
+                            content
+                                .id(step)
+                                .transition(.opacity)
+                                .padding(.bottom, 16)
+                                .frame(maxWidth: .infinity)
+                                .background {
+                                    // 空いている所を押すと、キーボードを閉じる(たね・×では閉じない)
+                                    Color.clear.contentShape(Rectangle()).onTapGesture { isNameFocused = false }
+                                }
+                        }
+                        .scrollDismissesKeyboard(.interactively)
+                        .scrollBounceBehavior(.basedOnSize)
+                        .onChange(of: keyboardUp) { _, up in
+                            if up, step == .name {
+                                withAnimation(.easeOut(duration: 0.25)) { reader.scrollTo("nameField", anchor: .center) }
+                            }
+                        }
+                    }
+                    .onAppear { scrollHeight = proxy.size.height }
+                    .onChange(of: proxy.size.height) { _, h in scrollHeight = h }
                 }
-                .scrollDismissesKeyboard(.interactively)
-                .scrollBounceBehavior(.basedOnSize)
             }
-            // キーボードが出ていても、ボタンが隠れない(キーボードの上に追従)
-            .safeAreaInset(edge: .bottom) { bottomButton }
+            // 「つぎへ」はキーボードのすぐ上に固定(キーボードの高さは OS から)
+            .safeAreaInset(edge: .bottom) { bottomArea }
 
             if burst {
                 Circle()
@@ -89,91 +194,85 @@ struct NewGroupFlowView: View {
                     .ignoresSafeArea()
             }
         }
-        .onAppear { haptics.prepare() }
+        // ステータスバー・キーボードも、画面の色にあわせる
+        .preferredColorScheme(colors.night ? .dark : .light)
+        .onAppear {
+            haptics.prepare()
+            if let initialName, name.isEmpty { name = GroupCreateName.clean(initialName) }
+            if let first = Step(rawValue: startStep), first != .name { step = first }
+        }
         .onDisappear { haptics.tearDown() }
-        .photosPicker(isPresented: $isPickingAlbum, selection: $pickerItem, matching: .images, photoLibrary: .shared())
-        .onChange(of: pickerItem) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-                    choose(image)
-                }
-                pickerItem = nil
-            }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.25)) { keyboardUp = true }
         }
-        .fullScreenCover(isPresented: $isShowingCamera) {
-            CircleCameraView(haptics: haptics) { image in
-                isShowingCamera = false
-                faceTab = .photo
-                choose(image)
-            } onClose: {
-                isShowingCamera = false
-                faceTab = sourceImage == nil ? .photo : faceTab
-            }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.25)) { keyboardUp = false }
         }
-        .onChange(of: createdGroup?.members.count) { old, new in
-            // ③を開いている間に、だれかが入った:その点がオレンジで現れて白に(触覚なし)
-            guard let old, let new, new > old else { return }
-            popIndex = new - 1
-            popStart = Date()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) { popStart = nil }
+        .sheet(item: $shareItems) { share in
+            ShareSheet(activityItems: share.items) { _ in shareItems = nil }
+                .presentationDetents([.medium, .large])
+        }
+        // 作ったあとは、前の完了画面(招待リンクを送る / リンクをコピー / あとで送る)。閉じたら、作成の画面ごと閉じる
+        .sheet(isPresented: $showingCreatedShare, onDismiss: onClose) {
+            GroupCreatedShareView(groupName: createdGroup?.name ?? finalName, shareURL: createdShareURL, warningMessage: createdWarning)
         }
     }
 
-    // MARK: - 上部(✕ / ← と、進み具合のバー)
+    // MARK: 上(× / ← ・「1 / 3」・進みのバー)
 
     private var topBar: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             HStack {
                 switch step {
                 case .name:
-                    circleButton("xmark", label: "閉じる", action: onClose)
+                    circleButton("xmark", label: "とじる", action: onClose)
                 case .face:
-                    circleButton("arrow.left", label: "もどる") { go(to: .name) }
-                case .invite:
-                    Color.clear.frame(width: 44, height: 44)
+                    if isCreating {
+                        // つくっている間は、もどらない(連打・二重作成を防ぐ)
+                        Color.clear.frame(width: 44, height: 44)
+                    } else {
+                        circleButton("arrow.left", label: "もどる") { go(to: .name) }
+                    }
+                case .done:
+                    // もう作ってあるので「もどる」ではなく「閉じる」
+                    circleButton("xmark", label: "とじる", action: onClose)
                 }
                 Spacer()
-            }
-            HStack(spacing: 6) {
-                ForEach(1...3, id: \.self) { index in
-                    Capsule()
-                        .fill(.white.opacity(index <= step.rawValue ? 0.9 : 0.18))
-                        .frame(height: 3)
+                if step != .done {
+                    Text("\(step.rawValue) / \(Self.stepCount)")
+                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(colors.sub)
+                        .accessibilityHidden(true)
                 }
             }
-            .padding(.horizontal, 4)
-            .accessibilityElement()
-            .accessibilityLabel("ステップ \(step.rawValue) / 3")
+            if step != .done {
+                HStack(spacing: 6) {
+                    ForEach(1...Self.stepCount, id: \.self) { index in
+                        Capsule()
+                            .fill(index <= step.rawValue ? colors.ink : colors.line)
+                            .frame(height: 3)
+                    }
+                }
+                .accessibilityElement()
+                .accessibilityLabel("ステップ \(step.rawValue) / \(Self.stepCount)")
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
+        .padding(.bottom, 4)
     }
 
     private func circleButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(colors.ink)
                 .frame(width: 44, height: 44)
-                .background(Circle().fill(.white.opacity(0.1)))
+                .background(Circle().fill(colors.field))
+                .overlay(Circle().strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-    }
-
-    private var auraBackground: some View {
-        let colors = GroupRingMath.auraPalettes[colorIndex]
-        return GeometryReader { proxy in
-            Ellipse()
-                .fill(RadialGradient(colors: [colors[0].opacity(0.32), colors[1].opacity(0.12), .clear], center: .center, startRadius: 0, endRadius: proxy.size.width * 0.7))
-                .frame(width: proxy.size.width * 1.5, height: 520)
-                .position(x: proxy.size.width / 2, y: 120)
-                .blur(radius: 30)
-                .animation(.easeInOut(duration: 0.6), value: colorIndex)
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
     }
 
     @ViewBuilder
@@ -181,540 +280,551 @@ struct NewGroupFlowView: View {
         switch step {
         case .name: nameStep
         case .face: faceStep
-        case .invite: inviteStep
+        case .done: doneStep
         }
     }
 
-    // MARK: - ① 名前
+    // MARK: ① 名前
+
+    /// キーボード中で、高さが足りない(iPhone SE など)ときは、プレビューを消す
+    private var hidesPreview: Bool { keyboardUp && scrollHeight < 300 }
 
     private var nameStep: some View {
         VStack(spacing: 0) {
-            GroupCircle(initial: initial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1, diameter: 224,
-                        discScale: discBump ? 1.04 : 1)
-                .padding(.top, 18)
-            heading("グループに、\n名前をつけます。", nil)
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("グループの名前")
-                    Spacer()
-                    Text("\(finalName.count) / \(GroupNameRules.maxLength)").monospacedDigit()
-                }
-                .font(.system(size: 10.5, design: .monospaced))
-                .foregroundStyle(Color(hex: "8E8E93"))
-                TextField("", text: $name, prompt: Text("たとえば「帰り道の4人」").foregroundStyle(.white.opacity(0.25)))
-                    .font(.system(size: 27, weight: .bold))
-                    .foregroundStyle(.white)
-                    .tint(.white)
-                    .lineLimit(1)
-                    .focused($isNameFocused)
-                    .submitLabel(.done)
-                    .onSubmit { isNameFocused = false }
-                    .onChange(of: name) { _, value in
-                        let clean = GroupNameRules.sanitizeInput(value)
-                        if clean != value { name = clean }
-                        bumpDisc()
-                    }
-                    .accessibilityLabel("グループの名前")
+            if !hidesPreview {
+                GroupCircle(initial: GroupCreateName.initial(name), colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1,
+                            diameter: keyboardUp ? 76 : 200, rotates: !keyboardUp, discScale: discBump ? 1.04 : 1, ringInk: colors.ink)
+                    .padding(.top, keyboardUp ? 4 : 14)
+                    .accessibilityHidden(true)
             }
-            .padding(.horizontal, 18)
-            .frame(minHeight: 78)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.white.opacity(0.07)))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(isNameFocused ? 0.55 : 0.12), lineWidth: 1))
-            .padding(.horizontal, 24)
-            .padding(.top, 22)
-
-            limitStepper
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("思いつかないときは")
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(Color(hex: "8E8E93"))
-                OnboardingFlowLayout(spacing: 8) {
-                    ForEach(Self.nameSuggestions, id: \.self) { suggestion in
-                        Button {
-                            haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-                            name = suggestion
-                        } label: {
-                            Text(suggestion)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 9)
-                                .background(Capsule().fill(.white.opacity(0.08)))
-                                .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
-                        }
-                        .buttonStyle(PressScaleStyle())
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.top, 20)
-
-            Text("みんなに見える名前です。実名や学校名は避けましょう。")
-                .font(.system(size: 11))
-                .foregroundStyle(Color(hex: "6B6B70"))
+            Text(keyboardUp ? "グループに、名前をつけます。" : "グループに、\n名前をつけます。")
+                .font(.system(size: keyboardUp ? 19 : 27, weight: .bold))
+                .tracking(-0.04 * 27)
                 .multilineTextAlignment(.center)
+                .foregroundStyle(colors.ink)
+                .lineLimit(keyboardUp ? 1 : 2)
+                .minimumScaleFactor(0.8)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 24)
-                .padding(.top, 20)
-        }
-        .onAppear {
-            if let initialName, name.isEmpty { name = GroupNameRules.sanitizeInput(initialName) }
-            isNameFocused = true
+                .padding(.top, keyboardUp ? 8 : 18)
+                .accessibilityAddTraits(.isHeader)
+
+            nameField
+                .id("nameField")
+                .padding(.horizontal, 20)
+                .padding(.top, keyboardUp ? 10 : 20)
+
+            seedsView
+                .padding(.top, keyboardUp ? 10 : 18)
+
+            if !keyboardUp {
+                Text("みんなに見える名前です。実名や学校名は避けましょう。")
+                    .font(.system(size: 12))
+                    .foregroundStyle(colors.sub)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 18)
+            }
         }
     }
 
-    private var limitStepper: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("人数の上限").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-                Text("4〜8人。あとから変えられます").font(.system(size: 11)).foregroundStyle(Color(hex: "8E8E93"))
-            }
-            Spacer()
-            HStack(spacing: 14) {
-                stepButton("minus", enabled: memberLimit > GroupMembershipPolicy.memberLimitRange.lowerBound) { memberLimit -= 1 }
-                Text("\(memberLimit)人")
-                    .font(.system(size: 17, weight: .bold))
+    private var nameField: some View {
+        let over: Bool = { if case .over = nameStatus { return true } else { return false } }()
+        let count = GroupCreateName.count(name)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("グループの名前")
+                Spacer()
+                Text("\(count) / \(GroupCreateName.maxLength)")
                     .monospacedDigit()
-                    .foregroundStyle(.white)
-                    .contentTransition(.numericText())
-                stepButton("plus", enabled: memberLimit < GroupMembershipPolicy.memberLimitRange.upperBound) { memberLimit += 1 }
+                    .foregroundStyle(over ? colors.warn : colors.sub)
+                    .fontWeight(over ? .bold : .regular)
+            }
+            .font(.system(size: 12, design: .monospaced))
+            .foregroundStyle(colors.sub)
+            .accessibilityHidden(true)
+            HStack(spacing: 8) {
+                GroupNameTextField(
+                    text: $name,
+                    isFocused: $isNameFocused,
+                    isComposing: $isComposing,
+                    placeholder: "たとえば「帰り道の4人」",
+                    textColor: UIColor(colors.ink),
+                    placeholderColor: UIColor(colors.placeholder),
+                    tintColor: UIColor(colors.accent),
+                    dark: colors.night,
+                    accessibilityValue: "\(count)文字、\(GroupCreateName.maxLength)文字まで",
+                    onSubmit: submitName
+                )
+                .frame(height: 40)
+                if !name.isEmpty {
+                    Button {
+                        LayerHaptics.light()
+                        name = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(colors.sub)
+                            .frame(width: 36, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("名前を消す")
+                }
             }
         }
-        .padding(.horizontal, 18)
-        .frame(minHeight: 64)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(0.05)))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("人数の上限、\(memberLimit)人")
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: if memberLimit < 8 { memberLimit += 1 }
-            case .decrement: if memberLimit > 4 { memberLimit -= 1 }
-            @unknown default: break
-            }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.field))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(over ? colors.warn : (isNameFocused ? colors.accent : colors.line), lineWidth: GroupCreateColors.lineWidth)
+        )
+        .modifier(GroupCreateShake(trigger: fieldShake, enabled: !reduceMotion))
+        .contentShape(Rectangle())
+        .onTapGesture { isNameFocused = true }
+        .onChange(of: name) { _, value in
+            let clean = GroupCreateName.clean(value)
+            if clean != value { name = clean; return }
+            bumpDisc()
+            checkOver()
         }
+        .onChange(of: isComposing) { _, _ in checkOver() }
     }
 
-    private func stepButton(_ icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private var seedsView: some View {
+        let seeds = GroupCreateName.seeds(excluding: myGroupNames)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("思いつかないときは")
+                .font(.system(size: 12))
+                .foregroundStyle(colors.sub)
+                .padding(.horizontal, 24)
+            if keyboardUp {
+                // キーボード中は1行(横にスクロール)にまとめる
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) { ForEach(seeds, id: \.self, content: seedChip) }
+                        .padding(.horizontal, 20)
+                }
+            } else {
+                OnboardingFlowLayout(spacing: 8) { ForEach(seeds, id: \.self, content: seedChip) }
+                    .padding(.horizontal, 20)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func seedChip(_ seed: String) -> some View {
         Button {
-            haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-            withAnimation(.easeOut(duration: 0.2)) { action() }
+            LayerHaptics.light()
+            name = seed
         } label: {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(Circle().fill(.white.opacity(0.1)))
+            Text(seed)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(colors.ink)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 38)
+                .background(Capsule().fill(colors.field))
+                .overlay(Capsule().strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
         }
         .buttonStyle(PressScaleStyle())
-        .disabled(!enabled)
-        .opacity(enabled ? 1 : 0.3)
+        .accessibilityLabel("名前のたね、\(seed)")
     }
 
-    // MARK: - ② 顔
-
-    private var faceHeading: (String, String) {
-        if sourceImage != nil { return ("いい顔です。\nこれでいきますか。", "ドラッグで位置を、つまみで大きさをあわせられます。") }
-        if faceTab == .colorOnly { return ("色と頭文字で、\n顔にします。", "写真は、あとからいつでも足せます。") }
-        return ("グループの、\n顔になる写真を。", "あとから、いつでも変えられます。")
+    private func submitName() {
+        // 変換を確定するだけの Enter では進まない(isComposing は入力欄が見る)
+        guard nameStatus == .ok else {
+            refuse()
+            return
+        }
+        LayerHaptics.light()
+        go(to: .face)
     }
+
+    /// 12文字をこえた瞬間:やわらかく2回 + 入力欄がゆれる(変換中は待つ)
+    private func checkOver() {
+        let over: Bool = { if case .over = nameStatus { return true } else { return false } }()
+        guard !isComposing else { return }
+        if over && !wasOver {
+            LayerHaptics.softDouble()
+            fieldShake += 1
+        }
+        wasOver = over
+    }
+
+    /// 押せない「つぎへ」:やわらかく2回 + ボタンがゆれる + 入力欄にもどる
+    private func refuse() {
+        LayerHaptics.softDouble()
+        buttonShake += 1
+        isNameFocused = true
+        if UIAccessibility.isVoiceOverRunning {
+            UIAccessibility.post(notification: .announcement, argument: GroupCreateName.buttonTitle(nameStatus))
+        }
+    }
+
+    // MARK: ② 顔
 
     private var faceStep: some View {
         VStack(spacing: 0) {
-            GroupCircle(image: preview, initial: initial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1,
-                        diameter: 256, discScale: discBump ? 1.04 : 1, develop: develop)
+            GroupCircle(initial: shownInitial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1,
+                        diameter: 200, discScale: discBump ? 1.04 : 1, ringInk: colors.ink)
+                .overlay(alignment: .bottomTrailing) {
+                    if faceStyle == GroupFaceStyle.photo {
+                        Image(systemName: "photo.stack.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(colors.primaryText)
+                            .frame(width: 34, height: 34)
+                            .background(Circle().fill(colors.primaryBg))
+                            .offset(x: -26, y: -26)
+                            .accessibilityHidden(true)
+                    }
+                }
                 .padding(.top, 10)
-                .gesture(sourceImage == nil ? nil : dragGesture)
-                .accessibilityHint(sourceImage == nil ? "" : "ドラッグで位置をあわせられます")
-            heading(faceHeading.0, faceHeading.1)
+                .accessibilityElement()
+                .accessibilityLabel("グループの顔のプレビュー")
 
-            tabs
+            Text("グループの、顔を決めます。")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(colors.ink)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 24)
-                .padding(.top, 20)
+                .padding(.top, 14)
+                .accessibilityAddTraits(.isHeader)
 
-            Group {
-                switch faceTab {
-                case .photo:
-                    if sourceImage != nil { adjustPanel } else { recentRow }
-                case .camera:
-                    Text("カメラをひらいています…")
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Color(hex: "8E8E93"))
-                        .padding(.top, 20)
-                case .colorOnly:
-                    swatches
+            // しゅるい
+            HStack(spacing: 8) {
+                kindButton(GroupFaceStyle.aura, "色", "circle.lefthalf.filled")
+                kindButton(GroupFaceStyle.photo, "みんなの写真", "photo.stack")
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+
+            if faceStyle == GroupFaceStyle.photo {
+                Text("みんなが撮った今日の写真が、グループの顔になります。まだ1枚もないときは、色が出ます。")
+                    .font(.system(size: 13))
+                    .foregroundStyle(colors.sub)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
+            }
+
+            card(title: faceStyle == GroupFaceStyle.photo ? "写真がない日の色" : "色") { swatches }
+                .padding(.top, 14)
+
+            card(title: nil) {
+                Toggle(isOn: Binding(get: { showsInitial }, set: { value in
+                    LayerHaptics.light()
+                    withAnimation(.easeOut(duration: 0.2)) { showsInitial = value }
+                })) {
+                    Text("名前の1文字目を入れる")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(colors.ink)
                 }
+                .tint(colors.accent)
             }
-            .padding(.top, 16)
+            .padding(.top, 10)
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(Self.warmText)
-                    .padding(.top, 14)
-                    .transition(.opacity)
-            }
+            card(title: "人数の上限") { limitPicker }
+                .padding(.top, 10)
         }
     }
 
-    private var tabs: some View {
-        HStack(spacing: 8) {
-            tab(.photo, "写真", "photo")
-            tab(.camera, "カメラ", "camera")
-            tab(.colorOnly, "色だけ", "circle.lefthalf.filled")
+    private func card<Inner: View>(title: String?, @ViewBuilder inner: () -> Inner) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let title {
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(colors.sub)
+            }
+            inner()
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.field))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
+        .padding(.horizontal, 20)
     }
 
-    private func tab(_ value: FaceTab, _ title: String, _ icon: String) -> some View {
-        let selected = faceTab == value
+    private func kindButton(_ value: String, _ title: String, _ icon: String) -> some View {
+        let selected = faceStyle == value
         return Button {
-            switch value {
-            case .camera:
-                faceTab = .camera
-                isShowingCamera = true
-            case .colorOnly:
-                // 写真を選んでいたら、外れる(色だけの顔になる)
-                withAnimation(.easeOut(duration: 0.25)) {
-                    faceTab = .colorOnly
-                    clearPhoto()
-                }
-            case .photo:
-                withAnimation(.easeOut(duration: 0.25)) { faceTab = .photo }
-            }
+            guard !selected else { return }
+            LayerHaptics.light()
+            withAnimation(.easeOut(duration: 0.2)) { faceStyle = value }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: icon).font(.system(size: 13, weight: .semibold))
-                Text(title).font(.system(size: 13.5, weight: .semibold))
+                Text(title).font(.system(size: 14, weight: .semibold))
             }
-            .foregroundStyle(selected ? .black : .white)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(Capsule().fill(selected ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.08))))
+            .foregroundStyle(selected ? colors.primaryText : colors.ink)
+            .frame(maxWidth: .infinity, minHeight: 46)
+            .background(Capsule().fill(selected ? colors.primaryBg : colors.field))
+            .overlay(Capsule().strokeBorder(selected ? Color.clear : colors.line, lineWidth: GroupCreateColors.lineWidth))
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    /// 最近の写真(左端は「アルバム」タイル)。許可がないときは「アルバム」だけ
-    private var recentRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    Button(action: openAlbum) {
-                        VStack(spacing: 8) {
-                            Image(systemName: "photo.on.rectangle").font(.system(size: 20))
-                            Text("アルバム").font(.system(size: 11.5, weight: .medium))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(width: 74, height: 92)
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.08)))
-                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 1))
-                    }
-                    .buttonStyle(PressScaleStyle())
-
-                    if recent.access == .granted {
-                        ForEach(recent.thumbnails, id: \.id) { item in
-                            Button { chooseRecent(item.id, thumbnail: item.image) } label: {
-                                Image(uiImage: item.image)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 74, height: 92)
-                                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            }
-                            .buttonStyle(PressScaleStyle())
-                            .accessibilityLabel("最近の写真")
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-            }
-            .mask(HStack(spacing: 0) { Color.black; LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing).frame(width: 30) })
-
-            Text(recent.access == .denied ? "写真の許可がないので、色だけでも作れます" : "顔や名前が写っていない写真が、おすすめです。")
-                .font(.system(size: 11))
-                .foregroundStyle(Color(hex: "6B6B70"))
-                .padding(.horizontal, 24)
-        }
-    }
-
-    /// 写真を選んだあと:大きさ・色あい・ホームでの見え方
-    private var adjustPanel: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 12) {
-                Text("大きさ").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(.white)
-                Slider(value: $faceScale, in: FaceImageRenderer.scaleRange)
-                    .tint(.white)
-                    .onChange(of: faceScale) { _, _ in
-                        faceOffset = FaceImageRenderer.clampOffset(faceOffset, scale: faceScale)
-                        renderPreview()
-                    }
-                    .accessibilityLabel("大きさ")
-            }
-            HStack(spacing: 8) {
-                ForEach(FaceTone.allCases) { value in
-                    Button {
-                        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-                        tone = value
-                        renderPreview()
-                    } label: {
-                        Text(value.label)
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(tone == value ? .black : .white)
-                            .frame(maxWidth: .infinity, minHeight: 36)
-                            .background(Capsule().fill(tone == value ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.08))))
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityAddTraits(tone == value ? .isSelected : [])
-                }
-            }
-            HStack(spacing: 14) {
-                // ホームのグループ列の1つぶん(直径40pt)
-                VStack(spacing: 4) {
-                    ZStack {
-                        GroupFace(iconData: preview?.jpegData(compressionQuality: 0.7), initial: initial, auraIndex: colorIndex, diameter: 30)
-                        GroupLightRing(memberCount: memberLimit, posted: 1, diameter: 40)
-                    }
-                    .frame(width: 40, height: 40)
-                    Text(finalName).font(.system(size: 9.5, weight: .medium)).foregroundStyle(.white.opacity(0.88)).lineLimit(1).frame(maxWidth: 56)
-                    Text("1 / \(memberLimit)").font(.system(size: 8.5, design: .monospaced)).foregroundStyle(Color(hex: "8E8E93"))
-                }
-                .accessibilityHidden(true)
-                Text("ホームでの見え方")
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(Color(hex: "BCBBC0"))
-                Spacer()
-                Button {
-                    haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-                    withAnimation(.easeOut(duration: 0.25)) { clearPhoto() }
-                } label: {
-                    Text("えらびなおす")
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 34)
-                        .background(Capsule().fill(.white.opacity(0.1)))
-                }
-                .buttonStyle(PressScaleStyle())
-            }
-        }
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.white.opacity(0.05)))
-        .padding(.horizontal, 24)
-    }
-
     private var swatches: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 14) {
-                ForEach(0..<GroupPalette.count, id: \.self) { index in
-                    let colors = GroupRingMath.auraPalettes[index]
-                    let selected = colorIndex == index
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
+        return LazyVGrid(columns: columns, spacing: 12) {
+            ForEach(0..<GroupPalette.count, id: \.self) { index in
+                let palette = GroupRingMath.auraPalettes[index]
+                let selected = colorIndex == index
+                Button {
+                    LayerHaptics.light()
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { chosenColor = index }
+                    bumpDisc()
+                } label: {
+                    Circle()
+                        .fill(LinearGradient(colors: [palette[0], palette[1]], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 44, height: 44)
+                        .overlay(Circle().strokeBorder(colors.ink, lineWidth: selected ? 2.5 : 0).padding(-5))
+                        .scaleEffect(selected && !reduceMotion ? 1.12 : 1)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("顔の色 \(index + 1)")
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+    }
+
+    private var limitPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ForEach(Array(GroupMembershipPolicy.memberLimitRange), id: \.self) { value in
+                    let selected = memberLimit == value
                     Button {
-                        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-                        withAnimation(.easeOut(duration: 0.2)) { chosenColor = index }
-                        bumpDisc()
+                        LayerHaptics.light()
+                        withAnimation(.easeOut(duration: 0.2)) { memberLimit = value }
                     } label: {
-                        Circle()
-                            .fill(LinearGradient(colors: [colors[0], colors[1]], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 36, height: 36)
-                            .overlay(Circle().strokeBorder(.white, lineWidth: selected ? 2 : 0).padding(-4))
-                            .scaleEffect(selected ? 1.12 : 1)
+                        Text("\(value)")
+                            .font(.system(size: 17, weight: .bold))
+                            .monospacedDigit()
+                            .foregroundStyle(selected ? colors.primaryText : colors.ink)
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                            .background(Capsule().fill(selected ? colors.primaryBg : colors.bg))
+                            .overlay(Capsule().strokeBorder(selected ? Color.clear : colors.line, lineWidth: GroupCreateColors.lineWidth))
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("色 \(index + 1)")
+                    .buttonStyle(PressScaleStyle())
+                    .accessibilityLabel("\(value)人まで")
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
-            Text("写真がなくても、色と頭文字で、ちゃんと顔になります。")
-                .font(.system(size: 11.5))
-                .foregroundStyle(Color(hex: "8E8E93"))
+            Text("あとから変えられます")
+                .font(.system(size: 12))
+                .foregroundStyle(colors.sub)
         }
-        .padding(.horizontal, 24)
     }
 
-    private var dragGesture: some Gesture {
-        DragGesture()
-            .onChanged { value in
-                if dragBase == nil { dragBase = faceOffset }
-                guard let base = dragBase else { return }
-                // 円板(直径256×0.74)の上の動き → 正方形の一辺に対する割合
-                let disc = 256 * 0.74 * faceScale
-                faceOffset = FaceImageRenderer.clampOffset(
-                    CGSize(width: base.width + value.translation.width / disc, height: base.height + value.translation.height / disc),
-                    scale: faceScale
-                )
-                renderPreview()
+    // MARK: できました(つくったあと):合言葉・リンク
+
+    private var doneStep: some View {
+        let members = max(1, createdGroup?.members.count ?? 1)
+        return VStack(spacing: 0) {
+            GroupCircle(image: nil, initial: shownInitial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: members,
+                        diameter: 150, discScale: discBump ? 1.04 : 1, ringInk: colors.ink)
+                .padding(.top, 8)
+                .accessibilityHidden(true)
+
+            Text("できました。\nなかまを、呼びましょう。")
+                .font(.system(size: 26, weight: .bold))
+                .tracking(-0.03 * 26)
+                .foregroundStyle(colors.ink)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .accessibilityAddTraits(.isHeader)
+                .modifier(DoneStagger(index: 0, appeared: doneAppeared, reduceMotion: reduceMotion))
+
+            VStack(spacing: 4) {
+                Text(createdGroup?.name ?? finalName)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(colors.ink)
+                Text("\(memberLimit)人まで ・ いま \(members)人")
+                    .font(.system(size: 13))
+                    .monospacedDigit()
+                    .foregroundStyle(colors.sub)
             }
-            .onEnded { _ in dragBase = nil }
+            .padding(.top, 10)
+            .accessibilityElement(children: .combine)
+            .modifier(DoneStagger(index: 1, appeared: doneAppeared, reduceMotion: reduceMotion))
+
+            VStack(spacing: 10) {
+                copyRow(title: "合言葉", value: passphrase, icon: "key")
+                copyRow(title: "招待リンク", value: inviteLink?.absoluteString, icon: "link")
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .modifier(DoneStagger(index: 2, appeared: doneAppeared, reduceMotion: reduceMotion))
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(colors.warn)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
+                    .transition(.opacity)
+            }
+        }
+        .onAppear { doneAppeared = true }
     }
 
-    // MARK: - ③ できた+呼ぶ
+    private func copyRow(title: String, value: String?, icon: String) -> some View {
+        let ready = value != nil
+        let pending = "用意しています…"
+        return HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(colors.sub)
+                .frame(width: 22)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 12))
+                    .foregroundStyle(colors.sub)
+                Text(value ?? pending)
+                    .font(.system(size: ready ? 15 : 14, weight: ready ? .bold : .regular, design: ready ? .monospaced : .default))
+                    .foregroundStyle(ready ? colors.ink : colors.sub)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            Spacer(minLength: 8)
+            Button {
+                guard let value else { return }
+                LayerHaptics.light()
+                UIPasteboard.general.string = value
+                withAnimation(.easeOut(duration: 0.2)) { copied = title }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { if copied == title { withAnimation { copied = nil } } }
+            } label: {
+                Text(copied == title ? "コピーしました" : "コピー")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(ready ? colors.primaryText : colors.disabledText)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(Capsule().fill(ready ? colors.primaryBg : colors.disabledBg))
+            }
+            .buttonStyle(PressScaleStyle())
+            .disabled(!ready)
+            .accessibilityLabel("\(title)をコピー")
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 64)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(colors.field))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
+        .accessibilityElement(children: .contain)
+    }
+
+    // MARK: 下のボタン(キーボードのすぐ上)
 
     @ViewBuilder
-    private var inviteStep: some View {
-        if let group = createdGroup {
-            let members = max(1, group.members.count)
-            let limit = GroupPalette.clampLimit(group.memberLimit)
-            VStack(spacing: 0) {
-                GroupCircle(image: group.iconImageData.flatMap(UIImage.init(data:)), initial: initial, colorIndex: colorIndex,
-                            memberLimit: limit, litCount: members, diameter: 196, popStart: popStart, popIndex: popIndex)
-                    .padding(.top, 6)
-                HStack(spacing: 8) {
-                    (Text("\(members)").bold() + Text(" / \(limit)人"))
-                        .foregroundStyle(.white)
-                        .contentTransition(.numericText(countsDown: false))
-                    Text(members >= limit ? "満員" : "あと\(limit - members)人")
-                        .foregroundStyle(members >= limit ? Color(hex: "8E8E93") : Self.warmText)
+    private var bottomArea: some View {
+        VStack(spacing: 6) {
+            switch step {
+            case .name:
+                primaryButton(GroupCreateName.buttonTitle(nameStatus), enabled: nameStatus == .ok) {
+                    if nameStatus == .ok {
+                        LayerHaptics.light()
+                        go(to: .face)
+                    } else {
+                        refuse()
+                    }
                 }
-                .font(.system(size: 13))
-                .padding(.top, 10)
-                .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.5), value: members)
-
-                heading("グループが、\nできました。", "つぎは、呼ぶ人を。入った人から、点が光ります。")
-                    .modifier(InviteStagger(index: 0, appeared: inviteAppeared, reduceMotion: reduceMotion))
-                InviteCard(group: group, summary: GroupRingMath.summaries(for: [group], now: Date())[0], haptics: haptics, onShowQR: { url in
-                    inviteQR = url
-                })
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .modifier(InviteStagger(index: 1, appeared: inviteAppeared, reduceMotion: reduceMotion))
-            }
-            .onAppear { inviteAppeared = true }
-            .overlay {
-                if let inviteQR {
-                    InviteQROverlay(url: inviteQR, auraIndex: colorIndex) { self.inviteQR = nil }
+                .modifier(GroupCreateShake(trigger: buttonShake, enabled: !reduceMotion))
+            case .face:
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(colors.warn)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(.opacity)
                 }
+                // 押したら止める(連打しても1つだけ)。10個のときは、つくらせない
+                primaryButton(createTitle, enabled: !isCreating && !isFull) {
+                    guard !isCreating, !isFull else { if isFull { LayerHaptics.softDouble() }; return }
+                    create()
+                }
+                .disabled(isCreating)
+            case .done:
+                primaryButton("リンクを送る", enabled: inviteLink != nil) { shareLink() }
+                Button(action: onClose) {
+                    Text("あとで呼ぶ")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(colors.ink)
+                        .underline()
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("閉じます。合言葉は、グループの設定からいつでも見られます")
             }
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, keyboardUp ? 8 : 12)
+        .background(colors.bg.ignoresSafeArea())
     }
 
-    @State private var inviteQR: URL?
-
-    // MARK: - 下のボタン
-
-    @ViewBuilder
-    private var bottomButton: some View {
-        switch step {
-        case .name:
-            primaryButton("つぎへ", enabled: !finalName.isEmpty) { go(to: .face) }
-        case .face:
-            primaryButton(isCreating ? "つくっています…" : "グループをつくる", enabled: !isCreating && !finalName.isEmpty, action: create)
-        case .invite:
-            primaryButton("ホームで、見る", enabled: true, action: onClose)
-        }
-    }
-
+    /// 押せないときも、文字が読める色(薄くするのではなく、色をかえる)。押せないときも押せる(理由を伝える)
     private func primaryButton(_ title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(enabled ? .black : Color(hex: "8E8E93"))
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(enabled ? colors.primaryText : colors.disabledText)
                 .frame(maxWidth: .infinity, minHeight: 56)
-                .background(Capsule().fill(enabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.12))))
+                .background(Capsule().fill(enabled ? colors.primaryBg : colors.disabledBg))
         }
         .buttonStyle(PressScaleStyle(scale: 0.97))
-        .disabled(!enabled)
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
-        .padding(.bottom, 12)
-        .background(LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+        .accessibilityHint(enabled ? "" : "まだ押せません")
     }
 
-    // MARK: - 共通
-
-    private func heading(_ title: String, _ description: String?) -> some View {
-        VStack(spacing: 10) {
-            Text(title)
-                .font(.system(size: 27, weight: .bold))
-                .tracking(-0.045 * 27)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.white)
-                .fixedSize(horizontal: false, vertical: true)
-            if let description {
-                Text(description)
-                    .font(.system(size: 12.5))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Color(hex: "BCBBC0"))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.horizontal, 28)
-        .padding(.top, 20)
-    }
+    // MARK: 共通
 
     private func go(to next: Step) {
         isNameFocused = false
         errorMessage = nil
-        withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.45)) { step = next }
+        withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.4)) { step = next }
     }
 
-    /// 円板が 1.04 倍にぽんと跳ねて戻る(0.26秒)
+    /// 丸が 1.04 倍にぽんと跳ねて戻る(視差を減らすなら出さない)
     private func bumpDisc() {
         guard !reduceMotion else { return }
         withAnimation(.easeOut(duration: 0.13)) { discBump = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.13) { withAnimation(.easeIn(duration: 0.13)) { discBump = false } }
     }
 
-    // MARK: - 写真
-
-    private func openAlbum() {
-        Task {
-            await recent.requestIfNeeded()
-            isPickingAlbum = true
-        }
+    private var createTitle: String {
+        if isFull { return "グループは、\(GroupMembershipPolicy.maxGroupsPerUser)個までです" }
+        return isCreating ? "つくっています…" : "つくる"
     }
 
-    private func chooseRecent(_ id: String, thumbnail: UIImage) {
-        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-        choose(thumbnail)
-        Task {
-            if let full = await recent.fullImage(id: id) {
-                sourceImage = full
-                renderPreview()
-            }
-        }
+    /// 共有シート:ただの文字ではなく、Later のアイコンつきのリンク(LPLinkMetadata)で渡す
+    private func shareLink() {
+        guard let inviteLink else { return }
+        LayerHaptics.light()
+        let name = createdGroup?.name ?? finalName
+        shareItems = ShareItems(items: [GroupInviteItemSource(groupName: name, passphrase: passphrase, url: inviteLink)])
     }
 
-    /// 写真を選んだ:1.5秒で、ぼかし+うす白+低い彩度 → くっきり・色づく(現像)
-    private func choose(_ image: UIImage) {
-        sourceImage = image
-        faceScale = 1
-        faceOffset = .zero
-        tone = .original
-        renderPreview()
-        faceTab = .photo
-        guard !reduceMotion else { develop = 1; return }
-        develop = 0
-        withAnimation(.easeOut(duration: 1.5)) { develop = 1 }
-        bumpDisc()
-    }
+    // MARK: 作成
 
-    private func clearPhoto() {
-        sourceImage = nil
-        preview = nil
-        faceScale = 1
-        faceOffset = .zero
-        tone = .original
-    }
-
-    private func renderPreview() {
-        guard let sourceImage else { preview = nil; return }
-        preview = FaceImageRenderer.render(sourceImage, scale: faceScale, offset: faceOffset, tone: tone, side: 512)
-    }
-
-    // MARK: - 作成
-
-    /// 「グループをつくる」:強く1回 → 中央から光が広がる(1.1秒)→ 0.52秒後に③(保存が終わっていれば)。
-    /// 保存に失敗したら②にとどまり、「つくれませんでした。もういちど」(グループは作られていない)。
+    /// 「つくる」:押した瞬間に CloudKit への作成を始め(うしろで走らせる)、むかしの演出をそのまま出す
+    /// (強く1回 → 中央から光が広がる 1.1秒 → 丸がぽんと跳ねる)。作成が終わったら「できました」へ
+    /// (見出し → 名前 → 合言葉が、ぼかしから順に浮かぶ)。演出が終わっても作成がまだなら「つくっています…」のまま。
+    /// 失敗したら、演出を止めて②にとどまり、入力した内容はのこす(グループは作られていない)。
     private func create() {
-        guard !isCreating, let user = currentUser else { return }
+        guard !isCreating, createdGroup == nil, let user = currentUser else { return }
+        guard nameStatus == .ok else { go(to: .name); return }
         guard let cloudKitManager = CloudKitManager.current else {
-            errorMessage = "つくれませんでした。もういちど"
+            withAnimation { errorMessage = "つくれませんでした。もういちど" }
             return
         }
         guard user.groups.filter({ !$0.isPersonalSpace }).count < GroupMembershipPolicy.maxGroupsPerUser else {
-            errorMessage = "グループは、10個までです。"
+            withAnimation { errorMessage = "グループは、\(GroupMembershipPolicy.maxGroupsPerUser)個までです。" }
             return
         }
         isCreating = true
@@ -731,10 +841,9 @@ struct NewGroupFlowView: View {
         let group = LaterGroup(name: finalName, host: user, autoGenerateMission: false, isPrivate: true)
         group.memberLimit = memberLimit
         group.colorIndex = colorIndex
+        group.faceStyle = faceStyle
+        group.showsInitial = showsInitial
         group.joinedAt = Date()
-        if let sourceImage {
-            group.iconImageData = FaceImageRenderer.render(sourceImage, scale: faceScale, offset: faceOffset, tone: tone)?.jpegData(compressionQuality: 0.85)
-        }
         _ = group.addMember(user)
         modelContext.insert(group)
 
@@ -745,25 +854,39 @@ struct NewGroupFlowView: View {
                 try await sharingService.createGroup(group, hostProfile: user)
             } catch GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true) {
                 // iCloud の容量不足で、写真だけ除いて作れた(グループは作成ずみ)
+                createdWarning = GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true).errorDescription
             } catch {
                 modelContext.delete(group)
                 try? modelContext.save()
+                // 演出を止めて、エラーを出す(名前・色・人数はそのまま)
+                burst = false
+                burstExpanded = false
                 isCreating = false
+                LayerHaptics.softDouble()
                 withAnimation { errorMessage = "つくれませんでした。もういちど" }
                 return
             }
             createdGroup = group
+            // むかしと同じ:光が広がりはじめてから 0.52秒は待ってから、つぎへ
             let wait = max(0, 0.52 - Date().timeIntervalSince(started))
-            DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
-                isCreating = false
-                go(to: .invite)
+            try? await Task.sleep(for: .seconds(wait))
+            // 前の完了画面へ。リンクは、作ってできた本物(CKShare の URL)を出す
+            let madeLink = try? await GroupInviteService.link(for: group, context: modelContext)
+            isCreating = false
+            inviteLink = madeLink
+            createdShareURL = madeLink.flatMap { InviteConfig.shareURL(from: $0) } ?? madeLink
+            if madeLink == nil {
+                createdWarning = [createdWarning, "リンクをつくれませんでした。つながってから、グループの設定でもう一度"].compactMap { $0 }.joined(separator: "\n")
             }
+            showingCreatedShare = true
+            // 合言葉は、画面には出さないが、これまでどおり作っておく(合言葉で入れるように・グループの設定で見られる)
+            passphrase = try? await GroupInviteService.passphrase(for: group, context: modelContext)
         }
     }
 }
 
-/// ③:見出し → 招待カードの順に、80msずつずらして、ぼかしから浮かぶ(0.7秒)
-private struct InviteStagger: ViewModifier {
+/// できました:見出し → 名前 → 合言葉の順に、80msずつずらして、ぼかしから浮かぶ(0.7秒)。むかしの演出のまま
+private struct DoneStagger: ViewModifier {
     let index: Int
     let appeared: Bool
     let reduceMotion: Bool
@@ -775,5 +898,112 @@ private struct InviteStagger: ViewModifier {
             .offset(y: shown ? 0 : 14)
             .opacity(shown ? 1 : 0)
             .animation(reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.7).delay(0.1 + Double(index) * 0.08), value: appeared)
+    }
+}
+
+// MARK: - ゆれ(視差を減らすなら、ゆれない)
+
+private struct GroupCreateShake: ViewModifier {
+    let trigger: Int
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        content.keyframeAnimator(initialValue: CGFloat(0), trigger: trigger) { view, x in
+            view.offset(x: enabled ? x : 0)
+        } keyframes: { _ in
+            KeyframeTrack {
+                LinearKeyframe(-8, duration: 0.06)
+                LinearKeyframe(8, duration: 0.08)
+                LinearKeyframe(-5, duration: 0.07)
+                LinearKeyframe(4, duration: 0.07)
+                LinearKeyframe(0, duration: 0.06)
+            }
+        }
+    }
+}
+
+// MARK: - 名前の入力欄(日本語入力に強い UITextField)
+
+/// 変換中(markedText)を見て、確定だけの Enter では進まない。文字数では切らない。
+/// 改行キーは「次へ」。キーボードの色は画面にあわせる。
+struct GroupNameTextField: UIViewRepresentable {
+    @Binding var text: String
+    @Binding var isFocused: Bool
+    @Binding var isComposing: Bool
+    let placeholder: String
+    let textColor: UIColor
+    let placeholderColor: UIColor
+    let tintColor: UIColor
+    let dark: Bool
+    let accessibilityValue: String
+    let onSubmit: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIView(context: Context) -> UITextField {
+        let field = UITextField()
+        field.delegate = context.coordinator
+        field.font = .systemFont(ofSize: 25, weight: .bold)
+        field.returnKeyType = .next
+        field.autocapitalizationType = .none
+        field.autocorrectionType = .no
+        field.spellCheckingType = .no
+        field.enablesReturnKeyAutomatically = false
+        field.accessibilityLabel = "グループの名前"
+        field.adjustsFontSizeToFitWidth = true
+        field.minimumFontSize = 18
+        field.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
+        return field
+    }
+
+    func updateUIView(_ field: UITextField, context: Context) {
+        context.coordinator.parent = self
+        // 変換中は、外から文字を書きかえない(変換中の文字が消える)
+        if field.markedTextRange == nil, field.text != text { field.text = text }
+        field.textColor = textColor
+        field.tintColor = tintColor
+        field.keyboardAppearance = dark ? .dark : .light
+        field.attributedPlaceholder = NSAttributedString(string: placeholder, attributes: [.foregroundColor: placeholderColor])
+        field.accessibilityValue = accessibilityValue
+        if isFocused, !field.isFirstResponder {
+            DispatchQueue.main.async { field.becomeFirstResponder() }
+        } else if !isFocused, field.isFirstResponder {
+            DispatchQueue.main.async { field.resignFirstResponder() }
+        }
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: GroupNameTextField
+
+        init(_ parent: GroupNameTextField) { self.parent = parent }
+
+        @objc func changed(_ field: UITextField) {
+            let composing = field.markedTextRange != nil
+            if parent.isComposing != composing { parent.isComposing = composing }
+            parent.text = field.text ?? ""
+        }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            if !parent.isFocused { parent.isFocused = true }
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            if parent.isFocused { parent.isFocused = false }
+            if parent.isComposing { parent.isComposing = false }
+        }
+
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            let composing = textField.markedTextRange != nil
+            if parent.isComposing != composing { parent.isComposing = composing }
+        }
+
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            // 変換を確定するだけの Enter では進まない
+            guard textField.markedTextRange == nil else { return true }
+            parent.onSubmit()
+            return false
+        }
     }
 }

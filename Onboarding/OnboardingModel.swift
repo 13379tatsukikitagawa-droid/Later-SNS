@@ -79,7 +79,7 @@ struct OnboardingLine {
 
 /// メールでのサインインがうまくいかなかった理由
 enum EmailSignInFailure: Equatable {
-    /// 通信の失敗・時間切れ
+    /// 通信の失敗・時間切れ(本当に通信がつながらなかったときだけ)
     case network
     /// リンクの期限切れ・使用済み
     case expiredLink
@@ -87,10 +87,16 @@ enum EmailSignInFailure: Equatable {
     case missingEmail
     /// 送信の回数が多すぎる(Firebaseの制限)
     case tooManyRequests
+    /// Firebase側で、この方法のサインインが無効(17006)
+    case providerDisabled
+    /// メールアドレスの形が違う(17008)
+    case invalidEmail
+    /// 上のどれでもない(原因は debugLabel とログで確かめる)
+    case other
 
     var title: String {
         switch self {
-        case .network, .tooManyRequests: return "送れませんでした。"
+        case .network, .tooManyRequests, .providerDisabled, .invalidEmail, .other: return "送れませんでした。"
         case .expiredLink, .missingEmail: return "確かめられませんでした。"
         }
     }
@@ -101,16 +107,25 @@ enum EmailSignInFailure: Equatable {
         case .expiredLink: return "リンクの期限が切れています。\nもう一度、送ってください。"
         case .missingEmail: return "同じアドレスを、\nもう一度入れてください。"
         case .tooManyRequests: return "しばらくしてから、\nもう一度ためしてください。"
+        case .providerDisabled: return "この方法は、今は使えません。\n開発者にお知らせください。"
+        case .invalidEmail: return "メールアドレスの形を、\n確かめてください。"
+        case .other: return "もう一度、\nためしてください。"
         }
     }
 
     /// Firebase Authのエラーを、画面の言葉に分ける(NSErrorのcodeで判定する)。
+    /// 「通信」と出すのは、本当に通信のエラーのときだけ。
     static func from(_ error: Error) -> EmailSignInFailure {
-        switch (error as NSError).code {
+        let nsError = error as NSError
+        switch nsError.code {
+        case 17006: return .providerDisabled         // operationNotAllowed(Firebase Console でオフ)
+        case 17008: return .invalidEmail             // invalidEmail
         case 17010: return .tooManyRequests          // tooManyRequests
+        case 17020: return .network                  // networkError
         case 17028, 17030: return .expiredLink       // expiredActionCode / invalidActionCode
         case 17034: return .missingEmail             // missingEmail
-        default: return .network
+        default:
+            return nsError.domain == NSURLErrorDomain ? .network : .other
         }
     }
 }

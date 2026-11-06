@@ -65,14 +65,13 @@ enum ProfileShot {
         return visibleShots(from: Array(sources), now: now)
     }
 
-    /// 撮った日の翌朝9:00(ひらく時刻)。
+    /// ひらく時刻(撮ったあとで最初に来る 9:00)。判定は PhotoDevelop の1つだけ。
     static func openDate(capturedAt: Date, calendar: Calendar = .current) -> Date {
-        let nextDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: capturedAt)) ?? capturedAt
-        return calendar.date(byAdding: .hour, value: DailyExposureRules.openingHour, to: nextDay) ?? nextDay
+        PhotoDevelop.developDate(takenAt: capturedAt, calendar: calendar)
     }
 
     static func isOpened(capturedAt: Date, now: Date, calendar: Calendar = .current) -> Bool {
-        now >= openDate(capturedAt: capturedAt, calendar: calendar)
+        PhotoDevelop.isDeveloped(takenAt: capturedAt, now: now, calendar: calendar)
     }
 
     /// Profile に出す日。古い順 → 新しい順(最大7つ、1日1つ)。
