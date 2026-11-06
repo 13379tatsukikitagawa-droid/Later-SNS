@@ -10,7 +10,8 @@ import UIKit
 struct VideoV20Tests {
     @Test func 動画の数字() {
         #expect(VideoRules.width == 540 && VideoRules.height == 720)
-        #expect(VideoRules.bitRate == 1_100_000 && VideoRules.keyFrameInterval == 30)
+        #expect(VideoRules.bitRate == 1_200_000 && VideoRules.keyFrameInterval == 30)
+        #expect(VideoRules.rawWidth == 720 && VideoRules.rawHeight == 960)
         #expect(VideoRules.maxDuration == 10)
         #expect(abs(VideoRules.tickInterval - 10.0 / 24) < 0.0001)
         #expect(!VideoRules.keeps(duration: 0.9))
@@ -87,15 +88,39 @@ struct VideoV20Tests {
         }
     }
 
-    @Test func 録画して書き出せる() async throws {
+    /// v21:録画は ふつうの映像(720×960)
+    @Test func 録画はふつうの映像() async throws {
         let video = try #require(await record(frames: 45))
         #expect(video.duration >= 1.4 && video.duration <= 1.6)
         #expect(!video.poster.isEmpty)
-        let asset = AVURLAsset(url: video.url)
-        let tracks = try await asset.loadTracks(withMediaType: .video)
-        let size = try await tracks.first!.load(.naturalSize)
-        #expect(size == CGSize(width: 540, height: 720))
+        #expect(video.velocities.count == 45)
+        let tracks = try await AVURLAsset(url: video.url).loadTracks(withMediaType: .video)
+        #expect(try await tracks.first!.load(.naturalSize) == CGSize(width: 720, height: 960))
         try? FileManager.default.removeItem(at: video.url)
+    }
+
+    /// v21:撮ったあとに 1回だけ RETRO-8(540×720)へ書き出す。10秒の動画の時間を測る(シミュレーターの値は目安)
+    @Test func 撮ったあとにレトロを書き出す() async throws {
+        let video = try #require(await record(frames: 300))
+        let out = FileManager.default.temporaryDirectory.appendingPathComponent("retro-test.mp4")
+        let start = Date()
+        let result = try await RetroExporter.export(raw: video.url, to: out, velocities: video.velocities, captureDate: Date(), light: false)
+        let seconds = Date().timeIntervalSince(start)
+        print(String(format: "[RetroExport] 10秒の動画を %.1f秒で書き出し(1コマ %.1fms)", seconds, seconds * 1000 / 300))
+        #expect(!result.poster.isEmpty)
+        #expect(result.duration > 9.5 && result.duration <= 10.1)
+        let tracks = try await AVURLAsset(url: out).loadTracks(withMediaType: .video)
+        #expect(try await tracks.first!.load(.naturalSize) == CGSize(width: 540, height: 720))
+        try? FileManager.default.removeItem(at: video.url)
+        try? FileManager.default.removeItem(at: out)
+    }
+
+    @Test func 音のフィルタは低い音を切る() {
+        var hp = Biquad.highPass(frequency: 80, sampleRate: 44_100)
+        // 20Hz の大きな波は、ほとんど通らない
+        var peak: Float = 0
+        for i in 0..<44_100 { let y = hp.run(sin(2 * .pi * 20 * Float(i) / 44_100)); if i > 4_000 { peak = max(peak, abs(y)) } }
+        #expect(peak < 0.1)
     }
 
     @Test func 一秒より短いと捨てる() async {

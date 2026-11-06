@@ -4,27 +4,35 @@ import CoreMotion
 import SwiftUI
 import UIKit
 
-// v20 動画:カメラの映像を RETRO-8(RetroLook)で加工し、同じ絵を
-//   ① ファインダー(AVSampleBufferDisplayLayer)と ② 録画(AVAssetWriter)の両方へ流す(見たとおりに撮れる)。
-// すべて frameQueue(カメラのフレームの列)で動かす。メインスレッドでは加工しない。バッファは使い回す。
-// 書き出し:540×720(3:4)・30fps・H.264 Main・約 1.1Mbps(vlook.py の maxrate)・キーフレーム 30 コマごと・B フレームなし。
-// 音:AAC 64kbps モノ(マイクを断られたら、音なしで録る)。最長 10 秒。1秒より みじかいものは捨てる(1こま使わない)。
+// v21 C:撮影中は ふつうの映像のまま記録する(ファインダーも ふつう)。
+// RETRO-8 は、撮ったあとに裏で1回だけ かける(RetroExporter)。ここは「ふつうの映像」の録画だけ。
+// もとの映像:720×960(3:4)・30fps・H.264・約 6Mbps。音:AAC 128kbps モノ(マイクを断られたら音なし)。
+// 横の速さ(ジャイロ)を コマごとに残し、書き出しのローリングシャッターに使う。
+// 最長 10 秒。1秒より みじかいものは捨てる(1こま使わない)。frameQueue で動かす(メインでは加工しない)。
 
 struct RecordedVideo: Sendable {
+    /// もとの ふつうの映像
     let url: URL
     let duration: Double
-    /// ポスター(最初のコマ・加工ずみの JPEG)
+    /// 仮のポスター(最初のコマ・ふつう)。書き出しが終わったら RETRO-8 の1コマ目に入れかわる
     let poster: Data
     let hasAudio: Bool
+    /// コマごとの 横の速さ(px/秒・幅 360 基準)
+    let velocities: [Double]
 }
 
 enum VideoRules {
+    /// 書き出し(RETRO-8)
     static let width = 540
     static let height = 720
     static let fps: Int32 = 30
-    static let bitRate = 1_100_000
+    static let bitRate = 1_200_000
     static let keyFrameInterval = 30
     static let audioBitRate = 64_000
+    /// もとの映像
+    static let rawWidth = 720
+    static let rawHeight = 960
+    static let rawBitRate = 6_000_000
     static let maxDuration: Double = 10
     static let minDuration: Double = 1
     /// おして ためる
@@ -40,12 +48,8 @@ enum VideoRules {
 }
 
 final class RetroRecorder: @unchecked Sendable {
-    let look = RetroLook()
-    /// ファインダー(メインで作り、ここから enqueue する。enqueue はどのスレッドからでもよい)
-    let displayLayer = AVSampleBufferDisplayLayer()
-
     private let lock = NSLock()
-    /// ここから下は frameQueue でだけ触る
+    private let context = CIContext(options: [.cacheIntermediates: false])
     private var pool: CVPixelBufferPool?
     private var writer: AVAssetWriter?
     private var videoInput: AVAssetWriterInput?
@@ -55,16 +59,13 @@ final class RetroRecorder: @unchecked Sendable {
     private var lastTime: CMTime = .zero
     private var poster: Data?
     private var outputURL: URL?
-    private var firstFrameTime: CMTime?
     private var active = false
     private var recording = false
-    private var stopping = false
     private var withAudio = false
-
+    private var velocities: [Double] = []
     private let motion = CMMotionManager()
 
     init() {
-        displayLayer.videoGravity = .resizeAspectFill
         if motion.isGyroAvailable {
             motion.gyroUpdateInterval = 1.0 / 30
             motion.startGyroUpdates()
@@ -73,13 +74,10 @@ final class RetroRecorder: @unchecked Sendable {
 
     deinit { motion.stopGyroUpdates() }
 
-    /// 動画モードの間だけ、フレームを加工する
+    /// 録画の間だけ、フレームを受けとる
     func setActive(_ on: Bool) {
         lock.lock(); active = on; lock.unlock()
-        if on { look.reset() }
     }
-
-    var isActive: Bool { lock.lock(); defer { lock.unlock() }; return active }
 
     // MARK: 録画(メインから呼ぶ)
 
@@ -87,25 +85,23 @@ final class RetroRecorder: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         guard !recording else { return }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("later-\(UUID().uuidString).mp4")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("later-raw-\(UUID().uuidString).mp4")
         guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mp4) else { return }
         let video = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: VideoRules.width,
-            AVVideoHeightKey: VideoRules.height,
+            AVVideoWidthKey: VideoRules.rawWidth,
+            AVVideoHeightKey: VideoRules.rawHeight,
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: VideoRules.bitRate,
+                AVVideoAverageBitRateKey: VideoRules.rawBitRate,
                 AVVideoMaxKeyFrameIntervalKey: VideoRules.keyFrameInterval,
-                AVVideoProfileLevelKey: AVVideoProfileLevelH264MainAutoLevel,
                 AVVideoAllowFrameReorderingKey: false,
-                AVVideoExpectedSourceFrameRateKey: VideoRules.fps,
             ],
         ])
         video.expectsMediaDataInRealTime = true
         let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: video, sourcePixelBufferAttributes: [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: VideoRules.width,
-            kCVPixelBufferHeightKey as String: VideoRules.height,
+            kCVPixelBufferWidthKey as String: VideoRules.rawWidth,
+            kCVPixelBufferHeightKey as String: VideoRules.rawHeight,
         ])
         guard writer.canAdd(video) else { return }
         writer.add(video)
@@ -115,7 +111,7 @@ final class RetroRecorder: @unchecked Sendable {
                 AVFormatIDKey: kAudioFormatMPEG4AAC,
                 AVNumberOfChannelsKey: 1,
                 AVSampleRateKey: 44_100,
-                AVEncoderBitRateKey: VideoRules.audioBitRate,
+                AVEncoderBitRateKey: 128_000,
             ])
             input.expectsMediaDataInRealTime = true
             if writer.canAdd(input) { writer.add(input); audioInput = input }
@@ -128,10 +124,9 @@ final class RetroRecorder: @unchecked Sendable {
         self.outputURL = url
         self.startTime = nil
         self.poster = nil
+        self.velocities = []
         self.withAudio = audioInput != nil
         self.recording = true
-        self.stopping = false
-        look.reset()
     }
 
     /// とめる。1秒より みじかい・失敗は nil(ファイルは消す)
@@ -143,11 +138,11 @@ final class RetroRecorder: @unchecked Sendable {
             return
         }
         recording = false
-        stopping = true
         let start = startTime
         let end = lastTime
         let poster = self.poster
         let hasAudio = withAudio
+        let velocities = self.velocities
         audioInput?.markAsFinished()
         videoInput.markAsFinished()
         self.writer = nil
@@ -169,66 +164,48 @@ final class RetroRecorder: @unchecked Sendable {
                 completion(nil)
                 return
             }
-            completion(RecordedVideo(url: url, duration: duration, poster: poster, hasAudio: hasAudio))
+            completion(RecordedVideo(url: url, duration: duration, poster: poster, hasAudio: hasAudio, velocities: velocities))
         }
     }
 
     // MARK: フレーム(frameQueue)
 
-    /// カメラの1コマ。動画モードのときだけ加工して、ファインダーと録画へ
+    /// カメラの1コマ。録画中だけ、ふつうのまま 720×960 にして書く
     func handleVideo(_ sampleBuffer: CMSampleBuffer) {
         lock.lock()
-        let on = active
-        let rec = recording
-        lock.unlock()
-        guard on, let source = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        if firstFrameTime == nil { firstFrameTime = time }
-        let t = CMTimeGetSeconds(CMTimeSubtract(time, startTime ?? firstFrameTime ?? time))
-
-        // 3:4 に合わせて 540×720 へ(アスペクト・フィル)
-        var image = CIImage(cvPixelBuffer: source)
-        let scale = max(CGFloat(VideoRules.width) / image.extent.width, CGFloat(VideoRules.height) / image.extent.height)
-        image = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-        let dx = (image.extent.width - CGFloat(VideoRules.width)) / 2, dy = (image.extent.height - CGFloat(VideoRules.height)) / 2
-        image = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX - dx, y: -image.extent.minY - dy))
-            .cropped(to: CGRect(x: 0, y: 0, width: VideoRules.width, height: VideoRules.height))
-
-        // 横に動くと、かたむく(ジャイロの回転の速さ → 幅 360 基準の px/秒)
-        let rate = motion.gyroData?.rotationRate.y ?? 0
-        let velocity = rate * 360 * 1.2
-        // 日付スタンプは、録画のときに焼きこむ(ファインダーにも同じものを出す)
-        let processed = look.process(image, time: t, velocityX: velocity, stampText: RetroSettings.stampOn ? RetroStamp.text(for: Date()) : nil)
-
-        guard let out = makeBuffer() else { return }
-        look.context.render(processed, to: out, bounds: CGRect(x: 0, y: 0, width: VideoRules.width, height: VideoRules.height), colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
-        enqueueForDisplay(out, time: time)
-
-        guard rec else { return }
-        lock.lock()
         defer { lock.unlock() }
-        guard recording, let writer, let videoInput, let adaptor else { return }
+        guard active, recording, let writer, let videoInput, let adaptor,
+              let source = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        var image = CIImage(cvPixelBuffer: source)
+        let scale = max(CGFloat(VideoRules.rawWidth) / image.extent.width, CGFloat(VideoRules.rawHeight) / image.extent.height)
+        image = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        let dx = (image.extent.width - CGFloat(VideoRules.rawWidth)) / 2, dy = (image.extent.height - CGFloat(VideoRules.rawHeight)) / 2
+        image = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX - dx, y: -image.extent.minY - dy))
+            .cropped(to: CGRect(x: 0, y: 0, width: VideoRules.rawWidth, height: VideoRules.rawHeight))
         if startTime == nil {
             writer.startSession(atSourceTime: time)
             startTime = time
-            // ポスター(最初のコマ・加工ずみ)
-            if let cg = look.context.createCGImage(processed, from: processed.extent) {
+            if let cg = context.createCGImage(image, from: image.extent) {
                 poster = UIImage(cgImage: cg).jpegData(compressionQuality: 0.85)
             }
         }
-        guard CMTimeGetSeconds(CMTimeSubtract(time, startTime ?? time)) <= VideoRules.maxDuration else { return }
-        if videoInput.isReadyForMoreMediaData, adaptor.append(out, withPresentationTime: time) {
+        guard CMTimeGetSeconds(CMTimeSubtract(time, startTime ?? time)) <= VideoRules.maxDuration,
+              videoInput.isReadyForMoreMediaData, let out = makeBuffer() else { return }
+        context.render(image, to: out)
+        if adaptor.append(out, withPresentationTime: time) {
             lastTime = time
+            // 横の速さ(ジャイロ → 幅 360 基準の px/秒)
+            velocities.append((motion.gyroData?.rotationRate.y ?? 0) * 360 * 1.2)
         }
     }
 
-    /// マイクの音(frameQueue とは別の列からでもよい)
+    /// マイクの音
     func handleAudio(_ sampleBuffer: CMSampleBuffer) {
         lock.lock()
         defer { lock.unlock() }
-        guard recording, startTime != nil, let audioInput, audioInput.isReadyForMoreMediaData else { return }
-        let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        guard let start = startTime, CMTimeCompare(time, start) >= 0 else { return }
+        guard recording, let start = startTime, let audioInput, audioInput.isReadyForMoreMediaData else { return }
+        guard CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(sampleBuffer), start) >= 0 else { return }
         audioInput.append(sampleBuffer)
     }
 
@@ -236,8 +213,8 @@ final class RetroRecorder: @unchecked Sendable {
         if pool == nil {
             let attrs: [CFString: Any] = [
                 kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
-                kCVPixelBufferWidthKey: VideoRules.width,
-                kCVPixelBufferHeightKey: VideoRules.height,
+                kCVPixelBufferWidthKey: VideoRules.rawWidth,
+                kCVPixelBufferHeightKey: VideoRules.rawHeight,
                 kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary,
             ]
             CVPixelBufferPoolCreate(nil, nil, attrs as CFDictionary, &pool)
@@ -246,22 +223,6 @@ final class RetroRecorder: @unchecked Sendable {
         var buffer: CVPixelBuffer?
         CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
         return buffer
-    }
-
-    private func enqueueForDisplay(_ buffer: CVPixelBuffer, time: CMTime) {
-        var format: CMVideoFormatDescription?
-        CMVideoFormatDescriptionCreateForImageBuffer(allocator: nil, imageBuffer: buffer, formatDescriptionOut: &format)
-        guard let format else { return }
-        var timing = CMSampleTimingInfo(duration: CMTime(value: 1, timescale: VideoRules.fps), presentationTimeStamp: time, decodeTimeStamp: .invalid)
-        var sample: CMSampleBuffer?
-        CMSampleBufferCreateReadyWithImageBuffer(allocator: nil, imageBuffer: buffer, formatDescription: format, sampleTiming: &timing, sampleBufferOut: &sample)
-        guard let sample else { return }
-        if let attachments = CMSampleBufferGetSampleAttachmentsArray(sample, createIfNecessary: true) as? [NSMutableDictionary], let first = attachments.first {
-            first[kCMSampleAttachmentKey_DisplayImmediately] = true
-        }
-        let renderer = displayLayer.sampleBufferRenderer
-        if renderer.status == .failed { renderer.flush() }
-        renderer.enqueue(sample)
     }
 }
 
@@ -289,32 +250,3 @@ enum RetroSettings {
     }
 }
 
-/// ファインダー(加工ずみの映像)
-struct RetroPreviewView: UIViewRepresentable {
-    let layer: AVSampleBufferDisplayLayer
-
-    final class Host: UIView {
-        var displayLayer: AVSampleBufferDisplayLayer? {
-            didSet {
-                oldValue?.removeFromSuperlayer()
-                if let displayLayer { layer.addSublayer(displayLayer) }
-                setNeedsLayout()
-            }
-        }
-        override func layoutSubviews() {
-            super.layoutSubviews()
-            displayLayer?.frame = bounds
-        }
-    }
-
-    func makeUIView(context: Context) -> Host {
-        let view = Host()
-        view.backgroundColor = .black
-        view.displayLayer = layer
-        return view
-    }
-
-    func updateUIView(_ uiView: Host, context: Context) {
-        if uiView.displayLayer !== layer { uiView.displayLayer = layer }
-    }
-}

@@ -965,6 +965,11 @@ struct TodayView: View {
         // ウィジェット:撮影・昨日をひらく・日付が変わる(状態が変わる)たびに、値を書いて更新
         .onAppear { syncWidget() }
         .task { await refreshBumpFriends() }
+        .task {
+            // v21:途中で止まった RETRO-8 の書き出しを、つづきから
+            RetroExportQueue.context = context
+            RetroExportQueue.run()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .bumpFriendsChanged)) { _ in
             bumpFriends = BumpFriendStore.cached
             Task { await refreshBumpFriends() }
@@ -1407,7 +1412,8 @@ struct TodayView: View {
     private func saveCapturedVideo(_ video: RecordedVideo, tags: [String], place: String?) {
         let captureDate = Date()
         Task { @MainActor in
-            guard let name = try? LaterVideoStore.adopt(video.url) else {
+            // もとの ふつう映像を置く(RETRO-8 は裏で書き出す。終わったら入れかわって、もとは消える)
+            guard let name = try? LaterVideoStore.adopt(video.url, prefix: LaterVideoStore.rawPrefix) else {
                 presentToast("動画を、保存できませんでした")
                 FilmLanding.shared.pending = nil
                 return
@@ -1428,6 +1434,8 @@ struct TodayView: View {
                     dayExtras: extras,
                     video: (name, video.duration)
                 )
+                RetroExportQueue.context = context
+                RetroExportQueue.enqueue(.init(rawName: name, captureDate: captureDate, velocities: video.velocities))
             } catch {
                 LaterVideoStore.deleteLocal(name)
                 FilmLanding.shared.pending = nil

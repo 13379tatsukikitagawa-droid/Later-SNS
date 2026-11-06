@@ -16,9 +16,9 @@ nonisolated enum LaterVideoStore {
     static func url(fileName: String) -> URL { folder.appendingPathComponent(fileName) }
 
     /// 書き出した一時ファイルを、置き場所へ移す。ファイル名を返す
-    static func adopt(_ tempURL: URL) throws -> String {
+    static func adopt(_ tempURL: URL, prefix: String = "") throws -> String {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let name = "\(UUID().uuidString).mp4"
+        let name = "\(prefix)\(UUID().uuidString).mp4"
         try FileManager.default.moveItem(at: tempURL, to: url(fileName: name))
         return name
     }
@@ -29,6 +29,11 @@ nonisolated enum LaterVideoStore {
         let u = url(fileName: name)
         return FileManager.default.fileExists(atPath: u.path) ? u : nil
     }
+
+    /// v21:まだ RETRO-8 に書き出していない、もとの ふつうの映像(送らない)
+    static let rawPrefix = "raw-"
+
+    static func isRaw(_ fileName: String?) -> Bool { fileName?.hasPrefix(rawPrefix) ?? false }
 
     static func deleteLocal(_ fileName: String?) {
         guard let fileName else { return }

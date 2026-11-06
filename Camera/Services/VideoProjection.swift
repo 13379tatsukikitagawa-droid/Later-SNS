@@ -45,6 +45,10 @@ struct VideoProjectionView: View {
     @State private var ramp = HapticRamp()
     @State private var timeObserver: Any?
     @State private var loadFailed = false
+    /// v21:ミルクが とけきった瞬間の、ビデオテープの「ジジッ」(横にずれる・コントラストが少し上がる)
+    @State private var glitchX: CGFloat = 0
+    @State private var glitchContrast = 1.0
+    @State private var developed = false
 
     enum Phase { case developing, ready, projecting }
 
@@ -65,9 +69,18 @@ struct VideoProjectionView: View {
                         .foregroundStyle(Color(hex: "FF8A2A"))
                 }
                 cheki
+                    .offset(x: glitchX)
+                    .contrast(glitchContrast)
                     .scaleEffect(expanded ? 1.3 : 1)
                     .opacity(flicker ? 0.55 : 1)
                     .onTapGesture { if phase == .projecting { close() } }
+                if phase != .projecting {
+                    Text(developed ? "ひらきました ・ RETRO-8 に 仕上がりました" : "現像中 ・ ミルク色が とけて、レトロな 色に")
+                        .font(.system(size: 11, design: .monospaced))
+                        .tracking(0.12 * 11)
+                        .foregroundStyle(.white.opacity(0.6))
+                        .contentTransition(.opacity)
+                }
                 if phase == .ready {
                     Button(action: project) {
                         Text("▶ 上映する")
@@ -140,7 +153,7 @@ struct VideoProjectionView: View {
                 }
                 .frame(height: 300)
                 HStack {
-                    Text("MOVIE").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(Color(hex: "FF8A2A"))
+                    Text("MOVIE ・ RETRO-8").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(Color(hex: "FF8A2A"))
                     Spacer()
                     Text(RetroStamp.text(for: Date())).font(.custom("Caveat-Bold", size: 20)).foregroundStyle(Color(hex: "FF7A1A"))
                 }
@@ -175,6 +188,7 @@ struct VideoProjectionView: View {
         Task { await prepare() }
         guard !VideoDevelopSeen.isSeen(id) else {
             milk = 0
+            developed = true
             phase = .ready
             return
         }
@@ -194,6 +208,15 @@ struct VideoProjectionView: View {
                 try? await Task.sleep(for: .milliseconds(16))
             }
             ramp.stop()
+            // とけきった瞬間に、ビデオテープの「ジジッ」(0.7秒・6コマ)
+            if !reduceMotion {
+                for x in [-7.0, 5, -3, 8, -4, 0] {
+                    glitchX = x
+                    glitchContrast = x == 0 ? 1 : 1.18
+                    try? await Task.sleep(for: .seconds(0.7 / 6))
+                }
+            }
+            withAnimation(.easeOut(duration: 0.3)) { developed = true }
             Haptics.play(.heart)
             withAnimation(.easeOut(duration: 0.3)) { glow = 1 }
             for i in 0..<4 {

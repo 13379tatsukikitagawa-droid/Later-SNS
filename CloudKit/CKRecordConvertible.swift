@@ -327,7 +327,8 @@ extension LaterPhoto {
                 }
                 record["image"] = CKAsset(fileURL: tempURL)
                 // v20 動画:本体も、ポスター(image)と同じ条件で送る。端末のファイルが残っている間だけ
-                if isVideo, let videoURL = LaterVideoStore.localURL(for: self) {
+                // もとの ふつう映像(raw-)は送らない。RETRO-8 の書き出しが終わってから送る
+                if isVideo, !LaterVideoStore.isRaw(videoFileName), let videoURL = LaterVideoStore.localURL(for: self) {
                     record["video"] = CKAsset(fileURL: videoURL)
                 }
             } catch {
