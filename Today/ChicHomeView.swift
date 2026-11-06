@@ -163,9 +163,9 @@ struct ChicHomeView: View {
             instant.disablesAnimations = true
             withTransaction(instant) { scrollPosition.scrollTo(edge: .top) }
         }
-        .onChange(of: launch == .finished) { _, finished in
+        .onReceive(NotificationCenter.default.publisher(for: .openingFinished)) { _ in
             // オープニングのあと:Home の登場
-            if finished { introToken += 1 }
+            introToken += 1
         }
         .confirmationDialog(
             bump?.pending.map { "「\($0.name)」と つながる?" } ?? "",

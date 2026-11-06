@@ -78,6 +78,8 @@ struct TodayView: View {
     @State private var showingFriendsHub = false
     /// v18.2:撮ったチェキが、物干しへ とんでいる間
     @State private var shotFlight: (handOff: ShotHandOff, start: Date)?
+    /// v21 E:オープニング(ゼロから起動した時だけ)
+    @State private var opening: (variant: OpeningVariant, start: Date)?
     @State private var ejectRamp = HapticRamp()
     /// v17:ふって つながった人(公開 DB の Friendship)
     @State private var bumpFriends: [BumpFriend] = BumpFriendStore.cached
@@ -587,6 +589,16 @@ struct TodayView: View {
                 .opacity(screen == .home && !isChicHome ? bottomFadeOpacity : 0)
                 .allowsHitTesting(false)
                 .ignoresSafeArea()
+
+            // v21 E:オープニング(いちばん上・タップで とばせる)
+            if let opening {
+                OpeningV21View(variant: opening.variant, start: opening.start) {
+                    self.opening = nil
+                    NotificationCenter.default.post(name: .openingFinished, object: nil)
+                }
+                .transition(.opacity)
+                .zIndex(10)
+            }
 
             // v18.2:撮ったチェキが、物干しへ とぶ
             if let shotFlight {
@@ -1104,7 +1116,17 @@ struct TodayView: View {
 
     /// コールドスタートの最初の1回だけ。ネットワークは待たず、前回の値(端末内のデータ)でそのまま進める。
     private func beginLaunchIfNeeded() {
-        guard let kind = LaunchCoordinator.beginColdLaunchIfNeeded(now: clock()) else { return }
+        guard LaunchCoordinator.beginColdLaunchIfNeeded(now: clock()) != nil else { return }
+        // v21 E:パシャ → チェキ → 現像 → 日の出(設定で オン / 短く / オフ)。データの読みこみは うしろで同時に進む
+        if let variant = OpeningSettings.variant(reduceMotion: reduceMotion) {
+            opening = (variant, Date())
+        } else {
+            NotificationCenter.default.post(name: .openingFinished, object: nil)
+        }
+    }
+
+    /// v20 までの起動アニメーション(いまは使わない。デバッグの再生用に残す)
+    private func beginLegacyLaunch(kind: LaunchKind) {
         // 撮影後の Home(v5)は、起動アニメーションを使わない(MONDO / GROUP が静かに出る)
         if homeState(at: clock()).usesGroupHome { return }
         if reduceMotion {

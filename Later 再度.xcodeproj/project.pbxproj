@@ -220,7 +220,6 @@
 		E3EEF64028A1411C946C4CB7 /* CachedPhotoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5EFC40A96147C5B9E6B7DC /* CachedPhotoImage.swift */; };
 		E4A000000000000000000002 /* HomeV17Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000001 /* HomeV17Model.swift */; };
 		E4A000000000000000000004 /* HomeV17Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000003 /* HomeV17Sections.swift */; };
-		E4A000000000000000000020 /* HomeV21.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000001F /* HomeV21.swift */; };
 		E4A000000000000000000006 /* GlobeDotsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000005 /* GlobeDotsData.swift */; };
 		E4A000000000000000000008 /* MondoGeo.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000007 /* MondoGeo.swift */; };
 		E4A00000000000000000000A /* MondoGlobeV19.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000009 /* MondoGlobeV19.swift */; };
@@ -234,6 +233,8 @@
 		E4A00000000000000000001A /* ShutterGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000019 /* ShutterGesture.swift */; };
 		E4A00000000000000000001C /* CaptureScreenV21.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000001B /* CaptureScreenV21.swift */; };
 		E4A00000000000000000001E /* RetroExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000001D /* RetroExporter.swift */; };
+		E4A000000000000000000020 /* HomeV21.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000001F /* HomeV21.swift */; };
+		E4A000000000000000000022 /* OpeningV21.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000021 /* OpeningV21.swift */; };
 		EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B4C22287B8F839F97B59D7 /* UserDirectoryService.swift */; };
 		EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */; };
 		F303E145110044B583E3ABFF /* DepthMapEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA209DF2AC745098562D3BF /* DepthMapEncoder.swift */; };
@@ -486,7 +487,6 @@
 		E3A000000000000000000009 /* MEAndCalendar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MEAndCalendar.swift; sourceTree = "<group>"; };
 		E4A000000000000000000001 /* HomeV17Model.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV17Model.swift; sourceTree = "<group>"; };
 		E4A000000000000000000003 /* HomeV17Sections.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV17Sections.swift; sourceTree = "<group>"; };
-		E4A00000000000000000001F /* HomeV21.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV21.swift; sourceTree = "<group>"; };
 		E4A000000000000000000005 /* GlobeDotsData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobeDotsData.swift; sourceTree = "<group>"; };
 		E4A000000000000000000007 /* MondoGeo.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MondoGeo.swift; sourceTree = "<group>"; };
 		E4A000000000000000000009 /* MondoGlobeV19.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MondoGlobeV19.swift; sourceTree = "<group>"; };
@@ -500,6 +500,8 @@
 		E4A000000000000000000019 /* ShutterGesture.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShutterGesture.swift; sourceTree = "<group>"; };
 		E4A00000000000000000001B /* CaptureScreenV21.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaptureScreenV21.swift; sourceTree = "<group>"; };
 		E4A00000000000000000001D /* RetroExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RetroExporter.swift; sourceTree = "<group>"; };
+		E4A00000000000000000001F /* HomeV21.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV21.swift; sourceTree = "<group>"; };
+		E4A000000000000000000021 /* OpeningV21.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpeningV21.swift; sourceTree = "<group>"; };
 		E8ED391917F67A87CD691ABF /* Fonts/Caveat-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Caveat-Bold.ttf"; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingV2Views.swift; sourceTree = "<group>"; };
@@ -836,6 +838,7 @@
 				E4A000000000000000000001 /* HomeV17Model.swift */,
 				E4A000000000000000000003 /* HomeV17Sections.swift */,
 				E4A00000000000000000001F /* HomeV21.swift */,
+				E4A000000000000000000021 /* OpeningV21.swift */,
 				E4A000000000000000000005 /* GlobeDotsData.swift */,
 				E4A000000000000000000007 /* MondoGeo.swift */,
 				E4A000000000000000000009 /* MondoGlobeV19.swift */,
@@ -1315,6 +1318,7 @@
 				E4A000000000000000000002 /* HomeV17Model.swift in Sources */,
 				E4A000000000000000000004 /* HomeV17Sections.swift in Sources */,
 				E4A000000000000000000020 /* HomeV21.swift in Sources */,
+				E4A000000000000000000022 /* OpeningV21.swift in Sources */,
 				E4A000000000000000000006 /* GlobeDotsData.swift in Sources */,
 				E4A000000000000000000008 /* MondoGeo.swift in Sources */,
 				E4A00000000000000000000A /* MondoGlobeV19.swift in Sources */,

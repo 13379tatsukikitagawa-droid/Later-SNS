@@ -23,6 +23,7 @@ struct SettingsMenuView: View {
     @State private var hapticsLevel = AppHapticsSetting.level
     @State private var tapToRecord = RetroSettings.tapToRecord
     @State private var videoStamp = RetroSettings.stampOn
+    @State private var openingMode = OpeningSettings.mode
     @State private var mondoOn = MondoService.isPublic
     @State private var knockOn = !KnockSetting.isOff
     @State private var showingNotificationDenied = false
@@ -225,6 +226,16 @@ struct SettingsMenuView: View {
             SettingsRow(icon: "calendar.badge.clock", title: "動画の日付スタンプ", note: "右下の橙の日付") {
                 Toggle("動画の日付スタンプ", isOn: Binding(get: { videoStamp }, set: { videoStamp = $0; RetroSettings.stampOn = $0; Haptics.play(.tick) }))
                     .toggleStyle(MonoToggleStyle())
+            }
+            SettingsDivider()
+            SettingsRow(icon: "sparkles", title: "オープニング", note: "アプリを ひらいたときの パシャ → チェキ") {
+                Menu {
+                    Picker("オープニング", selection: Binding(get: { openingMode }, set: { openingMode = $0; OpeningSettings.mode = $0; Haptics.play(.tick) })) {
+                        ForEach(OpeningMode.allCases) { Text($0.title).tag($0) }
+                    }
+                } label: {
+                    SettingsValue(openingMode.title, chevron: true)
+                }
             }
             SettingsDivider()
             SettingsRow(icon: "square.grid.2x2", title: "ウィジェットの置き方", action: { showingWidgetSetup = true }) {
