@@ -179,16 +179,22 @@ struct CaptureLayout: Equatable {
     var safeTop: CGFloat
     var safeBottom: CGFloat
 
-    /// シャッターの中心(下から 100)
+    /// v21:見本は 390×844。縦の位置は画面の高さの比で動かす(ノッチ・Dynamic Island の下に入るように)
+    var ky: CGFloat { max(0.72, size.height / 844) }
+    func y(_ v: CGFloat) -> CGFloat { v * ky }
+
+    /// シャッターの中心(見本:上端 676・104pt の円)
     var shutterCenter: CGPoint {
-        CGPoint(x: size.width / 2, y: size.height - max(100, safeBottom + 66))
+        CGPoint(x: size.width / 2, y: y(728))
     }
 
-    /// ファインダー(左右12、上はセーフエリア+40、下はシャッターの上 86)
+    /// 上のバー(高さ 46)の中心
+    var topBarCenterY: CGFloat { max(safeTop + 26, y(56) + 23) }
+
+    /// 撮影の窓(左右16・上112・高さ500・角30)。上のバーとは重ねない
     var finder: CGRect {
-        let top = safeTop + 40
-        let bottom = shutterCenter.y - 86
-        return CGRect(x: 12, y: top, width: max(0, size.width - 24), height: max(220, bottom - top))
+        let top = max(y(112), topBarCenterY + 23 + 8)
+        return CGRect(x: 16, y: top, width: max(0, size.width - 32), height: y(500))
     }
 
     /// 撮影後の画面の、上のスロット(幅270×高18)

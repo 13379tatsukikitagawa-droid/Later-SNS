@@ -36,11 +36,14 @@ struct VideoV20Tests {
         #expect(MilkCheki.durationText(8.2) == "0:08")
     }
 
-    @Test func 音量ボタンは05秒以内の2回押し() {
-        let t = Date()
-        #expect(VolumeShutterRules.isDoublePress(previous: t, now: t.addingTimeInterval(0.4)))
-        #expect(!VolumeShutterRules.isDoublePress(previous: t, now: t.addingTimeInterval(0.6)))
-        #expect(!VolumeShutterRules.isDoublePress(previous: nil, now: t))
+    @Test func 長押しの目もり() {
+        #expect(ShutterRules.litTicks(progress: 0) == 0)
+        #expect(ShutterRules.litTicks(progress: 1) == 24)
+        // 進み = 時間^1.25(はじめは ゆっくり)
+        #expect(ShutterRules.litTicks(progress: 0.5) < 12)
+        #expect(ShutterRules.photoHint(stage: 1) == "● ○ ○  もうすこし")
+        #expect(ShutterRules.idleHint(mode: .photo, left: 2) == "ながおしで撮る ・ 音量ボタンも ながおし")
+        #expect(ShutterRules.idleHint(mode: .video, left: 0) == "今日は、ここまで")
     }
 
     @Test func 撮ったあとの時間() {
@@ -101,35 +104,3 @@ struct VideoV20Tests {
     }
 }
 
-/// 見た目の確認(LATER_SNAPSHOT_DIR がある時だけ)
-@MainActor
-struct VideoV20SnapshotTests {
-    @Test func 部品() throws {
-        guard let path = ProcessInfo.processInfo.environment["LATER_SNAPSHOT_DIR"] else { return }
-        let dir = URL(fileURLWithPath: path)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let view = ZStack {
-            Color(hex: "0A0A0C")
-            VStack(spacing: 24) {
-                HStack(spacing: 16) {
-                    CaptureModeSwitch(mode: .photo) { _ in }
-                    CaptureModeSwitch(mode: .video) { _ in }
-                }
-                HStack(spacing: 6) {
-                    VideoShutterButton(charge: 0, recording: false, elapsed: 0, reduceMotion: false)
-                    VideoShutterButton(charge: 0.6, recording: false, elapsed: 0, reduceMotion: false)
-                    VideoShutterButton(charge: 0, recording: true, elapsed: 3.4, reduceMotion: false)
-                }
-                VideoShutterButton(charge: 0, recording: true, elapsed: 8.2, reduceMotion: false)
-                HStack(spacing: 20) {
-                    MilkCheki(isVideo: false).frame(width: 150, height: 188)
-                    MilkCheki(isVideo: true, duration: 8).frame(width: 150, height: 188)
-                }
-            }
-        }
-        .frame(width: 440, height: 760)
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = 2
-        try renderer.uiImage!.pngData()!.write(to: dir.appendingPathComponent("v20-parts.png"))
-    }
-}

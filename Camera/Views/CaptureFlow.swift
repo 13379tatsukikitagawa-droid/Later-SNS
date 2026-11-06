@@ -63,8 +63,6 @@ struct CaptureFlow: View {
     @State private var shotIsVideo: (Bool, Double?) = (false, nil)
     /// v20:写真 / 動画
     @State private var mode: CaptureMode = .photo
-    @State private var videoRecording = false
-    @State private var volumeDown = false
 
     private var left: Int { FilmRoll.shotsRemaining(shotsToday: shotsToday) }
     private var shotIndex: Int { min(FilmRoll.shotsPerDay, shotsToday + 1) }
@@ -120,40 +118,20 @@ struct CaptureFlow: View {
             .transition(.opacity)
         case .capture:
             ZStack {
-                CaptureScreen(
+                CaptureScreenV21(
                     camera: camera,
                     layout: layout,
                     tags: shotTags,
                     place: placeProvider.placeName,
                     left: left,
-                    haptics: haptics,
                     playsEntrance: playsCaptureEntrance,
+                    mode: $mode,
                     onBack: cancel,
-                    onShutter: { shutter(layout: layout) },
-                    isVideoMode: mode == .video,
-                    onVideoVolume: { volumeDown = $0 }
+                    onEditTags: backToTags,
+                    onPhoto: { shutter(layout: layout) },
+                    onRecorded: { video in recorded(video, layout: layout) }
                 )
                 .allowsHitTesting(step == .capture && shotStart == nil)
-                // ファインダーを よこになぞっても切りかわる(左へ = 動画)
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 24)
-                        .onEnded { value in
-                            guard layout.finder.contains(value.startLocation), !videoRecording, shotStart == nil,
-                                  let next = VideoShutterRules.swipe(dx: value.translation.width, dy: value.translation.height), next != mode else { return }
-                            switchMode(next)
-                        }
-                )
-                if shotStart == nil {
-                    VideoModeLayer(
-                        camera: camera,
-                        layout: layout,
-                        mode: $mode,
-                        left: left,
-                        onRecorded: { video in recorded(video, layout: layout) },
-                        onRecordingChange: { videoRecording = $0 },
-                        volumeDown: volumeDown
-                    )
-                }
                 if expandCopy {
                     cardCopy(layout)
                 }
@@ -335,11 +313,10 @@ struct CaptureFlow: View {
         }
     }
 
-    /// 写真 ⇄ 動画(なぞったとき。カプセルのタップは VideoModeLayer の中で)
-    private func switchMode(_ next: CaptureMode) {
-        Haptics.play(.detent)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) { Haptics.play(.tick, gap: 0) }
-        withAnimation(.easeOut(duration: 0.25)) { mode = next }
+    /// タグのカプセルをタップ:タグ画面へもどる(なおす)
+    private func backToTags() {
+        guard shotStart == nil else { return }
+        withAnimation(.easeOut(duration: 0.3)) { step = .tags }
     }
 
     /// v20:録った動画(1秒以上)。保存は今すぐ(見せる動きとは つなげない)。見た目は穴あきのミルク色のチェキで、ホームへ
