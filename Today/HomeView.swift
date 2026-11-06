@@ -105,6 +105,8 @@ struct HomeView: View {
                 todayShots: todayShots, onOpenShot: onOpenShot,
                 v17: v17, v17Actions: v17Actions, bump: bump
             )
+            // v21 D:Home は あたたかい白い紙(夜も、紙の上は昼の色で描く)
+            .environment(\.palette, .day)
         } else {
             darkBody
         }
