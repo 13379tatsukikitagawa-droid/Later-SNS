@@ -14,7 +14,9 @@ struct V13FixTests {
     private let calendar = Calendar.current
 
     private func date(_ dayOffset: Int, _ hour: Int, _ minute: Int = 0) -> Date {
-        let day = calendar.date(byAdding: .day, value: dayOffset, to: calendar.startOfDay(for: Date()))!
+        // 特別な日(0:00〜9:00 も 撮れる日など)に かからない、ふつうの日を 基準にする
+        let base = calendar.date(from: DateComponents(year: 2026, month: 10, day: 20))!
+        let day = calendar.date(byAdding: .day, value: dayOffset, to: base)!
         return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)!
     }
 

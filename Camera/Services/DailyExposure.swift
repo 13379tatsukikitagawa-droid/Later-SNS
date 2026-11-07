@@ -8,10 +8,12 @@ import SwiftData
 enum PhotoDevelop {
     /// 仕上がる時刻:takenAt のあとで、最初に来る 9:00(9:00 ちょうどに撮ったら、次の日の 9:00)
     static func developDate(takenAt: Date, calendar: Calendar = .current) -> Date {
-        let sameDay = DailyExposureRules.window(for: takenAt, calendar: calendar).open
+        // 撮れる窓(特別な日に のびることがある)では なく、時計の 9:00 で 決める
+        let start = calendar.startOfDay(for: takenAt)
+        let sameDay = calendar.date(byAdding: .minute, value: DailyExposureRules.openingHour * 60, to: start) ?? start
         if takenAt < sameDay { return sameDay }
-        let nextDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: takenAt)) ?? takenAt
-        return DailyExposureRules.window(for: nextDay, calendar: calendar).open
+        let nextDay = calendar.date(byAdding: .day, value: 1, to: start) ?? takenAt
+        return calendar.date(byAdding: .minute, value: DailyExposureRules.openingHour * 60, to: nextDay) ?? nextDay
     }
 
     /// 仕上がったか(now が仕上がる時刻を過ぎているか)
@@ -36,12 +38,31 @@ enum DailyExposureRules {
     /// グループの解禁(isUnlocked)まで画像を送らない。
     static let uploadsImageAtCapture = true
 
+    /// 0:00〜9:00 も 撮れる 特別な日(その日の 0:00〜9:00 は、前の日の 窓の つづき)。
+    /// 2026-11-08:この日だけ(確認用)。おわったら この行を 消す
+    static let openNights: Set<String> = ["2026-11-08"]
+
     /// 指定日の撮影時間帯(開始・終了)。9:00〜翌0:00。
+    /// openNights の 日は、前の日の 窓が その日の 9:00 まで のびる(0:00〜9:00 も 撮れる)
     static func window(for date: Date, calendar: Calendar = .current) -> (open: Date, close: Date) {
         let startOfToday = calendar.startOfDay(for: date)
         let open = calendar.date(byAdding: .minute, value: openingHour * 60, to: startOfToday) ?? startOfToday
-        let close = calendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday
+        var close = calendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday
+        // 0:00〜9:00 が 撮れる日の 夜中:前の日の(のびた)窓に 入る
+        if date < open, openNights.contains(dayKey(startOfToday, calendar: calendar)),
+           let previous = calendar.date(byAdding: .day, value: -1, to: startOfToday) {
+            return window(for: previous, calendar: calendar)
+        }
+        // あしたが 0:00〜9:00 も 撮れる日なら、きょうの 窓は あしたの 9:00 まで
+        if openNights.contains(dayKey(close, calendar: calendar)) {
+            close = calendar.date(byAdding: .minute, value: openingHour * 60, to: close) ?? close
+        }
         return (open, close)
+    }
+
+    private static func dayKey(_ date: Date, calendar: Calendar) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
     /// 撮影を始めてよいか。長押しを開始した瞬間の時刻を渡す(押している間に枠を跨いでも有効)。
@@ -100,7 +121,8 @@ enum FilmRoll {
 
     /// 特別な日だけ、撮れる数を かえる(キーは LaterDay.key:その日の 9:00 〜 翌 0:00)。
     /// 2026-11-08:この日だけ 15枚(確認用)。おわったら この行を 消す
-    static let specialCapacities: [String: Int] = ["2026-11-08": 15]
+    /// 2026-11-07 の 日(11/8 の 0:00〜9:00 も ふくむ)も 15枚
+    static let specialCapacities: [String: Int] = ["2026-11-07": 15, "2026-11-08": 15]
 
     /// その日に 撮れる 上限(ふだんは shotsPerDay)。表示の こまの数(3つ)・昨日の ひらく数(最大3)には 使わない
     static func capacity(now: Date = Date(), calendar: Calendar = .current) -> Int {
