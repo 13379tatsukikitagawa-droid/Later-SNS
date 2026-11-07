@@ -9,7 +9,7 @@ import Observation
 final class FilmCounter {
     static let shared = FilmCounter()
 
-    /// 1日に撮れる数
+    /// ふだんの 1日に撮れる数(表示の こまの数)
     static let limit = FilmRoll.shotsPerDay
 
     static let dayKeyKey = "filmCounter.dayKey"
@@ -23,15 +23,22 @@ final class FilmCounter {
     @ObservationIgnored private let defaults: UserDefaults?
     @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private let calendar: Calendar
+    /// その日の 上限(ふだん 3。特別な日だけ かわる:FilmRoll.capacity)
+    @ObservationIgnored private let capacityFor: (Date, Calendar) -> Int
+
+    /// 今日の 上限
+    var limit: Int { capacityFor(clock(), calendar) }
 
     init(
         defaults: UserDefaults? = UserDefaults(suiteName: LaterWidgetShared.appGroup),
         clock: @escaping () -> Date = Date.init,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        capacity: @escaping (Date, Calendar) -> Int = { FilmRoll.capacity(now: $0, calendar: $1) }
     ) {
         self.defaults = defaults
         self.clock = clock
         self.calendar = calendar
+        self.capacityFor = capacity
         let now = LaterDay.key(for: clock(), calendar: calendar)
         let savedKey = defaults?.string(forKey: Self.dayKeyKey)
         if savedKey == now {
@@ -48,11 +55,11 @@ final class FilmCounter {
     /// 今日、使ったこま(日がかわっていれば 0。読むだけで、書きかえない)
     var used: Int {
         guard dayKey == currentKey else { return 0 }
-        return min(Self.limit, usedIDs.count)
+        return min(limit, usedIDs.count)
     }
 
     /// 今日のこり(0〜3)
-    var remaining: Int { max(0, Self.limit - used) }
+    var remaining: Int { max(0, limit - used) }
 
     /// シャッターが切れた瞬間に1回だけ呼ぶ。数えられたら true、もう上限なら false。同じ ID は2回数えない。
     /// source は "screen" / "volume" / "movie"(ログ用)
@@ -61,7 +68,7 @@ final class FilmCounter {
         rollOverIfNeeded()
         let id = captureID.uuidString
         if usedIDs.contains(id) { return true }
-        guard usedIDs.count < Self.limit else {
+        guard usedIDs.count < limit else {
             #if DEBUG
             print("[Film] consume refused id=\(id) source=\(source) remaining=0")
             #endif
@@ -80,7 +87,7 @@ final class FilmCounter {
         rollOverIfNeeded()
         var merged = usedIDs
         for id in serverIDs where !merged.contains(id) {
-            guard merged.count < Self.limit else { break }
+            guard merged.count < limit else { break }
             merged.append(id)
         }
         guard merged != usedIDs else { return }
@@ -105,7 +112,7 @@ final class FilmCounter {
     /// テスト・見た目の確認用:今日の 使ったこまを 置きかえる(保存しない)
     func debugReplace(used: Int) {
         rollOverIfNeeded()
-        usedIDs = (0..<max(0, min(Self.limit, used))).map { _ in UUID().uuidString }
+        usedIDs = (0..<max(0, min(limit, used))).map { _ in UUID().uuidString }
     }
     #endif
 

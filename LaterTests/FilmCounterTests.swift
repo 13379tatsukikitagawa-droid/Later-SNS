@@ -29,7 +29,7 @@ struct FilmCounterTests {
     }
 
     private func counter(_ defaults: UserDefaults, _ clock: Clock) -> FilmCounter {
-        FilmCounter(defaults: defaults, clock: { clock.now }, calendar: tokyo)
+        FilmCounter(defaults: defaults, clock: { clock.now }, calendar: tokyo, capacity: { _, _ in 3 })
     }
 
     @Test func threeConsumesLeaveNothing() {

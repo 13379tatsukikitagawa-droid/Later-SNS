@@ -106,7 +106,9 @@ extension HomeState {
             guard opened else { return .ready(shotAt: shotInLatest) }
             // ひらいたあと、3こま目まで残りがあれば、また撮れる
             // 数えるのは FilmCounter(filmUsed)。渡されなければ保存ずみの写真から(テスト・プレビュー用)
-            let remaining = FilmRoll.shotsRemaining(shotsToday: max(filmUsed ?? 0, FilmRoll.distinctShotCount(shotsInLatest)))
+            // 上限は その日の 上限(ふだん 3。特別な日だけ かわる)
+            let taken = max(filmUsed ?? 0, FilmRoll.distinctShotCount(shotsInLatest))
+            let remaining = max(0, FilmRoll.capacity(now: now, calendar: calendar) - taken)
             return remaining > 0 ? .more(shotAt: shotInLatest, remaining: remaining) : .opened(shotAt: shotInLatest)
         }
 

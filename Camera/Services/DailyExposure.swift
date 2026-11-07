@@ -98,6 +98,15 @@ enum FilmRoll {
     /// 1日に撮れる枚数。変える時はここだけ直す。
     static let shotsPerDay = 3
 
+    /// 特別な日だけ、撮れる数を かえる(キーは LaterDay.key:その日の 9:00 〜 翌 0:00)。
+    /// 2026-11-08:この日だけ 15枚(確認用)。おわったら この行を 消す
+    static let specialCapacities: [String: Int] = ["2026-11-08": 15]
+
+    /// その日に 撮れる 上限(ふだんは shotsPerDay)。表示の こまの数(3つ)・昨日の ひらく数(最大3)には 使わない
+    static func capacity(now: Date = Date(), calendar: Calendar = .current) -> Int {
+        specialCapacities[LaterDay.key(for: now, calendar: calendar)] ?? shotsPerDay
+    }
+
     /// 今日のこり(0以上)。
     static func shotsRemaining(shotsToday: Int) -> Int {
         max(0, shotsPerDay - shotsToday)
