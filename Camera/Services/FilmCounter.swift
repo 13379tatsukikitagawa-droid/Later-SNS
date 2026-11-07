@@ -101,6 +101,14 @@ final class FilmCounter {
     /// 日がかわっていたら、0 にもどす(9:00 をまたいだ時)。画面が時計で更新される時に呼ぶ。
     func refresh() { rollOverIfNeeded() }
 
+    #if DEBUG
+    /// テスト・見た目の確認用:今日の 使ったこまを 置きかえる(保存しない)
+    func debugReplace(used: Int) {
+        rollOverIfNeeded()
+        usedIDs = (0..<max(0, min(Self.limit, used))).map { _ in UUID().uuidString }
+    }
+    #endif
+
     private func rollOverIfNeeded() {
         let key = currentKey
         guard dayKey != key else { return }

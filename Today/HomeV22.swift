@@ -317,12 +317,44 @@ struct HomeRingText: View {
 
 // MARK: - 見出し(2行・Black 30pt・字間 -4.5%・手書きの丸は文字に ぴったり)
 
+/// v22 ホームの 文字と 面の色(昼 / 夜)。夜(21:00〜9:00)は 背景が ほぼ黒なので、昼の色を そのまま 使わない。
+/// 夜の目安:本文 4.5:1 以上・大きな見出し 3:1 以上・小さな説明も #A1A1A8 より 暗くしない
+struct HomeV22Ink: Equatable {
+    let night: Bool
+
+    private func pick(_ day: String, _ night: String) -> Color { Color(hex: self.night ? night : day) }
+    /// 見出し・タイトル
+    var ink: Color { pick("111111", "F5F5F7") }
+    /// 小さな説明
+    var sub: Color { pick("8E8E93", "A1A1A8") }
+    /// 数字(1 / 3 など)
+    var meta: Color { pick("6E6E73", "B4B4BB") }
+    var chevron: Color { pick("C7C7CC", "8E8E95") }
+    /// 今日のカードの面
+    var card: Color { pick("FFFFFF", "18181C") }
+    /// うすい面(参加する・ガイドの カード)
+    var soft: Color { night ? Color.white.opacity(0.07) : Color(hex: "F4F3F7") }
+    var softLine: Color { night ? Color.white.opacity(0.14) : Color(hex: "E3E2E9") }
+    var guideCard: Color { night ? Color.white.opacity(0.07) : Color(hex: "F6F5F8") }
+    /// こま(撮った = 塗り・つぎ = ふち・まだ = 点線)
+    var slot: Color { pick("111111", "F5F5F7") }
+    var slotDash: Color { pick("C9C8CE", "6E6E76") }
+    /// 目じるしの 文字
+    var marker: Color { pick("3A3A3C", "D1D1D6") }
+    var faint: Color { pick("AEAEB2", "A1A1A8") }
+    /// 白い ボタンの 面
+    var button: Color { night ? Color.white.opacity(0.1) : .white }
+}
+
 struct HomeV22Headline: View {
     let headline: HomeV22Rules.Headline
     /// 丸を描く進み 0〜1
     var circle: Double = 1
     var lineReveal: Double = 1
     let width: CGFloat
+
+    @Environment(\.palette) private var palette
+    private var colors: HomeV22Ink { HomeV22Ink(night: palette.isNight) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -331,7 +363,7 @@ struct HomeV22Headline: View {
                 .opacity(lineReveal)
             Text(headline.sub)
                 .font(.system(size: 13, weight: .medium)).tracking(0.02 * 13)
-                .foregroundStyle(Color(hex: "8E8E93"))
+                .foregroundStyle(colors.sub)
                 .padding(.top, 7)
         }
         .frame(width: width)
@@ -362,7 +394,7 @@ struct HomeV22Headline: View {
         }
         .font(font)
         .tracking(-0.045 * size)
-        .foregroundStyle(Color(hex: "111111"))
+        .foregroundStyle(colors.ink)
         .lineLimit(1)
         .fixedSize()
         .frame(height: size * 1.24)
@@ -393,8 +425,10 @@ struct HomeTodayCard: View {
     let onTap: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.palette) private var palette
     @State private var bounce = 0
     private var landing: FilmLanding { FilmLanding.shared }
+    private var colors: HomeV22Ink { HomeV22Ink(night: palette.isNight) }
 
     var body: some View {
         let text = HomeV22Rules.card(used: used, initial: initial)
@@ -402,27 +436,27 @@ struct HomeTodayCard: View {
             HStack(spacing: 14) {
                 cheki
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(text.title).font(.system(size: 15.5, weight: .black)).tracking(-0.02 * 15.5).foregroundStyle(Color(hex: "111111")).lineLimit(1).minimumScaleFactor(0.8)
-                    Text(text.sub).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Color(hex: "8E8E93")).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(text.title).font(.system(size: 15.5, weight: .black)).tracking(-0.02 * 15.5).foregroundStyle(colors.ink).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(text.sub).font(.system(size: 11.5, weight: .medium)).foregroundStyle(colors.sub).lineLimit(1).minimumScaleFactor(0.8)
                     HStack(spacing: 6) {
                         HStack(spacing: 4) {
                             ForEach(0..<3, id: \.self) { i in slot(i) }
                         }
-                        Text("\(used) / 3").font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(0.1 * 10).foregroundStyle(Color(hex: "6E6E73"))
+                        Text("\(used) / 3").font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(0.1 * 10).foregroundStyle(colors.meta)
                         Spacer(minLength: 0)
                         if used >= 3 {
-                            Text("あと \(HomeV22Rules.untilNine(now: now))").font(.system(size: 10, design: .monospaced)).tracking(0.06 * 10).foregroundStyle(Color(hex: "FF6A1A"))
+                            Text("あと \(HomeV22Rules.untilNine(now: now))").font(.system(size: 10, design: .monospaced)).tracking(0.06 * 10).foregroundStyle(palette.accent)
                         }
                     }
                     .padding(.top, 4)
                 }
-                Text("›").font(.system(size: 22)).foregroundStyle(Color(hex: "C7C7CC")).padding(.trailing, 2)
+                Text("›").font(.system(size: 22)).foregroundStyle(colors.chevron).padding(.trailing, 2)
             }
             .padding(.leading, 10).padding(.trailing, 12)
             .frame(height: 90)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.white))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(LinearGradient(colors: [Color(hex: "FFCFB4"), Color(hex: "E8D6FF"), Color(hex: "CFE0FF"), Color(hex: "FFE7B8")], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5))
-            .shadow(color: Color(red: 0.47, green: 0.31, blue: 0.63).opacity(0.35), radius: 15, y: 14)
+            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(colors.card))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(LinearGradient(colors: [Color(hex: "FFCFB4"), Color(hex: "E8D6FF"), Color(hex: "CFE0FF"), Color(hex: "FFE7B8")], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5).opacity(palette.isNight ? 0.55 : 1))
+            .shadow(color: Color(red: 0.47, green: 0.31, blue: 0.63).opacity(palette.isNight ? 0.2 : 0.35), radius: 15, y: 14)
         }
         .buttonStyle(SquishButtonStyle(pressedScale: 0.98))
         .keyframeAnimator(initialValue: 1.0, trigger: bounce) { content, s in content.scaleEffect(s) } keyframes: { _ in
@@ -477,12 +511,12 @@ struct HomeTodayCard: View {
         let shape = RoundedRectangle(cornerRadius: 3)
         return ZStack {
             if i < used {
-                shape.fill(Color(hex: "111111"))
+                shape.fill(colors.slot)
                 Circle().fill(Color(hex: "FF8A2A")).frame(width: 4, height: 4)
             } else if i == used {
-                shape.strokeBorder(Color(hex: "111111"), lineWidth: 1.6)
+                shape.strokeBorder(colors.slot, lineWidth: 1.6)
             } else {
-                shape.strokeBorder(Color(hex: "C9C8CE"), style: StrokeStyle(lineWidth: 1.4, dash: [2, 2]))
+                shape.strokeBorder(colors.slotDash, style: StrokeStyle(lineWidth: 1.4, dash: [2, 2]))
             }
         }
         .frame(width: 11, height: 14)
@@ -501,10 +535,13 @@ struct HomeV22Groups: View {
     let onJoin: () -> Void
     let onAdd: () -> Void
 
+    @Environment(\.palette) private var palette
+    private var colors: HomeV22Ink { HomeV22Ink(night: palette.isNight) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             if summaries.isEmpty {
-                Text("グループ").font(.system(size: 17, weight: .black)).tracking(-0.02 * 17).foregroundStyle(Color(hex: "111111")).padding(.leading, 4)
+                Text("グループ").font(.system(size: 17, weight: .black)).tracking(-0.02 * 17).foregroundStyle(colors.ink).padding(.leading, 4)
                 HStack(spacing: 10) {
                     tile(dark: true, icon: "plus", title: "つくる", note: "4〜8人の グループ", action: onCreate)
                     tile(dark: false, icon: "qrcode", title: "参加する", note: "合言葉・QR・リンク", action: onJoin)
@@ -529,8 +566,8 @@ struct HomeV22Groups: View {
                     .frame(width: 40, height: 40)
                     .background(Circle().fill(dark ? AnyShapeStyle(LinearGradient(colors: [Color(hex: "FFB05A"), Color(hex: "FF5A7A")], startPoint: .topLeading, endPoint: .bottomTrailing)) : AnyShapeStyle(Color.white)))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(.system(size: 16, weight: .black)).tracking(-0.02 * 16).foregroundStyle(dark ? .white : Color(hex: "111111"))
-                    Text(note).font(.system(size: 10.5, weight: .medium)).foregroundStyle(dark ? Color(hex: "A7A7B2") : Color(hex: "8E8E93")).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(title).font(.system(size: 16, weight: .black)).tracking(-0.02 * 16).foregroundStyle(dark ? .white : colors.ink)
+                    Text(note).font(.system(size: 10.5, weight: .medium)).foregroundStyle(dark ? Color(hex: "A7A7B2") : colors.sub).lineLimit(1).minimumScaleFactor(0.8)
                 }
                 Spacer(minLength: 0)
             }
@@ -538,8 +575,9 @@ struct HomeV22Groups: View {
             .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
             .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(dark
                 ? AnyShapeStyle(LinearGradient(colors: [Color(hex: "141418"), Color(hex: "2A2433")], startPoint: .topLeading, endPoint: .bottomTrailing))
-                : AnyShapeStyle(Color(hex: "F4F3F7"))))
-            .overlay { if !dark { RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color(hex: "E3E2E9"), lineWidth: 1.4) } }
+                : AnyShapeStyle(colors.soft)))
+            // 夜は 黒い タイルも 背景に とけないよう、うすい ふちを つける
+            .overlay { if !dark || palette.isNight { RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(colors.softLine, lineWidth: dark ? 1 : 1.4) } }
             .shadow(color: dark ? Color(red: 0.12, green: 0.08, blue: 0.16).opacity(0.6) : .clear, radius: 13, y: 14)
         }
         .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
@@ -553,13 +591,16 @@ struct HomeV22Guide: View {
     let now: Date
     let onClose: () -> Void
 
+    @Environment(\.palette) private var palette
+    private var colors: HomeV22Ink { HomeV22Ink(night: palette.isNight) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
                 Circle().fill(Color(hex: "FF6A1A")).frame(width: 6, height: 6)
-                Text("HOW IT WORKS").font(.system(size: 9.5, design: .monospaced)).tracking(0.2 * 9.5).foregroundStyle(Color(hex: "8E8E93"))
+                Text("HOW IT WORKS").font(.system(size: 9.5, design: .monospaced)).tracking(0.2 * 9.5).foregroundStyle(colors.sub)
             }
-            Text("あしたの朝、\nこう ひらく。").font(.system(size: 28, weight: .black)).tracking(-0.045 * 28).foregroundStyle(Color(hex: "111111")).padding(.top, 8)
+            Text("あしたの朝、\nこう ひらく。").font(.system(size: 28, weight: .black)).tracking(-0.045 * 28).foregroundStyle(colors.ink).padding(.top, 8)
             HStack(alignment: .top, spacing: 8) {
                 step(icon: AnyView(Circle().fill(RadialGradient(colors: [Color(hex: "FFD08A"), Color(hex: "FF7A4A"), Color(hex: "E04A6A")], center: UnitPoint(x: 0.4, y: 0.35), startRadius: 0, endRadius: 22)).overlay(Circle().strokeBorder(.white, lineWidth: 3))),
                      title: "ながおしで 撮る", note: "1日3こま")
@@ -574,9 +615,9 @@ struct HomeV22Guide: View {
                 Haptics.play(.soft)
                 onClose()
             } label: {
-                Text("このガイドを とじる").font(.system(size: 11.5, weight: .bold)).foregroundStyle(Color(hex: "8E8E93"))
+                Text("このガイドを とじる").font(.system(size: 11.5, weight: .bold)).foregroundStyle(colors.sub)
                     .padding(.horizontal, 16).frame(height: 34)
-                    .background(Capsule().fill(.white)).overlay(Capsule().strokeBorder(Color(hex: "E3E2E9"), lineWidth: 1.2))
+                    .background(Capsule().fill(colors.button)).overlay(Capsule().strokeBorder(colors.softLine, lineWidth: 1.2))
             }
             .buttonStyle(SquishButtonStyle(pressedScale: 0.96))
             .frame(maxWidth: .infinity)
@@ -588,12 +629,12 @@ struct HomeV22Guide: View {
     private func step(icon: AnyView, title: String, note: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             icon.frame(width: 38, height: 38).padding(.bottom, 8)
-            Text(title).font(.system(size: 13, weight: .heavy)).tracking(-0.01 * 13).foregroundStyle(Color(hex: "111111")).fixedSize(horizontal: false, vertical: true)
-            Text(note).font(.system(size: 10, weight: .medium)).foregroundStyle(Color(hex: "8E8E93"))
+            Text(title).font(.system(size: 13, weight: .heavy)).tracking(-0.01 * 13).foregroundStyle(colors.ink).fixedSize(horizontal: false, vertical: true)
+            Text(note).font(.system(size: 10, weight: .medium)).foregroundStyle(colors.sub)
         }
         .padding(.horizontal, 10).padding(.top, 12).padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color(hex: "F6F5F8")))
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.guideCard))
     }
 
     /// Later の 1日:0〜24時の帯(夜 → 朝 → 昼 → 夕)+「いま」のつまみ・9:00 ひらく・24:00 消灯
@@ -602,9 +643,9 @@ struct HomeV22Guide: View {
         let k = Double((c.hour ?? 0) * 60 + (c.minute ?? 0)) / 1440
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Later の 1日").font(.system(size: 13, weight: .heavy)).foregroundStyle(Color(hex: "111111"))
+                Text("Later の 1日").font(.system(size: 13, weight: .heavy)).foregroundStyle(colors.ink)
                 Spacer()
-                Text("いま \(HomeV17Rules.clockText(HomeV17Rules.hour(of: now)))").font(.system(size: 10)).tracking(0.08 * 10).foregroundStyle(Color(hex: "FF6A1A"))
+                Text("いま \(HomeV17Rules.clockText(HomeV17Rules.hour(of: now)))").font(.system(size: 10)).tracking(0.08 * 10).foregroundStyle(palette.accent)
             }
             GeometryReader { proxy in
                 let w = proxy.size.width
@@ -626,21 +667,21 @@ struct HomeV22Guide: View {
             .padding(.top, 30)
             HStack {
                 ForEach(["0", "6", "12", "18", "24"], id: \.self) { h in
-                    Text(h).font(.system(size: 9)).tracking(0.06 * 9).foregroundStyle(Color(hex: "AEAEB2"))
+                    Text(h).font(.system(size: 9)).tracking(0.06 * 9).foregroundStyle(colors.faint)
                     if h != "24" { Spacer() }
                 }
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color(hex: "F6F5F8")))
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.guideCard))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Later の 1日。9:00 に ひらき、24:00 に 消灯")
     }
 
     private func marker(_ text: String, x: CGFloat, alignRight: Bool = false) -> some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 1).fill(Color(hex: "111111")).frame(width: 2, height: 24)
-            Text(text).font(.system(size: 9.5, weight: .bold)).foregroundStyle(Color(hex: "3A3A3C")).fixedSize()
+            RoundedRectangle(cornerRadius: 1).fill(colors.slot).frame(width: 2, height: 24)
+            Text(text).font(.system(size: 9.5, weight: .bold)).foregroundStyle(colors.marker).fixedSize()
                 .offset(x: alignRight ? -30 : 0, y: -26)
         }
         .position(x: x, y: 8)

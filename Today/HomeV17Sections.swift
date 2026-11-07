@@ -9,7 +9,8 @@ struct V17Ink {
     let night: Bool
 
     var ink: Color { night ? .white : Color(hex: "111111") }
-    var sub: Color { night ? Color.white.opacity(0.5) : Color(hex: "8E8E93") }
+    /// 夜の 小さな 説明は #A1A1A8 より 暗くしない(背景が ほぼ黒)
+    var sub: Color { night ? Color(hex: "A1A1A8") : Color(hex: "8E8E93") }
     var body: Color { night ? Color.white.opacity(0.62) : Color(hex: "6E6E73") }
     var text: Color { night ? Color.white.opacity(0.82) : Color(hex: "3A3A3C") }
     var faint: Color { night ? Color.white.opacity(0.3) : Color(hex: "AEAEB2") }
@@ -1828,15 +1829,16 @@ struct V17BottomChrome: View {
     var body: some View {
         let offset = scroll.offset
         ZStack(alignment: .bottomLeading) {
+            // 月(下から 102pt)の 後ろは 背景の色で うめて、上 48pt で 透明へ。
+            // 後ろの カードの 文字が 月の 文字と まざって 読めなくならないよう、スクロールしていなくても 敷く
             LinearGradient(stops: [
                 .init(color: tint.opacity(0), location: 0),
-                .init(color: tint, location: 0.72),
+                .init(color: tint.opacity(0.85), location: 0.22),
+                .init(color: tint, location: 0.32),
                 .init(color: tint, location: 1),
             ], startPoint: .top, endPoint: .bottom)
-            .frame(height: 150)
+            .frame(height: MoonLayout.visibleHeight + 48)
             .frame(maxWidth: .infinity)
-            .opacity(HomeV17Rules.moonFade(offset))
-            .animation(.easeOut(duration: 0.25), value: offset > 0)
 
             V17ScrollCue(ink: ink, animated: !reduceMotion)
                 .padding(.leading, 24)

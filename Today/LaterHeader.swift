@@ -82,9 +82,12 @@ private enum HeaderFont {
 // MARK: - ヘッダー(今日・昨日のホームで同じもの)
 
 /// 左上の「Later」+ 小さな today / yesterday、右上のアバター、ロゴの下の「消灯まで」の行。
-/// 高さ 80pt(安全領域の上から)。1行目の中心は 30pt、「消灯まで」の行の中心は 64pt。
+/// 高さ 87pt(安全領域の上から)。1行目の中心は 30pt、「消灯まで」の行の中心は 71pt
+/// (ロゴの下から ピルの上まで、前より 7pt あける)。
 struct LaterHeader: View {
-    static let height: CGFloat = 80
+    static let height: CGFloat = 87
+    /// 「消灯まで」の行の 上端(前は 49)
+    static let pillTop: CGFloat = 56
 
     /// ヘッダーの上端(安全領域の高さ)。昨日のホーム(HomeV5Container)は安全領域の中に置くので、
     /// 今日のホームも同じ値にそろえる。Safe Area を無視する親の中では proxy が 0 になるため、窓の値も見る。
@@ -123,7 +126,7 @@ struct LaterHeader: View {
             TimelineView(LaterHeaderSchedule(active: tickActive)) { context in
                 consumption(now: clock(), tick: context.date, remaining: remaining)
             }
-            .padding(.top, 49)
+            .padding(.top, Self.pillTop)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .frame(height: Self.height, alignment: .top)
@@ -168,9 +171,9 @@ struct LaterHeader: View {
             avatarSwitch.onSwitch()
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text("today").foregroundStyle(home == .today ? Color(hex: "6E6E73") : Color(hex: "C2C1C7"))
-                Text("/").font(.system(size: 13)).foregroundStyle(Color(hex: "DADADF"))
-                Text("yesterday").foregroundStyle(home == .yesterday ? Color(hex: "6E6E73") : Color(hex: "C2C1C7"))
+                Text("today").foregroundStyle(homeLabelColor(selected: home == .today))
+                Text("/").font(.system(size: 13)).foregroundStyle(Color(hex: palette.isNight ? "4A4A50" : "DADADF"))
+                Text("yesterday").foregroundStyle(homeLabelColor(selected: home == .yesterday))
             }
             .font(.system(size: 16, design: .serif).italic())
             .padding(.horizontal, 4)
@@ -180,6 +183,12 @@ struct LaterHeader: View {
         .buttonStyle(SquishButtonStyle(pressedScale: 0.96))
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: home)
         .accessibilityLabel(home == .today ? "いまは 今日のホーム。押すと 昨日のホームへ" : "いまは 昨日のホーム。押すと 今日のホームへ")
+    }
+
+    /// today / yesterday の 色。夜は 背景が ほぼ黒なので、いまの方は 明るく、もう一方も 読める 灰色(#8E8E93 = 約6:1)
+    private func homeLabelColor(selected: Bool) -> Color {
+        if palette.isNight { return Color(hex: selected ? "E5E5EA" : "8E8E93") }
+        return Color(hex: selected ? "6E6E73" : "C2C1C7")
     }
 
     // MARK: 「消灯まで」の行
