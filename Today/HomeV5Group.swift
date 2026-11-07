@@ -160,6 +160,10 @@ struct HomeV5GroupPage: View {
     @State private var unlockTask: Task<Void, Never>?
     /// タブを開き直すたびに増やす(ブロックが、もう一度下から出てくる)
     @State private var revealToken = 0
+    /// ヒーローの 出現の はじまり(タブを ひらくたび)
+    @State private var introStart: Date?
+    @State private var introToken = 0
+    @State private var marker = 1.0
 
     private var targetIDs: [String] {
         sections.flatMap { section in section.tiles.map(\.id).filter(section.unlockedIDs.contains) }
@@ -176,24 +180,29 @@ struct HomeV5GroupPage: View {
                 if sections.isEmpty {
                     GeometryReader { proxy in
                         let scale = YesterdayHeroLayout.scale(forWidth: proxy.size.width + V5.edge * 2)
-                        YesterdayGroupHero(userName: userName, onSeat: { if canCreate { onCreateGroup(nil) } })
+                        YesterdayGroupHero(userName: userName, introStart: introStart, isActive: isActive,
+                                           onSeat: { if canCreate { onCreateGroup(nil) } else { Haptics.play(.warn) } })
                             .scaleEffect(scale)
                             .frame(width: proxy.size.width, height: proxy.size.height)
                     }
                     .frame(height: YesterdayHeroLayout.size.height * YesterdayHeroLayout.scale(forWidth: UIScreen.main.bounds.width))
                     .padding(.top, 6)
                 }
-                YesterdayGroupHeadline()
+                // 見出し → サブ → ボタン → ME が、下から 26pt 浮いて 順に(0.07秒ずつ・バイブなし)
+                YesterdayGroupHeadline(marker: marker)
                     .padding(.top, sections.isEmpty ? 4 : 0)
-                    .scrollReveal(0, token: revealToken)
+                    .yesterdayRise(riseBase, token: introToken)
+                YesterdayGroupSub()
+                    .padding(.top, -4)
+                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep, token: introToken)
                 createJoinButtons
-                    .scrollReveal(1, token: revealToken)
+                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep * 2, token: introToken)
                 MECard(caption: "きのうの まい ・ 7日で きえる", film: friendsData.film, isActive: isActive, onTap: onOpenMe)
                     .padding(.top, 14)
-                    .scrollReveal(2, token: revealToken)
+                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep * 3, token: introToken)
                 TodayFriendsSection(state: friendsState, data: friendsData, actions: friendsActions, onFriend: onFriend, onInvite: onInviteFriend)
                     .padding(.horizontal, -V5.edge)
-                    .scrollReveal(3, token: revealToken)
+                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep * 4, token: introToken)
                 if !sections.isEmpty {
                     Text("グループ")
                         .font(.system(size: 28, weight: .heavy))
@@ -238,6 +247,8 @@ struct HomeV5GroupPage: View {
             if locked {
                 V5LockedPill()
                     .padding(.bottom, 8)
+                    .contentShape(Capsule())
+                    .onTapGesture { Haptics.play(.warn) }
                     .transition(.opacity)
             }
         }
@@ -245,16 +256,49 @@ struct HomeV5GroupPage: View {
         .onChange(of: scrollToTopToken) { _, _ in
             withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5top", anchor: .top) }
         }
-        .onAppear { seed() }
+        .onAppear {
+            seed()
+            if isActive { startIntro() }
+        }
         .onChange(of: targetIDs) { _, _ in syncUnlocks() }
         .onChange(of: sections.map(\.shotToday)) { _, _ in noticeShots() }
         .onChange(of: shotEvent?.id) { _, _ in syncUnlocks() }
         .onChange(of: isActive) { _, active in
-            if active { revealToken += 1 }
+            if active {
+                revealToken += 1
+                startIntro()
+            }
             if active, !pendingIDs.isEmpty { playPending() }
         }
         .onDisappear { unlockTask?.cancel() }
         }
+    }
+
+    // MARK: ヒーローの 出現
+
+    /// 見出しなどが 浮きはじめる 時刻(ヒーローが あれば そのあと)
+    private var riseBase: Double { sections.isEmpty ? YesterdayHeroTiming.riseStart : 0 }
+
+    /// 開いた 瞬間の 出現(約1.6秒)。開きなおすたびに はじめから(のこったバイブは token で 止まる)。
+    /// バイブは 最大5回:soft(まんなか)→ tick ×3(席)→ light(さいごの シールが 止まる)
+    private func startIntro() {
+        introToken += 1
+        let token = introToken
+        let hero = sections.isEmpty
+        introStart = hero ? Date() : nil
+        func after(_ seconds: Double, _ work: @escaping () -> Void) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { if introToken == token { work() } }
+        }
+        // マーカーは 見出しが 出たあと、左から右へ 0.5秒
+        marker = reduceMotion ? 1 : 0
+        if !reduceMotion {
+            after(riseBase + 0.35) { withAnimation(.timingCurve(0.3, 0.9, 0.3, 1, duration: 0.5)) { marker = 1 } }
+        }
+        guard hero else { return }
+        let t = YesterdayHeroTiming.self
+        after(0.15) { Haptics.play(.soft) }
+        for i in [0, 3, 6] { after(t.seatStart + Double(i) * t.seatStep) { Haptics.play(.tick, gap: 0) } }
+        after(t.lastStickerLanded) { YesterdayHeroHaptics.light() }
     }
 
     // MARK: 空・追加
@@ -278,7 +322,12 @@ struct HomeV5GroupPage: View {
         HStack(spacing: 12) {
             Button {
                 TapConsumption.mark()
-                if canCreate { onCreateGroup(nil) } else { Haptics.play(.warn) }
+                if canCreate {
+                    YesterdayHeroHaptics.rigid()
+                    onCreateGroup(nil)
+                } else {
+                    Haptics.play(.warn)
+                }
             } label: {
                 EmptyView()
             }
@@ -287,6 +336,7 @@ struct HomeV5GroupPage: View {
             .accessibilityLabel(canCreate ? "グループをつくる" : "グループは \(GroupMembershipPolicy.maxGroupsPerUser)個まで")
             Button {
                 TapConsumption.mark()
+                Haptics.play(.soft)
                 onJoinGroup()
             } label: {
                 EmptyView()

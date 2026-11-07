@@ -57,6 +57,9 @@ struct YesterdayGroupSnapshotTests {
             if only == "all" || only == "me" {
                 try await shoot(MEScreenV19(onBack: {}, onShoot: {}).modelContainer(container), name: "yg-me-\(label)", size: size, dir: dir)
             }
+            if only == "mid" && label == "promax" {
+                try await shoot(groupTab(palette: .day, sections: []), name: "yg-group-mid", size: size, dir: dir, wait: 0.7)
+            }
             if only == "all" || only == "group" {
                 for (palette, tag) in [(Palette.day, "day"), (Palette.night, "night")] {
                     try await shoot(groupTab(palette: palette, sections: []), name: "yg-group-\(tag)-\(label)", size: size, dir: dir, wait: 2.6)

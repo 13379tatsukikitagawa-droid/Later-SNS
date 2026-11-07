@@ -165,6 +165,8 @@ struct HomeV5Container: View {
             get: { tab },
             set: { new in
                 if new == tab {
+                    // すでに 開いている タブ:tick
+                    Haptics.play(.tick)
                     scrollToTop(new)
                 } else {
                     selectTab(new)
@@ -174,7 +176,8 @@ struct HomeV5Container: View {
     }
 
     private func selectTab(_ new: HomeTab) {
-        UISelectionFeedbackGenerator().selectionChanged()
+        // タブ切りかえ:selection(端末・設定で バイブを 切っていれば 鳴らさない)
+        YesterdayHeroHaptics.selection()
         if showsLightsPanel { setLightsPanel(false) }
         store(new)
         signals.activeTab = new
