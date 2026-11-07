@@ -159,7 +159,10 @@ struct MusicSheet: View {
     @State private var term = ""
     @State private var results: [AppleMusicCatalog.Found] = []
     @State private var searching = false
-    @State private var searchFailed = false
+    /// 失敗の 本当の 中身(開発用に 小さく 出す)。nil なら 失敗していない
+    @State private var searchError: String?
+    /// 開発用:許可と サブスクの 状態
+    @State private var statusLine = ""
     @State private var searchTask: Task<Void, Never>?
     @State private var linkText = ""
     @State private var linkPick: MusicPick?
@@ -217,7 +220,10 @@ struct MusicSheet: View {
             selected = current
             if current?.service == .spotify { service = .spotify }
         }
-        .task { if access == .ready { subscribed = await AppleMusicCatalog.hasSubscription() } }
+        .task {
+            if access == .ready { subscribed = await AppleMusicCatalog.hasSubscription() }
+            statusLine = await AppleMusicCatalog.statusLine()
+        }
         .onDisappear {
             searchTask?.cancel()
             player?.pause()
@@ -305,6 +311,7 @@ struct MusicSheet: View {
                         Haptics.play(.warn)
                     }
                     withAnimation { access = result }
+                    statusLine = await AppleMusicCatalog.statusLine()
                 }
             } label: {
                 Text("つなぐ").font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
@@ -336,8 +343,9 @@ struct MusicSheet: View {
     private var resultList: some View {
         ScrollView {
             LazyVStack(spacing: 2) {
-                if searchFailed {
-                    note("いまは、さがせませんでした。つながりを たしかめて、もういちど")
+                if let searchError {
+                    note("さがせませんでした。")
+                    debugText(searchError)
                 } else if !term.isEmpty, results.isEmpty, !searching {
                     note("見つかりませんでした")
                 }
@@ -347,6 +355,20 @@ struct MusicSheet: View {
             }
         }
         .scrollDismissesKeyboard(.immediately)
+        .safeAreaInset(edge: .bottom) {
+            // 開発用:許可と サブスクの 状態(小さな 灰色の 文字)
+            if !statusLine.isEmpty { debugText(statusLine) }
+        }
+    }
+
+    /// 開発用の 小さな 文字(選んで コピーできる)
+    private func debugText(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 9.5, weight: .regular, design: .monospaced))
+            .foregroundStyle(Color(hex: "9A9AA2"))
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 4)
     }
 
     // MARK: Spotify(リンクを はる)
@@ -448,24 +470,40 @@ struct MusicSheet: View {
 
     // MARK: 動き
 
+    /// 0.4秒 待ってから 検索(デバウンス)。待っている間に 打ったら、前の 待ちを とりけす。
+    /// とりけしは「待ち」の 間だけ。検索を はじめたら、とちゅうで キャンセルしない(結果が 古ければ 捨てるだけ)
     private func scheduleSearch(_ value: String, now: Bool = false) {
         searchTask?.cancel()
-        searchFailed = false
-        let query = value
-        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { results = []; searching = false; return }
+        let query = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            results = []
+            searching = false
+            searchError = nil
+            return
+        }
         searchTask = Task {
-            if !now { try? await Task.sleep(for: .milliseconds(350)) }
-            guard !Task.isCancelled else { return }
+            if !now {
+                try? await Task.sleep(for: .milliseconds(400))
+                guard !Task.isCancelled else { return }
+            }
             searching = true
-            defer { searching = false }
+            let outcome: Result<[AppleMusicCatalog.Found], Error>
             do {
-                let found = try await AppleMusicCatalog.search(query)
-                guard !Task.isCancelled else { return }
-                results = found
+                outcome = .success(try await Task.detached { try await AppleMusicCatalog.search(query) }.value)
             } catch {
-                guard !Task.isCancelled else { return }
+                outcome = .failure(error)
+            }
+            // いまの 入力と ちがう(あとから 打った)結果は 捨てる
+            guard term.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
+            searching = false
+            switch outcome {
+            case .success(let found):
+                searchError = nil
+                results = found
+            case .failure(let error):
                 results = []
-                searchFailed = true
+                searchError = AppleMusicCatalog.describe(error)
+                statusLine = await AppleMusicCatalog.statusLine()
             }
         }
     }

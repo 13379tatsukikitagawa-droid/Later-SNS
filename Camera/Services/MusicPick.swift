@@ -7,6 +7,7 @@
 
 import Foundation
 import MusicKit
+import os
 
 /// 今日の 1曲
 nonisolated struct MusicPick: Codable, Equatable, Sendable {
@@ -142,10 +143,61 @@ enum AppleMusicCatalog {
         }
     }
 
+    private static let logger = Logger(subsystem: "Later", category: "AppleMusic")
+
     /// Apple Music に 入っているか(試聴だけなら 入っていなくても 検索は できる)
     static func hasSubscription() async -> Bool {
         guard let subscription = try? await MusicSubscription.current else { return false }
         return subscription.canPlayCatalogContent
+    }
+
+    /// 開発用:いまの 許可と サブスクの 状態(画面の 小さな 文字・os_log)
+    static func statusLine() async -> String {
+        let auth: String = {
+            switch MusicAuthorization.currentStatus {
+            case .authorized: "authorized"
+            case .notDetermined: "notDetermined"
+            case .denied: "denied"
+            case .restricted: "restricted"
+            @unknown default: "unknown"
+            }
+        }()
+        var line = "auth=\(auth)"
+        do {
+            let subscription = try await MusicSubscription.current
+            line += " ・ sub: canPlay=\(subscription.canPlayCatalogContent) canBecome=\(subscription.canBecomeSubscriber) cloudLibrary=\(subscription.hasCloudLibraryEnabled)"
+        } catch {
+            line += " ・ sub: error \(describe(error))"
+        }
+        logger.info("\(line, privacy: .public)")
+        return line
+    }
+
+    /// 本当の エラー(型・localizedDescription・underlyingError・MusicKit の 中身)を 1つの 文に
+    static func describe(_ error: Error) -> String {
+        var parts = ["\(type(of: error))"]
+        if let token = error as? MusicTokenRequestError {
+            switch token {
+            case .developerTokenRequestFailed: parts.append("developerTokenRequestFailed(App ID の MusicKit が 有効でない・反映待ちの 可能性)")
+            case .permissionDenied: parts.append("permissionDenied")
+            case .privacyAcknowledgementRequired: parts.append("privacyAcknowledgementRequired(ミュージックアプリで 同意が 必要)")
+            case .userNotSignedIn: parts.append("userNotSignedIn(Apple ID に サインインしていない)")
+            case .userTokenRequestFailed: parts.append("userTokenRequestFailed")
+            case .userTokenRevoked: parts.append("userTokenRevoked")
+            case .unknown: parts.append("unknown")
+            @unknown default: parts.append("\(token)")
+            }
+        }
+        if let data = error as? MusicDataRequest.Error {
+            parts.append("status=\(data.status) code=\(data.code) title=\(data.title) detail=\(data.detailText)")
+        }
+        let ns = error as NSError
+        parts.append("\(ns.domain) \(ns.code): \(error.localizedDescription)")
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? Error {
+            let u = underlying as NSError
+            parts.append("underlying: \(type(of: underlying)) \(u.domain) \(u.code) \(underlying.localizedDescription)")
+        }
+        return parts.joined(separator: " | ")
     }
 
     struct Found: Identifiable, Equatable {
@@ -161,7 +213,16 @@ enum AppleMusicCatalog {
         guard !trimmed.isEmpty else { return [] }
         var request = MusicCatalogSearchRequest(term: trimmed, types: [Song.self])
         request.limit = 20
-        let response = try await request.response()
+        let response: MusicCatalogSearchResponse
+        do {
+            response = try await request.response()
+        } catch {
+            if !(error is CancellationError) {
+                logger.error("search failed term=\(trimmed, privacy: .public) error=\(describe(error), privacy: .public)")
+            }
+            throw error
+        }
+        logger.info("search ok term=\(trimmed, privacy: .public) songs=\(response.songs.count)")
         return response.songs.map { song in
             Found(id: song.id.rawValue, pick: pick(from: song), previewURL: song.previewAssets?.first?.url)
         }
