@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 import UIKit
 
-/// 撮影後の Home(v5)。標準の TabView で、Mondo / グループ / カレンダー の3つの場所を切りかえる(iOS 26 では、浮かぶガラスのタブバー)。
+/// 撮影後の Home(v5)。標準の TabView で、Mondo / グループ の2つの場所を切りかえる(カレンダーは プロフィールから)(iOS 26 では、浮かぶガラスのタブバー)。
 /// ヘッダー(Later・消灯までのピル・アバター)は3つのタブで同じ。
 /// 写真を見るのは、すべて縦の全画面ページ(VerticalPhotoViewer)。データの用意(グループ・タイル・Mondo)と、
 /// ビューア・グループの部屋・位置の共有・はじめての説明をつなぐ。
@@ -146,7 +146,7 @@ struct HomeV5Container: View {
     private var tab: HomeTab {
         switch tabRaw {
         case "group": return .group
-        case "calendar": return .calendar
+        // カレンダーのタブは なくした(プロフィールの「カレンダー」から ひらく)。前に カレンダーを見ていたら Mondo から
         default: return .mondo
         }
     }
@@ -317,9 +317,6 @@ struct HomeV5Container: View {
                     }
                     .badge(groupBadge)
 
-                    Tab("カレンダー", systemImage: "calendar", value: HomeTab.calendar) {
-                        measured(calendarTab(topInset: top + Self.headerExtra), safeBottom: proxy.safeAreaInsets.bottom)
-                    }
                 }
                 .tint(ChicColor.ink)
 

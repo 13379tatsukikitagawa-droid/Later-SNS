@@ -196,6 +196,8 @@ struct MEScreenV19: View {
     @Query(sort: \ExposureDay.captureDate, order: .reverse) private var exposureDays: [ExposureDay]
     @State private var page: Int? = 0
     @State private var showsCalendar = false
+    /// 昨日のホームの タブに あった カレンダー(LaterCalendarView)
+    @State private var showsLaterCalendar = false
     @State private var showsProfile = false
     @State private var picks: [String: String] = MEPickStore.picks
     @State private var toast: String?
@@ -212,6 +214,8 @@ struct MEScreenV19: View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 background
+                // 背の低い画面(SE)では、下の「カレンダー」まで 届くよう たてに スクロールできる
+                ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 0) {
                     topBar
                     header(list)
@@ -230,8 +234,15 @@ struct MEScreenV19: View {
                     Spacer(minLength: 8)
                     calendarButton
                         .padding(.horizontal, 20)
+                    laterCalendarRow
+                        .padding(.horizontal, 20)
+                        .padding(.top, 10)
                         .padding(.bottom, 24)
                 }
+                .frame(minHeight: proxy.size.height, alignment: .top)
+                }
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
                 if showsCalendar {
                     Color.black.opacity(0.45).ignoresSafeArea()
                         .onTapGesture { closeCalendar() }
@@ -287,6 +298,9 @@ struct MEScreenV19: View {
         .environment(\.colorScheme, .dark)
         .animation(.spring(response: 0.55, dampingFraction: 0.82), value: showsCalendar)
         .animation(.easeOut(duration: 0.3), value: toast)
+        .fullScreenCover(isPresented: $showsLaterCalendar) {
+            LaterCalendarView(onClose: { showsLaterCalendar = false })
+        }
         .fullScreenCover(isPresented: $showsProfile) {
             ProfileShelfView(onBack: { showsProfile = false }, onShoot: {
                 showsProfile = false
@@ -425,6 +439,26 @@ struct MEScreenV19: View {
             .background(GlassRect(radius: 28))
         }
         .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+    }
+
+    /// 「カレンダー」の行(昨日のホームの タブから うつした)
+    private var laterCalendarRow: some View {
+        Button {
+            Haptics.play(.detent)
+            showsLaterCalendar = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                Text("カレンダー").font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Color(hex: "8E8E95"))
+            }
+            .padding(.horizontal, 22)
+            .frame(height: 52)
+            .background(GlassRect(radius: 22))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+        .accessibilityLabel("カレンダー")
     }
 
     private func closeCalendar(quiet: Bool = false) {
