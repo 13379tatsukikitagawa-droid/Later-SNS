@@ -844,7 +844,7 @@ struct NewGroupFlowView: View {
         guard nameStatus == .ok else { go(to: .name); return }
         guard let cloudKitManager = CloudKitManager.current else {
             CloudDiagnostics.step("止まった:iCloud(CloudKitManager)が まだ 用意できていない")
-            withAnimation { errorMessage = "つくれませんでした。もういちど" }
+            withAnimation { errorMessage = "iCloud に まだ つながっていません。少しあとで、もういちど" }
             return
         }
         if cloudKitManager.currentUserRecordName == nil {
@@ -907,7 +907,10 @@ struct NewGroupFlowView: View {
                 burstExpanded = false
                 isCreating = false
                 LayerHaptics.softDouble()
-                withAnimation { errorMessage = "つくれませんでした。もういちど" }
+                // 理由を 日本語で 短く(iCloud に サインインしていない・通信できない・サーバー側の 設定が 足りない など)
+                let reason = GroupCreateFailureText.reason(for: error)
+                CloudDiagnostics.step("画面の文:\(reason)")
+                withAnimation { errorMessage = reason }
                 return
             }
             createdGroup = group
@@ -917,7 +920,13 @@ struct NewGroupFlowView: View {
             let wait = max(0, 0.52 - Date().timeIntervalSince(started))
             try? await Task.sleep(for: .seconds(wait))
             // 前の完了画面へ。リンクは、作ってできた本物(CKShare の URL)を出す
-            let madeLink = await Self.makeLink(for: group, context: modelContext)
+            var madeLink = await Self.makeLink(for: group, context: modelContext)
+            if madeLink == nil {
+                // リンクの 作成だけが 失敗:自動で 1回 やり直す(グループは もう 保存ずみ。だまって 止まらない)
+                CloudDiagnostics.step("リンク:失敗。自動で 1回 やり直す")
+                try? await Task.sleep(for: .seconds(1))
+                madeLink = await Self.makeLink(for: group, context: modelContext)
+            }
             isCreating = false
             inviteLink = madeLink
             createdShareURL = madeLink.flatMap { InviteConfig.shareURL(from: $0) } ?? madeLink
@@ -933,11 +942,16 @@ struct NewGroupFlowView: View {
 extension NewGroupFlowView {
     /// 招待リンクを つくる。失敗は 黙らせない(開発用の詳細を のこす)
     @MainActor
+    /// 最後に リンクを つくれなかった 理由(リンクの画面に 出す)
+    static var lastLinkFailureReason: String?
+
     static func makeLink(for group: LaterGroup, context: ModelContext) async -> URL? {
+        lastLinkFailureReason = nil
         do {
             return try await GroupInviteService.link(for: group, context: context)
         } catch {
             CloudDiagnostics.record("招待リンクを つくる", CloudDiagnostics.report(error) + "\n(\(String(describing: error)))")
+            lastLinkFailureReason = GroupCreateFailureText.reason(for: error)
             return nil
         }
     }

@@ -207,7 +207,13 @@ struct GroupCreatedShareView: View {
                     Text("リンクを つくっています…").foregroundStyle(Color(hex: "FF8A2A"))
                 } else {
                     Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .semibold))
-                    Text("リンクを つくれませんでした。もういちど")
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("リンクを つくれませんでした。もういちど")
+                        // 理由(iCloud・通信・サーバー側の 設定)。わからないときは 出さない
+                        if let reason = NewGroupFlowView.lastLinkFailureReason, reason != GroupCreateFailureText.generic {
+                            Text(reason).font(.system(size: 11, weight: .medium)).opacity(0.8)
+                        }
+                    }
                 }
                 Spacer(minLength: 0)
             }

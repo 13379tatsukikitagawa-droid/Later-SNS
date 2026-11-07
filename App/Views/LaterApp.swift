@@ -249,6 +249,13 @@ struct RootView: View {
         }
         .onReceive(ShareInviteInbox.shared.$pendingMetadata) { metadata in
             guard let metadata else { return }
+            // 参加は、招待された人が「入る」を押したときだけ。OS から 招待を 受け取っても、すぐには 参加しない。
+            // 招待の URL が わかるときは、later://join と 同じ「招待を受ける」画面(長押しで 入る)へ
+            if let shareURL = metadata.share.url {
+                ShareInviteInbox.shared.pendingMetadata = nil
+                handleInviteLink(shareURL)
+                return
+            }
             Task {
                 // OSがCKShare招待を直接受け入れた場合(userDidAcceptCloudKitShareWith経由、
                 // 招待リンクの本来の主経路)。これまでこの経路には成功/失敗どちらの

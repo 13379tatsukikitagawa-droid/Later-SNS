@@ -95,6 +95,21 @@ struct GroupInviteTests {
         #expect(!CloudDiagnostics.isSchemaError(CKError(.networkUnavailable)))
     }
 
+    @Test func 作成の失敗の理由を日本語で短く出す() {
+        #expect(GroupCreateFailureText.reason(for: GroupSharingError.notSignedIn) == GroupCreateFailureText.notSignedIn)
+        #expect(GroupCreateFailureText.reason(for: CKError(.notAuthenticated)) == GroupCreateFailureText.notSignedIn)
+        let offline = GroupSharingError.zoneCreationFailed(underlying: CKError(.networkUnavailable))
+        #expect(GroupCreateFailureText.reason(for: offline) == GroupCreateFailureText.network)
+        // 部分的な失敗:巻き添え(22)ではなく、中身の 本当の原因で えらぶ
+        let schema = CKError(.invalidArguments, userInfo: ["ServerErrorDescription": "Cannot create new field 'knockOff' in production schema"])
+        let profileID = CKRecord.ID(recordName: "profile_x")
+        let groupID = CKRecord.ID(recordName: "group_x")
+        let partial = CKError(.partialFailure, userInfo: [CKPartialErrorsByItemIDKey: [profileID: schema, groupID: CKError(.batchRequestFailed)]])
+        #expect(CloudDiagnostics.isSchemaError(partial))
+        #expect(GroupCreateFailureText.reason(for: GroupSharingError.groupCreationFailed(underlying: partial)) == GroupCreateFailureText.schema)
+        #expect(GroupCreateFailureText.reason(for: GroupSharingError.groupCreationFailed(underlying: CKError(.batchRequestFailed))) == GroupCreateFailureText.generic)
+    }
+
     @Test func 合言葉の形() {
         #expect(GroupInviteService.isPassphrase("hikari-2741"))
         #expect(!GroupInviteService.isPassphrase("ABC234"))

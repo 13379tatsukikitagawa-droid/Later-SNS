@@ -33,6 +33,11 @@ enum GroupMembershipPolicy {
 /// 再試行によって解消される(呼び出し側に直接届くことはない)一時的なものだから。
 private struct QuotaExceededDuringImageUpload: Error {}
 
+/// 本番のスキーマに ないフィールド・型が 原因で 保存が 失敗した(createGroup の中で、縮小して 1回だけ やり直す合図)。
+/// atomic バッチでは、本当の原因は 3件のうち どれか1件にだけ のり、のこりは CKError 22(巻き添え)になる。
+/// そのため、グループ本体の結果だけでなく、3件すべて・トップレベルの partialErrors を 見て 判定する。
+private struct SchemaMismatchDuringSave: Error { let underlying: Error; let detail: String? }
+
 enum GroupSharingError: LocalizedError {
     case notSignedIn
     case shareURLMissing
@@ -104,6 +109,64 @@ extension GroupSharingError {
         default:
             return false
         }
+    }
+}
+
+/// グループを つくれなかったときの、利用者むけの 短い理由(日本語)。くわしい内容は 長押し(CloudDiagnostics)
+enum GroupCreateFailureText {
+    static let generic = "つくれませんでした。もういちど"
+
+    static func reason(for error: Error) -> String {
+        if let sharing = error as? GroupSharingError {
+            switch sharing {
+            case .notSignedIn:
+                return notSignedIn
+            case .tooManyGroups:
+                return "グループは、\(GroupMembershipPolicy.maxGroupsPerUser)個までです。"
+            case .quotaExceeded:
+                return quota
+            case .zoneCreationFailed(let underlying), .groupCreationFailed(let underlying, _), .shareCreationFailed(let underlying, _):
+                if sharing.isSchemaFailure { return schema }
+                return reason(forCloudKit: underlying) ?? generic
+            default:
+                return generic
+            }
+        }
+        return reason(forCloudKit: error) ?? generic
+    }
+
+    static let notSignedIn = "iCloud に サインインしていません。設定アプリで サインインしてから、もういちど"
+    static let network = "通信できませんでした。つながりを たしかめて、もういちど"
+    static let schema = "サーバー側の 設定が 足りないため、つくれませんでした(開発者に お知らせください)"
+    static let quota = "iCloud の 容量が 足りません。空きを つくってから、もういちど"
+    static let busy = "iCloud が 混みあっています。少しあとで、もういちど"
+
+    /// CKError(部分的な失敗の 中身も)から 理由を えらぶ。わからなければ nil
+    static func reason(forCloudKit error: Error) -> String? {
+        if CloudDiagnostics.isSchemaError(error) { return schema }
+        guard let ckError = error as? CKError else { return nil }
+        var codes = [ckError.code]
+        if let partial = ckError.partialErrorsByItemID {
+            codes += partial.values.compactMap { ($0 as? CKError)?.code }.filter { $0 != .batchRequestFailed }
+        }
+        for code in codes {
+            switch code {
+            case .notAuthenticated, .accountTemporarilyUnavailable:
+                return notSignedIn
+            case .networkUnavailable, .networkFailure:
+                return network
+            case .serviceUnavailable, .requestRateLimited, .zoneBusy:
+                return busy
+            case .quotaExceeded:
+                return quota
+            case .invalidArguments, .serverRejectedRequest, .unknownItem, .badContainer, .missingEntitlement:
+                // 本番に フィールドや型が ないとき・コンテナの 設定が 合わないときに 多い
+                return schema
+            default:
+                continue
+            }
+        }
+        return nil
     }
 }
 
@@ -247,12 +310,20 @@ final class GroupSharingService {
         do {
             do {
                 try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: true)
-            } catch let error as GroupSharingError where error.isSchemaFailure {
+            } catch let mismatch as SchemaMismatchDuringSave {
                 // v22 J-2:本番に まだ ないフィールドが 原因のときだけ、あとから 足したフィールドを 除いて 1回だけ 保存しなおす。
                 // 黙って 成功させない(ログと 長押しの 詳細に「縮小して保存した」と のこす)
                 let first = CloudDiagnostics.last ?? ""
                 print("[GroupSync] createGroup: スキーマが原因の失敗。あとから足したフィールドを除いて 1回だけ 保存しなおします")
-                try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: true, minimal: true)
+                do {
+                    try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: true, minimal: true)
+                } catch let error as GroupSharingError {
+                    throw error
+                } catch is QuotaExceededDuringImageUpload {
+                    throw QuotaExceededDuringImageUpload()
+                } catch {
+                    throw GroupSharingError.groupCreationFailed(underlying: error, detail: mismatch.detail)
+                }
                 CloudDiagnostics.record("グループを つくる:縮小して保存した",
                                         "本番に ないフィールドが あったので、次を 除いて 保存しなおしました:\n"
                                         + "LaterGroup: \(LaterGroup.lateCloudFields.joined(separator: ", "))\n"
@@ -261,7 +332,18 @@ final class GroupSharingService {
         } catch is QuotaExceededDuringImageUpload {
             print("[GroupSync] createGroup: CKError.quotaExceeded(画像アップロード)を検知。画像を除いて再試行します")
             do {
-                try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: false)
+                do {
+                    try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: false)
+                } catch let mismatch as SchemaMismatchDuringSave {
+                    do {
+                        try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: false, minimal: true)
+                    } catch let error as GroupSharingError {
+                        throw error
+                    } catch {
+                        throw GroupSharingError.groupCreationFailed(underlying: error, detail: mismatch.detail)
+                    }
+                    CloudDiagnostics.record("グループを つくる:縮小して保存した(画像なし)", "本番に ないフィールドが あったので、あとから 足したフィールドを 除いて 保存しなおしました")
+                }
             } catch is QuotaExceededDuringImageUpload {
                 // 画像を除いても容量超過になることは無いはずだが、念のため区別せず扱う。
                 throw GroupSharingError.quotaExceeded(groupCreatedWithoutImages: false)
@@ -324,6 +406,9 @@ final class GroupSharingService {
             if includeImages, error.asQuotaExceededCKError != nil {
                 throw QuotaExceededDuringImageUpload()
             }
+            if !minimal, CloudDiagnostics.isSchemaError(error) {
+                throw SchemaMismatchDuringSave(underlying: error, detail: error.rootCausePartialErrorDetail)
+            }
             throw GroupSharingError.groupCreationFailed(underlying: error, detail: error.rootCausePartialErrorDetail)
         }
 
@@ -360,6 +445,13 @@ final class GroupSharingService {
         let rootCause = rootCauseDetail(from: saveResults, labels: recordLabels)
         let failures = CloudDiagnostics.report(results: saveResults, labels: recordLabels)
         if !failures.isEmpty { CloudDiagnostics.record("グループを つくる\(minimal ? "(縮小)" : "")", failures) }
+        if !minimal {
+            for (_, result) in saveResults {
+                if case .failure(let error) = result, CloudDiagnostics.isSchemaError(error) {
+                    throw SchemaMismatchDuringSave(underlying: error, detail: rootCause)
+                }
+            }
+        }
 
         // グループ本体の保存結果を、共有リンク(share)の結果とは独立に確認する。
         // これにより「グループ作成自体が失敗した」のか「グループは保存できたが
