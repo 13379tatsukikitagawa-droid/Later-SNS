@@ -103,7 +103,7 @@ struct CaptureFlowLogicTests {
         #expect(emotions / all > 0.7 && emotions / all < 0.8)
         #expect(Set(TagDictionary.all).count == TagDictionary.all.count)
         #expect(TagDictionary.display("朝") == "#朝")
-        #expect(TagDictionary.display("ねむい") == "ねむい")
+        #expect(TagDictionary.display("わくわく") == "わくわく")
     }
 
     // MARK: テープの色(FNV-1a)

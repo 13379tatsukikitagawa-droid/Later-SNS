@@ -47,6 +47,8 @@ struct MarqueeRow: View {
     var onTap: (String, CGPoint) -> Void = { _, _ in }
     /// さわって 止めた(tick)
     var onHold: () -> Void = {}
+    /// L-2:1列の 高さ(ガラスのとき)。2列に するときは 48
+    var rowHeight: CGFloat = 56
 
     @State private var paused = false
     @State private var pausedAt: Date?
@@ -76,7 +78,7 @@ struct MarqueeRow: View {
             .offset(x: CGFloat(x))
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: glass ? 56 : 46)
+        .frame(height: glass ? rowHeight : 46)
         .clipped()
         .contentShape(Rectangle())
         .simultaneousGesture(
@@ -95,7 +97,7 @@ struct MarqueeRow: View {
                 chip(word)
                     .modifier(ShakeEffect(animatableData: CGFloat(shakeCounts[word] ?? 0)))
                     .animation(.linear(duration: 0.28), value: shakeCounts[word] ?? 0)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, glass ? max(2, (rowHeight - chipHeight) / 2) : 6)
                     .contentShape(Rectangle())
                     .onTapGesture(coordinateSpace: .named(coordinateSpaceName)) { location in
                         onTap(word, location)
@@ -107,12 +109,15 @@ struct MarqueeRow: View {
     @ViewBuilder
     private func chip(_ word: String) -> some View {
         if glass {
-            TagGlassChip(text: TagDictionary.display(word), style: .glass, large: true)
+            TagGlassChip(text: TagDictionary.display(word), style: .glass, large: true, height: chipHeight)
                 .opacity(selected.contains(word) ? 0.3 : 1)
         } else {
             DymoTape(kind: .word(word), selected: selected.contains(word), tilted: true)
         }
     }
+
+    /// ガラスの まるの 高さ(列が 低いときは 小さく)
+    private var chipHeight: CGFloat { min(44, rowHeight - 8) }
 
     private func pause() {
         resumeToken = UUID()

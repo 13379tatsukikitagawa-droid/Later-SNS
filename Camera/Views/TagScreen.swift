@@ -1,7 +1,8 @@
 // TagScreen.swift
 // 撮影の前のタグ画面(v22 H)。白と黒(と その間の灰)だけ。カラフルな色は使わない。
 // - ガラスのカード:# 入力 ・ 0 / 3 ・ つけずに撮る / 撮る。えらんだタグは カードの上に 1行(白と黒を 交互)
-// - いま、よく選ばれている:1列で流れる(MarqueeRow・ガラスの まる)
+// - いま人気:2列で 逆向きに流れる(MarqueeRow・ガラスの まる・L-2)。ことばは TagWords(L-3)
+// - ひらくと キーボードが 出る(L-1)。「追加」は「いま人気」の 行の 右端
 // - 場所は自動(市区町村だけ。緯度経度は持たない・保存しない)
 // - タグは3つまで(TagRules.maxCount)。その日の下書きは TagDraft(UserDefaults・日ごと)
 
@@ -24,7 +25,41 @@ enum TagDictionary {
 
     /// テープに出す文字。場面ことばだけ「#」をつける(タグの値には # を入れない)
     static func display(_ word: String) -> String {
-        scenes.contains(word) ? "#" + word : word
+        (scenes.contains(word) || TagWords.all.contains(word)) ? "#" + word : word
+    }
+}
+
+// MARK: - L-3:いま人気の ことば(2列。あとで サーバーから 配れるよう、ここだけに まとめる)
+
+/// いまの言葉と、ギャルっぽい言葉が中心。人を 傷つける ことば(悪口・見た目いじり・差別)は 入れない
+/// (「きもい」ではなく「きもかわ」のように、やさしい形にする)。値には「#」を入れない(表示で つける)
+enum TagWords {
+    static let row1 = [
+        "エモい", "空", "ぴえん", "優勝", "散歩", "雨の日", "きもかわ", "夕焼け", "やばい",
+        "放課後", "ごはん", "ねむい", "部活", "帰り道", "コーヒー", "テスト前", "いい匂い",
+    ]
+    static let row2 = [
+        "チル", "尊い", "ガチ", "推ししか勝たん", "しんどい", "映え", "あざとい", "草", "まじむり",
+        "ちょうどいい", "神", "わかる", "ウケる", "沼", "いとおかし", "ハピ", "ばえ",
+    ]
+    static var all: Set<String> { Set(row1 + row2) }
+
+    /// 2列を つくる。毎回 少し ならびを かえる(いつも 同じ ことばが 先頭に ならない)。
+    /// 昨日の世界で 多かったことば(world)は、1列目の 前のほうに まぜる(同じものは 1回だけ・両方の列で 重ねない)
+    static func rows(world: [String] = [], shuffle: ([String]) -> [String] = { $0.shuffled() }) -> (first: [String], second: [String]) {
+        var seen = Set<String>()
+        func unique(_ words: [String]) -> [String] {
+            words.compactMap { word in
+                let clean = TagRules.clean(word)
+                guard !clean.isEmpty, !seen.contains(clean) else { return nil }
+                seen.insert(clean)
+                return clean
+            }
+        }
+        let worldWords = unique(Array(world.prefix(5)))
+        let first = shuffle(worldWords + unique(row1))
+        let second = shuffle(unique(row2))
+        return (first, second)
     }
 }
 
@@ -189,8 +224,8 @@ private struct TapeFlightItem: Identifiable, Equatable {
 // MARK: - 画面
 
 /// v22 H:撮影前の タグ画面(いまのアプリの形 ・ 白と黒だけ)。見本:later_v22.html の「タグ画面」(390×844)。
-/// ✕ → 今日を撮る前に / 今日は、どんな日? / 撮る前に、えらぶ。3つまで。→ ガラスのカード(# 入力・0 / 3・つけずに撮る / 撮る)
-/// → いま、よく選ばれている(1列で流れる)。キーボードの すぐ上、右に「追加」。
+/// ✕ → 今日は、どんな日? → ガラスのカード(# 入力・0 / 3・つけずに撮る / 撮る)
+/// → いま人気(右に「追加」)→ 2列で 流れる ことば。
 struct TagScreen: View {
     /// 今日のこり(0 のときは「撮る」「つけずに撮る」を押せない)
     let left: Int
@@ -216,7 +251,10 @@ struct TagScreen: View {
     @State private var input = ""
     @FocusState private var inputFocused: Bool
     @State private var popular: [String] = []
+    /// L-2:2列目(1列目と 逆向き・少し ゆっくり)
+    @State private var popular2: [String] = []
     @State private var rowPhase = Double.random(in: 0..<1)
+    @State private var rowPhase2 = Double.random(in: 0..<1)
     @State private var shakeCounts: [String: Int] = [:]
     @State private var cardShake = 0
     @State private var sheen = 0
@@ -227,6 +265,8 @@ struct TagScreen: View {
     @State private var refuseText = ""
     @State private var placeholder = "雨の日"
     @State private var placeholderTask: Task<Void, Never>?
+    /// とじている最中(キーボードを とじてから 画面を とじる・2回目は 無視)
+    @State private var closing = false
 
     private static let space = "tagScreen"
     private static let examples = ["雨の日", "放課後", "いい匂い", "部活", "帰り道", "テスト前"]
@@ -247,39 +287,35 @@ struct TagScreen: View {
                         .padding(.top, 7)
                         .modifier(Stagger(phase: stage, inDelay: 0, outIndex: 0, reduceMotion: reduceMotion))
 
-                    Text("今日を撮る前に")
-                        .font(.system(size: 10.5, weight: .semibold)).tracking(0.06 * 10.5)
-                        .foregroundStyle(Color(hex: "8E8E95"))
-                        .padding(.leading, 28)
-                        .padding(.top, compact ? 14 : 28)
-                        .modifier(Stagger(phase: stage, inDelay: 80, outIndex: 1, reduceMotion: reduceMotion))
+                    // L:文字を へらす。見出しだけ(×の すぐ下)
                     Text("今日は、どんな日?")
                         .font(.system(size: 30, weight: .black)).tracking(-0.04 * 30)
                         .foregroundStyle(.white)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .padding(.leading, 26)
-                        .padding(.top, 5)
-                        .modifier(Stagger(phase: stage, inDelay: 150, outIndex: 2, reduceMotion: reduceMotion))
+                        .padding(.top, compact ? 14 : 22)
+                        .modifier(Stagger(phase: stage, inDelay: 120, outIndex: 1, reduceMotion: reduceMotion))
                         .accessibilityAddTraits(.isHeader)
-                    Text("撮る前に、えらぶ。\(TagRules.maxCount)つまで。")
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundStyle(Color(hex: "9A9AA2"))
-                        .padding(.leading, 28)
-                        .padding(.top, 8)
-                        .modifier(Stagger(phase: stage, inDelay: 220, outIndex: 3, reduceMotion: reduceMotion))
 
                     card
                         .padding(.horizontal, 18)
-                        .padding(.top, 14)
+                        .padding(.top, compact ? 16 : 26)
 
-                    Text("いま、よく選ばれている")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color(hex: "8E8E95"))
-                        .padding(.leading, 28)
-                        .padding(.top, 24)
-                        .modifier(Stagger(phase: stage, inDelay: 420, outIndex: 5, reduceMotion: reduceMotion))
+                    // 「いま人気」+ 右に「追加」(キーボードが 出ている ときだけ。2列目と 重ならない)
+                    HStack(alignment: .center) {
+                        Text("いま人気")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color(hex: "8E8E95"))
+                            .modifier(Stagger(phase: stage, inDelay: 420, outIndex: 5, reduceMotion: reduceMotion))
+                        Spacer(minLength: 8)
+                        addButton
+                    }
+                    .frame(height: 30)
+                    .padding(.leading, 28)
+                    .padding(.trailing, 18)
+                    .padding(.top, compact ? 12 : 20)
                     words
-                        .padding(.top, 8)
+                        .padding(.top, 0)
                         .modifier(Stagger(phase: stage, inDelay: 480, outIndex: 6, reduceMotion: reduceMotion, dx: 60, dy: 0))
                     Spacer(minLength: 0)
                 }
@@ -288,31 +324,6 @@ struct TagScreen: View {
             }
             // キーボードが出ても、画面の組み立てを押しあげない
             .ignoresSafeArea(.keyboard, edges: .bottom)
-
-            // キーボードの すぐ上、右に「追加」(書いたことばが あるときだけ はっきり)
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button(action: commitInput) {
-                        Text("追加")
-                            .font(.system(size: 13, weight: .heavy))
-                            .foregroundStyle(Color(hex: "111111"))
-                            .padding(.horizontal, 20)
-                            .frame(height: 38)
-                            .background(Capsule().fill(.white))
-                    }
-                    .buttonStyle(SquishButtonStyle(pressedScale: 0.94))
-                    .opacity(trimmedInput.isEmpty || isFull ? 0.55 : 1)
-                    .accessibilityLabel("タグを追加")
-                }
-                .padding(.trailing, 18)
-                .padding(.bottom, 10)
-            }
-            .opacity(inputFocused ? 1 : 0)
-            .offset(y: inputFocused ? 0 : 12)
-            .allowsHitTesting(inputFocused)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: inputFocused)
 
             // 飛んでいるタグのコピー(いちばん上)
             ForEach(flights) { flight in
@@ -341,7 +352,8 @@ struct TagScreen: View {
         .onDisappear { placeholderTask?.cancel() }
         .onChange(of: inputFocused) { _, focused in
             if focused {
-                haptics.captureFeather()
+                // L-1:キーボードが 出た しゅんかんに、ごく軽い tick を 1回
+                Haptics.play(.tick)
                 placeholderTask?.cancel()
                 placeholder = ""
             } else if input.isEmpty {
@@ -412,15 +424,10 @@ struct TagScreen: View {
             .padding(.top, (!tags.isEmpty || place != nil) ? 52 : 36)
 
             HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("\(tags.count) / \(TagRules.maxCount)")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced)).tracking(0.06 * 11)
-                        .foregroundStyle(Color(hex: "8E8E95"))
-                        .contentTransition(.numericText())
-                    Text("空白か改行で、タグになります")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color(hex: "6E6E76"))
-                }
+                Text("\(tags.count) / \(TagRules.maxCount)")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced)).tracking(0.06 * 11)
+                    .foregroundStyle(Color(hex: "8E8E95"))
+                    .contentTransition(.numericText())
                 Spacer(minLength: 8)
                 shootButton
             }
@@ -468,7 +475,7 @@ struct TagScreen: View {
     private var words: some View {
         if voiceOver {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 10, alignment: .leading)], alignment: .leading, spacing: 8) {
-                ForEach(popular, id: \.self) { word in
+                ForEach(popular + popular2, id: \.self) { word in
                     Button { toggle(word, at: .zero) } label: {
                         TagGlassChip(text: TagDictionary.display(word), style: .glass, large: true).opacity(tags.contains(word) ? 0.3 : 1)
                     }
@@ -478,19 +485,11 @@ struct TagScreen: View {
             }
             .padding(.horizontal, 28)
         } else {
-            MarqueeRow(
-                words: popular,
-                secondsPerLoop: reduceMotion ? MarqueeMath.reducedSeconds : MarqueeMath.rowSeconds[0],
-                reversed: false,
-                phase: rowPhase,
-                selected: tags,
-                shakeCounts: shakeCounts,
-                coordinateSpaceName: Self.space,
-                glass: true,
-                onTap: { word, location in toggle(word, at: location) },
-                onHold: { Haptics.play(.tick) }
-            )
-            .frame(height: 56)
+            // L-2:2列。2列目は 逆向きで、1列目の 約1.2倍の 時間(少し ゆっくり)。1列 48pt・あいだ 2pt
+            VStack(spacing: Self.rowGap) {
+                marquee(popular, seconds: MarqueeMath.rowSeconds[0], reversed: false, phase: rowPhase)
+                marquee(popular2, seconds: MarqueeMath.rowSeconds[0] * 1.2, reversed: true, phase: rowPhase2)
+            }
             .mask(
                 LinearGradient(stops: [
                     .init(color: .clear, location: 0),
@@ -502,21 +501,61 @@ struct TagScreen: View {
         }
     }
 
+    static let rowHeight: CGFloat = 48
+    static let rowGap: CGFloat = 2
+
+    private func marquee(_ list: [String], seconds: Double, reversed: Bool, phase: Double) -> some View {
+        MarqueeRow(
+            words: list,
+            secondsPerLoop: reduceMotion ? MarqueeMath.reducedSeconds : seconds,
+            reversed: reversed,
+            phase: phase,
+            selected: tags,
+            shakeCounts: shakeCounts,
+            coordinateSpaceName: Self.space,
+            glass: true,
+            onTap: { word, location in toggle(word, at: location) },
+            onHold: { Haptics.play(.tick) },
+            rowHeight: Self.rowHeight
+        )
+        .frame(height: Self.rowHeight)
+    }
+
+    /// 「追加」:「いま人気」の 行の 右端。キーボードが 出ているときだけ。書いた ことばが あるときだけ はっきり
+    private var addButton: some View {
+        Button(action: commitInput) {
+            Text("追加")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color(hex: "111111"))
+                .padding(.horizontal, 16)
+                .frame(height: 30)
+                .background(Capsule().fill(.white))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.94))
+        .opacity(inputFocused ? (trimmedInput.isEmpty || isFull ? 0.55 : 1) : 0)
+        .offset(y: inputFocused ? 0 : 8)
+        .allowsHitTesting(inputFocused)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: inputFocused)
+        .accessibilityLabel("タグを追加")
+        .accessibilityHidden(!inputFocused)
+    }
+
     // MARK: 動きとルール
 
     private func appear() {
         if popular.isEmpty {
-            // 昨日の世界で 多かったことば → たりない分は いつものことば(同じものは 1回だけ)
-            var list: [String] = []
-            for word in WorldWordsStore.words(now: Date()) + TagDictionary.all.shuffled() {
-                let clean = TagRules.clean(word)
-                if !clean.isEmpty, !list.contains(clean) { list.append(clean) }
-                if list.count >= 14 { break }
-            }
-            popular = list
+            // L-3:いま人気の ことば(2列)。昨日の世界で 多かったことばは 1列目に まぜる。数は 出さない
+            let rows = TagWords.rows(world: WorldWordsStore.words(now: Date()))
+            popular = rows.first
+            popular2 = rows.second
         }
         startPlaceholder()
         DispatchQueue.main.async { phase = .shown }
+        // L-1:ひらく動き(フェードイン)が おわってから、入力欄に フォーカス(キーボードを 出す)。動きの途中だと カクつく
+        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.62)) {
+            guard phase == .shown, !closing, !leaving, !isFull, !voiceOver else { return }
+            inputFocused = true
+        }
     }
 
     /// プレースホルダー:「雨の日」→ 例が 打たれては 消える
@@ -656,10 +695,15 @@ struct TagScreen: View {
         onStart(withTags)
     }
 
+    /// ✕:キーボードを 先に とじてから、画面を とじる(連打は 1回だけ)
     private func close() {
+        guard !closing else { return }
+        closing = true
         Haptics.play(.soft)
+        guard inputFocused else { onClose(); return }
         inputFocused = false
-        onClose()
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { onClose() }
     }
 }
 
@@ -732,6 +776,8 @@ struct TagGlassChip: View {
     let text: String
     let style: Style
     var large = false
+    /// 高さを 決めるとき(流れる列が 低いとき)。nil なら いつもの高さ
+    var height: CGFloat? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -743,7 +789,7 @@ struct TagGlassChip: View {
         .font(.system(size: large ? 16 : (style == .place ? 12 : 12.5), weight: large ? .bold : .heavy))
         .foregroundStyle(style == .white ? Color(hex: "111111") : .white)
         .padding(.horizontal, large ? 20 : (style == .place ? 9 : 10))
-        .frame(height: large ? 44 : 30)
+        .frame(height: height ?? (large ? 44 : 30))
         .background {
             switch style {
             case .white: Capsule().fill(Color(hex: "F4F4F6"))
