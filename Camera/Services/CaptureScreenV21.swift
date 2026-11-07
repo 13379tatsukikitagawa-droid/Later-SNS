@@ -496,19 +496,24 @@ struct CaptureScreenV21: View {
         gesture.onPhoto = { source in onPhoto(source) }
         gesture.onStartRecording = {
             camera.recorder.setActive(true)
-            camera.recorder.startRecording(audio: hasAudio)
+            // 準備は メインの外。最初の コマが 書けた(録画が 実際に はじまった)瞬間に「ピッ」:rigid → 0.08秒後に soft
+            camera.recorder.startRecordingAsync(audio: hasAudio) {
+                Haptics.pulse(intensity: 1, sharpness: 0.9)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { Haptics.play(.soft, gap: 0) }
+            }
         }
         gesture.onStopRecording = { took, _ in
             let tooShort = !VideoRules.keeps(duration: took)
-            camera.recorder.stopRecording { video in
+            camera.recorder.stopRecordingAsync { video in
                 DispatchQueue.main.async {
                     camera.recorder.setActive(false)
+                    // 録画が 止まった あとに 鳴らす(動画の 音に 振動の 音が 入らないように)
                     guard let video, !tooShort else {
-                        Haptics.play(.warn)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { Haptics.play(.warn, gap: 0) }
+                        Haptics.play(.warn)   // みじかすぎ:やわらかく 2回
                         show("1秒より みじかいと 撮れません")
                         return
                     }
+                    Haptics.play(.success)   // おわった:やさしく
                     onRecorded(video)
                 }
             }

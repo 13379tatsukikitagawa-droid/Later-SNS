@@ -11,6 +11,17 @@ enum CaptureMode: String, Equatable {
 }
 
 enum VideoShutterRules {
+    /// 録画中の 1秒おきの 脈の 強さ。ふだんは 0.2(弱い)、のこり 3秒(7・8・9秒)は 0.3 → 0.45 → 0.6
+    nonisolated static func pulseIntensity(second: Int) -> Float {
+        let left = Int(VideoRules.maxDuration) - second
+        switch left {
+        case 3: return 0.3
+        case 2: return 0.45
+        case 1: return 0.6
+        default: return 0.2
+        }
+    }
+
     /// よこになぞる:46pt 以上・縦は 40pt 以内
     static func swipe(dx: CGFloat, dy: CGFloat) -> CaptureMode? {
         guard abs(dx) >= 46, abs(dy) <= 40 else { return nil }

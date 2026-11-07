@@ -508,6 +508,15 @@ enum Haptics {
         fallback(kind, scale: scale)
     }
 
+    /// 1回だけの 短い脈(強さ・鋭さを 指定)。動画の 録画中の 脈・「ピッ」に 使う
+    static func pulse(intensity: Float, sharpness: Float) {
+        guard isEnabled else { return }
+        let scale = AppHapticsSetting.scale
+        if playCore([(0, intensity, sharpness)], scale: scale) { return }
+        let k = CGFloat(min(1, intensity * scale))
+        if sharpness >= 0.7 { rigid.impactOccurred(intensity: k); rigid.prepare() } else { softGen.impactOccurred(intensity: k); softGen.prepare() }
+    }
+
     /// 長押しの強さ(0〜1)から、つぎの heart までの間隔(520ms → 190ms)
     nonisolated static func heartInterval(progress: Double) -> TimeInterval {
         let p = min(1, max(0, progress))

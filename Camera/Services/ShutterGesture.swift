@@ -209,7 +209,7 @@ final class ShutterGesture {
     private func beginCharge() {
         let start = Date()
         phase = .charging(start: start)
-        Haptics.play(.pop)
+        Haptics.play(.soft)   // 長押しを 始めた 瞬間:soft 1回(押している 手ごたえ)
         ramp.start()
         loop?.cancel()
         loop = Task { @MainActor [weak self] in
@@ -239,19 +239,24 @@ final class ShutterGesture {
         phase = .recording(start: start)
         progress = 0
         lit = 0
-        Haptics.play(.thud)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) { Haptics.play(.click) }
-        ramp.start()
-        ramp.update(0.14)
+        // ためる 間の 連続の ふるえは、ここで 止める(録画中は 強い 振動を 使わない)。
+        // 「ピッ」(rigid → soft)は、録画が 実際に はじまった 瞬間に 撮影画面が 鳴らす
+        ramp.stop()
         onStartRecording()
         loop?.cancel()
         loop = Task { @MainActor [weak self] in
+            var pulsed = 0
             while let self, !Task.isCancelled, case .recording = self.phase {
                 let e = Date().timeIntervalSince(start)
                 self.elapsed = e
-                self.ramp.update(VideoShutterRules.reelLevel(elapsed: e))
                 let now = VideoShutterRules.litTicks(elapsed: e)
-                if now > self.lit { self.lit = now; Haptics.play(.tick, gap: 0, intensity: 0.5) }
+                if now > self.lit { self.lit = now }   // 目もりは 見た目だけ(バイブは 鳴らさない)
+                // 1秒おきに 弱い脈。のこり 3秒(7・8・9秒)は 少しずつ 強く
+                let second = Int(e)
+                if second > pulsed, second >= 1, Double(second) < VideoRules.maxDuration {
+                    pulsed = second
+                    Haptics.pulse(intensity: VideoShutterRules.pulseIntensity(second: second), sharpness: 0.2)
+                }
                 if e >= VideoRules.maxDuration { self.stopRecording(auto: true); return }
                 try? await Task.sleep(for: .milliseconds(30))
             }
@@ -267,12 +272,8 @@ final class ShutterGesture {
         source = nil
         elapsed = 0
         lit = 0
-        if auto {
-            Haptics.play(.thud)
-        } else {
-            Haptics.play(.click)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.11) { Haptics.play(.soft) }
-        }
+        // おわりの バイブ(success / みじかすぎは warning)は、録画が 止まった あとに 撮影画面が 鳴らす
+        // (動画の 音に 振動の 音が 入らないように)
         onStopRecording(took, auto)
     }
 }

@@ -49,6 +49,10 @@ enum VideoRules {
 
 final class RetroRecorder: @unchecked Sendable {
     private let lock = NSLock()
+    /// 録画の はじめ・おわりの 準備は ここ(直列)。メインスレッドを 止めない。はじめ → おわり の 順は かならず 守る
+    private let controlQueue = DispatchQueue(label: "later.recorder.control", qos: .userInitiated)
+    /// 最初の コマを 書いた(録画が 実際に はじまった)。メインで 1回だけ
+    private var onStarted: (@Sendable () -> Void)?
     private let context = CIContext(options: [.cacheIntermediates: false])
     private var pool: CVPixelBufferPool?
     private var writer: AVAssetWriter?
@@ -79,7 +83,24 @@ final class RetroRecorder: @unchecked Sendable {
         lock.lock(); active = on; lock.unlock()
     }
 
-    // MARK: 録画(メインから呼ぶ)
+    // MARK: 録画(メインから呼ぶ。重い準備は controlQueue で)
+
+    /// はじめる。準備は メインの外。最初の コマが 書けたら onStarted(メイン)
+    func startRecordingAsync(audio: Bool, onStarted: @escaping @Sendable () -> Void) {
+        controlQueue.async { [self] in
+            // 先に 合図を 置く(準備の 直後に 来た コマで 取りこぼさない)
+            lock.lock(); self.onStarted = onStarted; lock.unlock()
+            startRecording(audio: audio)
+        }
+    }
+
+    /// とめる(はじめの 準備が おわってから)。完了は どのキューでも よい
+    func stopRecordingAsync(completion: @escaping @Sendable (RecordedVideo?) -> Void) {
+        controlQueue.async { [self] in
+            lock.lock(); onStarted = nil; lock.unlock()
+            stopRecording(completion: completion)
+        }
+    }
 
     func startRecording(audio: Bool) {
         lock.lock()
@@ -186,6 +207,10 @@ final class RetroRecorder: @unchecked Sendable {
         if startTime == nil {
             writer.startSession(atSourceTime: time)
             startTime = time
+            if let started = onStarted {
+                onStarted = nil
+                DispatchQueue.main.async { started() }
+            }
             if let cg = context.createCGImage(image, from: image.extent) {
                 poster = UIImage(cgImage: cg).jpegData(compressionQuality: 0.85)
             }

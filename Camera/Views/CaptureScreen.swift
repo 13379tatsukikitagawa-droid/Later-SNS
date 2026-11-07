@@ -182,8 +182,24 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
         if status == .ready || status == .failed { status = .idle }
         // 撮影の途中で閉じたら、完了を待たずに終わらせる(フラグを必ず戻す)
         if let id = currentCaptureID { finishCapture(id: id, image: nil) }
-        sessionQueue.async { [session] in
+        sessionQueue.async { [weak self, session] in
             if session.isRunning { session.stopRunning() }
+            // マイクを 使っていたら、ほかのアプリの 音を もどす
+            if self?.audioConfigured == true {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            }
+        }
+    }
+
+    /// 動画の録音中も バイブを 鳴らせる オーディオセッション(sessionQueue で 呼ぶ)
+    nonisolated static func configureRecordingAudio() {
+        let audio = AVAudioSession.sharedInstance()
+        do {
+            try audio.setCategory(.playAndRecord, mode: .videoRecording, options: [.mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP])
+            try audio.setAllowHapticsAndSystemSoundsDuringRecording(true)
+            try audio.setActive(true)
+        } catch {
+            print("[Capture] オーディオセッションの 設定に 失敗: \(error)")
         }
     }
 
@@ -211,6 +227,8 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
                 }
                 self.configured = true
             }
+            // 前に マイクを つないでいたら、録音中も バイブが 鳴る 設定に もどしてから 動かす
+            if self.audioConfigured { Self.configureRecordingAudio() }
             if !self.session.isRunning { self.session.startRunning() }
             let running = self.session.isRunning
             DispatchQueue.main.async {
@@ -260,10 +278,14 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
     func enableAudio(completion: @escaping @Sendable (Bool) -> Void) {
         sessionQueue.async { [weak self] in
             guard let self else { completion(false); return }
-            if self.audioConfigured { completion(true); return }
+            if self.audioConfigured { Self.configureRecordingAudio(); completion(true); return }
             guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized,
                   let mic = AVCaptureDevice.default(for: .audio),
                   let input = try? AVCaptureDeviceInput(device: mic) else { completion(false); return }
+            // マイクを つなぐ前に、オーディオセッションを 自分で 決める。
+            // カメラに 任せる(automaticallyConfiguresApplicationAudioSession = true)と、録音の間 iOS が バイブを 止める
+            self.session.automaticallyConfiguresApplicationAudioSession = false
+            Self.configureRecordingAudio()
             self.session.beginConfiguration()
             if self.session.canAddInput(input) { self.session.addInput(input) }
             if self.session.canAddOutput(self.audioOutput) {
