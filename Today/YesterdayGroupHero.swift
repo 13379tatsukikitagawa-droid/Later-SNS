@@ -167,3 +167,79 @@ struct YesterdayGroupHeadline: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+// MARK: - つくる / 参加する(横に2つ・高さ 62・まるい)
+
+/// 押している間 0.95 に ちぢみ、はなすと はずんで もどる。アイコンが うごき、白い光の筋が 横切る(0.55秒)
+struct YesterdayPillButtonStyle: ButtonStyle {
+    enum Icon { case plus, qr }
+    let icon: Icon
+    let title: String
+    let primary: Bool
+    let night: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        YesterdayPill(icon: icon, title: title, primary: primary, night: night, pressed: configuration.isPressed)
+    }
+}
+
+private struct YesterdayPill: View {
+    let icon: YesterdayPillButtonStyle.Icon
+    let title: String
+    let primary: Bool
+    let night: Bool
+    let pressed: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var sweep: CGFloat = -0.6
+
+    /// 昼:つくる = 黒地・白字 / 参加する = うすい灰・黒字。夜:つくる = 白地・黒字 / 参加する = 濃い灰・白字
+    private var background: Color {
+        primary ? (night ? .white : Color(hex: "111111")) : (night ? Color(hex: "1E1E21") : Color(hex: "F1F0F4"))
+    }
+    private var foreground: Color {
+        primary ? (night ? Color(hex: "111111") : .white) : (night ? .white : Color(hex: "111111"))
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            iconView
+                .frame(width: 22, height: 22)
+                .rotationEffect(.degrees(icon == .plus && pressed ? 90 : 0))
+                .scaleEffect(pressed ? 1.15 : 1)
+            Text(title).font(.system(size: 18, weight: .black)).tracking(-0.01 * 18)
+        }
+        .foregroundStyle(foreground)
+        .frame(maxWidth: .infinity)
+        .frame(height: 62)
+        .background(Capsule().fill(background))
+        .overlay {
+            GeometryReader { proxy in
+                LinearGradient(colors: [.clear, .white.opacity(0.4), .clear], startPoint: .leading, endPoint: .trailing)
+                    .frame(width: proxy.size.width * 0.46, height: proxy.size.height * 1.4)
+                    .rotationEffect(.degrees(14))
+                    .offset(x: proxy.size.width * sweep, y: -proxy.size.height * 0.2)
+            }
+            .clipShape(Capsule())
+            .allowsHitTesting(false)
+        }
+        .shadow(color: primary ? (night ? Color.white.opacity(0.18) : .black.opacity(0.6)) : .clear, radius: 13, y: 14)
+        .scaleEffect(pressed ? 0.95 : 1)
+        .animation(reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.32, dampingFraction: 0.5), value: pressed)
+        .onChange(of: pressed) { _, now in
+            guard now, !reduceMotion else { return }
+            sweep = -0.6
+            withAnimation(.timingCurve(0.3, 0.6, 0.3, 1, duration: 0.55)) { sweep = 1.2 }
+        }
+    }
+
+    @ViewBuilder
+    private var iconView: some View {
+        switch icon {
+        case .plus:
+            Image(systemName: "plus").font(.system(size: 20, weight: .bold))
+        case .qr:
+            Image(systemName: "qrcode").font(.system(size: 20, weight: .semibold))
+        }
+    }
+}

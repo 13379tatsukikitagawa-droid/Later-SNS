@@ -9,18 +9,28 @@ import UIKit
 struct YesterdayGroupSnapshotTests {
     static let sizes: [(String, CGSize)] = [("se", CGSize(width: 375, height: 667)), ("promax", CGSize(width: 440, height: 956))]
 
-    private func shoot<V: View>(_ view: V, name: String, size: CGSize, dir: URL, wait: Double = 2.2) async throws {
+    private func shoot<V: View>(_ view: V, name: String, size: CGSize, dir: URL, wait: Double = 2.2, scroll: CGFloat = 0) async throws {
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
         let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow()
         window.frame = CGRect(origin: .zero, size: size)
         window.rootViewController = UIHostingController(rootView: view)
         window.makeKeyAndVisible()
         try await Task.sleep(for: .seconds(wait))
+        if scroll > 0, let view = window.rootViewController?.view, let sv = Self.findScroll(in: view) {
+            sv.setContentOffset(CGPoint(x: 0, y: scroll), animated: false)
+            try await Task.sleep(for: .seconds(1.2))
+        }
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
         }
         try image.pngData()?.write(to: dir.appendingPathComponent("\(name).png"))
         window.isHidden = true
+    }
+
+    private static func findScroll(in view: UIView) -> UIScrollView? {
+        if let s = view as? UIScrollView, s.contentSize.height > s.bounds.height { return s }
+        for sub in view.subviews { if let s = findScroll(in: sub) { return s } }
+        return nil
     }
 
     private func groupTab(palette: Palette, sections: [GroupSectionModel]) -> some View {
@@ -50,6 +60,9 @@ struct YesterdayGroupSnapshotTests {
             if only == "all" || only == "group" {
                 for (palette, tag) in [(Palette.day, "day"), (Palette.night, "night")] {
                     try await shoot(groupTab(palette: palette, sections: []), name: "yg-group-\(tag)-\(label)", size: size, dir: dir, wait: 2.6)
+                    if label == "se" {
+                        try await shoot(groupTab(palette: palette, sections: []), name: "yg-group-\(tag)-\(label)-scrolled", size: size, dir: dir, wait: 2.6, scroll: 260)
+                    }
                 }
             }
         }

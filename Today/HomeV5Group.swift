@@ -273,53 +273,30 @@ struct HomeV5GroupPage: View {
         .padding(.vertical, 30)
     }
 
-    /// 「つくる」(黒・主役)と「参加する」(白 + 枠線)。色を完全に分ける。どちらも高さ 80pt 以上
+    /// 「つくる」「参加する」(横に2つ・高さ 62・まるい)。昼は つくる = 黒地・白字、夜は 白地・黒字
     private var createJoinButtons: some View {
-        VStack(spacing: 10) {
+        HStack(spacing: 12) {
             Button {
-                Haptics.play(.pop)
                 TapConsumption.mark()
                 if canCreate { onCreateGroup(nil) } else { Haptics.play(.warn) }
             } label: {
-                bigRow(title: "つくる", note: canCreate ? "ともだちを えらぶだけ" : "グループは \(GroupMembershipPolicy.maxGroupsPerUser)個まで", primary: true)
+                EmptyView()
             }
-            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            .buttonStyle(YesterdayPillButtonStyle(icon: .plus, title: "つくる", primary: true, night: palette.isNight))
             .opacity(canCreate ? 1 : 0.45)
-            .accessibilityLabel("グループをつくる")
+            .accessibilityLabel(canCreate ? "グループをつくる" : "グループは \(GroupMembershipPolicy.maxGroupsPerUser)個まで")
             Button {
-                Haptics.play(.pop)
                 TapConsumption.mark()
                 onJoinGroup()
             } label: {
-                bigRow(title: "参加する", note: "合言葉 か 招待カードで", primary: false)
+                EmptyView()
             }
-            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            .buttonStyle(YesterdayPillButtonStyle(icon: .qr, title: "参加する", primary: false, night: palette.isNight))
             .accessibilityLabel("グループに参加する")
         }
-        .padding(.top, 6)
+        .padding(.top, 8)
     }
 
-    private func bigRow(title: String, note: String, primary: Bool) -> some View {
-        HStack(spacing: 14) {
-            Circle()
-                .fill(primary ? AnyShapeStyle(LinearGradient(colors: GroupAddColors.sunset, startPoint: .topLeading, endPoint: .bottomTrailing)) : AnyShapeStyle(palette.fill))
-                .overlay(Image(systemName: primary ? "plus" : "arrow.right").font(.system(size: 20, weight: .bold)).foregroundStyle(primary ? Color.white : palette.ink))
-                .frame(width: 48, height: 48)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 18, weight: .heavy))
-                Text(note).font(.system(size: 12.5)).opacity(primary ? 0.78 : 1)
-            }
-            .foregroundStyle(primary ? palette.bg : palette.ink)
-            Spacer(minLength: 0)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 80)
-        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(primary ? palette.ink : palette.bg))
-        .overlay {
-            if !primary { RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(palette.groupAdd.secondaryLine, lineWidth: 1.5) }
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-    }
 
     // MARK: 解禁の動き
 
