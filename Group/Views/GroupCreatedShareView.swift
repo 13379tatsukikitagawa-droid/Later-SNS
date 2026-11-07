@@ -11,10 +11,15 @@ struct GroupCreatedShareView: View {
     /// 非nilの場合、カードの下に注意文言を表示する(例: iCloud容量不足で画像だけ
     /// 保存できなかった場合の案内)。通常の成功時はnilのまま。
     var warningMessage: String? = nil
+    /// v22 J-2:リンクを もう一度 つくる(失敗したとき)。nil なら「もういちど」は 出さない
+    var makeLink: (() async -> URL?)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var showCopiedToast = false
     @State private var showingShareSheet = false
+    /// つくりなおした リンク(CKShare の URL)
+    @State private var remadeURL: URL?
+    @State private var making = false
 
     private static let accentGreen = Color.brandGreen
     private static let cardBackground = Color(hex: "1A1A1A")
@@ -24,12 +29,14 @@ struct GroupCreatedShareView: View {
     /// タップされれば確実にこのアプリが直接開くlater://join?shareUrl=...でラップする
     /// (GroupDetailView.inviteSectionと同じ方針)。
     private var joinLink: URL? {
-        guard let shareURL else { return nil }
+        guard let shareURL = remadeURL ?? shareURL else { return nil }
         return GroupJoinLink.buildURL(shareURL: shareURL) ?? shareURL
     }
 
+    /// v22 J-2:以前と同じ文面(InviteConfig.shareMessage)
     private var shareMessage: String {
-        "laterで一緒に写真を撮ろう!グループ参加リンクはこちら: \(joinLink?.absoluteString ?? "")"
+        guard let joinLink else { return "" }
+        return InviteConfig.shareMessage(groupName: groupName, url: joinLink)
     }
 
     var body: some View {
@@ -71,7 +78,7 @@ struct GroupCreatedShareView: View {
             dismiss()
         }) {
             ShareSheet(activityItems: [
-                ShareLinkItemSource(text: shareMessage, title: "Laterで一緒に写真を撮ろう！")
+                ShareLinkItemSource(text: shareMessage, title: "「\(groupName)」に招待されました。")
             ]) { _ in
                 // 共有完了・キャンセルのいずれでも、そのまま留まらせず閉じる。
                 showingShareSheet = false
@@ -102,7 +109,11 @@ struct GroupCreatedShareView: View {
                     .foregroundStyle(.white.opacity(0.6))
             }
 
-            linkRow
+            if joinLink != nil {
+                linkRow
+            } else {
+                linkFailedRow
+            }
 
             if joinLink != nil {
                 // URLオブジェクトのままShareLinkへ渡すと、LINE等一部アプリの共有シートで
@@ -182,7 +193,48 @@ struct GroupCreatedShareView: View {
     }
 
     private var linkDisplayText: String {
-        joinLink?.absoluteString ?? "リンクの取得に失敗しました"
+        joinLink?.absoluteString ?? ""
+    }
+
+    /// リンクが できなかった:利用者には やさしい文(灰)。押すと もういちど。長押しで 開発用の詳細
+    private var linkFailedRow: some View {
+        Button {
+            Task { await remake() }
+        } label: {
+            HStack(spacing: 10) {
+                if making {
+                    ProgressView().tint(Color(hex: "FF8A2A")).scaleEffect(0.8)
+                    Text("リンクを つくっています…").foregroundStyle(Color(hex: "FF8A2A"))
+                } else {
+                    Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .semibold))
+                    Text("リンクを つくれませんでした。もういちど")
+                }
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.6))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.06)))
+        }
+        .buttonStyle(.plain)
+        .disabled(making || makeLink == nil)
+        .cloudDiagnosticsOnLongPress()
+        .accessibilityHint("長押しで、くわしい内容")
+    }
+
+    private func remake() async {
+        guard let makeLink, !making else { return }
+        making = true
+        for i in 0..<3 { DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.18) { Haptics.play(.tick) } }
+        let url = await makeLink()
+        making = false
+        if let url {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { remadeURL = url }
+            Haptics.play(.success)
+        } else {
+            Haptics.play(.warn)
+        }
     }
 
     // MARK: - コピー & トースト

@@ -95,6 +95,27 @@ enum GroupSharingError: LocalizedError {
     }
 }
 
+extension GroupSharingError {
+    /// 本番のスキーマ(フィールド・型が ない)が 原因の 失敗か
+    var isSchemaFailure: Bool {
+        switch self {
+        case .groupCreationFailed(let underlying, _), .shareCreationFailed(let underlying, _):
+            return CloudDiagnostics.isSchemaError(underlying)
+        default:
+            return false
+        }
+    }
+}
+
+extension LaterGroup {
+    /// あとから 足した フィールド(本番に まだ ないと、保存ぜんたいが 失敗する)
+    static let lateCloudFields = ["memberLimit", "colorIndex", "faceStyle", "showsInitial"]
+}
+
+extension UserProfile {
+    static let lateCloudFields = ["knockOff", "selfTags"]
+}
+
 extension Error {
     /// CKErrorの場合はコード番号・userInfoまで含めた詳細をXcodeのデバッグコンソールへ
     /// 出力し、画面表示用にコード番号付きの文言を返す。実機特有のCloudKit障害切り分け用に
@@ -223,7 +244,19 @@ final class GroupSharingService {
         // ホストプロフィール・CKShareのレコードを構築して保存する。まずは画像を
         // 含めて試み、CKError.quotaExceededを検知した場合のみ画像を除いて再試行する。
         do {
-            try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: true)
+            do {
+                try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: true)
+            } catch let error as GroupSharingError where error.isSchemaFailure {
+                // v22 J-2:本番に まだ ないフィールドが 原因のときだけ、あとから 足したフィールドを 除いて 1回だけ 保存しなおす。
+                // 黙って 成功させない(ログと 長押しの 詳細に「縮小して保存した」と のこす)
+                let first = CloudDiagnostics.last ?? ""
+                print("[GroupSync] createGroup: スキーマが原因の失敗。あとから足したフィールドを除いて 1回だけ 保存しなおします")
+                try await saveGroupRecords(group, hostProfile: hostProfile, ownerName: ownerName, zoneID: zoneID, includeImages: true, minimal: true)
+                CloudDiagnostics.record("グループを つくる:縮小して保存した",
+                                        "本番に ないフィールドが あったので、次を 除いて 保存しなおしました:\n"
+                                        + "LaterGroup: \(LaterGroup.lateCloudFields.joined(separator: ", "))\n"
+                                        + "UserProfile: \(UserProfile.lateCloudFields.joined(separator: ", "))\n\n最初の失敗:\n\(first)")
+            }
         } catch is QuotaExceededDuringImageUpload {
             print("[GroupSync] createGroup: CKError.quotaExceeded(画像アップロード)を検知。画像を除いて再試行します")
             do {
@@ -254,9 +287,11 @@ final class GroupSharingService {
         hostProfile: UserProfile,
         ownerName: String,
         zoneID: CKRecordZone.ID,
-        includeImages: Bool
+        includeImages: Bool,
+        minimal: Bool = false
     ) async throws {
         let groupRecord = group.toCKRecord(existing: nil, ownerName: ownerName, includeIcon: includeImages)
+        if minimal { for key in LaterGroup.lateCloudFields { groupRecord[key] = nil } }
         let share = CKShare(rootRecord: groupRecord)
         share.publicPermission = .readWrite
         share[CKShare.SystemFieldKey.title] = group.name as CKRecordValue
@@ -265,6 +300,12 @@ final class GroupSharingService {
         hostProfile.ckRecordName = hostRecordName
         hostProfile.cloudKitUserRecordName = ownerName
         let hostProfileRecord = hostProfile.toCKRecord(existing: nil, zoneID: zoneID, groupRecordID: groupRecord.recordID, includeAvatar: includeImages)
+        if minimal { for key in UserProfile.lateCloudFields { hostProfileRecord[key] = nil } }
+        let recordLabels: [CKRecord.ID: String] = [
+            groupRecord.recordID: "groupRecord(\(AppRecordType.laterGroup))",
+            hostProfileRecord.recordID: "hostProfileRecord(\(AppRecordType.userProfile))",
+            share.recordID: "share(CKShare)",
+        ]
 
         let saveResults: [CKRecord.ID: Result<CKRecord, Error>]
         do {
@@ -278,6 +319,7 @@ final class GroupSharingService {
             // どのレコードが真因だったかをログへ残す。
             _ = error.loggedDescription(context: "CircleCreateGroupView.createGroup modifyRecords")
             error.logPartialItemErrors()
+            CloudDiagnostics.record("グループを つくる\(minimal ? "(縮小)" : "")", CloudDiagnostics.report(error, labels: recordLabels))
             if includeImages, error.asQuotaExceededCKError != nil {
                 throw QuotaExceededDuringImageUpload()
             }
@@ -289,11 +331,6 @@ final class GroupSharingService {
         // CKError 22 (batchRequestFailed) を受け取る「巻き添え」になる。groupRecordの
         // 結果だけを見て早期returnすると、真因が別レコードにあった場合に特定できなくなる
         // ため、分岐する前に3件すべてをログへ出力しておく。
-        let recordLabels: [CKRecord.ID: String] = [
-            groupRecord.recordID: "groupRecord(\(AppRecordType.laterGroup))",
-            hostProfileRecord.recordID: "hostProfileRecord(\(AppRecordType.userProfile))",
-            share.recordID: "share(CKShare)",
-        ]
         var quotaExceededDetected = false
         for (recordID, result) in saveResults {
             let label = recordLabels[recordID] ?? recordID.recordName
@@ -320,6 +357,8 @@ final class GroupSharingService {
         // Xcodeコンソールを見られない環境でも原因を特定できるよう、この結果を
         // 画面表示用メッセージ(detail)にそのまま含める。
         let rootCause = rootCauseDetail(from: saveResults, labels: recordLabels)
+        let failures = CloudDiagnostics.report(results: saveResults, labels: recordLabels)
+        if !failures.isEmpty { CloudDiagnostics.record("グループを つくる\(minimal ? "(縮小)" : "")", failures) }
 
         // グループ本体の保存結果を、共有リンク(share)の結果とは独立に確認する。
         // これにより「グループ作成自体が失敗した」のか「グループは保存できたが
@@ -344,6 +383,7 @@ final class GroupSharingService {
             throw GroupSharingError.shareURLMissing
         }
         guard let savedShare = savedShareRecord as? CKShare, let shareURL = savedShare.url else {
+            CloudDiagnostics.record("グループを つくる", "共有(CKShare)は 保存できたが、url が nil でした")
             throw GroupSharingError.shareURLMissing
         }
 

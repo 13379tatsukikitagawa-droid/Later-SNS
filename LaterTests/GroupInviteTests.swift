@@ -1,3 +1,4 @@
+import CloudKit
 import Foundation
 import Testing
 import UIKit
@@ -74,6 +75,26 @@ struct GroupInviteTests {
         #expect(InviteConfig.shareURL(from: URL(string: "https://example.com/share/x")!) == nil)
     }
 
+    @Test func 招待リンクはエンコードなしで作り_あり_なしの両方を読める() {
+        let link = InviteConfig.joinLink(shareURL: shareURL)
+        #expect(link.absoluteString == "later://join?shareUrl=\(shareURL.absoluteString)")
+        let plain = URL(string: "later://join?shareUrl=https://www.icloud.com/share/048QUuOQglIyxDdrKDRVre3wg")!
+        #expect(InviteConfig.shareURL(from: plain)?.absoluteString == "https://www.icloud.com/share/048QUuOQglIyxDdrKDRVre3wg")
+        let encoded = URL(string: "later://join?shareUrl=https%3A%2F%2Fwww.icloud.com%2Fshare%2F048QUuOQglIyxDdrKDRVre3wg")!
+        #expect(InviteConfig.shareURL(from: encoded)?.absoluteString == "https://www.icloud.com/share/048QUuOQglIyxDdrKDRVre3wg")
+        #expect(InviteConfig.shareURL(from: URL(string: "later://join?x=1")!) == nil)
+    }
+
+    @Test func スキーマの失敗の文からフィールドを取り出す() {
+        let text = "Cannot create new field 'faceStyle' in production schema for record type 'LaterGroup'"
+        #expect(CloudDiagnostics.fieldName(in: text) == "faceStyle")
+        #expect(CloudDiagnostics.recordType(in: text) == "LaterGroup")
+        let error = CKError(.invalidArguments, userInfo: ["ServerErrorDescription": text])
+        #expect(CloudDiagnostics.isSchemaError(error))
+        #expect(CloudDiagnostics.describe(error).contains("field=faceStyle"))
+        #expect(!CloudDiagnostics.isSchemaError(CKError(.networkUnavailable)))
+    }
+
     @Test func 合言葉の形() {
         #expect(GroupInviteService.isPassphrase("hikari-2741"))
         #expect(!GroupInviteService.isPassphrase("ABC234"))
@@ -82,7 +103,7 @@ struct GroupInviteTests {
 
     @Test func 共有の文面にあおる言葉を入れない() {
         let text = InviteConfig.shareMessage(groupName: "よいしょー", url: InviteConfig.joinLink(shareURL: shareURL))
-        #expect(text.hasPrefix("「よいしょー」に招待されました。Later で、昨日をひらきあいましょう。 later://join"))
+        #expect(text == "「よいしょー」に招待されました。Later で、昨日をひらきあいましょう。\nlater://join?shareUrl=\(shareURL.absoluteString)")
         for word in ["早く", "いまだけ", "今だけ", "急いで"] { #expect(!text.contains(word)) }
     }
 

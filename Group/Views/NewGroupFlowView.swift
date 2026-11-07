@@ -214,7 +214,10 @@ struct NewGroupFlowView: View {
         }
         // 作ったあとは、前の完了画面(招待リンクを送る / リンクをコピー / あとで送る)。閉じたら、作成の画面ごと閉じる
         .sheet(isPresented: $showingCreatedShare, onDismiss: onClose) {
-            GroupCreatedShareView(groupName: createdGroup?.name ?? finalName, shareURL: createdShareURL, warningMessage: createdWarning)
+            GroupCreatedShareView(groupName: createdGroup?.name ?? finalName, shareURL: createdShareURL, warningMessage: createdWarning,
+                                  makeLink: createdGroup.map { group in
+                                      { await Self.makeLink(for: group, context: modelContext).flatMap { InviteConfig.shareURL(from: $0) } }
+                                  })
         }
     }
 
@@ -665,6 +668,7 @@ struct NewGroupFlowView: View {
                 Text(errorMessage)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(colors.warn)
+                    .cloudDiagnosticsOnLongPress()
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                     .padding(.top, 12)
@@ -740,6 +744,7 @@ struct NewGroupFlowView: View {
                     Text(errorMessage)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(colors.warn)
+                        .cloudDiagnosticsOnLongPress()
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                         .transition(.opacity)
@@ -856,6 +861,13 @@ struct NewGroupFlowView: View {
                 // iCloud の容量不足で、写真だけ除いて作れた(グループは作成ずみ)
                 createdWarning = GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true).errorDescription
             } catch {
+                // 開発用の詳細(長押しで見る)。CKError は GroupSharingService が のこす。それ以外も ここで のこす
+                if !(error is GroupSharingError) || CloudDiagnostics.last == nil {
+                    CloudDiagnostics.record("グループを つくる", CloudDiagnostics.report(error))
+                }
+                if case GroupSharingError.zoneCreationFailed(let underlying) = error {
+                    CloudDiagnostics.record("グループを つくる:ゾーン", CloudDiagnostics.report(underlying))
+                }
                 modelContext.delete(group)
                 try? modelContext.save()
                 // 演出を止めて、エラーを出す(名前・色・人数はそのまま)
@@ -871,16 +883,26 @@ struct NewGroupFlowView: View {
             let wait = max(0, 0.52 - Date().timeIntervalSince(started))
             try? await Task.sleep(for: .seconds(wait))
             // 前の完了画面へ。リンクは、作ってできた本物(CKShare の URL)を出す
-            let madeLink = try? await GroupInviteService.link(for: group, context: modelContext)
+            let madeLink = await Self.makeLink(for: group, context: modelContext)
             isCreating = false
             inviteLink = madeLink
             createdShareURL = madeLink.flatMap { InviteConfig.shareURL(from: $0) } ?? madeLink
-            if madeLink == nil {
-                createdWarning = [createdWarning, "リンクをつくれませんでした。つながってから、グループの設定でもう一度"].compactMap { $0 }.joined(separator: "\n")
-            }
             showingCreatedShare = true
             // 合言葉は、画面には出さないが、これまでどおり作っておく(合言葉で入れるように・グループの設定で見られる)
             passphrase = try? await GroupInviteService.passphrase(for: group, context: modelContext)
+        }
+    }
+}
+
+extension NewGroupFlowView {
+    /// 招待リンクを つくる。失敗は 黙らせない(開発用の詳細を のこす)
+    @MainActor
+    static func makeLink(for group: LaterGroup, context: ModelContext) async -> URL? {
+        do {
+            return try await GroupInviteService.link(for: group, context: context)
+        } catch {
+            CloudDiagnostics.record("招待リンクを つくる", CloudDiagnostics.report(error) + "\n(\(String(describing: error)))")
+            return nil
         }
     }
 }

@@ -111,6 +111,7 @@
 		A3FDAEEF2FB71C5C001484F7 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FDAEEE2FB71C5B001484F7 /* Theme.swift */; };
 		A3FDAEF32FB72048001484F7 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FDAEF22FB72048001484F7 /* ShareSheet.swift */; };
 		A3FE0C762FBEFC1B009437FC /* DailyGoalLockOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FE0C752FBEFC1B009437FC /* DailyGoalLockOverlay.swift */; };
+		E4A000000000000000000028 /* CloudDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000027 /* CloudDiagnostics.swift */; };
 		A419A8BAE368E5D357C25703 /* GroupSharingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C61911DB4CF172CE8BAA8EE /* GroupSharingService.swift */; };
 		A76B1D8370E9671F3A761E47 /* ChekiPhotoFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDF5F2153F01F43089097247 /* ChekiPhotoFrame.swift */; };
 		A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF193B5747AE398EAD547C74 /* OnboardingModel.swift */; };
@@ -305,6 +306,7 @@
 		60B938792A0F07511106FF26 /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		61631B2AC7C0C0680568B3A3 /* GroupSelectionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupSelectionStore.swift; sourceTree = "<group>"; };
 		6B89D635459545F88E9CB5FD /* PostTargetSelectionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTargetSelectionSheet.swift; sourceTree = "<group>"; };
+		E4A000000000000000000027 /* CloudDiagnostics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudDiagnostics.swift; sourceTree = "<group>"; };
 		6C61911DB4CF172CE8BAA8EE /* GroupSharingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupSharingService.swift; sourceTree = "<group>"; };
 		71186888D37FC45B1244C6D9 /* Profile/Views/ReportSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Profile/Views/ReportSheet.swift; sourceTree = "<group>"; };
 		72C5966B9BE0815A9FC93C36 /* PersonalTodayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonalTodayView.swift; sourceTree = "<group>"; };
@@ -733,6 +735,7 @@
 				B8289C9CCB22AFFDABCEC81E /* ModerationService.swift */,
 				F96C7548AF2068DC5BCAAB24 /* AccountDeletionService.swift */,
 				6C61911DB4CF172CE8BAA8EE /* GroupSharingService.swift */,
+				E4A000000000000000000027 /* CloudDiagnostics.swift */,
 				279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */,
 				52B4C22287B8F839F97B59D7 /* UserDirectoryService.swift */,
 				A3B62839302DAE4D0010ACBB /* GroupJoinLink.swift */,
@@ -1372,6 +1375,7 @@
 				E10BBAF5059E6BD10383F2C1 /* Profile/Views/ReportSheet.swift in Sources */,
 				59F80A436DE7C20220C14325 /* Profile/Views/SquareImageCropView.swift in Sources */,
 				A419A8BAE368E5D357C25703 /* GroupSharingService.swift in Sources */,
+				E4A000000000000000000028 /* CloudDiagnostics.swift in Sources */,
 				83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */,
 				0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */,
 				8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */,

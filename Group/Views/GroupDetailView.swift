@@ -165,7 +165,8 @@ struct GroupDetailView: View {
             if let errorMessage {
                 Text(errorMessage)
                     .font(.system(size: 13))
-                    .foregroundStyle(.red.opacity(0.85))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .cloudDiagnosticsOnLongPress()
             }
 
             if let shareURL {
@@ -176,8 +177,7 @@ struct GroupDetailView: View {
                 // ままShareLinkへ渡すと、LINE等一部アプリの共有シートで
                 // 「Cannot issue sandbox extension」エラーになり共有自体が失敗することがあった
                 // ため、プレーンなテキスト(String)として共有することでその問題を回避する。
-                let joinLinkText = (GroupJoinLink.buildURL(shareURL: shareURL) ?? shareURL).absoluteString
-                ShareLink(item: "laterで一緒に写真を撮ろう!グループ参加リンクはこちら: \(joinLinkText)") {
+                ShareLink(item: InviteConfig.shareMessage(groupName: group.name, url: InviteConfig.joinLink(shareURL: shareURL))) {
                     inviteButtonLabel(title: "招待リンクを送る", systemImage: "square.and.arrow.up")
                 }
             } else {
@@ -226,7 +226,10 @@ struct GroupDetailView: View {
         do {
             shareURL = try await sharingService.fetchOrCreateShareURL(for: group)
         } catch {
-            errorMessage = error.loggedDescription(context: "GroupDetailView.prepareShareURL")
+            _ = error.loggedDescription(context: "GroupDetailView.prepareShareURL")
+            CloudDiagnostics.record("招待リンクを つくる", CloudDiagnostics.report(error) + "\n(\(String(describing: error)))")
+            Haptics.play(.warn)
+            errorMessage = "リンクを つくれませんでした。もういちど"
         }
     }
 

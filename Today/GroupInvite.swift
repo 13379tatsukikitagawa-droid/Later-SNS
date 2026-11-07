@@ -15,7 +15,7 @@ import UIKit
 enum InviteConfig {
     /// 共有シートに渡す文面(あおる言葉は入れない)
     static func shareMessage(groupName: String, url: URL) -> String {
-        "「\(groupName)」に招待されました。Later で、昨日をひらきあいましょう。 \(url.absoluteString)"
+        "「\(groupName)」に招待されました。Later で、昨日をひらきあいましょう。\n\(url.absoluteString)"
     }
 
     /// CKShare の URL → 招待リンク(アプリを直接ひらく later://join)
@@ -225,6 +225,7 @@ struct InviteCard: View {
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
                     .padding(.top, 12)
+                    .cloudDiagnosticsOnLongPress()
             }
         }
         .padding(16)
@@ -352,7 +353,9 @@ struct InviteCard: View {
             do {
                 action(try await GroupInviteService.link(for: group, context: modelContext))
             } catch {
-                linkError = "いまは、リンクをつくれません。少しあとで、もう一度ためしてください。"
+                CloudDiagnostics.record("招待リンクを つくる", CloudDiagnostics.report(error) + "\n(\(String(describing: error)))")
+                Haptics.play(.warn)
+                linkError = "リンクを つくれませんでした。もういちど"
             }
         }
     }

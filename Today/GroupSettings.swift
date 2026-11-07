@@ -356,6 +356,7 @@ struct GroupSettingsView: View {
     @State private var shareText: String?
     @State private var passphrase: String?
     @State private var copied = false
+    @State private var linkError: String?
 
     init(group: LaterGroup, haptics: ExposureHaptics, onBack: @escaping () -> Void, onLeave: @escaping () -> Void) {
         self.group = group
@@ -550,11 +551,23 @@ struct GroupSettingsView: View {
     private var inviteSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionTitle("招待")
+            if let linkError {
+                Text(linkError)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(Color(hex: "8E8E93"))
+                    .cloudDiagnosticsOnLongPress()
+            }
             VStack(spacing: 0) {
                 row {
                     Task {
-                        if let url = try? await GroupInviteService.link(for: group, context: modelContext) {
+                        linkError = nil
+                        do {
+                            let url = try await GroupInviteService.link(for: group, context: modelContext)
                             shareText = InviteConfig.shareMessage(groupName: group.name, url: url)
+                        } catch {
+                            CloudDiagnostics.record("招待リンクを つくる", CloudDiagnostics.report(error) + "\n(\(String(describing: error)))")
+                            Haptics.play(.warn)
+                            linkError = "リンクを つくれませんでした。もういちど"
                         }
                     }
                 } content: {

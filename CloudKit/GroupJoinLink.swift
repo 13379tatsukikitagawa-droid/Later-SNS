@@ -13,26 +13,30 @@ enum GroupJoinLink {
     static let host = "join"
 
     /// CKShareの標準URLから、アプリ直接起動用のカスタムURLを組み立てる。
-    /// パーセントエンコードに失敗することは通常無いが、失敗時はnilを返すため
-    /// 呼び出し側は `GroupJoinLink.buildURL(shareURL: url) ?? url` のように
-    /// 元のURLへフォールバックすること。
+    /// v22 J-2:以前と同じ形に戻す。`shareUrl=` のあとは エンコードしない
+    /// (例:later://join?shareUrl=https://www.icloud.com/share/048QUuOQglIyxDdrKDRVre3wg)。
+    /// 組み立てに失敗したときだけ、エンコードした形にする。nil なら呼び出し側で元のURLへフォールバック。
     static func buildURL(shareURL: URL) -> URL? {
-        guard let encoded = shareURL.absoluteString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            return nil
+        let raw = shareURL.absoluteString
+        if let url = URL(string: "\(scheme)://\(host)?shareUrl=\(raw)"), extractShareURL(from: url) == shareURL {
+            return url
         }
+        guard let encoded = raw.addingPercentEncoding(withAllowedCharacters: .alphanumerics) else { return nil }
         return URL(string: "\(scheme)://\(host)?shareUrl=\(encoded)")
     }
 
-    /// later://join?shareUrl=... から、元のCKShare標準URLを取り出す。
+    /// later://join?shareUrl=... から、元のCKShare標準URLを取り出す(エンコードあり・なし どちらも読める)。
     /// scheme/hostが一致しない、またはshareUrlクエリが無い/不正な場合はnilを返す。
     static func extractShareURL(from url: URL) -> URL? {
-        guard url.scheme == scheme, url.host == host,
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let shareURLString = components.queryItems?.first(where: { $0.name == "shareUrl" })?.value,
-              let shareURL = URL(string: shareURLString)
-        else {
-            return nil
+        guard url.scheme == scheme, url.host == host else { return nil }
+        // shareUrl= のうしろを そのまま 取る(エンコードなしだと、CKShare の URL の中の ? や # で 切れることがあるため)
+        let text = url.absoluteString
+        guard let range = text.range(of: "shareUrl=") else { return nil }
+        var value = String(text[range.upperBound...])
+        if value.lowercased().hasPrefix("http%3a") || value.contains("%2F") || value.contains("%2f") {
+            value = value.removingPercentEncoding ?? value
         }
+        guard let shareURL = URL(string: value), shareURL.scheme?.hasPrefix("http") == true else { return nil }
         return shareURL
     }
 
