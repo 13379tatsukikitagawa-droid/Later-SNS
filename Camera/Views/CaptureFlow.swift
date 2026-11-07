@@ -43,6 +43,8 @@ struct CaptureFlow: View {
     @State private var draftLoaded = false
     /// この1枚に付けるタグ(「つけずに撮る」なら空)
     @State private var shotTags: [String] = []
+    /// v22 L-4:この1枚の 1曲(撮影画面の ピル)
+    @State private var shotMusic: MusicPick?
     @State private var isRestTime = false
 
     // ③ カード → ファインダー
@@ -123,6 +125,7 @@ struct CaptureFlow: View {
                     tags: shotTags,
                     place: placeProvider.placeName,
                     left: left,
+                    musicTitle: shotMusic?.shortTitle,
                     playsEntrance: playsCaptureEntrance,
                     mode: $mode,
                     onBack: cancel,
@@ -228,6 +231,7 @@ struct CaptureFlow: View {
         }
         navBusy = true
         shotTags = withTags ? tags : []
+        shotMusic = MusicDraft.load()
         camera.start()   // 映像が早く来るよう、ひろがり始めに起動する(sessionQueue で)
 
         let token = UUID()

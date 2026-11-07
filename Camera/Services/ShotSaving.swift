@@ -165,6 +165,8 @@ nonisolated enum PendingShotStore {
         let captureDate: Date
         let tags: [String]
         let place: String?
+        /// v22 L-4:撮ったときの 1曲(古い保存には ない)
+        var music: MusicPick? = nil
     }
 
     struct Item: Sendable {

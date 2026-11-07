@@ -1413,7 +1413,7 @@ struct TodayView: View {
 
     // MARK: - 撮影した1枚の保存
 
-    private func saveExposure(imageData: Data, exposureStart: Date, tags: [String], locationName: String?, extras: ExposureDayStore.Extras? = nil) -> Bool {
+    private func saveExposure(imageData: Data, exposureStart: Date, tags: [String], locationName: String?, extras: ExposureDayStore.Extras? = nil, music: MusicPick? = nil) -> Bool {
         guard let user = currentUser else { return false }
         do {
             try DailyExposureStore.save(
@@ -1424,7 +1424,8 @@ struct TodayView: View {
                 user: user,
                 groups: userGroups,
                 context: context,
-                dayExtras: extras
+                dayExtras: extras,
+                music: music
             )
             return true
         } catch {
@@ -1439,6 +1440,7 @@ struct TodayView: View {
     /// 保存しきれなかったときのために、先にファイルへおいておき(PendingShotStore)、次の起動で再試行する。
     private func saveCapturedShot(photo: UIImage, tags: [String], place: String?, shotIndex: Int) {
         let captureDate = Date()
+        let music = MusicDraft.load()   // v22 L-4:撮ったときの 1曲
         let background = BackgroundTaskBox.begin(name: "later.saveShot")
         shotSaveTask = Task { @MainActor in
             defer { background.end() }
@@ -1447,11 +1449,11 @@ struct TodayView: View {
                 return false
             }
             CaptureSignpost.mark("encoded")
-            let meta = PendingShotStore.Meta(id: UUID(), captureDate: captureDate, tags: tags, place: place)
+            let meta = PendingShotStore.Meta(id: UUID(), captureDate: captureDate, tags: tags, place: place, music: music)
             let data = encoded.imageData
             let wrote = await Task.detached(priority: .userInitiated) { PendingShotStore.write(imageData: data, meta: meta) }.value
             let extras = ExposureDayStore.Extras(colorHex: encoded.colorHex, thumbnailData: encoded.thumbnailData, toneHexes: encoded.toneHexes)
-            let ok = saveExposure(imageData: data, exposureStart: captureDate, tags: tags, locationName: place, extras: extras)
+            let ok = saveExposure(imageData: data, exposureStart: captureDate, tags: tags, locationName: place, extras: extras, music: music)
             CaptureSignpost.mark("saved", ok ? "ok" : "failed")   // ③ 写真が返る → 保存
             if ok, wrote {
                 let id = meta.id
@@ -1465,6 +1467,7 @@ struct TodayView: View {
     /// v20:録った動画を保存する(ポスター = 最初のコマ・加工ずみ JPEG を image に、本体は端末のファイル → CloudKit の video)
     private func saveCapturedVideo(_ video: RecordedVideo, tags: [String], place: String?) {
         let captureDate = Date()
+        let music = MusicDraft.load()   // v22 L-4
         Task { @MainActor in
             // もとの ふつう映像を置く(RETRO-8 は裏で書き出す。終わったら入れかわって、もとは消える)
             guard let name = try? LaterVideoStore.adopt(video.url, prefix: LaterVideoStore.rawPrefix) else {
@@ -1486,7 +1489,8 @@ struct TodayView: View {
                     groups: userGroups,
                     context: context,
                     dayExtras: extras,
-                    video: (name, video.duration)
+                    video: (name, video.duration),
+                    music: music
                 )
                 RetroExportQueue.context = context
                 RetroExportQueue.enqueue(.init(rawName: name, captureDate: captureDate, velocities: video.velocities))
@@ -1555,7 +1559,8 @@ struct TodayView: View {
             let data = item.imageData
             let extras = await Task.detached(priority: .utility) { ShotEncoder.dayExtras(from: data) }.value
             let ok = saveExposure(imageData: data, exposureStart: date, tags: item.meta.tags, locationName: item.meta.place,
-                                  extras: ExposureDayStore.Extras(colorHex: extras.colorHex, thumbnailData: extras.thumbnailData, toneHexes: extras.toneHexes))
+                                  extras: ExposureDayStore.Extras(colorHex: extras.colorHex, thumbnailData: extras.thumbnailData, toneHexes: extras.toneHexes),
+                                  music: item.meta.music)
             if ok { PendingShotStore.remove(item.meta.id) }
         }
     }

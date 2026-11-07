@@ -303,6 +303,15 @@ extension LaterPhoto {
         record["approxLongitude"] = approxLongitude
         // v20 動画:長さ(写真は空のまま)
         record["durationSeconds"] = durationSeconds
+        // v22 L-4:今日の 1曲。曲が ないときは 1つも 書かない
+        // (Production に 項目が まだ なくても、曲なしの 写真の 保存は 失敗しない)
+        if musicTitle != nil || musicLink != nil || record["musicTitle"] != nil {
+            record["musicTitle"] = musicTitle
+            record["musicArtist"] = musicArtist
+            record["musicArtworkURL"] = musicArtworkURL
+            record["musicLink"] = musicLink
+            record["musicService"] = musicService
+        }
         // PhotoNotificationService(撮影通知のCKQuerySubscription)がプッシュペイロードに
         // desiredKeysとして含めるためのスカラー値。"group"(CKRecord.Reference)自体は
         // desiredKeysで直接取得できないため、遷移先グループを特定するためだけに
@@ -359,6 +368,11 @@ extension LaterPhoto {
         approxLongitude = record["approxLongitude"] as? Double
         // v20 動画:長さだけ持つ。本体(video)は、タップしたときに LaterVideoStore.fetch で取る
         durationSeconds = record["durationSeconds"] as? Double
+        musicTitle = record["musicTitle"] as? String
+        musicArtist = record["musicArtist"] as? String
+        musicArtworkURL = record["musicArtworkURL"] as? String
+        musicLink = record["musicLink"] as? String
+        musicService = record["musicService"] as? String
         if let asset = record["image"] as? CKAsset {
             if let fileURL = asset.fileURL {
                 do {

@@ -161,7 +161,8 @@ enum DailyExposureStore {
         groups: [LaterGroup],
         context: ModelContext,
         dayExtras: ExposureDayStore.Extras? = nil,
-        video: (fileName: String, duration: Double)? = nil
+        video: (fileName: String, duration: Double)? = nil,
+        music: MusicPick? = nil
     ) throws {
         guard !groups.isEmpty else { throw SaveError.noDestination }
 
@@ -183,6 +184,8 @@ enum DailyExposureStore {
                 photo.durationSeconds = video.duration
                 photo.videoFileName = video.fileName
             }
+            // v22 L-4:今日の 1曲(つけていなければ 何も 入れない)
+            photo.applyMusic(music)
             // 位置の共有を「撮った場所」にしたグループだけ、丸めた位置を添える
             GroupLocationService.stamp(photo, groupID: group.id, isPersonalSpace: group.isPersonalSpace)
             // 撮った時点では画像以外だけを届ける。画像は翌日「投稿する」を選んだときに送る。

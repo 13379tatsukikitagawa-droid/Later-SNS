@@ -267,6 +267,10 @@ struct TagScreen: View {
     @State private var placeholderTask: Task<Void, Never>?
     /// とじている最中(キーボードを とじてから 画面を とじる・2回目は 無視)
     @State private var closing = false
+    /// L-4:今日の 1曲(その日の 下書き。撮ると 写真に つく)
+    @State private var music: MusicPick? = MusicDraft.load()
+    @State private var showsMusic = false
+    @State private var musicBounce = 0
 
     private static let space = "tagScreen"
     private static let examples = ["雨の日", "放課後", "いい匂い", "部活", "帰り道", "テスト前"]
@@ -282,10 +286,19 @@ struct TagScreen: View {
             GeometryReader { proxy in
                 let compact = proxy.size.height < 640
                 VStack(alignment: .leading, spacing: 0) {
-                    closeButton
-                        .padding(.leading, 18)
-                        .padding(.top, 7)
-                        .modifier(Stagger(phase: stage, inDelay: 0, outIndex: 0, reduceMotion: reduceMotion))
+                    // 左に ×、右に ♪(同じ 高さ・同じ 大きさ)
+                    HStack(alignment: .top) {
+                        closeButton
+                        Spacer(minLength: 12)
+                        TagMusicButton(pick: music, bounce: musicBounce) {
+                            Haptics.play(.pop)
+                            inputFocused = false
+                            showsMusic = true
+                        }
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 7)
+                    .modifier(Stagger(phase: stage, inDelay: 0, outIndex: 0, reduceMotion: reduceMotion))
 
                     // L:文字を へらす。見出しだけ(×の すぐ下)
                     Text("今日は、どんな日?")
@@ -347,6 +360,13 @@ struct TagScreen: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showRefuse)
         .coordinateSpace(name: Self.space)
+        .sheet(isPresented: $showsMusic) {
+            MusicSheet(current: music) { pick in
+                MusicDraft.save(pick)
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) { music = pick }
+                if pick != nil { musicBounce += 1 }
+            }
+        }
         .preferredColorScheme(.dark)
         .onAppear(perform: appear)
         .onDisappear { placeholderTask?.cancel() }

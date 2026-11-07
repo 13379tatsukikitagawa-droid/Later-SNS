@@ -40,7 +40,8 @@ struct TagScreenL22Tests {
         let dir = URL(fileURLWithPath: path)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         for (label, size) in [("se", CGSize(width: 375, height: 667)), ("pro", CGSize(width: 390, height: 844)), ("promax", CGSize(width: 440, height: 956))] {
-            for (state, tags) in [("empty", [String]()), ("two", ["エモい", "放課後"])] {
+            for (state, tags) in [("empty", [String]()), ("two", ["エモい", "放課後"]), ("music", ["エモい"])] {
+                MusicDraft.save(state == "music" ? MusicPick(title: "ねむれない夜に", artist: "Apple Music の曲", artworkURL: nil, link: nil, service: .apple) : nil)
                 let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
                 let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow()
                 window.frame = CGRect(origin: .zero, size: size)
@@ -54,6 +55,20 @@ struct TagScreenL22Tests {
                 try image.pngData()?.write(to: dir.appendingPathComponent("tag-\(state)-\(label).png"))
                 window.isHidden = true
             }
+            MusicDraft.save(nil)
+            // 音楽の シート(この シミュレーターは まだ 許可を きいていない →「つなぐ」)
+            let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+            let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow()
+            window.frame = CGRect(origin: .zero, size: size)
+            window.windowLevel = .alert + 1
+            window.rootViewController = UIHostingController(rootView: MusicSheet(current: nil) { _ in })
+            window.makeKeyAndVisible()
+            try await Task.sleep(for: .seconds(1.2))
+            let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+                window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+            }
+            try image.pngData()?.write(to: dir.appendingPathComponent("music-sheet-\(label).png"))
+            window.isHidden = true
         }
     }
 }

@@ -145,6 +145,24 @@ final class LaterPhoto {
     /// 動画か(長さがあるもの)
     var isVideo: Bool { (durationSeconds ?? 0) > 0 }
 
+    /// v22 L-4:今日の 1曲(つけなかったら ぜんぶ nil)。CloudKit の LaterPhoto.music*(STRING・省略可)
+    var musicTitle: String?
+    var musicArtist: String?
+    var musicArtworkURL: String?
+    /// Apple Music か Spotify の リンク(見る側は 押すと 自分のアプリで ひらく)
+    var musicLink: String?
+    /// "apple" / "spotify"
+    var musicService: String?
+
+    /// 曲を つける(nil なら はずす)
+    func applyMusic(_ pick: MusicPick?) {
+        musicTitle = pick?.title
+        musicArtist = pick?.artist
+        musicArtworkURL = pick?.artworkURL
+        musicLink = pick?.link
+        musicService = pick?.service.rawValue
+    }
+
     /// 解禁前の表示に使う、とても小さな画像(22 × 48 px の PNG・数KB)。フィルム加工後の画像から作る。
     /// 解禁前の GROUP のモザイクは、これだけを使う(高解像度の本体は使わない)。
     var mosaicTiny: Data?

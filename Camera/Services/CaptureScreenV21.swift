@@ -14,6 +14,8 @@ struct CaptureScreenV21: View {
     let tags: [String]
     let place: String?
     let left: Int
+    /// v22 L-4:今日の 1曲(ピルに「♪ 曲名」を 1つだけ・短く)
+    var musicTitle: String? = nil
     var playsEntrance = false
     @Binding var mode: CaptureMode
     let onBack: () -> Void
@@ -297,6 +299,7 @@ struct CaptureScreenV21: View {
             ForEach(shown, id: \.self) { tag in chip(icon: nil, text: "#\(tag)", tint: .white) }
             if tags.isEmpty { chip(icon: nil, text: "#タグなし", tint: .white.opacity(0.7)) }
             if tags.count > 2 { chip(icon: nil, text: "+\(tags.count - 2)", tint: .white) }
+            if let musicTitle { chip(icon: "music.note", text: musicTitle, tint: .white) }
         }
         .frame(width: layout.size.width - 32)
         .position(x: layout.size.width / 2, y: win.maxY + layout.y(14) + 16)

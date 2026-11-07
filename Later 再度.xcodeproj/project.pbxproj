@@ -234,10 +234,12 @@
 		E4A00000000000000000001C /* CaptureScreenV21.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000001B /* CaptureScreenV21.swift */; };
 		E4A00000000000000000001E /* RetroExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000001D /* RetroExporter.swift */; };
 		E4A000000000000000000022 /* OpeningV21.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000021 /* OpeningV21.swift */; };
-		E4A00000000000000000002A /* YesterdayGroupHero.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000029 /* YesterdayGroupHero.swift */; };
 		E4A000000000000000000024 /* HomeV22.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000023 /* HomeV22.swift */; };
 		E4A000000000000000000026 /* HomeDevelopViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000025 /* HomeDevelopViewer.swift */; };
 		E4A000000000000000000028 /* CloudDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000027 /* CloudDiagnostics.swift */; };
+		E4A00000000000000000002A /* YesterdayGroupHero.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000029 /* YesterdayGroupHero.swift */; };
+		E4A00000000000000000002C /* MusicPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002B /* MusicPick.swift */; };
+		E4A00000000000000000002E /* MusicSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002D /* MusicSheet.swift */; };
 		EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B4C22287B8F839F97B59D7 /* UserDirectoryService.swift */; };
 		EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */; };
 		F303E145110044B583E3ABFF /* DepthMapEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA209DF2AC745098562D3BF /* DepthMapEncoder.swift */; };
@@ -504,10 +506,12 @@
 		E4A00000000000000000001B /* CaptureScreenV21.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaptureScreenV21.swift; sourceTree = "<group>"; };
 		E4A00000000000000000001D /* RetroExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RetroExporter.swift; sourceTree = "<group>"; };
 		E4A000000000000000000021 /* OpeningV21.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpeningV21.swift; sourceTree = "<group>"; };
-		E4A000000000000000000029 /* YesterdayGroupHero.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YesterdayGroupHero.swift; sourceTree = "<group>"; };
 		E4A000000000000000000023 /* HomeV22.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV22.swift; sourceTree = "<group>"; };
 		E4A000000000000000000025 /* HomeDevelopViewer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeDevelopViewer.swift; sourceTree = "<group>"; };
 		E4A000000000000000000027 /* CloudDiagnostics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudDiagnostics.swift; sourceTree = "<group>"; };
+		E4A000000000000000000029 /* YesterdayGroupHero.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YesterdayGroupHero.swift; sourceTree = "<group>"; };
+		E4A00000000000000000002B /* MusicPick.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MusicPick.swift; sourceTree = "<group>"; };
+		E4A00000000000000000002D /* MusicSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MusicSheet.swift; sourceTree = "<group>"; };
 		E8ED391917F67A87CD691ABF /* Fonts/Caveat-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Caveat-Bold.ttf"; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingV2Views.swift; sourceTree = "<group>"; };
@@ -614,6 +618,7 @@
 				E4A000000000000000000017 /* VideoProjection.swift */,
 				E4A000000000000000000019 /* ShutterGesture.swift */,
 				E4A00000000000000000001B /* CaptureScreenV21.swift */,
+				E4A00000000000000000002B /* MusicPick.swift */,
 				E4A00000000000000000001D /* RetroExporter.swift */,
 				D0A1B2C3D4E5F60718293C22 /* ShotSaving.swift */,
 			);
@@ -1041,6 +1046,7 @@
 				77A061D0EFB35BCE1AF35412 /* ExposureCameraView.swift */,
 				D0A1B2C3D4E5F60718293A01 /* CaptureScreen.swift */,
 				D0A1B2C3D4E5F60718293A02 /* TagScreen.swift */,
+				E4A00000000000000000002D /* MusicSheet.swift */,
 				D0A1B2C3D4E5F60718293A03 /* CaptureFlow.swift */,
 				D0A1B2C3D4E5F60718293B14 /* ShotDoneView.swift */,
 				D0A1B2C3D4E5F60718293B13 /* MarqueeRow.swift */,
@@ -1389,6 +1395,7 @@
 				0B36F566AEEEC1ABA30B7529 /* ExposureCameraView.swift in Sources */,
 				D1A1B2C3D4E5F60718293A01 /* CaptureScreen.swift in Sources */,
 				D1A1B2C3D4E5F60718293A02 /* TagScreen.swift in Sources */,
+				E4A00000000000000000002E /* MusicSheet.swift in Sources */,
 				D1A1B2C3D4E5F60718293A03 /* CaptureFlow.swift in Sources */,
 				D1A1B2C3D4E5F60718293C22 /* ShotSaving.swift in Sources */,
 				D1A1B2C3D4E5F60718293B14 /* ShotDoneView.swift in Sources */,
@@ -1426,6 +1433,7 @@
 				E4A000000000000000000018 /* VideoProjection.swift in Sources */,
 				E4A00000000000000000001A /* ShutterGesture.swift in Sources */,
 				E4A00000000000000000001C /* CaptureScreenV21.swift in Sources */,
+				E4A00000000000000000002C /* MusicPick.swift in Sources */,
 				E4A00000000000000000001E /* RetroExporter.swift in Sources */,
 				70C1A0B468B5D64EC591E39B /* ApertureLogoView.swift in Sources */,
 				EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */,
@@ -1614,6 +1622,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Later;
 				INFOPLIST_KEY_CKSharingSupported = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "撮った1枚に、その日の1曲をつけるために Apple Music の曲を検索します。";
 				INFOPLIST_KEY_NSCameraUsageDescription = "思い出を記録し、グループで共有するためにカメラを使用します。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "撮影した場所の地名を写真に添えるために位置情報を使用します。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画に音声を記録するためにマイクを使用します。";
@@ -1657,6 +1666,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Later;
 				INFOPLIST_KEY_CKSharingSupported = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "撮った1枚に、その日の1曲をつけるために Apple Music の曲を検索します。";
 				INFOPLIST_KEY_NSCameraUsageDescription = "思い出を記録し、グループで共有するためにカメラを使用します。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "撮影した場所の地名を写真に添えるために位置情報を使用します。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画に音声を記録するためにマイクを使用します。";
