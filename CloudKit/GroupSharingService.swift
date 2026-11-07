@@ -234,6 +234,7 @@ final class GroupSharingService {
         do {
             let savedZone = try await container.privateCloudDatabase.save(zone)
             print("[GroupSync] ゾーン作成に成功: \(savedZone.zoneID)")
+            CloudDiagnostics.step("ゾーン OK")
         } catch {
             _ = error.loggedDescription(context: "[GroupSync] ゾーン作成に失敗: \(zoneID)")
             error.logPartialItemErrors()
@@ -405,6 +406,7 @@ final class GroupSharingService {
         group.ckZoneName = zoneID.zoneName
         group.ckZoneOwnerName = zoneID.ownerName
         group.ckShareURL = shareURL.absoluteString
+        CloudDiagnostics.step("グループ・共有の 保存 OK(リンク あり\(minimal ? "・縮小" : ""))")
 
         hostProfile.ckZoneName = zoneID.zoneName
         hostProfile.ckZoneOwnerName = zoneID.ownerName

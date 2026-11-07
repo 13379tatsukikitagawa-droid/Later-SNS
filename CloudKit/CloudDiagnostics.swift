@@ -11,8 +11,37 @@ enum CloudDiagnostics {
     private static let key = "cloud.diagnostics.last.v1"
     private static let logger = Logger(subsystem: "Later", category: "CloudDiagnostics")
 
-    /// 最後に のこした 詳細(長押しで 見る)
-    static var last: String? { UserDefaults.standard.string(forKey: key) }
+    private static let trailKey = "cloud.diagnostics.trail.v1"
+
+    /// 最後に のこした 詳細(長押しで 見る)。どこまで 進んだか(経過)も いっしょに
+    static var last: String? {
+        let detail = UserDefaults.standard.string(forKey: key)
+        let trail = UserDefaults.standard.string(forKey: trailKey)
+        switch (detail, trail) {
+        case (nil, nil): return nil
+        case (let d?, nil): return d
+        case (nil, let t?): return "経過:\n\(t)"
+        case (let d?, let t?): return "\(d)\n\n経過:\n\(t)"
+        }
+    }
+
+    /// 経過を はじめから 書きなおす(グループを つくる ・ など)
+    static func begin(_ title: String) {
+        UserDefaults.standard.removeObject(forKey: key)
+        UserDefaults.standard.set("\(time()) \(title)", forKey: trailKey)
+        logger.info("[trail] \(title, privacy: .public)")
+    }
+
+    /// 経過に 1行 たす(どこで 止まったか わかるように)
+    static func step(_ text: String) {
+        let trail = UserDefaults.standard.string(forKey: trailKey) ?? ""
+        UserDefaults.standard.set(trail + "\n\(time()) \(text)", forKey: trailKey)
+        logger.info("[trail] \(text, privacy: .public)")
+    }
+
+    private static func time() -> String {
+        Date().formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).second(.twoDigits))
+    }
 
     /// 詳細を のこす(ログにも 出す)
     static func record(_ title: String, _ body: String) {

@@ -118,6 +118,8 @@ struct NewGroupFlowView: View {
     @State private var memberLimit = GroupMembershipPolicy.maxMembersPerGroup
 
     @State private var isCreating = false
+    /// 作成に 15秒 以上 かかっている
+    @State private var slowCreating = false
     @State private var burst = false
     @State private var burstExpanded = false
     @State private var errorMessage: String?
@@ -749,6 +751,14 @@ struct NewGroupFlowView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .transition(.opacity)
                 }
+                if slowCreating {
+                    Text("時間が かかっています。つながりを たしかめています…")
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(colors.sub)
+                        .multilineTextAlignment(.center)
+                        .cloudDiagnosticsOnLongPress()
+                        .transition(.opacity)
+                }
                 // 押したら止める(連打しても1つだけ)。10個のときは、つくらせない
                 primaryButton(createTitle, enabled: !isCreating && !isFull) {
                     guard !isCreating, !isFull else { if isFull { LayerHaptics.softDouble() }; return }
@@ -822,18 +832,38 @@ struct NewGroupFlowView: View {
     /// (見出し → 名前 → 合言葉が、ぼかしから順に浮かぶ)。演出が終わっても作成がまだなら「つくっています…」のまま。
     /// 失敗したら、演出を止めて②にとどまり、入力した内容はのこす(グループは作られていない)。
     private func create() {
-        guard !isCreating, createdGroup == nil, let user = currentUser else { return }
-        guard nameStatus == .ok else { go(to: .name); return }
-        guard let cloudKitManager = CloudKitManager.current else {
+        guard !isCreating, createdGroup == nil else { return }
+        CloudDiagnostics.begin("グループを つくる:押した")
+        guard let user = currentUser else {
+            // 黙って もどらない(自分の プロフィールが まだ 読めていない)
+            CloudDiagnostics.step("止まった:自分の プロフィール(UserProfile)が ない")
+            LayerHaptics.softDouble()
             withAnimation { errorMessage = "つくれませんでした。もういちど" }
             return
+        }
+        guard nameStatus == .ok else { go(to: .name); return }
+        guard let cloudKitManager = CloudKitManager.current else {
+            CloudDiagnostics.step("止まった:iCloud(CloudKitManager)が まだ 用意できていない")
+            withAnimation { errorMessage = "つくれませんでした。もういちど" }
+            return
+        }
+        if cloudKitManager.currentUserRecordName == nil {
+            CloudDiagnostics.step("注意:iCloud の ユーザーが まだ わからない(サインイン・つながりを 確認)")
         }
         guard user.groups.filter({ !$0.isPersonalSpace }).count < GroupMembershipPolicy.maxGroupsPerUser else {
             withAnimation { errorMessage = "グループは、\(GroupMembershipPolicy.maxGroupsPerUser)個までです。" }
             return
         }
         isCreating = true
+        slowCreating = false
         errorMessage = nil
+        // 時間が かかっているときは、だまって 待たせない(長押しで 経過が 見られる)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
+            if isCreating, createdGroup == nil {
+                CloudDiagnostics.step("15秒たっても 作成が おわらない")
+                withAnimation { slowCreating = true }
+            }
+        }
         haptics.playTransient(intensity: 1.0, sharpness: 0.7)
         if !reduceMotion {
             burstExpanded = false
@@ -868,6 +898,8 @@ struct NewGroupFlowView: View {
                 if case GroupSharingError.zoneCreationFailed(let underlying) = error {
                     CloudDiagnostics.record("グループを つくる:ゾーン", CloudDiagnostics.report(underlying))
                 }
+                CloudDiagnostics.step("止まった:作成に 失敗(\(String(describing: error).prefix(160)))")
+                slowCreating = false
                 modelContext.delete(group)
                 try? modelContext.save()
                 // 演出を止めて、エラーを出す(名前・色・人数はそのまま)
@@ -879,6 +911,8 @@ struct NewGroupFlowView: View {
                 return
             }
             createdGroup = group
+            slowCreating = false
+            CloudDiagnostics.step("作成 OK")
             // むかしと同じ:光が広がりはじめてから 0.52秒は待ってから、つぎへ
             let wait = max(0, 0.52 - Date().timeIntervalSince(started))
             try? await Task.sleep(for: .seconds(wait))
@@ -887,7 +921,9 @@ struct NewGroupFlowView: View {
             isCreating = false
             inviteLink = madeLink
             createdShareURL = madeLink.flatMap { InviteConfig.shareURL(from: $0) } ?? madeLink
+            CloudDiagnostics.step(madeLink == nil ? "リンク:できなかった(画面で もういちど)" : "リンク OK")
             showingCreatedShare = true
+            CloudDiagnostics.step("リンクの 画面を 出した")
             // 合言葉は、画面には出さないが、これまでどおり作っておく(合言葉で入れるように・グループの設定で見られる)
             passphrase = try? await GroupInviteService.passphrase(for: group, context: modelContext)
         }
