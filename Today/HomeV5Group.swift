@@ -170,12 +170,30 @@ struct HomeV5GroupPage: View {
         ScrollView(.vertical) {
             // v14 ②:1本の縦並び(ZStack や .offset で重ねない)。
             // ともだち → ME → グループ → つくる → 参加する。画面に入ったら下から出てくる(タブを開き直すたびに、もう一度)
+            // 昨日 → グループ(v22):[ヒーロー(グループが 0件のときだけ)]→ 見出し → サブ → つくる / 参加する
+            // → ME → ともだち → グループ。画面に入ったら下から出てくる(タブを開き直すたびに、もう一度)
             VStack(spacing: 12) {
+                if sections.isEmpty {
+                    GeometryReader { proxy in
+                        let scale = YesterdayHeroLayout.scale(forWidth: proxy.size.width + V5.edge * 2)
+                        YesterdayGroupHero(userName: userName, onSeat: { if canCreate { onCreateGroup(nil) } })
+                            .scaleEffect(scale)
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                    }
+                    .frame(height: YesterdayHeroLayout.size.height * YesterdayHeroLayout.scale(forWidth: UIScreen.main.bounds.width))
+                    .padding(.top, 6)
+                }
+                YesterdayGroupHeadline()
+                    .padding(.top, sections.isEmpty ? 4 : 0)
+                    .scrollReveal(0, token: revealToken)
+                createJoinButtons
+                    .scrollReveal(1, token: revealToken)
+                MECard(caption: "きのうの まい ・ 7日で きえる", film: friendsData.film, isActive: isActive, onTap: onOpenMe)
+                    .padding(.top, 14)
+                    .scrollReveal(2, token: revealToken)
                 TodayFriendsSection(state: friendsState, data: friendsData, actions: friendsActions, onFriend: onFriend, onInvite: onInviteFriend)
                     .padding(.horizontal, -V5.edge)
-                    .scrollReveal(0, token: revealToken)
-                MECard(caption: "きのうの まい ・ 7日で きえる", film: friendsData.film, isActive: isActive, onTap: onOpenMe)
-                    .scrollReveal(1, token: revealToken)
+                    .scrollReveal(3, token: revealToken)
                 if !sections.isEmpty {
                     Text("グループ")
                         .font(.system(size: 28, weight: .heavy))
@@ -184,7 +202,7 @@ struct HomeV5GroupPage: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 12)
                         .accessibilityAddTraits(.isHeader)
-                        .scrollReveal(2, token: revealToken)
+                        .scrollReveal(4, token: revealToken)
                 }
                 ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
                     GroupSectionView(
@@ -204,10 +222,8 @@ struct HomeV5GroupPage: View {
                         onCycleLocation: { onCycleLocation(section.id) }
                     )
                     .v5Locked(locked)
-                    .scrollReveal(3 + index, token: revealToken)
+                    .scrollReveal(5 + index, token: revealToken)
                 }
-                createJoinButtons
-                    .scrollReveal(3 + sections.count, token: revealToken)
             }
             .padding(.horizontal, V5.edge)
             .padding(.top, topInset + 52)
