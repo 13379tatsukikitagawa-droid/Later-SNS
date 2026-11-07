@@ -3,7 +3,7 @@
 // 見本:later_v22.html の タグ画面(#msc・#shm)。
 // - ボタン:46pt の ガラスの まる + うすい 点線の 輪(14秒で 1周)。曲を つけると 幅 206 に のびて、
 //   左に まわる レコード(6秒で 1周)・曲名と アーティストの 2行・右に 白い イコライザー(3本・濃さを かえる。橙は 使わない)
-// - シート:Apple Music / Spotify の 切りかえ → Apple Music は MusicKit で 検索、Spotify は リンクを はる
+// - シート:Apple Music(MusicKit で 検索。入っていない人は リンクを はる)。Spotify は 使わない
 // - 「視差を減らす」:点線の 輪・レコード・イコライザーを 止める
 
 import AVFoundation
@@ -153,7 +153,6 @@ struct MusicSheet: View {
     let onDone: (MusicPick?) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var service: MusicPick.Service = .apple
     @State private var access: AppleMusicCatalog.Access = AppleMusicCatalog.access
     @State private var subscribed = true
     @State private var term = ""
@@ -185,12 +184,8 @@ struct MusicSheet: View {
             }
             .padding(.top, 14)
 
-            segment.padding(.top, 14)
-
-            Group {
-                if service == .apple { appleBody } else { spotifyBody }
-            }
-            .frame(maxHeight: .infinity, alignment: .top)
+            appleBody
+                .frame(maxHeight: .infinity, alignment: .top)
 
             Button(action: choose) {
                 Text(selected == nil ? "曲を えらんでください" : "この曲にする")
@@ -216,10 +211,7 @@ struct MusicSheet: View {
         .presentationDetents([.large])
         .presentationCornerRadius(32)
         .presentationDragIndicator(.hidden)
-        .onAppear {
-            selected = current
-            if current?.service == .spotify { service = .spotify }
-        }
+        .onAppear { selected = current }
         .task {
             if access == .ready { subscribed = await AppleMusicCatalog.hasSubscription() }
             statusLine = await AppleMusicCatalog.statusLine()
@@ -230,36 +222,6 @@ struct MusicSheet: View {
         }
     }
 
-    // MARK: 切りかえ
-
-    private var segment: some View {
-        HStack(spacing: 0) {
-            ForEach([MusicPick.Service.apple, .spotify], id: \.self) { item in
-                Button {
-                    guard service != item else { return }
-                    Haptics.play(.detent)   // selection(コツッ)
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { service = item }
-                } label: {
-                    Text(item == .apple ? "Apple Music" : "Spotify")
-                        .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(service == item ? Self.ink : Self.gray)
-                        .frame(maxWidth: .infinity).frame(height: 38)
-                        .background {
-                            if service == item {
-                                RoundedRectangle(cornerRadius: 13, style: .continuous).fill(.white)
-                                    .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
-                                    .matchedGeometryEffect(id: "seg", in: segmentSpace)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(3)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(hex: "F1F0F4")))
-    }
-
-    @Namespace private var segmentSpace
 
     // MARK: Apple Music
 
@@ -369,17 +331,6 @@ struct MusicSheet: View {
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 4)
-    }
-
-    // MARK: Spotify(リンクを はる)
-
-    private var spotifyBody: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            note("Spotify の アプリで「共有 → リンクを コピー」して、ここに はってください。")
-            linkField(placeholder: "open.spotify.com の リンクを はる")
-            linkResult
-        }
-        .padding(.top, 18)
     }
 
     private func linkField(placeholder: String) -> some View {

@@ -1,7 +1,7 @@
 // MusicPick.swift
 // v22 L-4:今日の 1曲。サービスに よらない形で 持つ(見る側は リンクを 押すと 自分のアプリで ひらく)。
 // - Apple Music:MusicKit で 検索(ライブラリは 読まない)
-// - Spotify:リンクを はる だけ(ログイン連携は しない)。曲名・ジャケットは oEmbed(ログイン なし)
+// - Apple Music に 入っていない人は、music.apple.com の リンクを はる(Spotify は 使わない)
 // CloudKit の LaterPhoto には musicTitle / musicArtist / musicArtworkURL / musicLink / musicService(すべて STRING・省略可)。
 // 曲が ないときは 1つも 書かない(Production に 項目が まだ なくても、曲なしの 保存は 成功する)。
 
@@ -13,7 +13,6 @@ import os
 nonisolated struct MusicPick: Codable, Equatable, Sendable {
     enum Service: String, Codable, Sendable {
         case apple
-        case spotify
     }
 
     var title: String
@@ -53,7 +52,7 @@ enum MusicDraft {
     }
 }
 
-// MARK: - リンク(Apple Music / Spotify)
+// MARK: - リンク(Apple Music)
 
 nonisolated enum MusicLink {
     /// はった 文字から、曲の リンクを 見つける
@@ -61,7 +60,6 @@ nonisolated enum MusicLink {
         let words = text.split(whereSeparator: { $0.isWhitespace || $0 == "\n" })
         for word in words {
             guard let url = URL(string: String(word)), let host = url.host?.lowercased() else { continue }
-            if host == "open.spotify.com" || host == "spotify.link" { return (url, .spotify) }
             if host == "music.apple.com" || host == "itunes.apple.com" { return (url, .apple) }
         }
         return nil
@@ -76,39 +74,12 @@ nonisolated enum MusicLink {
         return nil
     }
 
-    /// Spotify の oEmbed(ログイン なし)。とれなければ nil(リンクだけ 保存して「♪ 曲を きいてみる」)
-    static func spotifyInfo(for url: URL, session: URLSession = .shared) async -> (title: String, artworkURL: String?)? {
-        var components = URLComponents(string: "https://open.spotify.com/oembed")
-        components?.queryItems = [URLQueryItem(name: "url", value: url.absoluteString)]
-        guard let endpoint = components?.url else { return nil }
-        struct OEmbed: Decodable {
-            let title: String?
-            let thumbnail_url: String?
-        }
-        do {
-            let (data, response) = try await session.data(from: endpoint)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
-            let info = try JSONDecoder().decode(OEmbed.self, from: data)
-            guard let title = info.title, !title.isEmpty else { return nil }
-            return (title, info.thumbnail_url)
-        } catch {
-            return nil
-        }
-    }
-
     /// リンクから 1曲を つくる。曲名が とれなければ「曲を きいてみる」(リンクだけ)
     static func pick(from url: URL, service: MusicPick.Service) async -> MusicPick {
-        switch service {
-        case .spotify:
-            if let info = await spotifyInfo(for: url) {
-                return MusicPick(title: info.title, artist: "Spotify", artworkURL: info.artworkURL, link: url.absoluteString, service: .spotify)
-            }
-        case .apple:
-            if let id = appleSongID(from: url), let song = await AppleMusicCatalog.song(id: id) {
-                return song
-            }
+        if let id = appleSongID(from: url), let song = await AppleMusicCatalog.song(id: id) {
+            return song
         }
-        return MusicPick(title: "曲を きいてみる", artist: service == .spotify ? "Spotify" : "Apple Music", artworkURL: nil, link: url.absoluteString, service: service)
+        return MusicPick(title: "曲を きいてみる", artist: "Apple Music", artworkURL: nil, link: url.absoluteString, service: service)
     }
 }
 

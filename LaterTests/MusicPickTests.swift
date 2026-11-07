@@ -7,9 +7,8 @@ import Testing
 @MainActor
 struct MusicPickTests {
     @Test func リンクを見つける() {
-        let spotify = MusicLink.find(in: "きいて https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC?si=abc")
-        #expect(spotify?.service == .spotify)
-        #expect(spotify?.url.absoluteString.hasPrefix("https://open.spotify.com/track/") == true)
+        // Spotify は 使わない(リンクとして 見つけない)
+        #expect(MusicLink.find(in: "きいて https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC?si=abc") == nil)
         let apple = MusicLink.find(in: "https://music.apple.com/jp/album/name/1440857781?i=1440857904")
         #expect(apple?.service == .apple)
         #expect(apple.flatMap { MusicLink.appleSongID(from: $0.url) } == "1440857904")
@@ -49,7 +48,7 @@ struct MusicPickTests {
     @Test func 下書きは日ごとに1曲() {
         MusicDraft.save(nil)
         #expect(MusicDraft.load() == nil)
-        let pick = MusicPick(title: "t", artist: "a", artworkURL: nil, link: nil, service: .spotify)
+        let pick = MusicPick(title: "t", artist: "a", artworkURL: nil, link: nil, service: .apple)
         MusicDraft.save(pick)
         #expect(MusicDraft.load() == pick)
         MusicDraft.save(nil)
