@@ -370,16 +370,26 @@ enum YesterdayPostStore {
         }
     }
 
-    /// 投稿しない:7日で消す時と同じ範囲(写真本体・タグ・場所・点の記録・サムネイル・サーバーのレコード)を消す。
+    /// 【D】投稿しない:共有の場所(グループ)の レコードだけ 消して、ほかの人には 何も 残さない。
+    /// 自分の 端末には 残す(ME・カレンダー・★の 対象。7日で 消えるのは 同じ)
     static func skip(_ photos: [LaterPhoto], context: ModelContext) {
-        delete(photos, context: context, cloudKitManager: CloudKitManager.current)
+        let pending = photos.filter { !$0.isPosted && !$0.postDeclined }
+        guard !pending.isEmpty else { return }
+        let manager = CloudKitManager.current
+        for photo in pending {
+            photo.postDeclined = true
+            manager?.markForDelete(photo: photo)
+        }
+        try? context.save()
+        Task { await manager?.sendPendingChangesNow() }
     }
 
     /// 決めないまま次の9:00になった自分の写真を、静かに消す(「投稿しない」と同じ扱い)。
     @discardableResult
     static func pruneUndecided(context: ModelContext, cloudKitManager: CloudKitManager?, now: Date = Date(), calendar: Calendar = .current) -> Int {
         let deadline = DailyWindow.yesterday(for: now, calendar: calendar).open
-        let descriptor = FetchDescriptor<LaterPhoto>(predicate: #Predicate { !$0.isPosted && $0.captureDate < deadline })
+        // 「投稿しない」を 選んだ 写真は 消さない(端末に 残す。7日で 消える)
+        let descriptor = FetchDescriptor<LaterPhoto>(predicate: #Predicate { !$0.isPosted && !$0.postDeclined && $0.captureDate < deadline })
         guard let candidates = try? context.fetch(descriptor) else { return 0 }
         // 他の人の未投稿のレコード(画像なし)も端末に届いているので、自分の分だけを消す
         let me = UserProfile.current(from: (try? context.fetch(FetchDescriptor<UserProfile>())) ?? [])
@@ -389,6 +399,9 @@ enum YesterdayPostStore {
                 || (myRecordName != nil && photo.authorCloudKitUserRecordName == myRecordName)
         }
         guard !mine.isEmpty else { return 0 }
+        // ひらかないまま(または 決めないまま)9:00 を すぎた 写真を 消す。枚数を のこす
+        let count = OwnReveal.distinct(mine.map(\.captureDate)).count
+        CloudDiagnostics.record("決めないまま 9:00 を すぎた 写真を 消した", "\(count)枚(グループごとの 写しを ふくめて \(mine.count)件)")
         delete(mine, context: context, cloudKitManager: cloudKitManager)
         return mine.count
     }

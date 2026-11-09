@@ -461,6 +461,8 @@ final class CloudKitManager: NSObject {
     /// ここでは諦める前にresyncGroupZoneInfoIfNeeded(_:)でグループのゾーン情報の
     /// 復旧を試み、成功すれば同じ処理をそのまま続行する。
     func markForUpload(photo: LaterPhoto, in group: LaterGroup) async {
+        // 【D】「投稿しない」を 選んだ 写真は、二度と 送らない
+        guard !photo.postDeclined else { return }
         let photoLabel = photo.ckRecordName ?? photo.id.uuidString
         if group.cachedZoneID == nil {
             GroupSyncLogger.shared.warning("[GroupSync] markForUpload(photo): groupID=\(group.id, privacy: .public)のゾーン情報が未確定のため再同期を試みます recordName=\(photoLabel, privacy: .public)")
@@ -1143,6 +1145,8 @@ final class CloudKitManager: NSObject {
            let groupID = photo.groupID,
            let group = fetchOne(LaterGroup.self, { $0.id == groupID }),
            let groupRecordID = group.cachedRecordID {
+            // 【D】「投稿しない」を 選んだ 写真は 送らない(消す 予定)
+            if photo.postDeclined { return nil }
             return try? photo.toCKRecord(existing: existing, zoneID: recordID.zoneID, groupRecordID: groupRecordID)
         }
         if let vote = fetchOne(PhotoVote.self, { $0.ckRecordName == recordName }),

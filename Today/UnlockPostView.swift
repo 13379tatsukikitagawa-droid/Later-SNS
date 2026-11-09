@@ -685,3 +685,194 @@ private struct GlassFill<S: InsettableShape>: View {
         }
     }
 }
+
+// MARK: - 【D】撮ったあとの 現像の画面(前日の 自分の N枚目)と、1枚ずつの 投稿の 選択
+
+/// 全画面・黒(昼も夜も)。前日の N枚目が モザイクから 本物の写真になり(約2.5秒)、下に「投稿する / 投稿しない」。
+/// - 現像中は 画面の どこを タップしても、すぐ ひらききる(tick)
+/// - 選ぶまで 閉じない。下へ スワイプで 閉じると「まだ 決めていない」のまま(月に「昨日の1枚を選ぶ」)
+/// - 動きを減らす:モザイクを やめて、約1秒の フェード
+struct YesterdayRevealView: View {
+    enum Outcome { case posted, skipped, later }
+
+    let image: UIImage?
+    /// 22×48 の 小さな画像(モザイクの 元)
+    let tiny: Data?
+    let key: String
+    /// きのうの 何こま目か(1〜3)
+    let ordinal: Int
+    /// false なら 現像の 動きを せず、選ぶ ところから(月の「昨日の1枚を選ぶ」から 来たとき)
+    let playsReveal: Bool
+    /// 1回だけ 呼ぶ
+    let onFinish: (Outcome) -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var start = Date()
+    @State private var revealed = false
+    @State private var finished = false
+    @State private var dragY: CGFloat = 0
+    @State private var scheduled: [DispatchWorkItem] = []
+
+    /// 現像の 時間割(秒)。L0 → L1 → L2 → 本物
+    static let total: TimeInterval = 2.5
+    static let stages: [TimeInterval] = [0.6, 1.2, 1.9]
+    static let reducedTotal: TimeInterval = 1.0
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = min(proxy.size.width - 72, 320)
+            let height = width * 4 / 3
+            ZStack {
+                Color.black.ignoresSafeArea()
+                VStack(spacing: 18) {
+                    Spacer(minLength: 0)
+                    TimelineView(.animation(paused: revealed || finished)) { context in
+                        photo(elapsed: revealed ? Self.total : context.date.timeIntervalSince(start))
+                            .frame(width: width, height: height)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .shadow(color: .black.opacity(0.6), radius: 24, y: 18)
+                    }
+                    Text("きのうの \(ordinal)こま目、ひらきました")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(hex: "C7C7CC"))
+                        .opacity(revealed ? 1 : 0.0)
+                    Spacer(minLength: 0)
+                    buttons
+                        .opacity(revealed ? 1 : 0)
+                        .offset(y: revealed ? 0 : 12)
+                        .allowsHitTesting(revealed && !finished)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, max(24, proxy.safeAreaInsets.bottom + 8))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .offset(y: max(0, dragY))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                // 現像中:どこを タップしても すぐ ひらききる
+                guard !revealed, !finished else { return }
+                Haptics.play(.tick)
+                finishReveal(skipped: true)
+            }
+            .gesture(
+                DragGesture(minimumDistance: 12)
+                    .onChanged { value in if value.translation.height > 0 { dragY = value.translation.height } }
+                    .onEnded { value in
+                        if value.translation.height > 140 { finish(.later) } else { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { dragY = 0 } }
+                    }
+            )
+        }
+        .ignoresSafeArea()
+        .environment(\.colorScheme, .dark)
+        .animation(.easeOut(duration: 0.35), value: revealed)
+        .onAppear(perform: begin)
+        .onDisappear { scheduled.forEach { $0.cancel() } }
+        .accessibilityElement(children: .contain)
+        .accessibilityAction(.escape) { finish(.later) }
+    }
+
+    // MARK: 写真(モザイク → 本物)
+
+    /// 枠の 大きさは 外で 決める(縦長の モザイクを 広げても、画面の 組み立てが ずれないように)
+    private func photo(elapsed: TimeInterval) -> some View {
+        Color.clear
+            .overlay { photoContent(elapsed: elapsed) }
+            .clipped()
+    }
+
+    @ViewBuilder
+    private func photoContent(elapsed: TimeInterval) -> some View {
+        if reduceMotion || tiny == nil {
+            // フェードで 約1秒
+            let k = revealed ? 1 : min(1, max(0, elapsed / Self.reducedTotal))
+            ZStack {
+                Color(hex: "1C1C1F")
+                if let image { fill(Image(uiImage: image).resizable()).opacity(k) }
+            }
+        } else {
+            let level: MosaicLevel = elapsed < Self.stages[0] ? .l0 : (elapsed < Self.stages[1] ? .l1 : (elapsed < Self.stages[2] ? .l2 : .l3))
+            let real = revealed ? 1 : max(0, min(1, (elapsed - Self.stages[2]) / (Self.total - Self.stages[2])))
+            ZStack {
+                if real < 1, let tiny, let mosaic = MosaicRenderer.image(fromTiny: tiny, key: key, level: level == .l3 ? .l2 : level) {
+                    fill(Image(uiImage: mosaic).resizable().interpolation(.none))
+                }
+                if let image { fill(Image(uiImage: image).resizable()).opacity(real) }
+            }
+        }
+    }
+
+    /// 枠いっぱいに 広げる(枠の 大きさは かえない)
+    private func fill(_ image: Image) -> some View {
+        Color.clear
+            .overlay { image.scaledToFill() }
+            .clipped()
+    }
+
+    // MARK: ボタン
+
+    private var buttons: some View {
+        VStack(spacing: 10) {
+            Button {
+                // 投稿する:rigid → 0.08秒後に soft
+                Haptics.pulse(intensity: 1, sharpness: 0.9)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { Haptics.play(.soft, gap: 0) }
+                finish(.posted)
+            } label: {
+                Text("投稿する").font(.system(size: 16, weight: .heavy)).foregroundStyle(Color(hex: "111111"))
+                    .frame(maxWidth: .infinity).frame(height: 54)
+                    .background(Capsule().fill(.white))
+            }
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            Button {
+                Haptics.play(.soft)
+                finish(.skipped)
+            } label: {
+                Text("投稿しない").font(.system(size: 15, weight: .bold)).foregroundStyle(.white.opacity(0.85))
+                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .background(Capsule().strokeBorder(.white.opacity(0.28), lineWidth: 1.2))
+            }
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            Text("投稿しないと、あなたの 端末にだけ 残ります")
+                .font(.system(size: 11, weight: .medium)).foregroundStyle(Color(hex: "A1A1A8"))
+        }
+    }
+
+    // MARK: 動き
+
+    private func begin() {
+        start = Date()
+        guard playsReveal else {
+            revealed = true
+            return
+        }
+        Haptics.play(.soft)   // 現像の 画面が 出た
+        if reduceMotion || tiny == nil {
+            schedule(Self.reducedTotal) { finishReveal(skipped: false) }
+            return
+        }
+        // 段ごとに ごく軽い tick(3回)
+        for stage in Self.stages { schedule(stage) { if !revealed { Haptics.play(.tick, gap: 0) } } }
+        schedule(Self.total) { finishReveal(skipped: false) }
+    }
+
+    private func finishReveal(skipped: Bool) {
+        guard !revealed else { return }
+        scheduled.forEach { $0.cancel() }
+        revealed = true
+        if !skipped { Haptics.play(.success) }   // ひらききった
+    }
+
+    /// 閉じるのは 1回だけ
+    private func finish(_ outcome: Outcome) {
+        guard !finished else { return }
+        finished = true
+        scheduled.forEach { $0.cancel() }
+        onFinish(outcome)
+    }
+
+    private func schedule(_ delay: TimeInterval, _ work: @escaping () -> Void) {
+        let item = DispatchWorkItem(block: work)
+        scheduled.append(item)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
+    }
+}

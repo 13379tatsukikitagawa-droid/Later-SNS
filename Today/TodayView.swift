@@ -119,6 +119,15 @@ struct TodayView: View {
     @State private var mondoLoad: MondoLoad = .idle
     /// 撮った瞬間の合図(撮影後の Home v5:写真が右上のアバターへ飛び、1.4秒後に GROUP の解禁)
     @State private var shotEvent: ShotEvent?
+    /// 【D】撮ったあとの 現像の画面(前日の 自分の N枚目)と、1枚ずつの 投稿の 選択
+    @State private var revealRequest: RevealRequest?
+    /// 保存の 成功を 待つ あいだの 黒い幕(最大3秒)
+    @State private var revealCover = false
+    /// 現像の画面の あとで、チェキを カードへ とばす
+    @State private var pendingHandOff: ShotHandOff?
+    /// 撮った 1枚の 保存の 前の「前日の ひらいた数 / 前日の 枚数」と、保存の 結果
+    @State private var revealBaseline: (opened: Int, total: Int)?
+    @State private var lastSaveOK: Bool?
 
     // MARK: 今日 / 昨日 のホームの手動切りかえ(アバターの2回タップ・長押し)
     /// 手で選んだ日(DailyWindow.key)。その日だけ有効(次の日・9:00以降は、自動の決めかたにもどる)
@@ -220,9 +229,14 @@ struct TodayView: View {
             myCaptureDates: myCaptureDates,
             hasDeposited: hasDeposited,
             openedWindowKey: openedWindowKey.isEmpty ? nil : openedWindowKey,
-            yesterdayDecision: YesterdayDecision.resolve(yesterdayOwnPosted: yesterdayOwnPhotos(at: date).map(\.isPosted)),
+            yesterdayDecision: YesterdayDecision.resolve(yesterdayOwnPosted: openedUndeclined(at: date).map(\.isPosted)),
             filmUsed: FilmCounter.shared.used
         )
+    }
+
+    /// 【D】昨日の 自分の 写真のうち、今日 ひらいていて「投稿しない」を 選んでいないもの(投稿の 選択の 対象)
+    private func openedUndeclined(at date: Date) -> [LaterPhoto] {
+        yesterdayOwnPhotos(at: date).filter { !$0.postDeclined && OwnReveal.isOpen(takenAt: $0.captureDate, now: date) }
     }
 
     /// 昨日の窓の、自分の写真(グループごとの複製を含む)
@@ -613,6 +627,23 @@ struct TodayView: View {
                 }
                 .transition(.opacity)
                 .zIndex(10)
+            }
+
+            // 【D】撮ったあとの 現像の画面(全画面・黒)。保存を 待つ あいだは 黒い幕だけ
+            if revealCover || revealRequest != nil {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    if let request = revealRequest {
+                        YesterdayRevealView(image: request.image, tiny: request.tiny, key: request.key, ordinal: request.ordinal,
+                                            playsReveal: request.playsReveal) { outcome in
+                            finishReveal(request, outcome: outcome)
+                        }
+                        .id(request.id)
+                        .transition(.opacity)
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(9)
             }
 
             // v18.2:撮ったチェキが、物干しへ とぶ
@@ -1225,7 +1256,7 @@ struct TodayView: View {
                     if !refuseIfFilmEmpty() { expandMoon(to: .shoot) }
                 case .decide:
                     Haptics.play(.tick)  // v17:ごく軽く1回
-                    openDecision(playsUnlock: false)
+                    openRevealChoice()
                 case .review: viewYesterday(scope: .everyone)
                 case .open, .locked: updateNow()
                 }
@@ -1444,12 +1475,14 @@ struct TodayView: View {
     private func saveCapturedShot(photo: UIImage, tags: [String], place: String?, shotIndex: Int) {
         let captureDate = Date()
         let music = MusicDraft.load()   // v22 L-4:撮ったときの 1曲
+        markRevealBaseline()
         let background = BackgroundTaskBox.begin(name: "later.saveShot")
         shotSaveTask = Task { @MainActor in
             defer { background.end() }
             guard let encoded = await ShotEncoder.encoded(for: photo) else {
                 print("[PhotoSave Error] 撮った1枚を、保存の形にできませんでした")
                 FilmCounter.shared.refundLast(reason: "encodeFailed")   // 保存できなかった:数えない
+                lastSaveOK = false
                 return false
             }
             CaptureSignpost.mark("encoded")
@@ -1459,6 +1492,7 @@ struct TodayView: View {
             let extras = ExposureDayStore.Extras(colorHex: encoded.colorHex, thumbnailData: encoded.thumbnailData, toneHexes: encoded.toneHexes)
             let ok = saveExposure(imageData: data, exposureStart: captureDate, tags: tags, locationName: place, extras: extras, music: music)
             CaptureSignpost.mark("saved", ok ? "ok" : "failed")   // ③ 写真が返る → 保存
+            lastSaveOK = ok
             if ok, wrote {
                 let id = meta.id
                 Task.detached(priority: .utility) { PendingShotStore.remove(id) }
@@ -1478,10 +1512,12 @@ struct TodayView: View {
     private func saveCapturedVideo(_ video: RecordedVideo, tags: [String], place: String?) {
         let captureDate = Date()
         let music = MusicDraft.load()   // v22 L-4
+        markRevealBaseline()
         Task { @MainActor in
             // もとの ふつう映像を置く(RETRO-8 は裏で書き出す。終わったら入れかわって、もとは消える)
             guard let name = try? LaterVideoStore.adopt(video.url, prefix: LaterVideoStore.rawPrefix) else {
                 FilmCounter.shared.refundLast(reason: "videoSaveFailed")   // 保存できなかった:数えない
+                lastSaveOK = false
                 presentToast("動画を、保存できませんでした")
                 FilmLanding.shared.pending = nil
                 return
@@ -1503,12 +1539,14 @@ struct TodayView: View {
                     video: (name, video.duration),
                     music: music
                 )
+                lastSaveOK = true
                 RetroExportQueue.context = context
                 RetroExportQueue.enqueue(.init(rawName: name, captureDate: captureDate, velocities: video.velocities))
             } catch {
                 LaterVideoStore.deleteLocal(name)
                 FilmLanding.shared.pending = nil
                 FilmCounter.shared.refundLast(reason: "videoSaveFailed")   // 保存できなかった:数えない
+                lastSaveOK = false
                 presentToast("動画を、保存できませんでした")
             }
         }
@@ -1517,6 +1555,99 @@ struct TodayView: View {
     /// v18.2:撮ったチェキを引きついで、毎回ホームへもどる(確認の画面・文字は出さない)。
     /// 今日の film まで自動でスクロールし、物干しの空きこまへ とばす(ShotFlightOverlay)
     private func landShot(_ handOff: ShotHandOff) {
+        // 【D】この 1枚の 保存で、前日の 次の 1枚が ひらく はずなら、保存の 成功を 待って 現像の画面へ
+        let baseline = revealBaseline ?? currentRevealBaseline()
+        revealBaseline = nil   // 1枚ごとに 使いきる(前の 1枚の 値を 使いまわさない)
+        if revealRequest == nil, pendingHandOff == nil, baseline.opened < baseline.total {
+            pendingHandOff = handOff
+            var instant = Transaction()
+            instant.disablesAnimations = true
+            withTransaction(instant) { revealCover = true }
+            withAnimation(.easeOut(duration: 0.2)) {
+                screen = .home
+                moonScale = 1
+                moonOpacity = 1
+                moonTextOpacity = 1
+                homeOpacity = 1
+                bottomFadeOpacity = 1
+            }
+            now = clock()
+            Task { @MainActor in await waitForReveal(baseline: baseline) }
+            return
+        }
+        startLanding(handOff)
+    }
+
+    /// 保存の 成功を 待つ(最大3秒・止まらない)。ひらいたら 現像の画面、だめなら そのまま ホームへ
+    private func waitForReveal(baseline: (opened: Int, total: Int)) async {
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            if lastSaveOK == false { break }
+            let opened = OwnReveal.openedYesterdayCount(now: clock())
+            if opened > baseline.opened, let request = revealTarget(ordinal: opened, playsReveal: true) {
+                withAnimation(.easeOut(duration: 0.25)) { revealRequest = request }
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        // 保存に 失敗・時間切れ:現像の画面は 出さずに ホームへ(今までどおり)
+        withAnimation(.easeOut(duration: 0.25)) { revealCover = false }
+        if let handOff = pendingHandOff {
+            pendingHandOff = nil
+            startLanding(handOff)
+        }
+    }
+
+    /// 前日の N枚目(撮った順)
+    private func revealTarget(ordinal: Int, playsReveal: Bool) -> RevealRequest? {
+        let photos = yesterdayOwnPhotos(at: clock()).sorted { $0.captureDate < $1.captureDate }
+        let dates = OwnReveal.distinct(photos.map(\.captureDate))
+        guard ordinal >= 1, ordinal <= dates.count else { return nil }
+        let target = dates[ordinal - 1]
+        guard let photo = photos.first(where: { abs($0.captureDate.timeIntervalSince(target)) < 1 }) else { return nil }
+        return RevealRequest(captureDate: photo.captureDate, image: UIImage(data: photo.imageData), tiny: photo.mosaicTiny ?? MosaicRenderer.makeTiny(from: photo.imageData),
+                             key: "reveal-\(Int(target.timeIntervalSinceReferenceDate))", ordinal: ordinal, playsReveal: playsReveal)
+    }
+
+    /// 月の「昨日の1枚を選ぶ」:ひらいていて まだ 決めていない 1枚の、投稿の 選択から
+    private func openRevealChoice() {
+        guard revealRequest == nil else { return }
+        let dates = OwnReveal.distinct(yesterdayOwnPhotos(at: clock()).map(\.captureDate))
+        guard let target = openedUndeclined(at: clock()).filter({ !$0.isPosted }).min(by: { $0.captureDate < $1.captureDate }),
+              let index = dates.firstIndex(where: { abs($0.timeIntervalSince(target.captureDate)) < 1 }),
+              let request = revealTarget(ordinal: index + 1, playsReveal: false) else { return }
+        withAnimation(.easeOut(duration: 0.25)) {
+            revealCover = true
+            revealRequest = request
+        }
+    }
+
+    /// 現像の画面を 閉じる(1回だけ)。選んだ 1枚の 写し(グループごと)だけを 投稿する / しない
+    private func finishReveal(_ request: RevealRequest, outcome: YesterdayRevealView.Outcome) {
+        guard revealRequest?.id == request.id else { return }
+        let copies = yesterdayOwnPhotos(at: clock()).filter { abs($0.captureDate.timeIntervalSince(request.captureDate)) < 1 && !$0.isPosted }
+        switch outcome {
+        case .posted:
+            if let currentUser, !copies.isEmpty { YesterdayPostStore.post(copies, user: currentUser, context: context) }
+        case .skipped:
+            YesterdayPostStore.skip(copies, context: context)
+        case .later:
+            break   // まだ 決めていない(月に「昨日の1枚を選ぶ」)
+        }
+        withAnimation(.easeOut(duration: 0.3)) {
+            revealRequest = nil
+            revealCover = false
+        }
+        now = clock()
+        if let handOff = pendingHandOff {
+            pendingHandOff = nil
+            startLanding(handOff)   // ホームに もどった 瞬間:soft → チェキが カードへ
+        } else {
+            Haptics.play(.soft)
+        }
+    }
+
+    private func startLanding(_ handOff: ShotHandOff) {
         let landing = FilmLanding.shared
         landing.pending = (handOff.index, handOff.isVideo, handOff.duration)
         landing.scrollToken &+= 1
@@ -1537,6 +1668,18 @@ struct TodayView: View {
             ejectRamp.update(0.4)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { ejectRamp.stop() }
         }
+    }
+
+    /// 保存を 始める 前の「前日の ひらいた数 / 前日の 枚数」を 覚える(この 1枚で 次の 1枚が ひらくか)
+    private func markRevealBaseline() {
+        revealBaseline = currentRevealBaseline()
+        lastSaveOK = nil
+    }
+
+    private func currentRevealBaseline() -> (opened: Int, total: Int) {
+        let date = clock()
+        let total = OwnReveal.distinct(yesterdayOwnPhotos(at: date).map(\.captureDate)).count
+        return (OwnReveal.openedYesterdayCount(now: date), total)
     }
 
     /// テープでとまった(トン)。3こめなら、3枚が順にゆれて success
@@ -2116,4 +2259,15 @@ enum CaptureActionState: Equatable {
     case captureLimitReached  // 撮影中・個人の上限(GroupUnlockPolicy.individualMaximumPhotoCount)に到達済み
     case vote                 // 投票中
     case result                // 終了後
+}
+
+/// 【D】現像の画面に 出す 前日の 1枚
+struct RevealRequest: Identifiable {
+    let id = UUID()
+    let captureDate: Date
+    let image: UIImage?
+    let tiny: Data?
+    let key: String
+    let ordinal: Int
+    let playsReveal: Bool
 }

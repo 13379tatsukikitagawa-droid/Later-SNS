@@ -122,8 +122,11 @@ final class LaterPhoto {
     var isImageUploaded: Bool = false
     /// 「投稿する」を選んだか。撮った時点ではfalse(画像以外のレコードだけがグループに届く)。
     /// 「投稿する」でtrueにして画像を送る。この項目より前の写真・古いアプリから届いたレコードは
-    /// 投稿ずみとみなす(既定値true)。「投稿しない」を選んだ写真は、その場で削除する。
+    /// 投稿ずみとみなす(既定値true)。
     var isPosted: Bool = true
+    /// 【D】「投稿しない」を選んだ(端末だけ。CloudKit へは 送らない)。
+    /// 共有の場所の レコードは その時点で 消し、端末には 残す(ME・カレンダー・★の 対象。7日で 消えるのは 同じ)
+    var postDeclined: Bool = false
 
     // 🌟 キャプション（記憶の封印）
     var caption: String?
