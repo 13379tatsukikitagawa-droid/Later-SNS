@@ -106,10 +106,12 @@ enum SharedPlacePins {
         let today = DailyWindow.latest(for: now)
         var seen = Set<String>()
         return group.photos.compactMap { photo -> SharedPlacePin? in
+            let isMine = photo.owner?.id == myID
+            // 【プライバシー】ほかの人のピンは、投稿した写真だけ。自分のピンは、投稿の前でも 自分にだけ 見える
+            guard isMine || photo.isPosted else { return nil }
             guard let lat = photo.approxLatitude, let lon = photo.approxLongitude,
                   photo.captureDate >= yesterday.open, photo.captureDate < max(today.close, yesterday.close),
                   seen.insert(photo.dedupeKey).inserted else { return nil }
-            let isMine = photo.owner?.id == myID
             return SharedPlacePin(
                 id: photo.dedupeKey,
                 latitude: lat,

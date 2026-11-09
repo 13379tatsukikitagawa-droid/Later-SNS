@@ -29,6 +29,7 @@ struct MusicPickTests {
     @Test func 曲つきの写真は_5つの項目を書く() throws {
         let zone = CKRecordZone.ID(zoneName: "z", ownerName: CKCurrentUserDefaultName)
         let photo = LaterPhoto(imageData: Data(), captureDate: Date(), unlockDate: Date(), owner: nil)
+        photo.isPosted = true   // 曲は 投稿したときに 送る
         photo.applyMusic(MusicPick(title: "放課後", artist: "だれか", artworkURL: "https://example.com/a.jpg",
                                    link: "https://music.apple.com/jp/song/x/1", service: .apple))
         let record = try photo.toCKRecord(existing: nil, zoneID: zone, groupRecordID: CKRecord.ID(recordName: "g", zoneID: zone))

@@ -289,28 +289,33 @@ extension LaterPhoto {
         record["captureDate"] = captureDate
         record["unlockDate"] = unlockDate
         record["isUnlocked"] = isUnlocked
-        record["caption"] = caption
-        record["tags"] = tags.isEmpty ? nil : tags
-        record["locationName"] = locationName
+        // 【プライバシー】「投稿する」を押すまで、グループに 届けるのは
+        // 撮った人・撮った時刻・グループの印(今日 N人が撮った、の数に使う分)だけ。
+        // タグ・ひとこと・場所の名前・グループ名・位置・動画の長さ・曲は、投稿したときに 送る(投稿の前は 空にする)
+        let shares = isPosted
+        record["caption"] = shares ? caption : nil
+        record["tags"] = shares && !tags.isEmpty ? tags : nil
+        record["locationName"] = shares ? locationName : nil
         record["authorCloudKitUserRecordName"] = authorCloudKitUserRecordName
         record["authorNameCache"] = authorNameCache ?? owner?.name
-        record["groupNameCache"] = groupNameCache
+        record["groupNameCache"] = shares ? groupNameCache : nil
         record["isPosted"] = isPosted
         // モザイク用の小さな画像(投稿した写真だけ)。位置は、共有を「撮った場所」にした分だけ(丸めた値)。
         // 空にしたとき(共有オフ)は、サーバー側の値も消える。
-        record["mosaicTiny"] = isPosted ? mosaicTiny : nil
-        record["approxLatitude"] = approxLatitude
-        record["approxLongitude"] = approxLongitude
+        record["mosaicTiny"] = shares ? mosaicTiny : nil
+        record["approxLatitude"] = shares ? approxLatitude : nil
+        record["approxLongitude"] = shares ? approxLongitude : nil
         // v20 動画:長さ(写真は空のまま)
-        record["durationSeconds"] = durationSeconds
+        record["durationSeconds"] = shares ? durationSeconds : nil
         // v22 L-4:今日の 1曲。曲が ないときは 1つも 書かない
         // (Production に 項目が まだ なくても、曲なしの 写真の 保存は 失敗しない)
-        if musicTitle != nil || musicLink != nil || record["musicTitle"] != nil {
-            record["musicTitle"] = musicTitle
-            record["musicArtist"] = musicArtist
-            record["musicArtworkURL"] = musicArtworkURL
-            record["musicLink"] = musicLink
-            record["musicService"] = musicService
+        let sendsMusic = shares && (musicTitle != nil || musicLink != nil)
+        if sendsMusic || record["musicTitle"] != nil || record["musicLink"] != nil {
+            record["musicTitle"] = sendsMusic ? musicTitle : nil
+            record["musicArtist"] = sendsMusic ? musicArtist : nil
+            record["musicArtworkURL"] = sendsMusic ? musicArtworkURL : nil
+            record["musicLink"] = sendsMusic ? musicLink : nil
+            record["musicService"] = sendsMusic ? musicService : nil
         }
         // PhotoNotificationService(撮影通知のCKQuerySubscription)がプッシュペイロードに
         // desiredKeysとして含めるためのスカラー値。"group"(CKRecord.Reference)自体は
@@ -355,24 +360,31 @@ extension LaterPhoto {
         captureDate = record["captureDate"] as? Date ?? captureDate
         unlockDate = record["unlockDate"] as? Date ?? unlockDate
         isUnlocked = record["isUnlocked"] as? Bool ?? isUnlocked
-        caption = record["caption"] as? String
-        tags = record["tags"] as? [String] ?? []
-        locationName = record["locationName"] as? String
         authorCloudKitUserRecordName = record["authorCloudKitUserRecordName"] as? String ?? authorCloudKitUserRecordName
         authorNameCache = record["authorNameCache"] as? String ?? authorNameCache
-        groupNameCache = record["groupNameCache"] as? String ?? groupNameCache
         // 項目が無い = 古いアプリから届いたレコード(撮った時点で共有していた)ので、投稿ずみ
-        isPosted = record["isPosted"] as? Bool ?? true
-        mosaicTiny = record["mosaicTiny"] as? Data
-        approxLatitude = record["approxLatitude"] as? Double
-        approxLongitude = record["approxLongitude"] as? Double
+        let posted = record["isPosted"] as? Bool ?? true
+        isPosted = posted
+        // 【プライバシー】投稿の前の レコードには タグ・場所などが 入っていない(送っていない)。
+        // そのときは、端末に ある 値(撮った本人の 端末なら 本物)を 消さない
+        func take<T>(_ key: String, _ current: T?) -> T? {
+            if let value = record[key] as? T { return value }
+            return posted ? nil : current
+        }
+        caption = take("caption", caption)
+        tags = take("tags", tags) ?? []
+        locationName = take("locationName", locationName)
+        groupNameCache = take("groupNameCache", groupNameCache)
+        mosaicTiny = take("mosaicTiny", mosaicTiny)
+        approxLatitude = take("approxLatitude", approxLatitude)
+        approxLongitude = take("approxLongitude", approxLongitude)
         // v20 動画:長さだけ持つ。本体(video)は、タップしたときに LaterVideoStore.fetch で取る
-        durationSeconds = record["durationSeconds"] as? Double
-        musicTitle = record["musicTitle"] as? String
-        musicArtist = record["musicArtist"] as? String
-        musicArtworkURL = record["musicArtworkURL"] as? String
-        musicLink = record["musicLink"] as? String
-        musicService = record["musicService"] as? String
+        durationSeconds = take("durationSeconds", durationSeconds)
+        musicTitle = take("musicTitle", musicTitle)
+        musicArtist = take("musicArtist", musicArtist)
+        musicArtworkURL = take("musicArtworkURL", musicArtworkURL)
+        musicLink = take("musicLink", musicLink)
+        musicService = take("musicService", musicService)
         if let asset = record["image"] as? CKAsset {
             if let fileURL = asset.fileURL {
                 do {
