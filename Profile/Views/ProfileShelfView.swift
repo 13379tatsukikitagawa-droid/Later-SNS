@@ -511,7 +511,7 @@ struct ProfileShelfView: View {
         .onTapGesture {
             guard !point.opened else { return }
             LayerHaptics.softDouble()
-            showToast(PhotoDevelop.lockedNote)
+            showToast(OwnReveal.status(takenAt: point.date, now: Date()).lockedText.map { $0.hasPrefix("あと") ? "今日 \($0) 撮ると、ひらきます" : PhotoDevelop.lockedNote } ?? PhotoDevelop.lockedNote)
         }
     }
 

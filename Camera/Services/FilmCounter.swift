@@ -108,6 +108,17 @@ final class FilmCounter {
     /// 日がかわっていたら、0 にもどす(9:00 をまたいだ時)。画面が時計で更新される時に呼ぶ。
     func refresh() { rollOverIfNeeded() }
 
+    /// 保存に 失敗した(写真が 返らなかった・保存の形に できなかった):最後に 数えた 1こまを 戻す
+    func refundLast(reason: String) {
+        rollOverIfNeeded()
+        guard !usedIDs.isEmpty else { return }
+        usedIDs.removeLast()
+        save()
+        #if DEBUG
+        print("[Film] refund reason=\(reason) remaining=\(remaining)")
+        #endif
+    }
+
     #if DEBUG
     /// テスト・見た目の確認用:今日の 使ったこまを 置きかえる(保存しない)
     func debugReplace(used: Int) {

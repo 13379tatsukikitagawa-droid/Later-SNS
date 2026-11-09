@@ -17,6 +17,8 @@ struct MEShot: Identifiable, Equatable {
     let photoID: UUID
     /// v20:動画なら長さ
     var duration: Double? = nil
+    /// 【B】ひらいているか(前日の写真は 今日 撮った枚数だけ)
+    var reveal: OwnReveal.Status = .open
 }
 
 struct MEDay: Identifiable, Equatable {
@@ -56,10 +58,13 @@ enum MERules {
             let key = ExposureDayStore.dayKey(for: date, calendar: calendar)
             var seen = Set<TimeInterval>()
             let list = (byDay[key] ?? []).sorted { $0.captureDate < $1.captureDate }.filter { seen.insert($0.captureDate.timeIntervalSinceReferenceDate.rounded()).inserted }
-            let shots = list.prefix(3).map { MEShot(id: "\(key)|\(Int($0.captureDate.timeIntervalSinceReferenceDate))", takenAt: $0.captureDate, photoID: $0.id, duration: $0.isVideo ? $0.durationSeconds : nil) }
+            let own = photos.map(\.captureDate)
+            let shots = list.prefix(3).map { MEShot(id: "\(key)|\(Int($0.captureDate.timeIntervalSinceReferenceDate))", takenAt: $0.captureDate, photoID: $0.id, duration: $0.isVideo ? $0.durationSeconds : nil,
+                                                    reveal: OwnReveal.status(takenAt: $0.captureDate, now: now, ownCaptureDates: own, calendar: calendar)) }
             var tags: [String] = []
             for photo in list { for tag in photo.tags where !tags.contains(tag) { tags.append(tag) } }
-            let developed = list.first.map { PhotoDevelop.isDeveloped(takenAt: $0.captureDate, now: now, calendar: calendar) } ?? false
+            // その日の 1枚でも ひらいていれば「仕上がった日」(1枚ずつの 判定は MEShot.reveal)
+            let developed = shots.contains { $0.reveal.isOpen }
             return MEDay(key: key, date: date, ago: ago, shots: Array(shots), tags: Array(tags.prefix(2)), developed: developed)
         }
     }
@@ -634,6 +639,12 @@ private struct MEDayCard: View {
         .padding(.top, 10)
     }
 
+    /// ひらく前の チェキを 押したとき の 文
+    static func lockedToast(_ reveal: OwnReveal.Status) -> String {
+        if case .waiting(let n) = reveal { return "今日 あと\(n)こま 撮ると、ひらきます" }
+        return "9:00 まで まってね"
+    }
+
     private var fan: some View {
         ZStack {
             ForEach(Array(day.shots.enumerated()), id: \.element.id) { index, shot in
@@ -641,15 +652,16 @@ private struct MEDayCard: View {
                 MECheki(
                     shot: shot,
                     ago: day.ago,
-                    developed: day.developed,
+                    developed: shot.reveal.isOpen,
+                    lockedText: shot.reveal.lockedText,
                     picked: pickedID == shot.id,
                     data: photos.first { $0.id == shot.photoID }?.imageData,
                     onTap: {
                         // 開いた状態で動画のチェキをタップ:上映(ひらく前は、9:00 まで)
                         if spread, shot.duration != nil {
-                            if day.developed { onPlay(shot) } else {
+                            if shot.reveal.isOpen { onPlay(shot) } else {
                                 Haptics.play(.warn)
-                                onToast("動画は あしたの 9:00 に、ひらきます")
+                                onToast(Self.lockedToast(shot.reveal))
                             }
                             return
                         }
@@ -662,7 +674,7 @@ private struct MEDayCard: View {
                     },
                     onTooEarly: {
                         Haptics.play(.warn)
-                        onToast("9:00 まで まってね")
+                        onToast(Self.lockedToast(shot.reveal))
                     }
                 )
                 .rotationEffect(.degrees(spread ? f.rotation * 1.6 : f.rotation))
@@ -706,6 +718,8 @@ private struct MECheki: View {
     let shot: MEShot
     let ago: Int
     let developed: Bool
+    /// ひらく前の 短い文(「あと2こま」/「9:00 に ひらく」)
+    var lockedText: String? = nil
     let picked: Bool
     let data: Data?
     let onTap: () -> Void
@@ -807,7 +821,7 @@ private struct MECheki: View {
             image = await MEImageLoader.load(key: shot.id, data: data)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(developed ? "写真\(picked ? "、えらんだ1枚" : "")" : "仕上がり中。9:00 に ひらく")
+        .accessibilityLabel(developed ? "写真\(picked ? "、えらんだ1枚" : "")" : "まだ ひらいていない。\(lockedText ?? "9:00 に ひらく")")
         .accessibilityAction(named: "えらぶ") { if developed { onPick(data) } else { onTooEarly() } }
     }
 
@@ -817,8 +831,17 @@ private struct MECheki: View {
             // きょう:ミルク色(写真は読まない)
             ZStack {
                 LinearGradient(colors: [Color(hex: "DDE6E2"), Color(hex: "C9D3E0")], startPoint: UnitPoint(x: 0.3, y: 0), endPoint: UnitPoint(x: 0.7, y: 1))
-                Text("DEVELOPING\n9:00").font(.system(size: 9, weight: .bold, design: .monospaced)).tracking(0.2 * 9)
-                    .multilineTextAlignment(.center).foregroundStyle(Color(hex: "7D8790"))
+                if let lockedText, lockedText.hasPrefix("あと") {
+                    // 【B】前日の 写真:今日 あと Nこま 撮ると ひらく
+                    VStack(spacing: 4) {
+                        Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold))
+                        Text(lockedText).font(.system(size: 12, weight: .heavy))
+                    }
+                    .foregroundStyle(Color(hex: "5D6770"))
+                } else {
+                    Text("DEVELOPING\n9:00").font(.system(size: 9, weight: .bold, design: .monospaced)).tracking(0.2 * 9)
+                        .multilineTextAlignment(.center).foregroundStyle(Color(hex: "7D8790"))
+                }
             }
         } else if let image {
             ZStack {

@@ -6,7 +6,7 @@ import SwiftUI
 struct PinPhotoPickerView: View {
     let photos: [LaterPhoto]
     /// 仕上がる前(撮ったあとの最初の 9:00 まで)の写真は、選ばせない・見せない
-    private var visiblePhotos: [LaterPhoto] { photos.filter { PhotoDevelop.isDeveloped(takenAt: $0.captureDate, now: Date()) } }
+    private var visiblePhotos: [LaterPhoto] { photos.filter { OwnReveal.isOpen(takenAt: $0.captureDate, now: Date()) } }
     let alreadyPinnedIDs: Set<UUID>
     let remainingSlots: Int
     let onConfirm: (_ newlyPinnedIDs: [UUID]) -> Void

@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import SwiftData
 
 /// 撮った写真を「見せてよいか」の、ただ1つの判定(Later の約束)。
@@ -23,6 +24,87 @@ enum PhotoDevelop {
 
     /// まだ開けないものを押したときの、短い一言
     static let lockedNote = "あしたの朝、仕上がります"
+}
+
+/// 【B】前日の 自分の写真が ひらいているか(ただ1つの 判定)。
+/// - 今日(いまの窓)の 写真:つぎの 9:00 まで 現像中
+/// - 前日の 写真:今日 **保存できた** 枚数だけ、撮った順(古い方から)に ひらく。のこりは「あと◯こま」
+/// - それより 前の 写真:ひらいている
+/// 保存できた 写真(端末の LaterPhoto)から 毎回 計算するので、アプリを 閉じても 戻らない。9:00 で 数えなおす
+enum OwnReveal {
+    enum Status: Equatable {
+        /// 今日の 写真(9:00 まで)
+        case developing
+        case open
+        /// 前日の 写真:今日 あと shots こま 撮ると ひらく
+        case waiting(shots: Int)
+
+        var isOpen: Bool { self == .open }
+        /// ぼかしに 出す 短い文(「あと2こま」/「9:00 に ひらく」)
+        var lockedText: String? {
+            switch self {
+            case .open: return nil
+            case .developing: return "9:00 に ひらく"
+            case .waiting(let n): return "あと\(n)こま"
+            }
+        }
+    }
+
+    /// ownCaptureDates:自分が 撮って 保存できた 写真の 時刻(グループごとの 写しは まとめなくてよい)。
+    /// 省略すると、OwnShotLedger(端末の 写真から 作った 一覧)を 使う
+    static func status(takenAt: Date, now: Date, ownCaptureDates: [Date]? = nil, calendar: Calendar = .current) -> Status {
+        let latest = DailyWindow.latest(for: now, calendar: calendar)
+        if takenAt >= latest.open { return .developing }
+        let yesterday = DailyWindow.yesterday(for: now, calendar: calendar)
+        guard takenAt >= yesterday.open, takenAt < yesterday.close else { return .open }
+        let dates = distinct(ownCaptureDates ?? OwnShotLedger.shared.captureDates)
+        let yesterdayShots = dates.filter { $0 >= yesterday.open && $0 < yesterday.close }
+        let index = yesterdayShots.firstIndex { abs($0.timeIntervalSince(takenAt)) < 1 } ?? yesterdayShots.filter { $0 < takenAt }.count
+        let savedToday = dates.filter { $0 >= latest.open && $0 < latest.close && $0 <= now }.count
+        return index < savedToday ? .open : .waiting(shots: index + 1 - savedToday)
+    }
+
+    static func isOpen(takenAt: Date, now: Date, ownCaptureDates: [Date]? = nil, calendar: Calendar = .current) -> Bool {
+        status(takenAt: takenAt, now: now, ownCaptureDates: ownCaptureDates, calendar: calendar).isOpen
+    }
+
+    /// 前日の 写真が、今日 何枚 ひらいたか(= min(今日 保存できた枚数, 前日の枚数))
+    static func openedYesterdayCount(now: Date, ownCaptureDates: [Date]? = nil, calendar: Calendar = .current) -> Int {
+        let latest = DailyWindow.latest(for: now, calendar: calendar)
+        let yesterday = DailyWindow.yesterday(for: now, calendar: calendar)
+        let dates = distinct(ownCaptureDates ?? OwnShotLedger.shared.captureDates)
+        let y = dates.filter { $0 >= yesterday.open && $0 < yesterday.close }.count
+        let t = dates.filter { $0 >= latest.open && $0 < latest.close && $0 <= now }.count
+        return min(y, t)
+    }
+
+    /// 同じ 1枚(グループごとの 写し)は 1つに。古い順
+    static func distinct(_ dates: [Date]) -> [Date] {
+        var seen = Set<Int>()
+        return dates.sorted().filter { seen.insert(Int($0.timeIntervalSinceReferenceDate.rounded())).inserted }
+    }
+}
+
+/// 自分が 撮って 保存できた 写真の 時刻(端末の LaterPhoto から TodayView が 作る)。
+/// 写真の 一覧を 持たない 画面(カレンダー・プロフィールなど)も、OwnReveal で 同じ 判定が できるように
+@MainActor @Observable
+final class OwnShotLedger {
+    static let shared = OwnShotLedger()
+    private static let key = "ownShotLedger.v1"
+
+    private(set) var captureDates: [Date]
+
+    private init() {
+        let stored = UserDefaults.standard.array(forKey: Self.key) as? [Double] ?? []
+        captureDates = stored.map { Date(timeIntervalSinceReferenceDate: $0) }
+    }
+
+    func update(_ dates: [Date]) {
+        let next = OwnReveal.distinct(dates)
+        guard next != captureDates else { return }
+        captureDates = next
+        UserDefaults.standard.set(next.map(\.timeIntervalSinceReferenceDate), forKey: Self.key)
+    }
 }
 
 /// 「今日の1枚」の撮影ルール(Later 基本ルール 再設計版 §2・§3)。

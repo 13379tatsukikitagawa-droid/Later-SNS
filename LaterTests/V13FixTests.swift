@@ -46,7 +46,8 @@ struct V13FixTests {
     @Test func プロフィールの判定も同じ関数() {
         for taken in [date(0, 9, 0), date(0, 14), date(-1, 23, 59)] {
             for now in [date(0, 8, 59), date(0, 9, 0), date(1, 8, 59), date(1, 9, 0)] {
-                #expect(ProfileShot.isOpened(capturedAt: taken, now: now) == PhotoDevelop.isDeveloped(takenAt: taken, now: now))
+                // 【B】プロフィールも OwnReveal(前日の 写真は 今日 撮った枚数だけ ひらく)
+                #expect(ProfileShot.isOpened(capturedAt: taken, now: now, ownCaptureDates: [taken]) == OwnReveal.isOpen(takenAt: taken, now: now, ownCaptureDates: [taken]))
             }
         }
     }

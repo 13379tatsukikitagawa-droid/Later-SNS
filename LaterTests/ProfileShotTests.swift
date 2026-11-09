@@ -64,7 +64,7 @@ struct ProfileShotTests {
         var today = Self.source(0)
         today.isPosted = false
         let shots = ProfileShot.visibleShots(from: [Self.source(-2), pending, today], now: Self.date(0, 13), calendar: Self.tokyo)
-        // 昨日の未決定は出さない。今日の1枚(まだひらいていない)は出す
+        // 【B】昨日の1枚は、今日の1枚が 保存できたので ひらいている。未決定なので 出さない。今日の1枚(まだ現像中)は出す
         #expect(shots.map(\.date) == [Self.date(-2, 12), Self.date(0, 12)])
     }
 

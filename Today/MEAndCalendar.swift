@@ -19,6 +19,8 @@ struct MEReelDay: Identifiable, Equatable {
     let ago: Int
     let date: Date
     let kind: Kind
+    /// 【B】ひらく前の 短い文(「あと2こま」/「9:00 に ひらく」)
+    var lockedText: String = "9:00 に ひらく"
     var id: String { key }
 }
 
@@ -31,19 +33,23 @@ enum MEReelRules {
             let date = calendar.date(byAdding: .day, value: -ago, to: todayStart) ?? todayStart
             let key = ExposureDayStore.dayKey(for: date, calendar: calendar)
             let kind: MEReelDay.Kind
+            var lockedText = "9:00 に ひらく"
             if let day = byKey[key] {
-                kind = PhotoDevelop.isDeveloped(takenAt: day.captureDate, now: now, calendar: calendar) ? .photo(day.thumbnailData) : .locked
+                // 【B】その日の 1枚目(記録は 1日1件・その日の 最初の 1枚)が ひらいているか
+                let reveal = OwnReveal.status(takenAt: day.captureDate, now: now, calendar: calendar)
+                kind = reveal.isOpen ? .photo(day.thumbnailData) : .locked
+                lockedText = reveal.lockedText ?? lockedText
             } else {
                 kind = .rest
             }
-            return MEReelDay(key: key, ago: ago, date: date, kind: kind)
+            return MEReelDay(key: key, ago: ago, date: date, kind: kind, lockedText: lockedText)
         }
     }
 
     /// 下の小さな文字:LOCKED / あと1日で きえる / あと◯日
     static func note(_ day: MEReelDay) -> String {
         switch day.kind {
-        case .locked: return "LOCKED"
+        case .locked: return day.lockedText.hasPrefix("あと") ? day.lockedText : "LOCKED"
         case .rest: return "おやすみ"
         case .photo:
             let left = HomeLayerRules.filmDaysLeft(ago: day.ago)
@@ -206,7 +212,7 @@ struct MEScreen: View {
                     LinearGradient(colors: [Color(hex: "EEE6DA").opacity(0.94), Color(hex: "D0DAE8").opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing)
                     VStack(spacing: 8) {
                         Image(systemName: "lock.fill").font(.system(size: 22, weight: .bold))
-                        Text("9:00 に ひらく").font(.system(size: 13, weight: .heavy))
+                        Text(day.lockedText).font(.system(size: 13, weight: .heavy))
                     }
                     .foregroundStyle(Color(hex: "3A2A18"))
                 case .photo(let data):
@@ -543,7 +549,8 @@ struct LaterCalendarView: View {
         let weekday = date.map { ["日", "月", "火", "水", "木", "金", "土"][Calendar.current.component(.weekday, from: $0) - 1] } ?? ""
         let left = date.map { max(0, DailyExposureRules.photoRetentionDays - (Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: $0), to: Calendar.current.startOfDay(for: Date())).day ?? 0)) } ?? 0
         // 写真は 仕上がった日(PhotoDevelop)で、7日以内のときだけ
-        let thumb: Data? = old ? nil : exposureDays.first { $0.dayKey == cell.id && PhotoDevelop.isDeveloped(takenAt: $0.captureDate, now: Date()) }?.thumbnailData
+        // 【B】ひらいていない 前日の 写真は 出さない(色だけ)
+        let thumb: Data? = old ? nil : exposureDays.first { $0.dayKey == cell.id && OwnReveal.isOpen(takenAt: $0.captureDate, now: Date()) }?.thumbnailData
         return HStack(spacing: 14) {
             ZStack {
                 Color(hex: hex ?? "FF8A3D")

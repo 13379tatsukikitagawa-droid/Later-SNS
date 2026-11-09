@@ -120,7 +120,7 @@ enum SharedPlacePins {
                 isMine: isMine,
                 capturedAt: photo.captureDate,
                 tiny: photo.mosaicTiny,
-                isUnlocked: (isMine && PhotoDevelop.isDeveloped(takenAt: photo.captureDate, now: now)) || unlockedKeys.contains(photo.dedupeKey)
+                isUnlocked: (isMine && OwnReveal.isOpen(takenAt: photo.captureDate, now: now)) || unlockedKeys.contains(photo.dedupeKey)
             )
         }
     }

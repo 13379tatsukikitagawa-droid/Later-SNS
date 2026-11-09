@@ -107,7 +107,9 @@ struct V19Tests {
         let days = MERules.days(photos: photos, now: now)
         #expect(days.count == 7)
         #expect(days[1].shots.count == 3)
-        #expect(days[1].developed)
+        // 【B】今日 まだ 撮っていないので、昨日の 3枚は ひらいていない(あと 1・2・3こま)
+        #expect(!days[1].developed)
+        #expect(days[1].shots.map(\.reveal) == [.waiting(shots: 1), .waiting(shots: 2), .waiting(shots: 3)])
         #expect(days[0].shots.isEmpty)
     }
 }

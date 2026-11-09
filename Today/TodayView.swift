@@ -651,6 +651,7 @@ struct TodayView: View {
                     },
                     onShot: { handOff in landShot(handOff) },
                     onCaptureFailed: {
+                        FilmCounter.shared.refundLast(reason: "noPhoto")   // 撮れなかった:数えない
                         FilmLanding.shared.pending = nil
                         presentToast("撮れませんでした。もう一度")
                     },
@@ -830,6 +831,8 @@ struct TodayView: View {
 
     private var lifecycleLayer: some View {
         rootStack
+        // 【B】保存できた 自分の写真の 時刻(ひらく判定 OwnReveal に 使う)。保存に 成功した 写真だけが ここに 入る
+        .task(id: myCaptureDates.count) { OwnShotLedger.shared.update(myCaptureDates) }
         .onAppear {
             AppLaunchTiming.reportHomeDisplayedIfNeeded()
             haptics.prepare()
@@ -1446,6 +1449,7 @@ struct TodayView: View {
             defer { background.end() }
             guard let encoded = await ShotEncoder.encoded(for: photo) else {
                 print("[PhotoSave Error] 撮った1枚を、保存の形にできませんでした")
+                FilmCounter.shared.refundLast(reason: "encodeFailed")   // 保存できなかった:数えない
                 return false
             }
             CaptureSignpost.mark("encoded")
@@ -1459,7 +1463,13 @@ struct TodayView: View {
                 let id = meta.id
                 Task.detached(priority: .utility) { PendingShotStore.remove(id) }
             }
-            if !ok { presentToast("写真は、あとで保存します") }   // ユーザーは止めない(次の起動で再試行)
+            if !ok, !wrote {
+                // 保存も、あとで保存する ための 書き置きも できなかった:数えない
+                FilmCounter.shared.refundLast(reason: "saveFailed")
+                presentToast("写真を、保存できませんでした")
+            } else if !ok {
+                presentToast("写真は、あとで保存します")   // ユーザーは止めない(次の起動で再試行)
+            }
             return ok
         }
     }
@@ -1471,6 +1481,7 @@ struct TodayView: View {
         Task { @MainActor in
             // もとの ふつう映像を置く(RETRO-8 は裏で書き出す。終わったら入れかわって、もとは消える)
             guard let name = try? LaterVideoStore.adopt(video.url, prefix: LaterVideoStore.rawPrefix) else {
+                FilmCounter.shared.refundLast(reason: "videoSaveFailed")   // 保存できなかった:数えない
                 presentToast("動画を、保存できませんでした")
                 FilmLanding.shared.pending = nil
                 return
@@ -1497,6 +1508,7 @@ struct TodayView: View {
             } catch {
                 LaterVideoStore.deleteLocal(name)
                 FilmLanding.shared.pending = nil
+                FilmCounter.shared.refundLast(reason: "videoSaveFailed")   // 保存できなかった:数えない
                 presentToast("動画を、保存できませんでした")
             }
         }

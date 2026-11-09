@@ -70,8 +70,9 @@ enum ProfileShot {
         PhotoDevelop.developDate(takenAt: capturedAt, calendar: calendar)
     }
 
-    static func isOpened(capturedAt: Date, now: Date, calendar: Calendar = .current) -> Bool {
-        PhotoDevelop.isDeveloped(takenAt: capturedAt, now: now, calendar: calendar)
+    static func isOpened(capturedAt: Date, now: Date, ownCaptureDates: [Date]? = nil, calendar: Calendar = .current) -> Bool {
+        // 【B】前日の 写真は、今日 撮った枚数だけ ひらく
+        OwnReveal.isOpen(takenAt: capturedAt, now: now, ownCaptureDates: ownCaptureDates, calendar: calendar)
     }
 
     /// Profile に出す日。古い順 → 新しい順(最大7つ、1日1つ)。
@@ -83,7 +84,7 @@ enum ProfileShot {
                 guard !source.groups.isEmpty, source.captureDate <= now, !seen.contains(source.dayKey) else { return nil }
                 let remaining = DailyExposureRules.remainingDaysUntilExpiry(capturedAt: source.captureDate, now: now, calendar: calendar)
                 guard remaining > 0 else { return nil }
-                let opened = isOpened(capturedAt: source.captureDate, now: now, calendar: calendar)
+                let opened = isOpened(capturedAt: source.captureDate, now: now, ownCaptureDates: sources.map(\.captureDate), calendar: calendar)
                 guard !opened || source.isPosted else { return nil }
                 seen.insert(source.dayKey)
                 return WeekDayPoint(

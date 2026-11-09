@@ -378,7 +378,7 @@ enum HomeLayerBuilder {
                 kind = HomeLayerRules.filmToday(state: state, shotsToday: shotsToday)
             } else if let day = daysByKey[key] {
                 // 仕上がる前(撮ったあとの最初の 9:00 まで)は、写真を渡さない
-                kind = PhotoDevelop.isDeveloped(takenAt: day.captureDate, now: now, calendar: calendar) ? .photo(day.thumbnailData) : .developing
+                kind = OwnReveal.isOpen(takenAt: day.captureDate, now: now, calendar: calendar) ? .photo(day.thumbnailData) : .developing
             } else {
                 kind = .rest
             }
@@ -399,7 +399,7 @@ enum HomeLayerBuilder {
         }
         data.picks = bestDays.sorted().map { key in
             let day = daysByKey[key]
-            let developed = day.map { PhotoDevelop.isDeveloped(takenAt: $0.captureDate, now: now, calendar: calendar) } ?? false
+            let developed = day.map { OwnReveal.isOpen(takenAt: $0.captureDate, now: now, calendar: calendar) } ?? false
             return HomeCalendarPick(day: key, thumbnail: developed ? day?.thumbnailData : nil)
         }
 
