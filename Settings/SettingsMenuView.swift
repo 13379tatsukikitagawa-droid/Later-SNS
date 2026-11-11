@@ -18,6 +18,8 @@ struct SettingsMenuView: View {
     @AppStorage("currentProfileID") private var currentProfileID: String = ""
     @AppStorage("isSetupCompleted") private var isSetupCompleted: Bool = false
 
+    /// 「はじめての 合図を もう一度」を 押した
+    @State private var hintsReset = false
     @State private var haptics = ExposureHaptics()
     @State private var notificationOn = false
     @State private var hapticsLevel = AppHapticsSetting.level
@@ -275,6 +277,14 @@ struct SettingsMenuView: View {
             SettingsDivider()
             SettingsRow(icon: "camera", title: "撮影のしかた", action: { showingShootGuide = true }) {
                 SettingsValue("", chevron: true)
+            }
+            SettingsDivider()
+            SettingsRow(icon: "sparkle", title: "はじめての 合図を もう一度", note: hintsReset ? "もどしました。その場で また 出ます" : nil, action: {
+                FirstHintStore.resetAll()
+                Haptics.play(.success)
+                withAnimation(.easeOut(duration: 0.2)) { hintsReset = true }
+            }) {
+                SettingsValue("", chevron: false)
             }
             SettingsDivider()
             SettingsRow(icon: "doc.text", title: "利用規約・プライバシー", action: { showingPrivacy = true }) {

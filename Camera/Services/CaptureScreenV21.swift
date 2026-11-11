@@ -50,7 +50,7 @@ struct CaptureScreenV21: View {
             CaptureCameraPreview(
                 session: camera.session,
                 volumeEnabled: camera.status == .ready,
-                onVolumePress: { gesture.press(.volume) },
+                onVolumePress: { HintCenter.shared.touched(.shoot); gesture.press(.volume) },
                 onVolumeRelease: { gesture.release(.volume) }
             )
             .opacity(camera.status == .ready ? 1 : 0)
@@ -440,12 +440,15 @@ struct CaptureScreenV21: View {
                     .animation(snapRing ? .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.52) : nil, value: snapRing)
             }
             .frame(width: 104, height: 104)
+            // はじめての 合図(shoot):「押しつづける」見本
+            .overlay { if HintCenter.shared.active == .shoot && gesture.phase == .idle { ShutterHintDemo() } }
+            .firstHint(.shoot, eligible: (appeared || !playsEntrance) && left > 0, edge: .top, shape: .circle, onDark: true, gap: 22)
             .scaleEffect(reduceMotion ? 1 : (gesture.phase == .idle ? 1 : (video ? 1 : 0.95 + 0.09 * e)))
             .animation(.spring(response: 0.38, dampingFraction: 0.6), value: recording)
             .contentShape(Circle())
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onChanged { _ in if !pressedScreen { pressedScreen = true; gesture.press(.screen) } }
+                    .onChanged { _ in if !pressedScreen { pressedScreen = true; HintCenter.shared.touched(.shoot); gesture.press(.screen) } }
                     .onEnded { _ in pressedScreen = false; gesture.release(.screen) }
             )
             .accessibilityElement()
@@ -478,7 +481,8 @@ struct CaptureScreenV21: View {
             .multilineTextAlignment(.center)
             .frame(width: layout.size.width - 20)
             .position(x: layout.size.width / 2, y: min(layout.size.height - max(layout.safeBottom, 12) - 8, layout.y(792) + 6))
-            .opacity(appearOpacity)
+            // 合図の 見本の 間は、下の 小さな 説明文を かくす
+            .opacity(HintCenter.shared.active == .shoot ? 0 : appearOpacity)
             .animation(.easeOut(duration: 0.2), value: text)
     }
 

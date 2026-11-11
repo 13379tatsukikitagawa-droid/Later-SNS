@@ -53,7 +53,6 @@ enum HomeV22Rules {
 /// 初回(アプリを入れた日から、はじめての 9:00 まで)。端末に保存する
 enum HomeFirstDay {
     private static let key = "home.firstOpenedAt"
-    private static let guideKey = "home.guideClosed"
 
     static func firstOpenedAt(now: Date = Date(), defaults: UserDefaults = .standard) -> Date {
         if let date = defaults.object(forKey: key) as? Date { return date }
@@ -65,11 +64,6 @@ enum HomeFirstDay {
     static func isInitial(now: Date = Date(), calendar: Calendar = .current, defaults: UserDefaults = .standard) -> Bool {
         let first = firstOpenedAt(now: now, defaults: defaults)
         return now < PhotoDevelop.developDate(takenAt: first, calendar: calendar)
-    }
-
-    static var guideClosed: Bool {
-        get { UserDefaults.standard.bool(forKey: guideKey) }
-        set { UserDefaults.standard.set(newValue, forKey: guideKey) }
     }
 }
 
@@ -534,6 +528,8 @@ struct HomeV22Groups: View {
     let onCreate: () -> Void
     let onJoin: () -> Void
     let onAdd: () -> Void
+    /// はじめての 合図(grp)を「つくる」に 出してよい
+    var createHintEligible = false
 
     @Environment(\.palette) private var palette
     private var colors: HomeV22Ink { HomeV22Ink(night: palette.isNight) }
@@ -544,6 +540,7 @@ struct HomeV22Groups: View {
                 Text("グループ").font(.system(size: 17, weight: .black)).tracking(-0.02 * 17).foregroundStyle(colors.ink).padding(.leading, 4)
                 HStack(spacing: 10) {
                     tile(dark: true, icon: "plus", title: "つくる", note: "4〜8人の グループ", action: onCreate)
+                        .firstHint(.grp, eligible: createHintEligible, edge: .top, shape: .rounded(22), onDark: palette.isNight)
                     tile(dark: false, icon: "qrcode", title: "参加する", note: "合言葉・QR・リンク", action: onJoin)
                 }
             } else {
@@ -582,108 +579,5 @@ struct HomeV22Groups: View {
         }
         .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
         .accessibilityLabel("\(title)。\(note)")
-    }
-}
-
-// MARK: - 使いかたガイド(初回だけ・とじられる)
-
-struct HomeV22Guide: View {
-    let now: Date
-    let onClose: () -> Void
-
-    @Environment(\.palette) private var palette
-    private var colors: HomeV22Ink { HomeV22Ink(night: palette.isNight) }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 7) {
-                Circle().fill(Color(hex: "FF6A1A")).frame(width: 6, height: 6)
-                Text("HOW IT WORKS").font(.system(size: 9.5, design: .monospaced)).tracking(0.2 * 9.5).foregroundStyle(colors.sub)
-            }
-            Text("あしたの朝、\nこう ひらく。").font(.system(size: 28, weight: .black)).tracking(-0.045 * 28).foregroundStyle(colors.ink).padding(.top, 8)
-            HStack(alignment: .top, spacing: 8) {
-                step(icon: AnyView(Circle().fill(RadialGradient(colors: [Color(hex: "FFD08A"), Color(hex: "FF7A4A"), Color(hex: "E04A6A")], center: UnitPoint(x: 0.4, y: 0.35), startRadius: 0, endRadius: 22)).overlay(Circle().strokeBorder(.white, lineWidth: 3))),
-                     title: "ながおしで 撮る", note: "1日3こま")
-                step(icon: AnyView(RoundedRectangle(cornerRadius: 4).fill(LinearGradient(colors: [Color(hex: "E9EEEA"), Color(hex: "D3DAE5")], startPoint: .topLeading, endPoint: .bottomTrailing)).frame(width: 32).shadow(color: .black.opacity(0.15), radius: 5, y: 4)),
-                     title: "ミルク色で 預ける", note: "中身は 見えない")
-                step(icon: AnyView(Circle().fill(RadialGradient(stops: [.init(color: .white, location: 0), .init(color: Color(hex: "FFC9A2"), location: 0.34), .init(color: Color(hex: "E39CF2"), location: 0.78), .init(color: Color(hex: "A99BFF"), location: 1)], center: .top, startRadius: 0, endRadius: 40))),
-                     title: "9:00 に ひらく", note: "えらんだ1枚は 1年")
-            }
-            .padding(.top, 16)
-            dayBar.padding(.top, 14)
-            Button {
-                Haptics.play(.soft)
-                onClose()
-            } label: {
-                Text("このガイドを とじる").font(.system(size: 11.5, weight: .bold)).foregroundStyle(colors.sub)
-                    .padding(.horizontal, 16).frame(height: 34)
-                    .background(Capsule().fill(colors.button)).overlay(Capsule().strokeBorder(colors.softLine, lineWidth: 1.2))
-            }
-            .buttonStyle(SquishButtonStyle(pressedScale: 0.96))
-            .frame(maxWidth: .infinity)
-            .padding(.top, 12)
-        }
-        .padding(.horizontal, 22)
-    }
-
-    private func step(icon: AnyView, title: String, note: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            icon.frame(width: 38, height: 38).padding(.bottom, 8)
-            Text(title).font(.system(size: 13, weight: .heavy)).tracking(-0.01 * 13).foregroundStyle(colors.ink).fixedSize(horizontal: false, vertical: true)
-            Text(note).font(.system(size: 10, weight: .medium)).foregroundStyle(colors.sub)
-        }
-        .padding(.horizontal, 10).padding(.top, 12).padding(.bottom, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.guideCard))
-    }
-
-    /// Later の 1日:0〜24時の帯(夜 → 朝 → 昼 → 夕)+「いま」のつまみ・9:00 ひらく・24:00 消灯
-    private var dayBar: some View {
-        let c = Calendar.current.dateComponents([.hour, .minute], from: now)
-        let k = Double((c.hour ?? 0) * 60 + (c.minute ?? 0)) / 1440
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Later の 1日").font(.system(size: 13, weight: .heavy)).foregroundStyle(colors.ink)
-                Spacer()
-                Text("いま \(HomeV17Rules.clockText(HomeV17Rules.hour(of: now)))").font(.system(size: 10)).tracking(0.08 * 10).foregroundStyle(palette.accent)
-            }
-            GeometryReader { proxy in
-                let w = proxy.size.width
-                ZStack(alignment: .leading) {
-                    Capsule().fill(LinearGradient(stops: [
-                        .init(color: Color(hex: "2B2A4A"), location: 0), .init(color: Color(hex: "4A3A6A"), location: 0.18), .init(color: Color(hex: "FFB38A"), location: 0.34),
-                        .init(color: Color(hex: "FFE7C8"), location: 0.45), .init(color: Color(hex: "FFF6E8"), location: 0.6), .init(color: Color(hex: "FFC9A2"), location: 0.76),
-                        .init(color: Color(hex: "9C86FF"), location: 0.9), .init(color: Color(hex: "2B2A4A"), location: 1),
-                    ], startPoint: .leading, endPoint: .trailing))
-                    .frame(height: 16)
-                    marker("9:00 ひらく", x: w * 9 / 24)
-                    marker("24:00 消灯", x: w - 1, alignRight: true)
-                    Circle().fill(.white).overlay(Circle().fill(Color(hex: "FF6A1A")).padding(6)).overlay(Circle().strokeBorder(Color(hex: "111111"), lineWidth: 2))
-                        .frame(width: 20, height: 20).shadow(color: .black.opacity(0.25), radius: 5, y: 4)
-                        .position(x: w * k, y: 8)
-                }
-            }
-            .frame(height: 16)
-            .padding(.top, 30)
-            HStack {
-                ForEach(["0", "6", "12", "18", "24"], id: \.self) { h in
-                    Text(h).font(.system(size: 9)).tracking(0.06 * 9).foregroundStyle(colors.faint)
-                    if h != "24" { Spacer() }
-                }
-            }
-        }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.guideCard))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Later の 1日。9:00 に ひらき、24:00 に 消灯")
-    }
-
-    private func marker(_ text: String, x: CGFloat, alignRight: Bool = false) -> some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 1).fill(colors.slot).frame(width: 2, height: 24)
-            Text(text).font(.system(size: 9.5, weight: .bold)).foregroundStyle(colors.marker).fixedSize()
-                .offset(x: alignRight ? -30 : 0, y: -26)
-        }
-        .position(x: x, y: 8)
     }
 }

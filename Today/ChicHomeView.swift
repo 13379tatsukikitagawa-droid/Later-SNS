@@ -57,7 +57,8 @@ struct ChicHomeView: View {
     @State private var cardIn = true
     @State private var groupsIn = true
     @State private var headCircle = 1.0
-    @State private var guideClosed = HomeFirstDay.guideClosed
+    /// オープニングの あとの 登場が 動いている間(はじめての 合図を 出さない)
+    @State private var introRunning = false
     @State private var showsDevelop = false
 
     private static let homeTabIndex = 0
@@ -88,6 +89,10 @@ struct ChicHomeView: View {
                     firstPage(top: top, width: width, compact: compact)
                         .frame(width: width)
                         .modifier(V17Rattle(feel: feel))
+                        // はじめての 合図(first・unlock):中身を うすく ぼかす
+                        .opacity(HintCenter.shared.spotlightOn ? 0.38 : 1)
+                        .blur(radius: HintCenter.shared.spotlightOn && !reduceMotion ? 1.5 : 0)
+                        .animation(.easeOut(duration: 0.5), value: HintCenter.shared.spotlightOn)
                 }
                 .scrollPosition($scrollPosition)
                 .scrollIndicators(.hidden)
@@ -112,8 +117,9 @@ struct ChicHomeView: View {
                 )
                 .frame(width: width, height: LaterHeader.height)
                 .padding(.top, top)
-                .opacity(launch.headerOpacity * (isDiving ? 0 : 1))
+                .opacity(launch.headerOpacity * (isDiving ? 0 : 1) * (HintCenter.shared.spotlightOn ? 0.5 : 1))
                 .animation(.easeOut(duration: 0.32), value: isDiving)
+                .animation(.easeOut(duration: 0.5), value: HintCenter.shared.spotlightOn)
 
                 // 月の上の白いグラデーション(スクロールしたときだけ)と、「SCROLL」のヒント
                 V17BottomChrome(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, ink: palette.isNight ? Color.white : Color(hex: "111111"), showsCue: false)
@@ -161,6 +167,8 @@ struct ChicHomeView: View {
         .ignoresSafeArea()
         .onAppear { isOnScreen = true }
         .onDisappear { isOnScreen = false }
+        // オープニングの あとの 登場・現像ビュー・ライト の間は 合図を 出さない
+        .onChange(of: introRunning || showsDevelop || showsLights, initial: true) { _, on in HintCenter.shared.setBlocked("chicHome", on) }
     }
 
     /// v22 の 1画面目(見本 later_v22.html の ホーム):ガラスの球 → 見出し 2行 → 今日のカード → グループ。
@@ -175,6 +183,8 @@ struct ChicHomeView: View {
 
             HomeGlassOrb(used: used, initial: initial, dateText: HomeDevelopCard.stampText(now), isActive: isVisible && scroll.offset < 420,
                          introStart: introStart, onTap: openMondo)
+                // はじめての 合図(orb):1枚 撮ったあと
+                .firstHint(.orb, eligible: hintsAllowed && used >= 1 && scroll.offset < 40, edge: .bottom, shape: .circle, onDark: palette.isNight, gap: 4)
                 .scaleEffect(orbScale * max(0.9, 1 - y / 2400))
                 .frame(height: 254 * orbScale)
                 .offset(y: y * 0.25)
@@ -193,7 +203,8 @@ struct ChicHomeView: View {
                 .opacity(cardIn ? 1 : 0)
 
             HomeV22Groups(summaries: groupSummaries, canCreate: canCreateGroup, isFrontmost: isVisible, shotsToday: used,
-                          onSelect: onSelectGroup, onCreate: onCreateGroup, onJoin: onJoinGroup, onAdd: onAddGroup)
+                          onSelect: onSelectGroup, onCreate: onCreateGroup, onJoin: onJoinGroup, onAdd: onAddGroup,
+                          createHintEligible: hintsAllowed && FirstHintStore.isSeen(.orb))
                 .padding(.top, 12)
                 .offset(y: groupsIn ? 0 : 24)
                 .opacity(groupsIn ? 1 : 0)
@@ -204,16 +215,6 @@ struct ChicHomeView: View {
                 .padding(.top, 72)
                 .v17Reveal()
                 .id(HomeV17Section.film.rawValue)
-
-            if initial && !guideClosed {
-                HomeV22Guide(now: now) {
-                    withAnimation(.easeOut(duration: 0.26)) { guideClosed = true }
-                    HomeFirstDay.guideClosed = true
-                }
-                .padding(.top, 72)
-                .v17Reveal()
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
-            }
 
             // ともだち(D は あとで。いまは v17 の まま 置いておく)
             if let bump {
@@ -227,6 +228,11 @@ struct ChicHomeView: View {
         }
         .opacity(isDiving ? 0 : 1)
         .animation(.easeOut(duration: 0.32), value: isDiving)
+    }
+
+    /// はじめての 合図を 出してよい(Home が 前面・オープニングと 登場が おわった・もぐっていない)
+    private var hintsAllowed: Bool {
+        isVisible && launch == .finished && !introRunning && !isDiving && !showsLights && !showsDevelop && bump?.pending == nil
     }
 
     private func openMondo() {
@@ -256,6 +262,8 @@ struct ChicHomeView: View {
     private func playIntro() {
         guard !reduceMotion else { return }
         introStart = Date()
+        introRunning = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.9) { introRunning = false }
         headIn = false; cardIn = false; groupsIn = false; headCircle = 0
         withAnimation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.7)) { headIn = true }
         withAnimation(.timingCurve(0.5, 0, 0.3, 1, duration: 0.76).delay(1.38)) { headCircle = 1 }

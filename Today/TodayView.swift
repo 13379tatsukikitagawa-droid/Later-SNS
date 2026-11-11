@@ -608,6 +608,7 @@ struct TodayView: View {
                 }
                 .onAppear { screenSize = proxy.size }
                 .onChange(of: proxy.size) { _, size in screenSize = size }
+                moonHintAnchor(size: proxy.size)
             }
             .ignoresSafeArea()
 
@@ -1033,6 +1034,7 @@ struct TodayView: View {
         }
         // ウィジェット:撮影・昨日をひらく・日付が変わる(状態が変わる)たびに、値を書いて更新
         .onAppear { syncWidget() }
+        .onChange(of: hintBlocked, initial: true) { _, blocked in HintCenter.shared.setBlocked("today", blocked) }
         .task { await refreshBumpFriends() }
         .task {
             // v21:途中で止まった RETRO-8 の書き出しを、つづきから
@@ -1256,6 +1258,8 @@ struct TodayView: View {
             textOpacity: moonTextOpacity,
             isInteractive: screen == .home && !isMoonAnimating,
             onTap: {
+                HintCenter.shared.touched(.first)
+                HintCenter.shared.touched(.unlock)
                 // 押した瞬間の時刻で判定しなおす(表示中の状態が古い可能性があるため)。
                 let current = homeState(at: clock()).moonPlan(yesterday: yesterdayLight)
                 switch current {
@@ -1286,6 +1290,33 @@ struct TodayView: View {
         .position(MoonLayout.center(in: size))
         .opacity(moonOpacity)
         .allowsHitTesting(screen == .home && !isMoonAnimating && launchClock == nil)
+    }
+
+    // MARK: はじめての 合図(月の「今日を撮る」)
+
+    /// 月の 見えている ところ(画面の 下)に 合図を つける。見た目だけ(タップは 月が 受ける)
+    private func moonHintAnchor(size: CGSize) -> some View {
+        let key: FirstHintKey = HomeFirstDay.isInitial(now: now) ? .first : .unlock
+        let width = MoonLayout.diameter(screenWidth: size.width) * 0.6
+        return Color.clear
+            .frame(width: width, height: MoonLayout.visibleHeight - 22)
+            .firstHint(key, eligible: moonHintEligible, edge: .top, shape: .capsule, onDark: palette.isNight, gap: 14)
+            .position(x: size.width / 2, y: size.height - MoonLayout.visibleHeight / 2 - 6)
+            .allowsHitTesting(false)
+    }
+
+    /// 今日 まだ 0枚で、月が「今日を撮る」のとき(Home が 前面・起動の 動きが おわった)
+    private var moonHintEligible: Bool {
+        guard screen == .home, !isHomeCovered, launchClock == nil, !isMoonAnimating, irisMode == nil, !usesV5Home, !isDivingToMondo else { return false }
+        guard filmUsed == 0, FilmCounter.shared.remaining > 0 else { return false }
+        if case .shoot = state.moonPlan(yesterday: yesterdayLight) { return true }
+        return false
+    }
+
+    /// 合図を 出さない 間(シート・グループ作成・現像画面・トースト)
+    private var hintBlocked: Bool {
+        showingNewGroup || sheetGroup != nil || showingDevelopSheet || showingAddGroupSheet || showingFriendsHub
+            || revealRequest != nil || revealCover || lockedToast != nil
     }
 
     private func moonMode(for plan: HomeState.MoonPlan) -> HomeMoon.Mode {

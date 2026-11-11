@@ -320,6 +320,8 @@ struct TagScreen: View {
                         .accessibilityAddTraits(.isHeader)
 
                     card
+                        // はじめての 合図(tag):はじめて 開いたとき。ふきだしは カードの 下
+                        .firstHint(.tag, eligible: phase == .shown && !leaving && !closing && !showsMusic, edge: .bottom, shape: .rounded(30), onDark: true, gap: 10)
                         .padding(.horizontal, 18)
                         .padding(.top, compact ? 16 : 26)
 
@@ -444,6 +446,7 @@ struct TagScreen: View {
                     .onSubmit(commitInput)
                     .disabled(isFull || leaving)
                     .onChange(of: input) { _, value in
+                        if !value.isEmpty { HintCenter.shared.touched(.tag) }
                         if value.count > TagRules.maxLength + 1 { input = String(value.prefix(TagRules.maxLength + 1)) }
                         // 空白か改行で、タグになる
                         if let last = value.last, last == " " || last == "　" || last == "\n" { commitInput() }
