@@ -130,3 +130,16 @@ struct HomeNoSwipeRegionKey: PreferenceKey {
         value.append(contentsOf: nextValue())
     }
 }
+
+// MARK: - いま選ばれているタブ(0 = Home。以前は MainTabView.swift にあった)
+
+struct SelectedMainTabIndexKey: EnvironmentKey {
+    static let defaultValue = 0
+}
+
+extension EnvironmentValues {
+    var selectedMainTabIndex: Int {
+        get { self[SelectedMainTabIndexKey.self] }
+        set { self[SelectedMainTabIndexKey.self] = newValue }
+    }
+}

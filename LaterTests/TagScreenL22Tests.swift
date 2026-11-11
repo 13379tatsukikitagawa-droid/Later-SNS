@@ -21,7 +21,6 @@ struct TagScreenL22Tests {
         for word in TagWords.row1 + TagWords.row2 {
             #expect(!word.hasPrefix("#"))
             #expect(TagRules.clean(word) == word)
-            #expect(!ShootTagRules.isForbidden(word))
         }
         #expect(!TagWords.all.contains("きもい"))
         #expect(TagDictionary.display("エモい") == "#エモい")
