@@ -153,7 +153,7 @@ struct V23YesterdaySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            V17SectionHeader(kicker: "OPENED AT 9:00 ・ \(MERules.dot(day.date))", title: "きのうの", accent: "3こま", number: "\(top + 1) / \(count)", ink: ink)
+            V17SectionHeader(kicker: "OPENED AT 9:00 ・ \(MERules.dot(day.date))", title: "きのうの 3こま", number: "\(top + 1) / \(count)", ink: ink)
             ZStack {
                 ForEach(Array(shots.enumerated()), id: \.element.id) { index, shot in
                     card(shot, index: index)
@@ -587,7 +587,17 @@ struct V23WorldSection: View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
             let morning = V23Rules.morning(utcHours: V23Rules.utcHours(context.date) + offsetHours)
             VStack(alignment: .leading, spacing: 0) {
-                V17SectionHeader(kicker: "WORLD", title: "いま、朝が\nひらいている街", number: morning.city.en, ink: ink)
+                V17SectionHeader(kicker: "WORLD", title: "いま、朝が\nひらいている街", ink: ink)
+                    .overlay(alignment: .bottomTrailing) {
+                        // 右はしの 街の 名前(長い 名前は ちぢめる)
+                        // 手書きの 字の 最後が 切れないよう、うしろに 細い 空白を 1つ
+                        Text(morning.city.en + "\u{2009}")
+                            .font(V17Font.hand(morning.city.en.count > 7 ? 22 : 28))
+                            .foregroundStyle(V17Ink.orange)
+                            .fixedSize()
+                            .padding(.trailing, 2)
+                            .padding(.bottom, 9)
+                    }
                 band(morning)
                     .padding(.top, 14)
                 VStack(spacing: 3) {
