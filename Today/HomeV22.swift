@@ -209,6 +209,15 @@ enum HomeOrbRules {
     /// まわりの 位置(中心から。左上・右上・左下・右下)
     static let satelliteOffsets: [CGSize] = [CGSize(width: -135, height: -74), CGSize(width: 135, height: -74),
                                              CGSize(width: -135, height: 74), CGSize(width: 135, height: 74)]
+
+    /// まわりの 1つが しめる 場所(丸 50 + 影 + 下の 字。浮き沈み 4pt ぶん 広め)。文字の輪は ここでは 消える
+    static func satelliteHole(_ action: HomeOrbAction, index i: Int) -> CGRect {
+        let o = satelliteOffsets[min(max(i, 0), satelliteOffsets.count - 1)]
+        let labelWidth = CGFloat(action.label.count) * (8 * 0.6 + 8 * 0.14) + 10
+        let half = max(29, labelWidth / 2 + 2)
+        // ボタンの 中心 = o.y + 4.5、丸の 上 = 中心 - 34.5、字の 下 = 中心 + 34.5
+        return CGRect(x: o.width - half, y: o.height + 4.5 - 34.5 - 6, width: half * 2, height: 69 + 6 + 4)
+    }
 }
 
 struct HomeGlassOrb: View {
@@ -268,8 +277,10 @@ struct HomeGlassOrb: View {
                         .allowsHitTesting(false)
                 }
                 // 外の文字の輪(200秒で一周)
-                HomeRingText(text: HomeOrbRules.ringText(now: Date()), radius: 128)
-                    .rotationEffect(.degrees((t.truncatingRemainder(dividingBy: 200) / 200) * 360))
+                // まわりの 4つの 下では 字を 消す(SE 幅で かさならない ように)
+                HomeRingText(text: HomeOrbRules.ringText(now: Date()), radius: 128,
+                             rotation: (t.truncatingRemainder(dividingBy: 200) / 200) * 2 * .pi,
+                             holes: plan.satellites.enumerated().map { HomeOrbRules.satelliteHole($0.element, index: $0.offset) })
                     .opacity(reveal)
                 // ガラスの球(ドットは うすい 光の粒)
                 globe(t: t, reveal: reveal)
@@ -737,6 +748,10 @@ private struct HomeOrbDots: View {
 struct HomeRingText: View {
     let text: String
     let radius: CGFloat
+    /// 回転(ラジアン)
+    var rotation: Double = 0
+    /// 字を 消す 場所(中心から の 矩形)。ふちから 6pt で ふわっと 消える
+    var holes: [CGRect] = []
 
     var body: some View {
         Canvas { ctx, size in
@@ -744,8 +759,11 @@ struct HomeRingText: View {
             let chars = Array(text)
             let step = 2 * Double.pi / Double(chars.count)
             for (i, ch) in chars.enumerated() {
-                let a = -Double.pi / 2 + Double(i) * step
+                let a = -Double.pi / 2 + Double(i) * step + rotation
+                let fade = HomeRingText.visibility(at: CGPoint(x: cos(a) * radius, y: sin(a) * radius), holes: holes)
+                if fade <= 0 { continue }
                 var inner = ctx
+                inner.opacity = fade
                 inner.translateBy(x: c.x + cos(a) * radius, y: c.y + sin(a) * radius)
                 inner.rotate(by: .radians(a + .pi / 2))
                 inner.draw(Text(String(ch)).font(.system(size: 8, design: .monospaced)).foregroundColor(Color(hex: "A9A6B0")), at: .zero)
@@ -754,6 +772,16 @@ struct HomeRingText: View {
         .frame(width: radius * 2 + 20, height: radius * 2 + 20)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    /// 0 = 穴の中、1 = 穴から 6pt 以上 はなれている
+    static func visibility(at p: CGPoint, holes: [CGRect]) -> Double {
+        var v = 1.0
+        for r in holes {
+            let dx = max(r.minX - p.x, 0, p.x - r.maxX), dy = max(r.minY - p.y, 0, p.y - r.maxY)
+            v = min(v, min(1, Double((dx * dx + dy * dy).squareRoot()) / 6))
+        }
+        return v
     }
 }
 

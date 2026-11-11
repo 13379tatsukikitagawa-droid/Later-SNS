@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import Later_再度
@@ -83,5 +84,19 @@ struct HomeOrbRulesTests {
         #expect(HomeOrbAction.yesterday.title == "Yesterday")
         #expect(HomeOrbAction.newGroup.title == "New group")
         #expect(HomeOrbAction.newGroup.label == "NEW GROUP")
+    }
+
+    @Test func 文字の輪は_まわりの_下で_消える() {
+        let holes = (0..<4).map { HomeOrbRules.satelliteHole(.newGroup, index: $0) }
+        // まわりの 4つの 方向(半径 128)では 消える
+        for o in HomeOrbRules.satelliteOffsets {
+            let a = atan2(Double(o.height), Double(o.width))
+            #expect(HomeRingText.visibility(at: CGPoint(x: cos(a) * 128, y: sin(a) * 128), holes: holes) == 0)
+        }
+        // 真上・真下は 見える
+        #expect(HomeRingText.visibility(at: CGPoint(x: 0, y: -128), holes: holes) == 1)
+        #expect(HomeRingText.visibility(at: CGPoint(x: 0, y: 128), holes: holes) == 1)
+        // 長い 字ほど 広い
+        #expect(HomeOrbRules.satelliteHole(.newGroup, index: 0).width > HomeOrbRules.satelliteHole(.chat, index: 0).width)
     }
 }
