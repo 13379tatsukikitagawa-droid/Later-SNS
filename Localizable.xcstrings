@@ -307,6 +307,40 @@
         }
       }
     },
+    "home.orb.locked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shoot 1 today to open"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日 1枚 撮ると、ひらきます"
+          }
+        }
+      }
+    },
+    "home.orb.tomorrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See you tomorrow"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "また あした"
+          }
+        }
+      }
+    },
     "notification.chat.new": {
       "extractionState": "manual",
       "localizations": {

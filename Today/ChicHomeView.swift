@@ -172,8 +172,9 @@ struct ChicHomeView: View {
                 }
             })
         }
-        .task(id: initialDay) {
-            guard !initialDay else { return }
+        .task(id: isVisible) {
+            // v32:招待は 毎日 よむ(まんなかの 丸の Join)。Home が 前に 出るたびに
+            guard isVisible else { return }
             invites = await FriendCloud.inbox()
         }
         .fullScreenCover(isPresented: $showsDevelop) {
@@ -217,12 +218,15 @@ struct ChicHomeView: View {
         return VStack(spacing: 0) {
             Color.clear.frame(height: top + LaterHeader.height + 3)
 
-            HomeGlassOrb(used: used, initial: initial, dateText: HomeDevelopCard.stampText(now), isActive: isVisible && scroll.offset < 420,
-                         introStart: introStart, onTap: openMondo)
-                // はじめての 合図(orb):1枚 撮ったあと
-                .firstHint(.orb, eligible: hintsAllowed && used >= 1 && scroll.offset < 40, edge: .bottom, shape: .circle, onDark: palette.isNight, gap: 4)
+            // v32:まんなかの 丸 = 万能ボタン(いま いちばんの こと)
+            let orb = orbContext
+            HomeGlassOrb(input: orb.input, dateText: HomeDevelopCard.stampText(now), isActive: isVisible && scroll.offset < 420,
+                         centerName: orb.centerName, yesterdayPhoto: orb.yesterdayPhoto, introStart: introStart,
+                         onCenter: { runOrb($0, center: true) }, onSatellite: { runOrb($0, center: false) },
+                         onLocked: { v17Actions.toast(String(localized: "home.orb.locked")) },
+                         hintEligible: hintsAllowed && scroll.offset < 40)
                 .scaleEffect(orbScale * max(0.9, 1 - y / 2400))
-                .frame(height: 254 * orbScale)
+                .frame(height: HomeGlassOrb.height * orbScale)
                 .offset(y: y * 0.25)
                 .opacity(max(0.15, 1 - y / 420))
 
@@ -331,14 +335,70 @@ struct ChicHomeView: View {
         isVisible && launch == .finished && !introRunning && !isDiving && !showsLights && !showsDevelop && bump?.pending == nil
     }
 
-    private func openMondo() {
-        // 下の区画を見ているあいだ(40pt より下)は、玉のタップで MONDO へ行かない
+    // MARK: v32 まんなかの 丸
+
+    private struct OrbContext {
+        var input: HomeOrbRules.Input
+        var invite: FriendInviteCard?
+        var chatGroup: UUID?
+        var centerName: String?
+        var yesterdayPhoto: LaterPhoto?
+    }
+
+    /// 今の データから 丸の 入力を 組む(招待・新しい メッセージ・きのうの 自分の 1枚)
+    private var orbContext: OrbContext {
+        let used = FilmCounter.shared.used
+        let blocked = Set(blockedUsers.map(\.blockedCloudKitUserRecordName))
+        let me = CloudKitManager.current?.currentUserRecordName
+        let invite = invites.first { $0.status == .pending && $0.shareURL != nil }
+        let unread = groups.first { GroupChatStore.shared.hasUnread($0.id, me: me, blocked: blocked) }
+        let opened = OwnReveal.openedYesterdayCount(now: now)
+        let input = HomeOrbRules.Input(hasInvite: invite != nil, used: used, remaining: FilmCounter.shared.remaining,
+                                       hasUnread: unread != nil, hasGroups: !groups.isEmpty, openedYesterday: opened)
+        let center = HomeOrbRules.center(input)
+        var photo: LaterPhoto?
+        if center == .yesterday, opened > 0, let mine = UserProfile.current(from: profiles)?.photos,
+           let day = MERules.days(photos: mine, now: now).first(where: { $0.ago == 1 }) {
+            let open = day.shots.filter { $0.reveal.isOpen }
+            let kept = MEPickStore.pick(day: day.key)
+            let shot = open.first { $0.id == kept } ?? open.first
+            photo = shot.flatMap { s in mine.first { $0.id == s.photoID } }
+        }
+        let name: String? = switch center {
+        case .join: invite?.groupName
+        case .chat: unread?.name
+        default: nil
+        }
+        return OrbContext(input: input, invite: invite, chatGroup: (unread ?? groups.first)?.id, centerName: name, yesterdayPhoto: photo)
+    }
+
+    /// 丸(まんなか・まわり)の 行き先。処理は 今の ボタンと 同じ ものを 呼ぶだけ
+    private func runOrb(_ action: HomeOrbAction, center: Bool) {
+        // 下の区画を見ているあいだ(40pt より下)は、丸の タップで 動かない
         guard scroll.offset <= LayerMotion.orbTapLimit else { return }
-        if FilmCounter.shared.used > 0 {
-            Haptics.play(.pop)
-            onOrbTap()
-        } else {
-            Haptics.play(.warn)
+        let context = orbContext
+        switch action {
+        case .join:
+            guard let card = context.invite else { return }
+            guard let url = card.shareURL else { v17Actions.toast(String(localized: "darkroom.invite.expired")); return }
+            // 今の「入る」と 同じ(本人が 押したときだけ 共有を 受けいれる)
+            InviteCardStore.set(.accepted, for: card.id)
+            if let i = invites.firstIndex(where: { $0.id == card.id }) { invites[i].status = .accepted }
+            NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.link(url))
+        case .shoot:
+            v17Actions.shoot()
+        case .chat:
+            if let id = context.chatGroup { onOpenChat(id) } else { onCreateGroup() }
+        case .yesterday:
+            if center { onOrbTap() } else { v17Actions.openMondo() }
+        case .develop:
+            openDevelop()
+        case .newGroup:
+            onCreateGroup()
+        case .mondo:
+            v17Actions.openMondo()
+        case .friends:
+            v17Actions.openFriends()
         }
     }
 

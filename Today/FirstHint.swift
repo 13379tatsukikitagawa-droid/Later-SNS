@@ -19,7 +19,7 @@ enum FirstHintKey: String, CaseIterable, Sendable {
         case .unlock: "撮ると、きのうが 1枚 ひらく"
         case .tag: "ひとこと タグ。なくても OK"
         case .shoot: "ながおしで 撮る"
-        case .orb: "タップで、みんなの 今日"
+        case .orb: "まんなかは、いま いちばんの こと"
         case .keep: "長押しで、1年 のこす"
         case .grp: "ともだちと、見せあう"
         }

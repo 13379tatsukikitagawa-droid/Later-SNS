@@ -19,7 +19,7 @@ struct FirstHintTests {
         #expect(FirstHintKey.unlock.text == "撮ると、きのうが 1枚 ひらく")
         #expect(FirstHintKey.tag.text == "ひとこと タグ。なくても OK")
         #expect(FirstHintKey.shoot.text == "ながおしで 撮る")
-        #expect(FirstHintKey.orb.text == "タップで、みんなの 今日")
+        #expect(FirstHintKey.orb.text == "まんなかは、いま いちばんの こと")
         #expect(FirstHintKey.grp.text == "ともだちと、見せあう")
         #expect(FirstHintKey.shoot.dwell == 1.3)
         #expect(FirstHintKey.orb.dwell == 0.8)
