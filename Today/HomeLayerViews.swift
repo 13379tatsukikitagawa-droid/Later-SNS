@@ -514,7 +514,7 @@ struct LayerAvatar: View {
         }
     }
 
-    private static func colors(_ seed: UUID) -> [Color] {
+    static func colors(_ seed: UUID) -> [Color] {
         let palettes: [[String]] = [["FF9A4D", "FF5D73"], ["5DA9FF", "7A5CFF"], ["4CD6A8", "2E9BFF"], ["FFC93D", "FF7A3D"], ["C77DFF", "FF6FB5"]]
         let index = Int(seed.uuid.0) % palettes.count
         return palettes[index].map { Color(hex: $0) }

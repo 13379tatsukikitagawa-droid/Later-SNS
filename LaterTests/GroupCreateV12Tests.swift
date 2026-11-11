@@ -1,5 +1,6 @@
 import CloudKit
 import Foundation
+import SwiftData
 import SwiftUI
 import Testing
 import UIKit
@@ -20,14 +21,53 @@ struct GroupCreateV12Tests {
         #expect(GroupCreateName.status("") == .empty)
     }
 
-    @Test func 十二文字をこえても切らず_ボタンでへらしてと伝える() {
-        let long = "あいうえおかきくけこさしすせ" // 14
+    @Test func 十四文字をこえても切らず_つくるは押せない() {
+        let long = "あいうえおかきくけこさしすせそた" // 16
         #expect(GroupCreateName.clean(long) == long)
         #expect(GroupCreateName.status(long) == .over(2))
-        #expect(GroupCreateName.buttonTitle(.over(2)) == "2文字、へらしてね")
-        #expect(GroupCreateName.buttonTitle(.empty) == "名前を いれてね")
-        #expect(GroupCreateName.buttonTitle(.ok) == "つぎへ")
-        #expect(GroupCreateName.status("あいうえおかきくけこさし") == .ok) // ちょうど12
+        #expect(GroupCreateName.status("あいうえおかきくけこさしすせ") == .ok) // ちょうど14
+    }
+
+    @Test func つくるボタンの文字は友だちの数でかわる() {
+        #expect(GroupCreateName.createTitle(friends: 0, creating: false) == "つくる")
+        #expect(GroupCreateName.createTitle(friends: 3, creating: false) == "つくって 3人に おくる")
+        #expect(GroupCreateName.createTitle(friends: 3, creating: true) == "つくっています…")
+        #expect(GroupCreateName.pickedNote(0) == "あとでも OK")
+        #expect(GroupCreateName.pickedNote(3) == "3人 えらびました")
+    }
+
+    @Test func リンクは短く省略する() {
+        let url = URL(string: "https://www.icloud.com/share/0aBcDeFgHiJk")
+        #expect(GroupCreateName.shortLink(url) == "icloud.com/share/0aBcD…")
+        #expect(GroupCreateName.shortLink(nil) == "")
+    }
+
+    @Test func 玉の色は名前から決まり_未入力はオレンジとピンク() {
+        #expect(GroupCreateBlobPalette.index(for: "") == 0)
+        #expect(GroupCreateBlobPalette.pairs[0] == ["FF8A3D", "FF5FA2"])
+        #expect(GroupCreateBlobPalette.pairs.count == 8)
+        #expect(GroupCreateBlobPalette.index(for: "部活") == GroupCreateBlobPalette.index(for: " 部活 "))
+        for name in ["いつメン", "2-B", "ひみつ基地"] {
+            #expect((0..<8).contains(GroupCreateBlobPalette.index(for: name)))
+        }
+    }
+
+    @Test func 招待中は入るまで数える() throws {
+        let schema = Schema([LaterPhoto.self, LaterGroup.self, UserProfile.self, PhotoVote.self, BlockedUser.self, ExposureDay.self])
+        let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+        let context = container.mainContext
+        let defaults = UserDefaults(suiteName: "invite-sent-test")!
+        defaults.removePersistentDomain(forName: "invite-sent-test")
+        let group = LaterGroup(name: "ゼミ")
+        context.insert(group)
+        GroupInviteSentStore.add(["a", "b", "a"], to: group.id, defaults: defaults)
+        #expect(GroupInviteSentStore.ids(for: group.id, defaults: defaults) == ["a", "b"])
+        #expect(GroupInviteSentStore.pendingCount(for: group, defaults: defaults) == 2)
+        let joined = UserProfile(name: "b", username: "b")
+        joined.cloudKitUserRecordName = "b"
+        context.insert(joined)
+        _ = group.addMember(joined)
+        #expect(GroupInviteSentStore.pendingCount(for: group, defaults: defaults) == 1)
     }
 
     @Test func 改行は取る() {
@@ -38,7 +78,8 @@ struct GroupCreateV12Tests {
         let seeds = GroupCreateName.seeds(excluding: ["ゼミ", " 部活 "])
         #expect(!seeds.contains("ゼミ"))
         #expect(!seeds.contains("部活"))
-        #expect(seeds.contains("帰り道の4人"))
+        #expect(seeds.contains("いつメン"))
+        #expect(GroupCreateName.seeds == ["いつメン", "放課後クラブ", "部活", "2-B", "帰り道", "ひみつ基地", "推し活", "テスト前"])
     }
 
     @Test func 顔の色は8つ_今までの番号は変わらない() {

@@ -2,22 +2,24 @@ import SwiftUI
 import SwiftData
 import UIKit
 
-// MARK: - グループ作成(3ステップ・v12)
+// MARK: - グループ作成(v22:デザインだけ 作りなおし)
 
-// ① 名前 → ② 顔 → ③ 呼ぶ。上に進みのバー。昼は白・夜は黒(ThemeClock の palette にしたがう)。
-// グループが CloudKit に作られるのは、③の「つくって、リンクを送る」「あとで呼ぶ」を押した瞬間だけ。
-// 合言葉・リンクは、つくったあとに決まる(重ならないものをサーバーに登録するため)。
+// なまえ画面(友だちも えらべる)→ つくっている(演出)→ できた画面(リンク)。全面で ひらく。
+// 見た目・アニメーション・バイブだけを 変えた。保存(GroupSharingService.createGroup)・
+// リンク(GroupInviteService.link / makeLink)・招待文(InviteConfig.shareMessage)・
+// 招待カード(FriendCloud.sendInvites)は、今までの 関数を そのまま 呼ぶ。
+// 色・顔・人数の上限は ここでは 聞かない(あとで グループの 設定で 変えられる)。
 
 // MARK: 名前の決めごと(画面を持たない)
 
 enum GroupCreateName {
-    static let maxLength = 12
+    static let maxLength = 14
 
-    static let seeds = ["帰り道の4人", "朝活ぐみ", "しずかな会", "ゼミ", "部活", "クラス"]
+    static let seeds = ["いつメン", "放課後クラブ", "部活", "2-B", "帰り道", "ひみつ基地", "推し活", "テスト前"]
 
     enum Status: Equatable {
         case empty
-        /// 12文字をこえた(こえた文字数)
+        /// 14文字をこえた(こえた文字数)
         case over(Int)
         case ok
     }
@@ -42,14 +44,6 @@ enum GroupCreateName {
         return .ok
     }
 
-    static func buttonTitle(_ status: Status) -> String {
-        switch status {
-        case .empty: return "名前を いれてね"
-        case .over(let n): return "\(n)文字、へらしてね"
-        case .ok: return "つぎへ"
-        }
-    }
-
     /// もう使っている名前は出さない
     static func seeds(excluding names: [String]) -> [String] {
         let used = Set(names.map(finalize))
@@ -59,27 +53,113 @@ enum GroupCreateName {
     static func initial(_ input: String) -> String {
         String(finalize(input).prefix(1))
     }
+
+    /// 「つくる」ボタンの 文字(えらんだ 友だちの 数で かわる)
+    static func createTitle(friends: Int, creating: Bool) -> String {
+        if creating { return "つくっています…" }
+        return friends == 0 ? "つくる" : "つくって \(friends)人に おくる"
+    }
+
+    /// 見出し右の「3人 えらびました」(0人は「あとでも OK」)
+    static func pickedNote(_ count: Int) -> String {
+        count == 0 ? "あとでも OK" : "\(count)人 えらびました"
+    }
+
+    /// リンクの カプセルに 出す 短い 形(icloud.com/share/xxxxx…)
+    static func shortLink(_ url: URL?) -> String {
+        guard let url else { return "" }
+        var text = url.absoluteString
+        for prefix in ["https://", "http://", "www."] where text.hasPrefix(prefix) { text.removeFirst(prefix.count) }
+        let head = "icloud.com/share/"
+        if text.hasPrefix(head) {
+            let id = text.dropFirst(head.count)
+            return id.count > 5 ? head + id.prefix(5) + "…" : text
+        }
+        return text.count > 24 ? String(text.prefix(23)) + "…" : text
+    }
 }
 
-// MARK: 色(昼は白・夜は黒。文字と背景のコントラスト比 4.5 以上)
+// MARK: 色(昼は うすい クリーム・夜は ほぼ黒。文字と背景のコントラスト比 4.5 以上)
 
 struct GroupCreateColors {
     let night: Bool
 
-    var bg: Color { night ? Color(hex: "000000") : Color(hex: "FFFFFF") }
-    var ink: Color { night ? Color(hex: "FFFFFF") : Color(hex: "111114") }
-    var sub: Color { night ? Color(hex: "A9A9B1") : Color(hex: "5F5F66") }
-    var field: Color { night ? Color(hex: "1C1C1F") : Color(hex: "F3F3F6") }
-    var placeholder: Color { night ? Color(hex: "8E8E96") : Color(hex: "6B6B73") }
-    var line: Color { night ? Color(hex: "4A4A50") : Color(hex: "C9C9D1") }
-    var primaryBg: Color { night ? Color(hex: "FFFFFF") : Color(hex: "111114") }
-    var primaryText: Color { night ? Color(hex: "111114") : Color(hex: "FFFFFF") }
-    var disabledBg: Color { night ? Color(hex: "2C2C30") : Color(hex: "E3E3E8") }
-    var disabledText: Color { night ? Color(hex: "A9A9B1") : Color(hex: "5F5F66") }
+    var bg: Color { night ? Color(hex: "0B0B0E") : Color(hex: "FBF6EC") }
+    var ink: Color { night ? Color(hex: "F5F5F7") : Color(hex: "17151A") }
+    var sub: Color { night ? Color(hex: "A9A9B1") : Color(hex: "5E5A63") }
+    var field: Color { night ? Color(hex: "1C1C20").opacity(0.9) : Color.white.opacity(0.78) }
+    var placeholder: Color { night ? Color(hex: "8E8E96") : Color(hex: "6B6670") }
+    var line: Color { night ? Color(hex: "4A4A50") : Color(hex: "D8D0C2") }
+    var primaryBg: Color { night ? Color(hex: "F5F5F7") : Color(hex: "17151A") }
+    var primaryText: Color { night ? Color(hex: "17151A") : Color(hex: "FFFFFF") }
+    var disabledBg: Color { night ? Color(hex: "2C2C30") : Color(hex: "E6E0D6") }
+    var disabledText: Color { night ? Color(hex: "A9A9B1") : Color(hex: "5E5A63") }
     var accent: Color { night ? Color(hex: "FF8A3D") : Color(hex: "FF6A1A") }
     var warn: Color { night ? Color(hex: "FF7A66") : Color(hex: "D93A28") }
+    var warnCard: Color { night ? Color(hex: "3A1712") : Color(hex: "FDE3DE") }
 
     static let lineWidth: CGFloat = 1.5
+}
+
+/// 背景の 色の玉(グループ名の 文字から ハッシュ → 8組の 2色ペア。未入力は オレンジ → ピンク)
+enum GroupCreateBlobPalette {
+    static let pairs: [[String]] = [
+        ["FF8A3D", "FF5FA2"],
+        ["6AA8FF", "7BE0C8"],
+        ["FFD36E", "FF7A59"],
+        ["9AE6B4", "4FB3BF"],
+        ["C59BFF", "FF9ECF"],
+        ["FF9C8A", "B23A62"],
+        ["D7EC7A", "3E8E5A"],
+        ["7CC8FF", "8A6CF0"],
+    ]
+
+    /// 名前の 文字(Unicode)の 和で えらぶ(端末・起動を またいでも 同じ)
+    static func index(for name: String) -> Int {
+        let trimmed = GroupCreateName.finalize(name)
+        guard !trimmed.isEmpty else { return 0 }
+        let sum = trimmed.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0x7FFF_FFFF }
+        return sum % pairs.count
+    }
+
+    static func colors(for name: String) -> [Color] {
+        pairs[index(for: name)].map { Color(hex: $0) }
+    }
+}
+
+/// 友だちを えらんで 送った 招待カード(端末の中だけ。ホームの「招待中 N人」に 使う)。
+/// 本人が「入る」を 押して メンバーに なるまでは、数に 入れない
+enum GroupInviteSentStore {
+    private static let key = "groupInviteSent.v1"
+
+    static func ids(for groupID: UUID, defaults: UserDefaults = .standard) -> [String] {
+        (defaults.dictionary(forKey: key) as? [String: [String]])?[groupID.uuidString] ?? []
+    }
+
+    static func add(_ ids: [String], to groupID: UUID, defaults: UserDefaults = .standard) {
+        var all = defaults.dictionary(forKey: key) as? [String: [String]] ?? [:]
+        var list = all[groupID.uuidString] ?? []
+        for id in ids where !list.contains(id) { list.append(id) }
+        all[groupID.uuidString] = list
+        defaults.set(all, forKey: key)
+    }
+
+    /// まだ 入っていない 招待の 数(招待中)。だれも 招待して いなければ 0
+    static func pendingCount(for group: LaterGroup, defaults: UserDefaults = .standard) -> Int {
+        let joined = Set(group.members.compactMap(\.cloudKitUserRecordName))
+        return ids(for: group.id, defaults: defaults).filter { !joined.contains($0) }.count
+    }
+}
+
+/// 作成画面に 出す 友だち(HomeFriend から。id は CloudKit の ユーザー名 = 招待カードの あて先)
+struct GroupCreateFriend: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let avatarData: Data?
+    let seed: UUID
+
+    var initial: String { String(name.trimmingCharacters(in: .whitespaces).prefix(1)) }
+    var colors: [Color] { LayerAvatar.colors(seed) }
 }
 
 // MARK: - 本体
@@ -87,122 +167,152 @@ struct GroupCreateColors {
 struct NewGroupFlowView: View {
     /// 最初から入れておくグループ名(空の GROUP 画面のステッカーから。nil なら空)
     var initialName: String? = nil
-    /// 見た目の確認用:はじめのステップ(1・2。3 は「できました」)
-    var startStep: Int = 1
+    /// えらべる 友だち(自分を のぞく)
+    var friends: [GroupCreateFriend] = []
+    /// 見た目の確認用(テスト):はじめの 場面
+    var preview: Preview? = nil
+    /// できた画面を とじた(ホームで「「{name}」を つくりました」)
+    var onCreated: (String) -> Void = { _ in }
     let onClose: () -> Void
 
-    /// ① 名前 → ② 顔と人数(ここで「つくる」)→ できました(合言葉・リンク)。進みの棒は2本
-    private enum Step: Int { case name = 1, face, done }
-    private static let stepCount = 2
+    enum Preview: Equatable {
+        case name
+        case creating
+        case doneLink
+        case doneFriends
+        case failed
+    }
+
+    /// なまえ → つくっている → できた / うまく いかなかった
+    enum Phase: Equatable {
+        case name, creating, done, failed
+    }
+
+    /// 失敗の しゅるい(もういちど で やりなおす ところ)
+    enum FailureKind: Equatable {
+        /// グループの 保存(グループは 作られていない → なまえ画面へ)
+        case save
+        /// リンク(グループは 保存ずみ → リンクだけ つくりなおす)
+        case link
+        /// 招待カード(グループは 保存ずみ → カードだけ 送りなおす)
+        case cards
+    }
+
+    struct Failure: Equatable {
+        let kind: FailureKind
+        /// 実際の エラー内容(CKError など。長押しで コピー)
+        let detail: String
+    }
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.palette) private var palette
     @Query private var profiles: [UserProfile]
 
-    @State private var step: Step = .name
+    @State private var phase: Phase = .name
     @State private var name = ""
     @State private var isComposing = false
     @State private var isNameFocused = false
     @State private var keyboardUp = false
-    @State private var scrollHeight: CGFloat = 600
-    @State private var fieldShake = 0
-    @State private var buttonShake = 0
-    @State private var wasOver = false
-    @State private var discBump = false
+    @State private var picked: [String] = []
+    @State private var toast: String?
 
-    @State private var faceStyle = GroupFaceStyle.aura
-    /// 手で選んだ色(nil なら名前から決める)
-    @State private var chosenColor: Int?
-    @State private var showsInitial = true
-    @State private var memberLimit = GroupMembershipPolicy.maxMembersPerGroup
+    // 演出
+    @State private var bounce = 0
+    @State private var flashSeat: Int?
+    @State private var flashToken = 0
+    @State private var gather: CGFloat = 0
+    @State private var glow: Double = 0
+    @State private var glowLoop = false
+    @State private var confettiStart: Date?
+    @State private var appearedAt = Date()
+    /// 画面の 高さ(SE など 低い 画面では、まんなかを ちぢめる)
+    @State private var screenHeight: CGFloat = 852
 
+    // 作成
     @State private var isCreating = false
-    /// 作成に 15秒 以上 かかっている
-    @State private var slowCreating = false
-    @State private var burst = false
-    @State private var burstExpanded = false
-    @State private var errorMessage: String?
+    @State private var failure: Failure?
+    @State private var retrying = false
     @State private var createdGroup: LaterGroup?
-    /// 作ったあと:前の完了画面(GroupCreatedShareView)を出す
-    @State private var showingCreatedShare = false
     @State private var createdShareURL: URL?
-    /// iCloud の容量不足で、写真だけ除いて作れたときの注意文言
-    @State private var createdWarning: String?
-    @State private var passphrase: String?
     @State private var inviteLink: URL?
-    @State private var shareItems: ShareItems?
-    @State private var copied: String?
-    @State private var doneAppeared = false
+    @State private var passphrase: String?
+    @State private var invited: [String] = []
+    @State private var showingShare = false
+    @State private var copied = false
     @State private var haptics = ExposureHaptics()
-
-    private struct ShareItems: Identifiable {
-        let id = UUID()
-        let items: [Any]
-    }
 
     private var colors: GroupCreateColors { GroupCreateColors(night: palette.isNight) }
     private var currentUser: UserProfile? { UserProfile.current(from: profiles) }
     private var finalName: String { GroupCreateName.finalize(name) }
     private var nameStatus: GroupCreateName.Status { GroupCreateName.status(name) }
-    private var colorIndex: Int { chosenColor ?? GroupPalette.index(forName: finalName) }
-    private var shownInitial: String { showsInitial ? GroupCreateName.initial(name) : "" }
+    private var shownName: String { createdGroup?.name ?? finalName }
     private var myGroupNames: [String] { currentUser?.groups.filter { !$0.isPersonalSpace }.map(\.name) ?? [] }
     /// 10個のときは、つくらせない
     private var isFull: Bool { myGroupNames.count >= GroupMembershipPolicy.maxGroupsPerUser && createdGroup == nil }
+    private var canCreate: Bool { nameStatus == .ok && !isCreating && !isFull }
+    private var animates: Bool { !reduceMotion }
+
+    /// できた画面で 使う リンク(今までと 同じ:CKShare の URL を later://join で つつむ)
+    private var joinLink: URL? {
+        guard let createdShareURL else { return nil }
+        return GroupJoinLink.buildURL(shareURL: createdShareURL) ?? createdShareURL
+    }
+
+    /// 招待文(全文。今までと 同じ 文面)
+    private var shareMessage: String {
+        guard let joinLink else { return "" }
+        return InviteConfig.shareMessage(groupName: shownName, url: joinLink)
+    }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            colors.bg.ignoresSafeArea()
+        ZStack {
+            GroupCreateBackdrop(colors: GroupCreateBlobPalette.colors(for: name), bg: colors.bg, night: colors.night, animates: animates)
+                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
-                GeometryReader { proxy in
-                    ScrollViewReader { reader in
-                        ScrollView {
-                            content
-                                .id(step)
-                                .transition(.opacity)
-                                .padding(.bottom, 16)
-                                .frame(maxWidth: .infinity)
-                                .background {
-                                    // 空いている所を押すと、キーボードを閉じる(たね・×では閉じない)
-                                    Color.clear.contentShape(Rectangle()).onTapGesture { isNameFocused = false }
-                                }
-                        }
-                        .scrollDismissesKeyboard(.interactively)
-                        .scrollBounceBehavior(.basedOnSize)
-                        .onChange(of: keyboardUp) { _, up in
-                            if up, step == .name {
-                                withAnimation(.easeOut(duration: 0.25)) { reader.scrollTo("nameField", anchor: .center) }
-                            }
-                        }
+                ScrollView {
+                    VStack(spacing: 0) {
+                        stage
+                        content
                     }
-                    .onAppear { scrollHeight = proxy.size.height }
-                    .onChange(of: proxy.size.height) { _, h in scrollHeight = h }
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 16)
                 }
+                .scrollDismissesKeyboard(.interactively)
+                .scrollBounceBehavior(.basedOnSize)
+                .scrollIndicators(.hidden)
             }
-            // 「つぎへ」はキーボードのすぐ上に固定(キーボードの高さは OS から)
+            // 「つくる」は 下に 固定(キーボードの すぐ上に ついてくる)
             .safeAreaInset(edge: .bottom) { bottomArea }
 
-            if burst {
-                Circle()
-                    .fill(RadialGradient(colors: [.white, Color(hex: "FFD2AE"), .clear], center: .center, startRadius: 0, endRadius: 40))
-                    .frame(width: 80, height: 80)
-                    .scaleEffect(burstExpanded ? 20 : 0.5)
-                    .opacity(burstExpanded ? 0 : 1)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if let confettiStart, animates {
+                GroupConfetti(start: confettiStart)
                     .allowsHitTesting(false)
                     .ignoresSafeArea()
             }
+
+            if let toast {
+                Text(toast)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(colors.primaryText)
+                    .padding(.horizontal, 18).padding(.vertical, 11)
+                    .background(Capsule().fill(colors.primaryBg))
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 64)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .allowsHitTesting(false)
+            }
         }
-        // ステータスバー・キーボードも、画面の色にあわせる
+        .background(GeometryReader { proxy in
+            Color.clear
+                .onAppear { screenHeight = proxy.size.height }
+                .onChange(of: proxy.size.height) { _, h in if !keyboardUp { screenHeight = h } }
+        })
         .preferredColorScheme(colors.night ? .dark : .light)
-        .onAppear {
-            haptics.prepare()
-            if let initialName, name.isEmpty { name = GroupCreateName.clean(initialName) }
-            if let first = Step(rawValue: startStep), first != .name { step = first }
-        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: toast)
+        .onAppear(perform: appear)
         .onDisappear { haptics.tearDown() }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             withAnimation(.easeOut(duration: 0.25)) { keyboardUp = true }
@@ -210,686 +320,675 @@ struct NewGroupFlowView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeOut(duration: 0.25)) { keyboardUp = false }
         }
-        .sheet(item: $shareItems) { share in
-            ShareSheet(activityItems: share.items) { _ in shareItems = nil }
-                .presentationDetents([.medium, .large])
-        }
-        // 作ったあとは、前の完了画面(招待リンクを送る / リンクをコピー / あとで送る)。閉じたら、作成の画面ごと閉じる
-        .sheet(isPresented: $showingCreatedShare, onDismiss: onClose) {
-            GroupCreatedShareView(groupName: createdGroup?.name ?? finalName, shareURL: createdShareURL, warningMessage: createdWarning,
-                                  makeLink: createdGroup.map { group in
-                                      { await Self.makeLink(for: group, context: modelContext).flatMap { InviteConfig.shareURL(from: $0) } }
-                                  })
+        .sheet(isPresented: $showingShare) {
+            // 今までと 同じ:アイコンつきの 招待文(全文)を 渡す
+            ShareSheet(activityItems: [
+                ShareLinkItemSource(text: shareMessage, title: "「\(shownName)」に招待されました。")
+            ]) { _ in showingShare = false }
+            .presentationDetents([.medium, .large])
         }
     }
 
-    // MARK: 上(× / ← ・「1 / 3」・進みのバー)
+    // MARK: 上(×)
 
     private var topBar: some View {
-        VStack(spacing: 10) {
-            HStack {
-                switch step {
-                case .name:
-                    circleButton("xmark", label: "とじる", action: onClose)
-                case .face:
-                    if isCreating {
-                        // つくっている間は、もどらない(連打・二重作成を防ぐ)
-                        Color.clear.frame(width: 44, height: 44)
-                    } else {
-                        circleButton("arrow.left", label: "もどる") { go(to: .name) }
-                    }
-                case .done:
-                    // もう作ってあるので「もどる」ではなく「閉じる」
-                    circleButton("xmark", label: "とじる", action: onClose)
-                }
-                Spacer()
-                if step != .done {
-                    Text("\(step.rawValue) / \(Self.stepCount)")
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(colors.sub)
-                        .accessibilityHidden(true)
-                }
+        HStack {
+            Button(action: closeTapped) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(colors.ink)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(colors.field))
+                    .overlay(Circle().strokeBorder(colors.line.opacity(0.6), lineWidth: 1))
             }
-            if step != .done {
-                HStack(spacing: 6) {
-                    ForEach(1...Self.stepCount, id: \.self) { index in
-                        Capsule()
-                            .fill(index <= step.rawValue ? colors.ink : colors.line)
-                            .frame(height: 3)
-                    }
-                }
-                .accessibilityElement()
-                .accessibilityLabel("ステップ \(step.rawValue) / \(Self.stepCount)")
-            }
+            .buttonStyle(PressScaleStyle())
+            .opacity(isCreating ? 0.35 : 1)
+            .disabled(isCreating)
+            .accessibilityLabel("とじる")
+            Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 18)
         .padding(.top, 6)
-        .padding(.bottom, 4)
     }
 
-    private func circleButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(colors.ink)
-                .frame(width: 44, height: 44)
-                .background(Circle().fill(colors.field))
-                .overlay(Circle().strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
+    // MARK: まんなか(アバター + 席)
+
+    private var stage: some View {
+        let compact = keyboardUp && phase == .name
+        // 低い 画面(SE)では 0.8倍。キーボード中は さらに 小さく
+        let scale: CGFloat = compact ? 0.62 : (screenHeight < 720 ? 0.8 : 1)
+        return GroupCreateStage(
+            initial: phase == .name || phase == .creating ? GroupCreateName.initial(name) : GroupCreateName.initial(shownName),
+            avatarColors: GroupCreateBlobPalette.colors(for: name),
+            seats: seats,
+            flashSeat: flashSeat,
+            flashToken: flashToken,
+            bounce: bounce,
+            gather: gather,
+            glow: glow,
+            glowLoop: glowLoop,
+            animates: animates,
+            ink: colors.ink,
+            seatLine: colors.sub
+        )
+        .scaleEffect(scale)
+        .frame(height: GroupCreateStage.box * scale)
+        .padding(.top, compact ? 0 : 8)
+        .accessibilityHidden(true)
+    }
+
+    /// 席(7つ)。なまえ画面では えらんだ 友だちが 順に 入る。できた画面では 1つ目が ホスト本人
+    private var seats: [GroupCreateSeat] {
+        let chosen = picked.compactMap { id in friends.first { $0.id == id } }
+        switch phase {
+        case .name, .creating, .failed:
+            var list: [GroupCreateSeat] = chosen.map { .friend(initial: $0.initial, colors: $0.colors, pending: false) }
+            while list.count < 7 { list.append(.empty) }
+            return list
+        case .done:
+            let joined = Set(createdGroup?.members.compactMap(\.cloudKitUserRecordName) ?? [])
+            var list: [GroupCreateSeat] = [.host(initial: GroupCreateName.initial(shownName), colors: GroupCreateBlobPalette.colors(for: name))]
+            for id in invited {
+                guard let friend = friends.first(where: { $0.id == id }) else { continue }
+                list.append(.friend(initial: friend.initial, colors: friend.colors, pending: !joined.contains(id)))
+            }
+            while list.count < 7 { list.append(.empty) }
+            return list
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
     }
 
     @ViewBuilder
     private var content: some View {
-        switch step {
-        case .name: nameStep
-        case .face: faceStep
-        case .done: doneStep
+        switch phase {
+        case .name, .creating: nameContent
+        case .done: doneContent
+        case .failed: failedContent
         }
     }
 
-    // MARK: ① 名前
+    // MARK: 1. なまえ画面
 
-    /// キーボード中で、高さが足りない(iPhone SE など)ときは、プレビューを消す
-    private var hidesPreview: Bool { keyboardUp && scrollHeight < 300 }
-
-    private var nameStep: some View {
+    private var nameContent: some View {
         VStack(spacing: 0) {
-            if !hidesPreview {
-                GroupCircle(initial: GroupCreateName.initial(name), colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1,
-                            diameter: keyboardUp ? 76 : 200, rotates: !keyboardUp, discScale: discBump ? 1.04 : 1, ringInk: colors.ink)
-                    .padding(.top, keyboardUp ? 4 : 14)
-                    .accessibilityHidden(true)
-            }
-            Text(keyboardUp ? "グループに、名前をつけます。" : "グループに、\n名前をつけます。")
-                .font(.system(size: keyboardUp ? 19 : 27, weight: .bold))
-                .tracking(-0.04 * 27)
-                .multilineTextAlignment(.center)
+            Text("なまえを つけよう")
+                .font(.system(size: keyboardUp ? 22 : 28, weight: .heavy))
+                .tracking(-0.03 * 28)
                 .foregroundStyle(colors.ink)
-                .lineLimit(keyboardUp ? 1 : 2)
-                .minimumScaleFactor(0.8)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 24)
-                .padding(.top, keyboardUp ? 8 : 18)
+                .padding(.top, keyboardUp ? 2 : 14)
                 .accessibilityAddTraits(.isHeader)
 
             nameField
-                .id("nameField")
-                .padding(.horizontal, 20)
-                .padding(.top, keyboardUp ? 10 : 20)
+                .padding(.horizontal, 24)
+                .padding(.top, keyboardUp ? 10 : 16)
 
-            seedsView
-                .padding(.top, keyboardUp ? 10 : 18)
+            seedChips
+                .padding(.top, 14)
 
-            if !keyboardUp {
-                Text("みんなに見える名前です。実名や学校名は避けましょう。")
-                    .font(.system(size: 12))
-                    .foregroundStyle(colors.sub)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 18)
-            }
+            friendsRow
+                .padding(.top, 22)
         }
+        // つくっている間は、上へ うすく 消える
+        .opacity(phase == .creating ? 0 : 1)
+        .offset(y: phase == .creating && animates ? -24 : 0)
+        .allowsHitTesting(phase == .name)
     }
 
     private var nameField: some View {
         let over: Bool = { if case .over = nameStatus { return true } else { return false } }()
         let count = GroupCreateName.count(name)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("グループの名前")
-                Spacer()
-                Text("\(count) / \(GroupCreateName.maxLength)")
-                    .monospacedDigit()
-                    .foregroundStyle(over ? colors.warn : colors.sub)
-                    .fontWeight(over ? .bold : .regular)
-            }
-            .font(.system(size: 12, design: .monospaced))
-            .foregroundStyle(colors.sub)
-            .accessibilityHidden(true)
-            HStack(spacing: 8) {
-                GroupNameTextField(
-                    text: $name,
-                    isFocused: $isNameFocused,
-                    isComposing: $isComposing,
-                    placeholder: "たとえば「帰り道の4人」",
-                    textColor: UIColor(colors.ink),
-                    placeholderColor: UIColor(colors.placeholder),
-                    tintColor: UIColor(colors.accent),
-                    dark: colors.night,
-                    accessibilityValue: "\(count)文字、\(GroupCreateName.maxLength)文字まで",
-                    onSubmit: submitName
-                )
-                .frame(height: 40)
-                if !name.isEmpty {
-                    Button {
-                        LayerHaptics.light()
-                        name = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(colors.sub)
-                            .frame(width: 36, height: 36)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("名前を消す")
-                }
-            }
+        return VStack(spacing: 6) {
+            GroupNameTextField(
+                text: $name,
+                isFocused: $isNameFocused,
+                isComposing: $isComposing,
+                placeholder: "グループの なまえ",
+                textColor: UIColor(colors.ink),
+                placeholderColor: UIColor(colors.placeholder),
+                tintColor: UIColor(colors.accent),
+                dark: colors.night,
+                accessibilityValue: "\(count)文字、\(GroupCreateName.maxLength)文字まで",
+                alignment: .center,
+                fontSize: 30,
+                returnKey: .done,
+                onSubmit: submit
+            )
+            .frame(height: 48)
+            Rectangle().fill(over ? colors.warn : colors.line).frame(height: 1.5)
+            Text("\(count) / \(GroupCreateName.maxLength)")
+                .font(.system(size: 12, weight: over ? .bold : .regular, design: .monospaced))
+                .monospacedDigit()
+                .foregroundStyle(over ? colors.warn : colors.sub)
+                .accessibilityHidden(true)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.field))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(over ? colors.warn : (isNameFocused ? colors.accent : colors.line), lineWidth: GroupCreateColors.lineWidth)
-        )
-        .modifier(GroupCreateShake(trigger: fieldShake, enabled: !reduceMotion))
         .contentShape(Rectangle())
         .onTapGesture { isNameFocused = true }
-        .onChange(of: name) { _, value in
+        .onChange(of: name) { old, value in
             let clean = GroupCreateName.clean(value)
             if clean != value { name = clean; return }
-            bumpDisc()
-            checkOver()
-        }
-        .onChange(of: isComposing) { _, _ in checkOver() }
-    }
-
-    private var seedsView: some View {
-        let seeds = GroupCreateName.seeds(excluding: myGroupNames)
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("思いつかないときは")
-                .font(.system(size: 12))
-                .foregroundStyle(colors.sub)
-                .padding(.horizontal, 24)
-            if keyboardUp {
-                // キーボード中は1行(横にスクロール)にまとめる
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) { ForEach(seeds, id: \.self, content: seedChip) }
-                        .padding(.horizontal, 20)
-                }
-            } else {
-                OnboardingFlowLayout(spacing: 8) { ForEach(seeds, id: \.self, content: seedChip) }
-                    .padding(.horizontal, 20)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func seedChip(_ seed: String) -> some View {
-        Button {
-            LayerHaptics.light()
-            name = seed
-        } label: {
-            Text(seed)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(colors.ink)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 38)
-                .background(Capsule().fill(colors.field))
-                .overlay(Capsule().strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
-        }
-        .buttonStyle(PressScaleStyle())
-        .accessibilityLabel("名前のたね、\(seed)")
-    }
-
-    private func submitName() {
-        // 変換を確定するだけの Enter では進まない(isComposing は入力欄が見る)
-        guard nameStatus == .ok else {
-            refuse()
-            return
-        }
-        LayerHaptics.light()
-        go(to: .face)
-    }
-
-    /// 12文字をこえた瞬間:やわらかく2回 + 入力欄がゆれる(変換中は待つ)
-    private func checkOver() {
-        let over: Bool = { if case .over = nameStatus { return true } else { return false } }()
-        guard !isComposing else { return }
-        if over && !wasOver {
-            LayerHaptics.softDouble()
-            fieldShake += 1
-        }
-        wasOver = over
-    }
-
-    /// 押せない「つぎへ」:やわらかく2回 + ボタンがゆれる + 入力欄にもどる
-    private func refuse() {
-        LayerHaptics.softDouble()
-        buttonShake += 1
-        isNameFocused = true
-        if UIAccessibility.isVoiceOverRunning {
-            UIAccessibility.post(notification: .announcement, argument: GroupCreateName.buttonTitle(nameStatus))
+            typed(old: old, new: value)
         }
     }
 
-    // MARK: ② 顔
-
-    private var faceStep: some View {
-        VStack(spacing: 0) {
-            GroupCircle(initial: shownInitial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: 1,
-                        diameter: 200, discScale: discBump ? 1.04 : 1, ringInk: colors.ink)
-                .overlay(alignment: .bottomTrailing) {
-                    if faceStyle == GroupFaceStyle.photo {
-                        Image(systemName: "photo.stack.fill")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(colors.primaryText)
-                            .frame(width: 34, height: 34)
-                            .background(Circle().fill(colors.primaryBg))
-                            .offset(x: -26, y: -26)
-                            .accessibilityHidden(true)
-                    }
-                }
-                .padding(.top, 10)
-                .accessibilityElement()
-                .accessibilityLabel("グループの顔のプレビュー")
-
-            Text("グループの、顔を決めます。")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(colors.ink)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-                .accessibilityAddTraits(.isHeader)
-
-            // しゅるい
+    private var seedChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                kindButton(GroupFaceStyle.aura, "色", "circle.lefthalf.filled")
-                kindButton(GroupFaceStyle.photo, "みんなの写真", "photo.stack")
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-
-            if faceStyle == GroupFaceStyle.photo {
-                Text("みんなが撮った今日の写真が、グループの顔になります。まだ1枚もないときは、色が出ます。")
-                    .font(.system(size: 13))
-                    .foregroundStyle(colors.sub)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-            }
-
-            card(title: faceStyle == GroupFaceStyle.photo ? "写真がない日の色" : "色") { swatches }
-                .padding(.top, 14)
-
-            card(title: nil) {
-                Toggle(isOn: Binding(get: { showsInitial }, set: { value in
-                    LayerHaptics.light()
-                    withAnimation(.easeOut(duration: 0.2)) { showsInitial = value }
-                })) {
-                    Text("名前の1文字目を入れる")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(colors.ink)
-                }
-                .tint(colors.accent)
-            }
-            .padding(.top, 10)
-
-            card(title: "人数の上限") { limitPicker }
-                .padding(.top, 10)
-        }
-    }
-
-    private func card<Inner: View>(title: String?, @ViewBuilder inner: () -> Inner) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if let title {
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(colors.sub)
-            }
-            inner()
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(colors.field))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
-        .padding(.horizontal, 20)
-    }
-
-    private func kindButton(_ value: String, _ title: String, _ icon: String) -> some View {
-        let selected = faceStyle == value
-        return Button {
-            guard !selected else { return }
-            LayerHaptics.light()
-            withAnimation(.easeOut(duration: 0.2)) { faceStyle = value }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 13, weight: .semibold))
-                Text(title).font(.system(size: 14, weight: .semibold))
-            }
-            .foregroundStyle(selected ? colors.primaryText : colors.ink)
-            .frame(maxWidth: .infinity, minHeight: 46)
-            .background(Capsule().fill(selected ? colors.primaryBg : colors.field))
-            .overlay(Capsule().strokeBorder(selected ? Color.clear : colors.line, lineWidth: GroupCreateColors.lineWidth))
-        }
-        .buttonStyle(PressScaleStyle())
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
-    private var swatches: some View {
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
-        return LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(0..<GroupPalette.count, id: \.self) { index in
-                let palette = GroupRingMath.auraPalettes[index]
-                let selected = colorIndex == index
-                Button {
-                    LayerHaptics.light()
-                    withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6)) { chosenColor = index }
-                    bumpDisc()
-                } label: {
-                    Circle()
-                        .fill(LinearGradient(colors: [palette[0], palette[1]], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 44, height: 44)
-                        .overlay(Circle().strokeBorder(colors.ink, lineWidth: selected ? 2.5 : 0).padding(-5))
-                        .scaleEffect(selected && !reduceMotion ? 1.12 : 1)
-                        .frame(maxWidth: .infinity, minHeight: 56)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("顔の色 \(index + 1)")
-                .accessibilityAddTraits(selected ? .isSelected : [])
-            }
-        }
-    }
-
-    private var limitPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                ForEach(Array(GroupMembershipPolicy.memberLimitRange), id: \.self) { value in
-                    let selected = memberLimit == value
+                ForEach(GroupCreateName.seeds(excluding: myGroupNames), id: \.self) { seed in
                     Button {
-                        LayerHaptics.light()
-                        withAnimation(.easeOut(duration: 0.2)) { memberLimit = value }
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        name = seed
                     } label: {
-                        Text("\(value)")
-                            .font(.system(size: 17, weight: .bold))
-                            .monospacedDigit()
-                            .foregroundStyle(selected ? colors.primaryText : colors.ink)
-                            .frame(maxWidth: .infinity, minHeight: 46)
-                            .background(Capsule().fill(selected ? colors.primaryBg : colors.bg))
-                            .overlay(Capsule().strokeBorder(selected ? Color.clear : colors.line, lineWidth: GroupCreateColors.lineWidth))
+                        Text(seed)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(colors.ink)
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 36)
+                            .background(Capsule().fill(colors.field))
+                            .overlay(Capsule().strokeBorder(colors.line.opacity(0.7), lineWidth: 1))
                     }
                     .buttonStyle(PressScaleStyle())
-                    .accessibilityLabel("\(value)人まで")
-                    .accessibilityAddTraits(selected ? .isSelected : [])
+                    .accessibilityLabel("なまえの 候補、\(seed)")
                 }
             }
-            Text("あとから変えられます")
-                .font(.system(size: 12))
-                .foregroundStyle(colors.sub)
+            .padding(.horizontal, 24)
         }
     }
 
-    // MARK: できました(つくったあと):合言葉・リンク
-
-    private var doneStep: some View {
-        let members = max(1, createdGroup?.members.count ?? 1)
-        return VStack(spacing: 0) {
-            GroupCircle(image: nil, initial: shownInitial, colorIndex: colorIndex, memberLimit: memberLimit, litCount: members,
-                        diameter: 150, discScale: discBump ? 1.04 : 1, ringInk: colors.ink)
-                .padding(.top, 8)
-                .accessibilityHidden(true)
-
-            Text("できました。\nなかまを、呼びましょう。")
-                .font(.system(size: 26, weight: .bold))
-                .tracking(-0.03 * 26)
-                .foregroundStyle(colors.ink)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .accessibilityAddTraits(.isHeader)
-                .modifier(DoneStagger(index: 0, appeared: doneAppeared, reduceMotion: reduceMotion))
-
-            VStack(spacing: 4) {
-                Text(createdGroup?.name ?? finalName)
-                    .font(.system(size: 17, weight: .bold))
+    private var friendsRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("ともだちも よぶ")
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(colors.ink)
-                Text("\(memberLimit)人まで ・ いま \(members)人")
+                Spacer()
+                Text(GroupCreateName.pickedNote(picked.count))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(colors.sub)
+                    .contentTransition(.numericText())
+            }
+            .padding(.horizontal, 24)
+            if friends.isEmpty {
+                Text("まだ ともだちが いません。あとで リンクで よべます")
                     .font(.system(size: 13))
-                    .monospacedDigit()
                     .foregroundStyle(colors.sub)
-            }
-            .padding(.top, 10)
-            .accessibilityElement(children: .combine)
-            .modifier(DoneStagger(index: 1, appeared: doneAppeared, reduceMotion: reduceMotion))
-
-            VStack(spacing: 10) {
-                copyRow(title: "合言葉", value: passphrase, icon: "key")
-                copyRow(title: "招待リンク", value: inviteLink?.absoluteString, icon: "link")
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .modifier(DoneStagger(index: 2, appeared: doneAppeared, reduceMotion: reduceMotion))
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(colors.warn)
-                    .cloudDiagnosticsOnLongPress()
-                    .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .padding(.top, 12)
-                    .transition(.opacity)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 14) {
+                        ForEach(friends) { friend in friendButton(friend) }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 4)
+                }
             }
         }
-        .onAppear { doneAppeared = true }
     }
 
-    private func copyRow(title: String, value: String?, icon: String) -> some View {
-        let ready = value != nil
-        let pending = "用意しています…"
-        return HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(colors.sub)
-                .frame(width: 22)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 12))
-                    .foregroundStyle(colors.sub)
-                Text(value ?? pending)
-                    .font(.system(size: ready ? 15 : 14, weight: ready ? .bold : .regular, design: ready ? .monospaced : .default))
-                    .foregroundStyle(ready ? colors.ink : colors.sub)
+    private func friendButton(_ friend: GroupCreateFriend) -> some View {
+        let on = picked.contains(friend.id)
+        return Button { toggle(friend) } label: {
+            VStack(spacing: 6) {
+                LayerAvatar(data: friend.avatarData, seed: friend.seed, name: friend.name)
+                    .frame(width: 52, height: 52)
+                    .padding(3)
+                    .overlay(Circle().strokeBorder(on ? colors.ink : Color.clear, lineWidth: 2.5))
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .heavy))
+                            .foregroundStyle(colors.primaryText)
+                            .frame(width: 20, height: 20)
+                            .background(Circle().fill(colors.primaryBg))
+                            .scaleEffect(on ? 1 : 0.01)
+                            .opacity(on ? 1 : 0)
+                            .animation(animates ? .spring(response: 0.35, dampingFraction: 0.55) : nil, value: on)
+                    }
+                Text(friend.name)
+                    .font(.system(size: 11.5, weight: .bold))
+                    .foregroundStyle(colors.ink)
                     .lineLimit(1)
-                    .truncationMode(.middle)
+                    .frame(width: 64)
             }
-            Spacer(minLength: 8)
-            Button {
-                guard let value else { return }
-                LayerHaptics.light()
-                UIPasteboard.general.string = value
-                withAnimation(.easeOut(duration: 0.2)) { copied = title }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { if copied == title { withAnimation { copied = nil } } }
-            } label: {
-                Text(copied == title ? "コピーしました" : "コピー")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(ready ? colors.primaryText : colors.disabledText)
-                    .padding(.horizontal, 14)
-                    .frame(minHeight: 36)
-                    .background(Capsule().fill(ready ? colors.primaryBg : colors.disabledBg))
-            }
-            .buttonStyle(PressScaleStyle())
-            .disabled(!ready)
-            .accessibilityLabel("\(title)をコピー")
         }
-        .padding(.horizontal, 16)
-        .frame(minHeight: 64)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(colors.field))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
-        .accessibilityElement(children: .contain)
+        .buttonStyle(SquishButtonStyle())
+        .accessibilityLabel(friend.name)
+        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityHint(on ? "えらぶのを やめます" : "グループに よびます")
     }
 
-    // MARK: 下のボタン(キーボードのすぐ上)
+    // MARK: 3. できた画面
 
+    private var doneContent: some View {
+        VStack(spacing: 0) {
+            Text(invited.isEmpty ? "できました" : "おくりました")
+                .font(.system(size: 34, weight: .heavy))
+                .tracking(-0.03 * 34)
+                .foregroundStyle(colors.ink)
+                .padding(.top, 14)
+                .accessibilityAddTraits(.isHeader)
+            if !invited.isEmpty {
+                Text("「入る」で なかまに なります")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(colors.sub)
+                    .padding(.top, 6)
+                invitedTags
+                    .padding(.top, 16)
+            }
+            linkCapsule
+                .padding(.top, invited.isEmpty ? 18 : 16)
+        }
+        .transition(.opacity)
+    }
+
+    /// えらんだ 友だちの 札(「承認まち」。入ったら 消える)
+    private var invitedTags: some View {
+        let joined = Set(createdGroup?.members.compactMap(\.cloudKitUserRecordName) ?? [])
+        return ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: 6) {
+            ForEach(invited, id: \.self) { id in
+                let friend = friends.first { $0.id == id }
+                let waiting = !joined.contains(id)
+                HStack(spacing: 5) {
+                    Circle().fill(LinearGradient(colors: friend?.colors ?? [colors.sub, colors.sub], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 14, height: 14)
+                    Text(friend?.name ?? "ともだち").font(.system(size: 12, weight: .bold)).lineLimit(1)
+                    Text(waiting ? "承認まち" : "入った").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(colors.sub)
+                }
+                .foregroundStyle(colors.ink)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Capsule().fill(colors.field))
+                .overlay(Capsule().strokeBorder(colors.line, style: StrokeStyle(lineWidth: 1, dash: waiting ? [3, 3] : [])))
+                .accessibilityElement(children: .combine)
+            }
+          }
+          .padding(.horizontal, 24)
+          .padding(.vertical, 2)
+        }
+    }
+
+    /// リンクは 1行の 小さな 丸い カプセル(短く 省略。招待文の 全文は 出さない)
     @ViewBuilder
+    private var linkCapsule: some View {
+        if joinLink != nil {
+            HStack(spacing: 6) {
+                Image(systemName: "link").font(.system(size: 11, weight: .bold))
+                Text(GroupCreateName.shortLink(createdShareURL))
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(colors.sub)
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(Capsule().fill(colors.field))
+            .overlay(Capsule().strokeBorder(colors.line.opacity(0.7), lineWidth: 1))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("招待リンク")
+        }
+    }
+
+    // MARK: うまく いかなかった
+
+    private var failedContent: some View {
+        VStack(spacing: 0) {
+            Text("うまく いきませんでした")
+                .font(.system(size: 26, weight: .heavy))
+                .foregroundStyle(colors.ink)
+                .padding(.top, 14)
+                .accessibilityAddTraits(.isHeader)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(failure?.kind == .cards ? "招待カードを おくれませんでした" : "リンクを つくれませんでした")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(colors.warn)
+                if let detail = failure?.detail, !detail.isEmpty {
+                    Text(detail)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(colors.ink.opacity(0.75))
+                        .lineLimit(4)
+                        .textSelection(.enabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(colors.warnCard))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(colors.warn.opacity(0.5), lineWidth: 1))
+            .contextMenu {
+                Button("エラーを コピー", systemImage: "doc.on.doc") { UIPasteboard.general.string = failure?.detail }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .accessibilityElement(children: .combine)
+            .accessibilityHint("長押しで、エラーの 内容を コピー")
+        }
+        .transition(.opacity)
+    }
+
+    // MARK: 下の ボタン(キーボードの すぐ上)
+
     private var bottomArea: some View {
-        VStack(spacing: 6) {
-            switch step {
-            case .name:
-                primaryButton(GroupCreateName.buttonTitle(nameStatus), enabled: nameStatus == .ok) {
-                    if nameStatus == .ok {
-                        LayerHaptics.light()
-                        go(to: .face)
-                    } else {
-                        refuse()
+        VStack(spacing: 8) {
+            switch phase {
+            case .name, .creating:
+                primaryButton(isFull ? "グループは、\(GroupMembershipPolicy.maxGroupsPerUser)個までです" : GroupCreateName.createTitle(friends: picked.count, creating: isCreating),
+                              enabled: canCreate) { createTapped() }
+                    .disabled(isCreating)
+                    .accessibilityHint(nameStatus == .ok ? "グループを つくります" : "なまえを いれると 押せます")
+            case .done:
+                if joinLink != nil {
+                    HStack(spacing: 10) {
+                        primaryButton(invited.isEmpty ? "リンクを おくる" : "リンクでも よぶ", enabled: true) { sendTapped() }
+                            .accessibilityHint("共有シートを ひらきます")
+                        secondaryButton(copied ? "コピーした" : "コピー") { copyTapped() }
+                            .frame(width: 112)
+                            .accessibilityHint("招待リンクを コピーします")
                     }
                 }
-                .modifier(GroupCreateShake(trigger: buttonShake, enabled: !reduceMotion))
-            case .face:
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(colors.warn)
-                        .cloudDiagnosticsOnLongPress()
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .transition(.opacity)
-                }
-                if slowCreating {
-                    Text("時間が かかっています。つながりを たしかめています…")
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(colors.sub)
-                        .multilineTextAlignment(.center)
-                        .cloudDiagnosticsOnLongPress()
-                        .transition(.opacity)
-                }
-                // 押したら止める(連打しても1つだけ)。10個のときは、つくらせない
-                primaryButton(createTitle, enabled: !isCreating && !isFull) {
-                    guard !isCreating, !isFull else { if isFull { LayerHaptics.softDouble() }; return }
-                    create()
-                }
-                .disabled(isCreating)
-            case .done:
-                primaryButton("リンクを送る", enabled: inviteLink != nil) { shareLink() }
-                Button(action: onClose) {
-                    Text("あとで呼ぶ")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(colors.ink)
-                        .underline()
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("閉じます。合言葉は、グループの設定からいつでも見られます")
+                laterButton
+            case .failed:
+                primaryButton(retrying ? "やりなおしています…" : "もういちど", enabled: !retrying) { retryTapped() }
+                    .disabled(retrying)
+                    .accessibilityHint(failure?.kind == .save ? "なまえ画面に もどります" : "もういちど ためします")
+                if failure?.kind != .save { laterButton }
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 8)
+        .padding(.top, 14)
         .padding(.bottom, keyboardUp ? 8 : 12)
-        .background(colors.bg.ignoresSafeArea())
+        // 下の ボタンの うしろに、背景色を うすく しく(スクロールした 中身が 重ならない)
+        .background(
+            LinearGradient(colors: [colors.bg.opacity(0), colors.bg.opacity(0.92), colors.bg], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))
+                .ignoresSafeArea()
+        )
     }
 
-    /// 押せないときも、文字が読める色(薄くするのではなく、色をかえる)。押せないときも押せる(理由を伝える)
+    private var laterButton: some View {
+        Button(action: closeTapped) {
+            Text("あとで")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(colors.sub)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("とじて、ホームへ もどります")
+    }
+
+    /// 押せないときは グレー(文字は 読める 色)
     private func primaryButton(_ title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(enabled ? colors.primaryText : colors.disabledText)
+                .lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .background(Capsule().fill(enabled ? colors.primaryBg : colors.disabledBg))
+                .contentTransition(.opacity)
         }
         .buttonStyle(PressScaleStyle(scale: 0.97))
-        .accessibilityHint(enabled ? "" : "まだ押せません")
     }
 
-    // MARK: 共通
+    private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(colors.ink)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(Capsule().fill(colors.field))
+                .overlay(Capsule().strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
+                .contentTransition(.opacity)
+        }
+        .buttonStyle(PressScaleStyle(scale: 0.97))
+    }
 
-    private func go(to next: Step) {
+    // MARK: 動き
+
+    private func appear() {
+        haptics.prepare()
+        appearedAt = Date()
+        if let initialName, name.isEmpty { name = GroupCreateName.clean(initialName) }
+        if let preview {
+            applyPreview(preview)
+            return
+        }
+        Haptics.play(.soft)
+        // アニメが 落ち着いてから(0.7秒)キーボードを 出す
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            guard phase == .name, !UIAccessibility.isVoiceOverRunning else { return }
+            isNameFocused = true
+        }
+    }
+
+    /// 文字を 打った:アバターの 文字が ぽんっと 弾む(1.16倍)+ 席が 1つ ぴかっと 光る + ごく軽い バイブ
+    private func typed(old: String, new: String) {
+        guard phase == .name, GroupCreateName.finalize(old) != GroupCreateName.finalize(new) else { return }
+        Haptics.play(.tick)
+        guard animates else { return }
+        bounce += 1
+        flashSeat = (flashSeat.map { $0 + 3 } ?? Int.random(in: 0..<7)) % 7
+        flashToken += 1
+    }
+
+    private func toggle(_ friend: GroupCreateFriend) {
+        guard phase == .name else { return }
+        if let index = picked.firstIndex(of: friend.id) {
+            Haptics.play(.tick)
+            withAnimation(animates ? .spring(response: 0.4, dampingFraction: 0.7) : nil) { _ = picked.remove(at: index) }
+            return
+        }
+        // 自分を 入れて 8人まで
+        guard picked.count < FriendRules.maxInvitees else {
+            Haptics.play(.warn)
+            show("グループは \(GroupMembershipPolicy.maxMembersPerGroup)人まで")
+            return
+        }
+        Haptics.play(.pop)
+        withAnimation(animates ? .spring(response: 0.45, dampingFraction: 0.55) : nil) { picked.append(friend.id) }
+    }
+
+    private func submit() {
+        guard canCreate else {
+            LayerHaptics.softDouble()
+            return
+        }
+        createTapped()
+    }
+
+    private func closeTapped() {
+        guard !isCreating else { return }
+        Haptics.play(.tick)
         isNameFocused = false
-        errorMessage = nil
-        withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.4)) { step = next }
+        if createdGroup != nil {
+            onCreated(shownName)
+        }
+        onClose()
     }
 
-    /// 丸が 1.04 倍にぽんと跳ねて戻る(視差を減らすなら出さない)
-    private func bumpDisc() {
-        guard !reduceMotion else { return }
-        withAnimation(.easeOut(duration: 0.13)) { discBump = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.13) { withAnimation(.easeIn(duration: 0.13)) { discBump = false } }
+    private func copyTapped() {
+        guard joinLink != nil else { return }
+        Haptics.play(.click)
+        UIPasteboard.general.string = shareMessage
+        withAnimation(.easeOut(duration: 0.15)) { copied = true }
+        show("招待リンクを コピーしました")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { withAnimation(.easeOut(duration: 0.2)) { copied = false } }
     }
 
-    private var createTitle: String {
-        if isFull { return "グループは、\(GroupMembershipPolicy.maxGroupsPerUser)個までです" }
-        return isCreating ? "つくっています…" : "つくる"
+    private func sendTapped() {
+        guard joinLink != nil else { return }
+        Haptics.play(.click)
+        showingShare = true
     }
 
-    /// 共有シート:ただの文字ではなく、Later のアイコンつきのリンク(LPLinkMetadata)で渡す
-    private func shareLink() {
-        guard let inviteLink else { return }
-        LayerHaptics.light()
-        let name = createdGroup?.name ?? finalName
-        shareItems = ShareItems(items: [GroupInviteItemSource(groupName: name, passphrase: passphrase, url: inviteLink)])
+    private func show(_ text: String) {
+        toast = text
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { if toast == text { toast = nil } }
     }
 
-    // MARK: 作成
+    // MARK: 2. つくっている 演出(約1.6秒。本物の 保存が おわるまで つづける)
 
-    /// 「つくる」:押した瞬間に CloudKit への作成を始め(うしろで走らせる)、むかしの演出をそのまま出す
-    /// (強く1回 → 中央から光が広がる 1.1秒 → 丸がぽんと跳ねる)。作成が終わったら「できました」へ
-    /// (見出し → 名前 → 合言葉が、ぼかしから順に浮かぶ)。演出が終わっても作成がまだなら「つくっています…」のまま。
-    /// 失敗したら、演出を止めて②にとどまり、入力した内容はのこす(グループは作られていない)。
+    /// 演出の 最短の 長さ
+    static let showMinimum: Double = 1.6
+
+    private func createTapped() {
+        guard canCreate, phase == .name else {
+            if isFull { LayerHaptics.softDouble() }
+            return
+        }
+        isNameFocused = false
+        Haptics.play(.click)
+        withAnimation(.easeOut(duration: 0.3)) { phase = .creating }
+        playGather()
+        create()
+    }
+
+    /// 席が アバターへ 吸いこまれる → アバターが ぽわっと 光る。この間 とても 軽い バイブを 3回(0.26秒おき)
+    private func playGather() {
+        for i in 1...3 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.26) {
+                guard phase == .creating else { return }
+                Haptics.play(.tick)
+            }
+        }
+        guard animates else { return }
+        withAnimation(.easeIn(duration: 0.9)) { gather = 1 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            guard phase == .creating else { return }
+            withAnimation(.easeOut(duration: 0.35)) { glow = 1 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                guard phase == .creating else { return }
+                withAnimation(.easeIn(duration: 0.35)) { glow = 0.35 }
+            }
+        }
+        // 1.6秒を すぎても 保存が おわらないときは、光を くりかえす
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.showMinimum) {
+            if phase == .creating { glowLoop = true }
+        }
+    }
+
+    /// できた:紙吹雪 + 成功の バイブ + 席が もどる(1つ目は ホスト本人)
+    private func finishSuccess() {
+        glowLoop = false
+        Haptics.play(.success)
+        if animates { confettiStart = Date() }
+        withAnimation(animates ? .spring(response: 0.6, dampingFraction: 0.72) : .easeOut(duration: 0.25)) {
+            phase = .done
+            gather = 0
+            glow = 0
+        }
+        if animates {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { confettiStart = nil }
+        }
+    }
+
+    /// うまく いかなかった:席が ふたたび ひろがる + やわらかく 2回
+    private func finishFailure(_ newFailure: Failure) {
+        glowLoop = false
+        LayerHaptics.softDouble()
+        failure = newFailure
+        withAnimation(animates ? .spring(response: 0.6, dampingFraction: 0.75) : .easeOut(duration: 0.25)) {
+            phase = .failed
+            gather = 0
+            glow = 0
+        }
+    }
+
+    /// 演出が 最後まで 見えるよう、押してから 1.6秒は 待つ
+    private func waitForShow(since started: Date) async {
+        let wait = max(0, Self.showMinimum - Date().timeIntervalSince(started))
+        if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+    }
+
+    private func retryTapped() {
+        guard let failure, !retrying else { return }
+        Haptics.play(.click)
+        switch failure.kind {
+        case .save:
+            // なまえ画面へ(入力は のこす)
+            self.failure = nil
+            withAnimation(.easeOut(duration: 0.3)) { phase = .name }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { isNameFocused = true }
+        case .link:
+            guard let group = createdGroup else { return }
+            retrying = true
+            Task { @MainActor in
+                let madeLink = await Self.makeLink(for: group, context: modelContext)
+                retrying = false
+                guard let madeLink else {
+                    LayerHaptics.softDouble()
+                    self.failure = Failure(kind: .link, detail: NewGroupFlowView.lastLinkFailureReason ?? CloudDiagnostics.last ?? "")
+                    return
+                }
+                inviteLink = madeLink
+                createdShareURL = InviteConfig.shareURL(from: madeLink) ?? madeLink
+                if picked.isEmpty || !invited.isEmpty {
+                    finishSuccess()
+                } else {
+                    await sendCards(group: group, link: madeLink)
+                }
+            }
+        case .cards:
+            guard let group = createdGroup else { return }
+            retrying = true
+            Task { @MainActor in
+                await sendCards(group: group, link: inviteLink)
+                retrying = false
+            }
+        }
+    }
+
+    /// えらんだ 友だちに 招待カードを 送る(今までと 同じ FriendCloud.sendInvites)
+    private func sendCards(group: LaterGroup, link: URL?) async {
+        let ids = picked
+        let ok = await FriendCloud.sendInvites(to: ids, groupName: group.name, memberCount: group.members.count, shareURL: link, myName: currentUser?.name ?? "")
+        if ok {
+            invited = ids
+            GroupInviteSentStore.add(ids, to: group.id)
+            finishSuccess()
+        } else {
+            CloudDiagnostics.step("招待カード:送れなかった")
+            finishFailure(Failure(kind: .cards, detail: FriendError.network.message))
+        }
+    }
+
+    // MARK: 作成(保存 → リンク → 招待カード。順番も 呼ぶ 関数も 今までと 同じ)
+
     private func create() {
         guard !isCreating, createdGroup == nil else { return }
         CloudDiagnostics.begin("グループを つくる:押した")
+        let started = Date()
         guard let user = currentUser else {
             // 黙って もどらない(自分の プロフィールが まだ 読めていない)
             CloudDiagnostics.step("止まった:自分の プロフィール(UserProfile)が ない")
-            LayerHaptics.softDouble()
-            withAnimation { errorMessage = "つくれませんでした。もういちど" }
+            Task { @MainActor in
+                await waitForShow(since: started)
+                finishFailure(Failure(kind: .save, detail: "UserProfile が まだ 読めていません"))
+            }
             return
         }
-        guard nameStatus == .ok else { go(to: .name); return }
         guard let cloudKitManager = CloudKitManager.current else {
             CloudDiagnostics.step("止まった:iCloud(CloudKitManager)が まだ 用意できていない")
-            withAnimation { errorMessage = "iCloud に まだ つながっていません。少しあとで、もういちど" }
+            Task { @MainActor in
+                await waitForShow(since: started)
+                finishFailure(Failure(kind: .save, detail: "iCloud に まだ つながっていません(CloudKitManager なし)"))
+            }
             return
         }
         if cloudKitManager.currentUserRecordName == nil {
             CloudDiagnostics.step("注意:iCloud の ユーザーが まだ わからない(サインイン・つながりを 確認)")
         }
-        guard user.groups.filter({ !$0.isPersonalSpace }).count < GroupMembershipPolicy.maxGroupsPerUser else {
-            withAnimation { errorMessage = "グループは、\(GroupMembershipPolicy.maxGroupsPerUser)個までです。" }
-            return
-        }
         isCreating = true
-        slowCreating = false
-        errorMessage = nil
-        // 時間が かかっているときは、だまって 待たせない(長押しで 経過が 見られる)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
-            if isCreating, createdGroup == nil {
-                CloudDiagnostics.step("15秒たっても 作成が おわらない")
-                withAnimation { slowCreating = true }
-            }
-        }
-        haptics.playTransient(intensity: 1.0, sharpness: 0.7)
-        if !reduceMotion {
-            burstExpanded = false
-            burst = true
-            DispatchQueue.main.async { withAnimation(.easeOut(duration: 1.1)) { burstExpanded = true } }
-            bumpDisc()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.15) { burst = false; burstExpanded = false }
-        }
+        failure = nil
 
         let group = LaterGroup(name: finalName, host: user, autoGenerateMission: false, isPrivate: true)
-        group.memberLimit = memberLimit
-        group.colorIndex = colorIndex
-        group.faceStyle = faceStyle
-        group.showsInitial = showsInitial
+        group.memberLimit = GroupMembershipPolicy.maxMembersPerGroup
+        group.colorIndex = GroupPalette.index(forName: finalName)
+        group.faceStyle = GroupFaceStyle.aura
+        group.showsInitial = true
         group.joinedAt = Date()
         _ = group.addMember(user)
         modelContext.insert(group)
 
-        let started = Date()
         Task { @MainActor in
             let sharingService = GroupSharingService(container: cloudKitManager.container, modelContext: modelContext, cloudKitManager: cloudKitManager)
             do {
                 try await sharingService.createGroup(group, hostProfile: user)
             } catch GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true) {
                 // iCloud の容量不足で、写真だけ除いて作れた(グループは作成ずみ)
-                createdWarning = GroupSharingError.quotaExceeded(groupCreatedWithoutImages: true).errorDescription
+                CloudDiagnostics.step("注意:容量不足で 写真だけ のぞいて 作成")
             } catch {
                 // 開発用の詳細(長押しで見る)。CKError は GroupSharingService が のこす。それ以外も ここで のこす
                 if !(error is GroupSharingError) || CloudDiagnostics.last == nil {
@@ -899,27 +998,19 @@ struct NewGroupFlowView: View {
                     CloudDiagnostics.record("グループを つくる:ゾーン", CloudDiagnostics.report(underlying))
                 }
                 CloudDiagnostics.step("止まった:作成に 失敗(\(String(describing: error).prefix(160)))")
-                slowCreating = false
+                // 保存に 失敗:グループは 一覧に 入れない
                 modelContext.delete(group)
                 try? modelContext.save()
-                // 演出を止めて、エラーを出す(名前・色・人数はそのまま)
-                burst = false
-                burstExpanded = false
-                isCreating = false
-                LayerHaptics.softDouble()
-                // 理由を 日本語で 短く(iCloud に サインインしていない・通信できない・サーバー側の 設定が 足りない など)
                 let reason = GroupCreateFailureText.reason(for: error)
                 CloudDiagnostics.step("画面の文:\(reason)")
-                withAnimation { errorMessage = reason }
+                await waitForShow(since: started)
+                isCreating = false
+                finishFailure(Failure(kind: .save, detail: "\(reason)\n\(CloudDiagnostics.report(error))"))
                 return
             }
             createdGroup = group
-            slowCreating = false
             CloudDiagnostics.step("作成 OK")
-            // むかしと同じ:光が広がりはじめてから 0.52秒は待ってから、つぎへ
-            let wait = max(0, 0.52 - Date().timeIntervalSince(started))
-            try? await Task.sleep(for: .seconds(wait))
-            // 前の完了画面へ。リンクは、作ってできた本物(CKShare の URL)を出す
+            // 本物の リンク(CKShare の URL)を つくる
             var madeLink = await Self.makeLink(for: group, context: modelContext)
             if madeLink == nil {
                 // リンクの 作成だけが 失敗:自動で 1回 やり直す(グループは もう 保存ずみ。だまって 止まらない)
@@ -927,14 +1018,256 @@ struct NewGroupFlowView: View {
                 try? await Task.sleep(for: .seconds(1))
                 madeLink = await Self.makeLink(for: group, context: modelContext)
             }
-            isCreating = false
             inviteLink = madeLink
             createdShareURL = madeLink.flatMap { InviteConfig.shareURL(from: $0) } ?? madeLink
             CloudDiagnostics.step(madeLink == nil ? "リンク:できなかった(画面で もういちど)" : "リンク OK")
-            showingCreatedShare = true
-            CloudDiagnostics.step("リンクの 画面を 出した")
             // 合言葉は、画面には出さないが、これまでどおり作っておく(合言葉で入れるように・グループの設定で見られる)
-            passphrase = try? await GroupInviteService.passphrase(for: group, context: modelContext)
+            Task { @MainActor in passphrase = try? await GroupInviteService.passphrase(for: group, context: modelContext) }
+            await waitForShow(since: started)
+            isCreating = false
+            guard let madeLink else {
+                finishFailure(Failure(kind: .link, detail: NewGroupFlowView.lastLinkFailureReason ?? CloudDiagnostics.last ?? ""))
+                return
+            }
+            if picked.isEmpty {
+                finishSuccess()
+            } else {
+                await sendCards(group: group, link: madeLink)
+            }
+        }
+    }
+
+    // MARK: 見た目の 確認(テスト)
+
+    private func applyPreview(_ preview: Preview) {
+        switch preview {
+        case .name:
+            break
+        case .creating:
+            phase = .creating
+            isCreating = true
+            gather = 0.6
+            glow = 0.8
+        case .doneLink, .doneFriends:
+            phase = .done
+            createdShareURL = URL(string: "https://www.icloud.com/share/0aBcDeFgHiJkLmNoPq")
+            if preview == .doneFriends { invited = Array(friends.prefix(3).map(\.id)) }
+        case .failed:
+            phase = .failed
+            failure = Failure(kind: .link, detail: "CKError 15 serverRejectedRequest: Invalid Arguments")
+        }
+    }
+}
+
+// MARK: - 背景(ぼかした 色の玉が 3こ ゆっくり 動く)
+
+private struct GroupCreateBackdrop: View {
+    let colors: [Color]
+    let bg: Color
+    let night: Bool
+    let animates: Bool
+
+    var body: some View {
+        TimelineView(.animation(paused: !animates)) { context in
+            let t = animates ? context.date.timeIntervalSinceReferenceDate : 0
+            GeometryReader { proxy in
+                let w = proxy.size.width, h = proxy.size.height
+                ZStack {
+                    bg
+                    blob(colors[0], size: w * 0.95, x: w * (0.22 + 0.06 * sin(t / 7)), y: h * (0.2 + 0.04 * cos(t / 9)))
+                    blob(colors[1], size: w * 0.85, x: w * (0.82 + 0.05 * cos(t / 8)), y: h * (0.34 + 0.05 * sin(t / 6.5)))
+                    blob(colors[0].opacity(0.8), size: w * 0.7, x: w * (0.5 + 0.07 * sin(t / 10)), y: h * (0.78 + 0.03 * cos(t / 7.5)))
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.8), value: colors)
+    }
+
+    private func blob(_ color: Color, size: CGFloat, x: CGFloat, y: CGFloat) -> some View {
+        Circle()
+            .fill(color.opacity(night ? 0.34 : 0.42))
+            .frame(width: size, height: size)
+            .blur(radius: size * 0.28)
+            .position(x: x, y: y)
+    }
+}
+
+// MARK: - アバターと 7つの 席
+
+enum GroupCreateSeat: Equatable {
+    case empty
+    case friend(initial: String, colors: [Color], pending: Bool)
+    case host(initial: String, colors: [Color])
+}
+
+struct GroupCreateStage: View {
+    let initial: String
+    let avatarColors: [Color]
+    let seats: [GroupCreateSeat]
+    let flashSeat: Int?
+    let flashToken: Int
+    let bounce: Int
+    /// 0(ひろがる)〜 1(アバターへ 吸いこまれた)
+    let gather: CGFloat
+    /// アバターの 光(0〜1)
+    let glow: Double
+    /// 保存を 待つ間、光を くりかえす
+    let glowLoop: Bool
+    let animates: Bool
+    let ink: Color
+    let seatLine: Color
+
+    static let avatar: CGFloat = 128
+    static let seat: CGFloat = 38
+    static let radius: CGFloat = 110
+    static var box: CGFloat { radius * 2 + seat + 8 }
+
+    @State private var start = Date()
+
+    var body: some View {
+        TimelineView(.animation(paused: !animates)) { context in
+            let t = animates ? context.date.timeIntervalSince(start) : 0
+            ZStack {
+                ring(t)
+                avatarFace(t)
+                ForEach(Array(seats.enumerated()), id: \.offset) { index, seat in
+                    seatView(seat, index: index)
+                        .offset(seatOffset(index: index, count: seats.count, t: t))
+                        .scaleEffect(1 - 0.6 * gather)
+                        .opacity(Double(1 - gather))
+                }
+            }
+            .frame(width: Self.box, height: Self.box)
+        }
+    }
+
+    /// 虹色の リング(14秒で 1周)
+    private func ring(_ t: Double) -> some View {
+        Circle()
+            .strokeBorder(
+                AngularGradient(colors: [Color(hex: "FF6A5F"), Color(hex: "FFC24B"), Color(hex: "7BE07F"), Color(hex: "5FC8FF"), Color(hex: "9A7CFF"), Color(hex: "FF6FB5"), Color(hex: "FF6A5F")], center: .center),
+                lineWidth: 4
+            )
+            .frame(width: Self.avatar + 16, height: Self.avatar + 16)
+            .rotationEffect(.degrees(t / 14 * 360))
+    }
+
+    private func avatarFace(_ t: Double) -> some View {
+        let loop = glowLoop ? 0.45 + 0.4 * (0.5 - 0.5 * cos(t * 2 * .pi / 1.1)) : 0
+        let light = max(glow, loop)
+        return ZStack {
+            Circle()
+                .fill(LinearGradient(colors: avatarColors, startPoint: .topLeading, endPoint: .bottomTrailing))
+            Text(initial.isEmpty ? "?" : initial)
+                .font(.system(size: 54, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+                .contentTransition(.opacity)
+                .keyframeAnimator(initialValue: CGFloat(1), trigger: bounce) { view, scale in
+                    view.scaleEffect(scale)
+                } keyframes: { _ in
+                    KeyframeTrack {
+                        SpringKeyframe(1.16, duration: 0.12, spring: .snappy)
+                        SpringKeyframe(1, duration: 0.3, spring: .bouncy)
+                    }
+                }
+        }
+        .frame(width: Self.avatar, height: Self.avatar)
+        .overlay(Circle().fill(.white).opacity(light * 0.55).blendMode(.plusLighter))
+        .shadow(color: avatarColors[0].opacity(0.35 + light * 0.5), radius: 18 + light * 30)
+        .scaleEffect(1 + 0.06 * light)
+    }
+
+    /// 公転(80秒で 1周)+ ふわふわ 上下。吸いこまれる ほど 中心へ
+    private func seatOffset(index: Int, count: Int, t: Double) -> CGSize {
+        let angle = -Double.pi / 2 + Double(index) / Double(max(count, 1)) * 2 * .pi + t / 80 * 2 * .pi
+        let r = Self.radius * (1 - gather)
+        let bob = animates ? 3 * sin(t * 2 * .pi / 3.2 + Double(index)) : 0
+        return CGSize(width: cos(angle) * r, height: sin(angle) * r + bob)
+    }
+
+    @ViewBuilder
+    private func seatView(_ seat: GroupCreateSeat, index: Int) -> some View {
+        switch seat {
+        case .empty:
+            ZStack {
+                Circle().fill(Color.white.opacity(0.18))
+                Circle().strokeBorder(seatLine.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                Image(systemName: "plus").font(.system(size: 13, weight: .bold)).foregroundStyle(seatLine)
+            }
+            .frame(width: Self.seat, height: Self.seat)
+            .modifier(SeatFlash(on: flashSeat == index, token: flashToken, animates: animates))
+        case let .friend(initial, colors, pending):
+            seatFace(initial: initial, colors: colors)
+                .overlay(Circle().strokeBorder(ink.opacity(0.75), style: StrokeStyle(lineWidth: 2, dash: pending ? [3, 3] : [])).padding(-3))
+                .transition(.scale(scale: 0.2).combined(with: .opacity))
+        case let .host(initial, colors):
+            seatFace(initial: initial, colors: colors)
+                .overlay(Circle().strokeBorder(ink.opacity(0.75), lineWidth: 2).padding(-3))
+        }
+    }
+
+    private func seatFace(initial: String, colors: [Color]) -> some View {
+        ZStack {
+            Circle().fill(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
+            Text(initial).font(.system(size: 15, weight: .heavy, design: .rounded)).foregroundStyle(.white)
+        }
+        .frame(width: Self.seat, height: Self.seat)
+    }
+}
+
+/// 席が 1つ ぴかっと 光る(文字を 打つたび)
+private struct SeatFlash: ViewModifier {
+    let on: Bool
+    let token: Int
+    let animates: Bool
+
+    func body(content: Content) -> some View {
+        content.keyframeAnimator(initialValue: 0.0, trigger: on ? token : -1) { view, light in
+            view
+                .overlay(Circle().fill(.white).opacity(light * 0.85).blendMode(.plusLighter))
+                .shadow(color: .white.opacity(light), radius: 10 * light)
+                .scaleEffect(1 + 0.12 * light)
+        } keyframes: { _ in
+            KeyframeTrack {
+                LinearKeyframe(on && animates ? 1 : 0, duration: 0.08)
+                LinearKeyframe(0, duration: 0.42)
+            }
+        }
+    }
+}
+
+// MARK: - 紙吹雪(22こ、7色 + 白。アバターから 広がる)
+
+private struct GroupConfetti: View {
+    let start: Date
+
+    static let colors: [Color] = ["FF6A5F", "FFC24B", "7BE07F", "5FC8FF", "9A7CFF", "FF6FB5", "FF8A3D", "FFFFFF"].map { Color(hex: $0) }
+    static let count = 22
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let t = context.date.timeIntervalSince(start)
+            GeometryReader { proxy in
+                let origin = CGPoint(x: proxy.size.width / 2, y: proxy.safeAreaInsets.top + 62 + GroupCreateStage.box / 2)
+                Canvas { canvas, _ in
+                    for i in 0..<Self.count {
+                        let seed = Double(i)
+                        let angle = seed / Double(Self.count) * 2 * .pi + sin(seed * 12.9898) * 0.4
+                        let speed = 260 + 140 * abs(sin(seed * 78.233))
+                        let x = origin.x + cos(angle) * speed * t
+                        let y = origin.y + sin(angle) * speed * t + 420 * t * t
+                        let fade = max(0, 1 - t / 1.8)
+                        guard fade > 0 else { continue }
+                        var piece = canvas
+                        piece.opacity = fade
+                        piece.translateBy(x: x, y: y)
+                        piece.rotate(by: .radians(t * (4 + seed.truncatingRemainder(dividingBy: 5))))
+                        let rect = CGRect(x: -4, y: -6, width: 8, height: 12)
+                        piece.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(Self.colors[i % Self.colors.count]))
+                    }
+                }
+            }
         }
     }
 }
@@ -957,21 +1290,6 @@ extension NewGroupFlowView {
     }
 }
 
-/// できました:見出し → 名前 → 合言葉の順に、80msずつずらして、ぼかしから浮かぶ(0.7秒)。むかしの演出のまま
-private struct DoneStagger: ViewModifier {
-    let index: Int
-    let appeared: Bool
-    let reduceMotion: Bool
-
-    func body(content: Content) -> some View {
-        let shown = appeared || reduceMotion
-        return content
-            .blur(radius: shown ? 0 : 10)
-            .offset(y: shown ? 0 : 14)
-            .opacity(shown ? 1 : 0)
-            .animation(reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.7).delay(0.1 + Double(index) * 0.08), value: appeared)
-    }
-}
 
 // MARK: - ゆれ(視差を減らすなら、ゆれない)
 
@@ -997,7 +1315,7 @@ private struct GroupCreateShake: ViewModifier {
 // MARK: - 名前の入力欄(日本語入力に強い UITextField)
 
 /// 変換中(markedText)を見て、確定だけの Enter では進まない。文字数では切らない。
-/// 改行キーは「次へ」。キーボードの色は画面にあわせる。
+/// 改行キーは「完了」(作成画面)。キーボードの色は画面にあわせる。
 struct GroupNameTextField: UIViewRepresentable {
     @Binding var text: String
     @Binding var isFocused: Bool
@@ -1008,6 +1326,9 @@ struct GroupNameTextField: UIViewRepresentable {
     let tintColor: UIColor
     let dark: Bool
     let accessibilityValue: String
+    var alignment: NSTextAlignment = .natural
+    var fontSize: CGFloat = 25
+    var returnKey: UIReturnKeyType = .next
     let onSubmit: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -1015,13 +1336,14 @@ struct GroupNameTextField: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextField {
         let field = UITextField()
         field.delegate = context.coordinator
-        field.font = .systemFont(ofSize: 25, weight: .bold)
-        field.returnKeyType = .next
+        field.font = .systemFont(ofSize: fontSize, weight: .bold)
+        field.textAlignment = alignment
+        field.returnKeyType = returnKey
         field.autocapitalizationType = .none
         field.autocorrectionType = .no
         field.spellCheckingType = .no
         field.enablesReturnKeyAutomatically = false
-        field.accessibilityLabel = "グループの名前"
+        field.accessibilityLabel = "グループの なまえ"
         field.adjustsFontSizeToFitWidth = true
         field.minimumFontSize = 18
         field.setContentHuggingPriority(.defaultLow, for: .horizontal)

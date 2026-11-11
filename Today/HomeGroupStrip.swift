@@ -341,12 +341,21 @@ private struct HomeGroupCard: View {
                     .foregroundStyle(palette.ink)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                if let inviting = summary.invitingText {
+                    // v22:つくった ばかり・承認まち(「招待中」の ピル)
+                    Text(inviting)
+                        .font(.system(size: 10.5, weight: .bold))
+                        .foregroundStyle(palette.ink)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(Capsule().fill(auraColors[1].opacity(palette.isNight ? 0.4 : 0.3)))
+                } else {
                 Text("\(summary.postedYesterday) / \(summary.memberCount)")
                     .font(.system(size: 10.5, design: .monospaced))
                     .monospacedDigit()
                     .foregroundStyle(GroupCardColors.count(night: palette.isNight))
                     .contentTransition(.numericText(countsDown: false))
                     .animation(reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.5), value: summary.postedYesterday)
+                }
             }
             .dynamicTypeSize(...DynamicTypeSize.xLarge)
         }

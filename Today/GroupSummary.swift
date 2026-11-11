@@ -19,6 +19,14 @@ struct GroupSummary: Identifiable, Equatable {
     /// 顔が「みんなの写真」のとき:今日いちばん新しい1枚のモザイク(写真そのものは出さない)。なければ色
     var faceMosaic: Data?
     var faceMosaicKey = ""
+    /// v22:招待中(nil なら 出さない)。0 = まだ 自分だけ・N = 招待カードの 承認まち N人
+    var inviting: Int? = nil
+
+    /// ピルの 文字(「招待中」「招待中 3人」)
+    var invitingText: String? {
+        guard let inviting else { return nil }
+        return inviting > 0 ? "招待中 \(inviting)人" : "招待中"
+    }
 
     var isFull: Bool { memberCount >= memberLimit }
     var openSeats: Int { max(0, memberLimit - memberCount) }
@@ -106,9 +114,17 @@ enum GroupRingMath {
                 memberLimit: GroupPalette.clampLimit(group.memberLimit),
                 showsInitial: group.showsInitial,
                 faceMosaic: faceMosaic(for: group, now: now)?.mosaicTiny,
-                faceMosaicKey: faceMosaic(for: group, now: now)?.imageCacheKey ?? ""
+                faceMosaicKey: faceMosaic(for: group, now: now)?.imageCacheKey ?? "",
+                inviting: inviting(for: group)
             )
         }
+    }
+
+    /// 招待中:承認まちの 招待カードが あれば その数。なければ、まだ 自分だけの とき 0
+    static func inviting(for group: LaterGroup) -> Int? {
+        let pending = GroupInviteSentStore.pendingCount(for: group)
+        if pending > 0 { return pending }
+        return group.deduplicatedMemberIDs.count <= 1 ? 0 : nil
     }
 
     /// 顔が「みんなの写真」のグループの、今日(直近の窓)いちばん新しい1枚

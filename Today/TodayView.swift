@@ -1021,7 +1021,15 @@ struct TodayView: View {
             .environment(\.palette, palette)
         }
         .fullScreenCover(isPresented: $showingNewGroup) {
-            NewGroupFlowView(initialName: newGroupPrefill) { showingNewGroup = false }
+            NewGroupFlowView(
+                initialName: newGroupPrefill,
+                friends: layerData(sharedGroups: sharedGroups).friends.filter { !$0.isMe }.map {
+                    GroupCreateFriend(id: $0.id, name: $0.name, avatarData: $0.avatarData, seed: $0.seed)
+                },
+                onCreated: { name in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { presentToast("「\(name)」を つくりました") }
+                }
+            ) { showingNewGroup = false }
         }
         // ウィジェット:撮影・昨日をひらく・日付が変わる(状態が変わる)たびに、値を書いて更新
         .onAppear { syncWidget() }
