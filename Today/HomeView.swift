@@ -57,6 +57,10 @@ struct HomeView: View {
     var v17: HomeV17Data = .empty
     var v17Actions = HomeV17Actions()
     var bump: V17Bump?
+    /// v28 暗室
+    var groups: [LaterGroup] = []
+    var onOpenChat: (UUID) -> Void = { _ in }
+    var onReplyPhoto: (UUID, LaterPhoto) -> Void = { _, _ in }
 
     private static let homeTabIndex = 0
     private static let baseHeight: CGFloat = 844
@@ -103,7 +107,8 @@ struct HomeView: View {
                 launch: launch, onOrbTap: onOrbTap, isDiving: isDiving,
                 layerData: layerData, layerActions: layerActions,
                 todayShots: todayShots, onOpenShot: onOpenShot,
-                v17: v17, v17Actions: v17Actions, bump: bump
+                v17: v17, v17Actions: v17Actions, bump: bump,
+                groups: groups, onOpenChat: onOpenChat, onReplyPhoto: onReplyPhoto
             )
         } else {
             darkBody

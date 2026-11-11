@@ -40,10 +40,20 @@ struct ChicHomeView: View {
     var v17: HomeV17Data = .empty
     var v17Actions = HomeV17Actions()
     var bump: V17Bump?
+    /// v28/v29 暗室:グループ(ACTIVE)・部屋を ひらく・写真に 返信
+    var groups: [LaterGroup] = []
+    var onOpenChat: (UUID) -> Void = { _ in }
+    var onReplyPhoto: (UUID, LaterPhoto) -> Void = { _, _ in }
 
     @Environment(\.palette) private var palette
     /// v23:自分の 写真(きのうの 3こま・7日の film)
     @Query private var profiles: [UserProfile]
+    @Query private var blockedUsers: [BlockedUser]
+    /// v28:暗室に 入った(ヘッダーも 黒に)・下の フェードを 黒に
+    @State private var darkOn = false
+    @State private var bottomDark = false
+    @State private var viewerItem: DarkroomPhoto?
+    @State private var invites: [FriendInviteCard] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.selectedMainTabIndex) private var selectedMainTabIndex
@@ -111,7 +121,7 @@ struct ChicHomeView: View {
                     }
                 }
 
-                V17HeaderGlass(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, height: top + LaterHeader.height + 16, lineY: top + LaterHeader.height + 4)
+                V17HeaderGlass(scroll: scroll, tint: darkOn ? Darkroom.bg : (palette.isNight ? palette.bg : ChicColor.paper), height: top + LaterHeader.height + 16, lineY: top + LaterHeader.height + 4)
                     .allowsHitTesting(false)
 
                 LaterHeader(
@@ -123,6 +133,9 @@ struct ChicHomeView: View {
                     onConsumption: scrollToFilm,
                     avatarSwitch: avatarSwitch
                 )
+                // v28:暗室に 入ったら ヘッダーも 黒に(ロゴ 白・ピル 黒)
+                .environment(\.palette, darkOn ? .night : palette)
+                .animation(.easeOut(duration: 0.45), value: darkOn)
                 .frame(width: width, height: LaterHeader.height)
                 .padding(.top, top)
                 .opacity(launch.headerOpacity * (isDiving ? 0 : 1) * (HintCenter.shared.spotlightOn ? 0.5 : 1))
@@ -130,7 +143,7 @@ struct ChicHomeView: View {
                 .animation(.easeOut(duration: 0.5), value: HintCenter.shared.spotlightOn)
 
                 // 月の上の白いグラデーション(スクロールしたときだけ)と、「SCROLL」のヒント
-                V17BottomChrome(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, ink: palette.isNight ? Color.white : Color(hex: "111111"), showsCue: false)
+                V17BottomChrome(scroll: scroll, tint: bottomDark ? Darkroom.bg : (palette.isNight ? palette.bg : ChicColor.paper), ink: bottomDark || palette.isNight ? Color.white : Color(hex: "111111"), showsCue: false)
                     .frame(width: width, height: fullHeight)
                     .allowsHitTesting(false)
             }
@@ -150,6 +163,18 @@ struct ChicHomeView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openingFinished)) { _ in
             playIntro()
+        }
+        .fullScreenCover(item: $viewerItem) { item in
+            DarkroomViewer(item: item, onClose: { viewerItem = nil }, onReply: { photo in
+                viewerItem = nil
+                if let group = photo.groupID {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onReplyPhoto(group, photo.photo) }
+                }
+            })
+        }
+        .task(id: initialDay) {
+            guard !initialDay else { return }
+            invites = await FriendCloud.inbox()
         }
         .fullScreenCover(isPresented: $showsDevelop) {
             HomeDevelopViewer(shots: v17.shots, videoDurations: v17.videoDurations, used: FilmCounter.shared.used, tones: tones, now: now,
@@ -198,6 +223,7 @@ struct ChicHomeView: View {
                 .offset(y: y * 0.25)
                 .opacity(max(0.15, 1 - y / 420))
 
+            if initial {
             HomeV22Headline(headline: HomeV22Rules.headline(used: used, initial: initial), circle: headCircle, lineReveal: headIn ? 1 : 0, width: width)
                 .padding(.top, 6)
                 .offset(y: headIn ? 0 : 14)
@@ -224,11 +250,6 @@ struct ChicHomeView: View {
                 .v17Reveal()
                 .id(HomeV17Section.film.rawValue)
 
-            // v23:2日目から(MONDO の ことば → きのうの 3こま → 7日の film → WORLD)
-            if !initial {
-                v23Sections
-            }
-
             // ともだち(D は あとで。いまは v17 の まま 置いておく)
             if let bump {
                 V17FriendsSection(friends: v17.friends, ink: V17Ink(night: palette.isNight), feel: feel, actions: v17Actions, bump: bump)
@@ -238,38 +259,68 @@ struct ChicHomeView: View {
             }
 
             Color.clear.frame(height: HomeV17Rules.bottomSpace)
+            } else {
+                darkroomPages
+            }
         }
         .opacity(isDiving ? 0 : 1)
         .animation(.easeOut(duration: 0.32), value: isDiving)
     }
 
-    /// v23 の 区画(見本 later_v23.html の d2only)
+    private var initialDay: Bool { HomeFirstDay.isInitial(now: now) }
+
+    /// v28/v29:2日目からの Home の 下(夕暮れ → 暗室 → SEE YOU AT 9:00)
     @ViewBuilder
-    private var v23Sections: some View {
-        let ink = V17Ink(night: palette.isNight)
-        let photos = UserProfile.current(from: profiles)?.photos ?? []
-        let days = MERules.days(photos: photos, now: now)
-        V17WordsSection(mode: HomeV17Rules.wordsMode(state: state, shotsToday: max(FilmCounter.shared.used, v17.shots.count)),
-                        words: v17.words, countries: v17.countries, ink: ink, actions: v17Actions)
-            .padding(.horizontal, 22)
-            .padding(.top, 72)
-            .v17Reveal()
-        let yesterday = V23Rules.yesterdayShots(days)
-        if let day = days.first(where: { $0.ago == 1 }), !yesterday.isEmpty {
-            V23YesterdaySection(day: day, shots: yesterday, photos: photos, ink: ink,
-                                hintEligible: hintsAllowed && FilmCounter.shared.used >= 1)
-                .padding(.horizontal, 22)
-                .padding(.top, 72)
-                .v17Reveal()
+    private var darkroomPages: some View {
+        let blocked = Set(blockedUsers.map(\.blockedCloudKitUserRecordName))
+        let data = DarkroomData.make(me: UserProfile.current(from: profiles), groups: groups, blocked: blocked, now: now)
+        VStack(spacing: 0) {
+            DuskTodaySection(shots: data.todayShots, now: now, night: palette.isNight,
+                             onShoot: v17Actions.shoot, onOpenDevelop: openDevelop)
+                .padding(.top, -6)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { rect in
+                    updateDark(dusk: rect)
+                }
+            DarkroomSection(
+                data: data, groups: groups, summaries: groupSummaries, invites: invites, words: v17.words,
+                friends: layerData.friends, now: now,
+                onOpenChat: onOpenChat, onCreateGroup: onCreateGroup,
+                onJoin: { card in
+                    guard let url = card.shareURL else { v17Actions.toast(String(localized: "darkroom.invite.expired")); return }
+                    // 今の「入る」と 同じ(本人が 押したときだけ 共有を 受けいれる)
+                    InviteCardStore.set(.accepted, for: card.id)
+                    if let i = invites.firstIndex(where: { $0.id == card.id }) { invites[i].status = .accepted }
+                    NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.link(url))
+                },
+                onOpenMondo: v17Actions.openMondo,
+                onOpenFriends: v17Actions.openFriends,
+                onOpenPhoto: { viewerItem = $0 },
+                onToast: v17Actions.toast,
+                keepHintEligible: hintsAllowed && FilmCounter.shared.used >= 1
+            )
+            V17EndSection(now: now, ink: V17Ink(night: true), isActive: isVisible)
+                .padding(.top, 70)
+                .frame(maxWidth: .infinity)
+                .background(Darkroom.bg)
+            Darkroom.bg.frame(height: HomeV17Rules.bottomSpace)
         }
-        V23WeekFilmSection(days: days, photos: photos, ink: ink, onToast: v17Actions.toast)
-            .padding(.horizontal, 22)
-            .padding(.top, 72)
-            .v17Reveal()
-        V23WorldSection(ink: ink)
-            .padding(.horizontal, 22)
-            .padding(.top, 72)
-            .v17Reveal()
+    }
+
+    /// 夕暮れの 6割が 画面の 上(約120pt)に 来たら ヘッダーを 黒に。5割5分が 画面に 入ったら 下の フェードを 黒に
+    private func updateDark(dusk rect: CGRect) {
+        guard !palette.isNight else {
+            if darkOn { darkOn = false }
+            bottomDark = true
+            return
+        }
+        let screen = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? 852
+        let on = rect.minY + rect.height * 0.62 < 120
+        if on != darkOn {
+            darkOn = on
+            Haptics.play(.tick)
+        }
+        let bottom = rect.minY + rect.height * 0.55 < screen
+        if bottom != bottomDark { bottomDark = bottom }
     }
 
     /// はじめての 合図を 出してよい(Home が 前面・オープニングと 登場が おわった・もぐっていない)

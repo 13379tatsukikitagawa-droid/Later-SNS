@@ -82,6 +82,8 @@ struct GroupChatRoomView: View {
     /// メニュー:メンバー・ぬける など(今までの グループの 画面)
     let onOpenGroupSheet: () -> Void
     var onToast: (String) -> Void = { _ in }
+    /// v28:はじめから この 写真への 返信に する
+    var initialReply: LaterPhoto? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.palette) private var palette
@@ -162,6 +164,10 @@ struct GroupChatRoomView: View {
             Haptics.play(.pop)
             store.openRoom = group.id
             store.markSeen(group.id)
+            if let initialReply {
+                replyPhoto = initialReply
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { inputFocused = true }
+            }
         }
         .onDisappear {
             if store.openRoom == group.id { store.openRoom = nil }
@@ -210,11 +216,12 @@ struct GroupChatRoomView: View {
             }
             .accessibilityLabel("もどる")
             VStack(alignment: .leading, spacing: 2) {
-                Text(group.name).font(.system(size: 17, weight: .heavy)).foregroundStyle(ink).lineLimit(1)
+                // v28:見出しは セリフ体(日本語は 明朝)、下に 小さく オレンジ
+                Text(group.name).font(Darkroom.title(group.name, size: 24)).foregroundStyle(ink).lineLimit(1)
                 if let status = GroupTogether.status(members) {
                     Text(status)
-                        .font(.system(size: 11.5, weight: .bold))
-                        .foregroundStyle(status == "そろった" ? Color(hex: "FF6A1A") : sub)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color(hex: "FF6A1A"))
                         .contentTransition(.opacity)
                 }
             }

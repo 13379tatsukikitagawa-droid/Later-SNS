@@ -73,6 +73,8 @@ struct TodayView: View {
     @State private var sheetGroup: LaterGroup?
     /// v23:グループの 部屋(チャット)
     @State private var chatGroup: LaterGroup?
+    /// v28:暗室の ビューアで「reply」を 押した 写真(部屋で その 写真への 返信に)
+    @State private var chatReply: LaterPhoto?
     /// いま入ったグループ(Home の列に「ぽんと入る」)
     @State private var arrivingGroupID: UUID?
     /// グループの招待の QR(画面いっぱいに重ねる)
@@ -519,7 +521,13 @@ struct TodayView: View {
                 },
                 v17: v17Data(sharedGroups: sharedGroups),
                 v17Actions: v17Actions(sharedGroups: sharedGroups),
-                bump: bump
+                bump: bump,
+                groups: sharedGroups,
+                onOpenChat: { id in openChat(id) },
+                onReplyPhoto: { id, photo in
+                    chatReply = photo
+                    openChat(id)
+                }
             )
             }
             .opacity(homeOpacity)
@@ -769,8 +777,10 @@ struct TodayView: View {
                     group: group,
                     friends: layerData(sharedGroups: sharedGroups).friends,
                     onClose: { withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) { chatGroup = nil } },
-                    onOpenGroupSheet: { sheetGroup = group }
+                    onOpenGroupSheet: { sheetGroup = group },
+                    initialReply: chatReply
                 )
+                .onDisappear { chatReply = nil }
                 .transition(.move(edge: .trailing))
                 .zIndex(9)
             }

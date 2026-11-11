@@ -203,7 +203,7 @@
 		E4A00000000000000000002C /* MusicPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002B /* MusicPick.swift */; };
 		E4A00000000000000000002E /* MusicSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002D /* MusicSheet.swift */; };
 		E4A000000000000000000030 /* FirstHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002F /* FirstHint.swift */; };
-		E4A000000000000000000032 /* HomeV23Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000031 /* HomeV23Sections.swift */; };
+		E4A000000000000000000032 /* HomeDarkroom.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000031 /* HomeDarkroom.swift */; };
 		E4A000000000000000000034 /* GroupChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000033 /* GroupChat.swift */; };
 		E4A000000000000000000036 /* GroupChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000035 /* GroupChatRoom.swift */; };
 		E4A000000000000000000042 /* Fonts/InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000041 /* Fonts/InstrumentSerif-Regular.ttf */; };
@@ -437,7 +437,7 @@
 		E4A00000000000000000002B /* MusicPick.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MusicPick.swift; sourceTree = "<group>"; };
 		E4A00000000000000000002D /* MusicSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MusicSheet.swift; sourceTree = "<group>"; };
 		E4A00000000000000000002F /* FirstHint.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FirstHint.swift; sourceTree = "<group>"; };
-		E4A000000000000000000031 /* HomeV23Sections.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV23Sections.swift; sourceTree = "<group>"; };
+		E4A000000000000000000031 /* HomeDarkroom.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeDarkroom.swift; sourceTree = "<group>"; };
 		E4A000000000000000000033 /* GroupChat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupChat.swift; sourceTree = "<group>"; };
 		E4A000000000000000000035 /* GroupChatRoom.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupChatRoom.swift; sourceTree = "<group>"; };
 		E4A000000000000000000041 /* Fonts/InstrumentSerif-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/InstrumentSerif-Regular.ttf"; sourceTree = "<group>"; };
@@ -775,7 +775,7 @@
 				E4A000000000000000000003 /* HomeV17Sections.swift */,
 				E4A000000000000000000023 /* HomeV22.swift */,
 				E4A00000000000000000002F /* FirstHint.swift */,
-				E4A000000000000000000031 /* HomeV23Sections.swift */,
+				E4A000000000000000000031 /* HomeDarkroom.swift */,
 				E4A000000000000000000049 /* AppLanguage.swift */,
 				E4A000000000000000000035 /* GroupChatRoom.swift */,
 				E4A000000000000000000033 /* GroupChat.swift */,
@@ -1219,7 +1219,7 @@
 				E4A000000000000000000004 /* HomeV17Sections.swift in Sources */,
 				E4A000000000000000000024 /* HomeV22.swift in Sources */,
 				E4A000000000000000000030 /* FirstHint.swift in Sources */,
-				E4A000000000000000000032 /* HomeV23Sections.swift in Sources */,
+				E4A000000000000000000032 /* HomeDarkroom.swift in Sources */,
 				E4A00000000000000000004A /* AppLanguage.swift in Sources */,
 				E4A000000000000000000036 /* GroupChatRoom.swift in Sources */,
 				E4A000000000000000000034 /* GroupChat.swift in Sources */,
