@@ -11,7 +11,7 @@ import UIKit
 // - 合図は 見た目だけ。ヒット判定を 持たない(部品の タップは そのまま 通る)
 
 enum FirstHintKey: String, CaseIterable, Sendable {
-    case first, unlock, tag, shoot, orb, grp
+    case first, unlock, tag, shoot, orb, keep, grp
 
     var text: String {
         switch self {
@@ -20,6 +20,7 @@ enum FirstHintKey: String, CaseIterable, Sendable {
         case .tag: "ひとこと タグ。なくても OK"
         case .shoot: "ながおしで 撮る"
         case .orb: "タップで、みんなの 今日"
+        case .keep: "長押しで、1年 のこす"
         case .grp: "ともだちと、見せあう"
         }
     }

@@ -13,7 +13,8 @@ struct FirstHintTests {
     }
 
     @Test func 文言は表のとおり() {
-        #expect(FirstHintKey.allCases == [.first, .unlock, .tag, .shoot, .orb, .grp])
+        #expect(FirstHintKey.allCases == [.first, .unlock, .tag, .shoot, .orb, .keep, .grp])
+        #expect(FirstHintKey.keep.text == "長押しで、1年 のこす")
         #expect(FirstHintKey.first.text == "ここから、1枚目")
         #expect(FirstHintKey.unlock.text == "撮ると、きのうが 1枚 ひらく")
         #expect(FirstHintKey.tag.text == "ひとこと タグ。なくても OK")

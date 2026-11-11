@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// 白 × シックの Home(撮る前の今日のホーム:first・dawn と、月が出る夜の night・rest)。
@@ -41,6 +42,8 @@ struct ChicHomeView: View {
     var bump: V17Bump?
 
     @Environment(\.palette) private var palette
+    /// v23:自分の 写真(きのうの 3こま・7日の film)
+    @Query private var profiles: [UserProfile]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.selectedMainTabIndex) private var selectedMainTabIndex
@@ -221,6 +224,11 @@ struct ChicHomeView: View {
                 .v17Reveal()
                 .id(HomeV17Section.film.rawValue)
 
+            // v23:2日目から(MONDO の ことば → きのうの 3こま → 7日の film → WORLD)
+            if !initial {
+                v23Sections
+            }
+
             // ともだち(D は あとで。いまは v17 の まま 置いておく)
             if let bump {
                 V17FriendsSection(friends: v17.friends, ink: V17Ink(night: palette.isNight), feel: feel, actions: v17Actions, bump: bump)
@@ -233,6 +241,35 @@ struct ChicHomeView: View {
         }
         .opacity(isDiving ? 0 : 1)
         .animation(.easeOut(duration: 0.32), value: isDiving)
+    }
+
+    /// v23 の 区画(見本 later_v23.html の d2only)
+    @ViewBuilder
+    private var v23Sections: some View {
+        let ink = V17Ink(night: palette.isNight)
+        let photos = UserProfile.current(from: profiles)?.photos ?? []
+        let days = MERules.days(photos: photos, now: now)
+        V17WordsSection(mode: HomeV17Rules.wordsMode(state: state, shotsToday: max(FilmCounter.shared.used, v17.shots.count)),
+                        words: v17.words, countries: v17.countries, ink: ink, actions: v17Actions)
+            .padding(.horizontal, 22)
+            .padding(.top, 72)
+            .v17Reveal()
+        let yesterday = V23Rules.yesterdayShots(days)
+        if let day = days.first(where: { $0.ago == 1 }), !yesterday.isEmpty {
+            V23YesterdaySection(day: day, shots: yesterday, photos: photos, ink: ink,
+                                hintEligible: hintsAllowed && FilmCounter.shared.used >= 1)
+                .padding(.horizontal, 22)
+                .padding(.top, 72)
+                .v17Reveal()
+        }
+        V23WeekFilmSection(days: days, photos: photos, ink: ink, onToast: v17Actions.toast)
+            .padding(.horizontal, 22)
+            .padding(.top, 72)
+            .v17Reveal()
+        V23WorldSection(ink: ink)
+            .padding(.horizontal, 22)
+            .padding(.top, 72)
+            .v17Reveal()
     }
 
     /// はじめての 合図を 出してよい(Home が 前面・オープニングと 登場が おわった・もぐっていない)

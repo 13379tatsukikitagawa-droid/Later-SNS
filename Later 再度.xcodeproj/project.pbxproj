@@ -241,6 +241,7 @@
 		E4A00000000000000000002C /* MusicPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002B /* MusicPick.swift */; };
 		E4A00000000000000000002E /* MusicSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002D /* MusicSheet.swift */; };
 		E4A000000000000000000030 /* FirstHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A00000000000000000002F /* FirstHint.swift */; };
+		E4A000000000000000000032 /* HomeV23Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000031 /* HomeV23Sections.swift */; };
 		EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B4C22287B8F839F97B59D7 /* UserDirectoryService.swift */; };
 		EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */; };
 		F303E145110044B583E3ABFF /* DepthMapEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA209DF2AC745098562D3BF /* DepthMapEncoder.swift */; };
@@ -514,6 +515,7 @@
 		E4A00000000000000000002B /* MusicPick.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MusicPick.swift; sourceTree = "<group>"; };
 		E4A00000000000000000002D /* MusicSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MusicSheet.swift; sourceTree = "<group>"; };
 		E4A00000000000000000002F /* FirstHint.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FirstHint.swift; sourceTree = "<group>"; };
+		E4A000000000000000000031 /* HomeV23Sections.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV23Sections.swift; sourceTree = "<group>"; };
 		E8ED391917F67A87CD691ABF /* Fonts/Caveat-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Caveat-Bold.ttf"; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingV2Views.swift; sourceTree = "<group>"; };
@@ -853,6 +855,7 @@
 				E4A000000000000000000003 /* HomeV17Sections.swift */,
 				E4A000000000000000000023 /* HomeV22.swift */,
 				E4A00000000000000000002F /* FirstHint.swift */,
+				E4A000000000000000000031 /* HomeV23Sections.swift */,
 				E4A000000000000000000029 /* YesterdayGroupHero.swift */,
 				E4A000000000000000000025 /* HomeDevelopViewer.swift */,
 				E4A000000000000000000021 /* OpeningV21.swift */,
@@ -1336,6 +1339,7 @@
 				E4A000000000000000000004 /* HomeV17Sections.swift in Sources */,
 				E4A000000000000000000024 /* HomeV22.swift in Sources */,
 				E4A000000000000000000030 /* FirstHint.swift in Sources */,
+				E4A000000000000000000032 /* HomeV23Sections.swift in Sources */,
 				E4A00000000000000000002A /* YesterdayGroupHero.swift in Sources */,
 				E4A000000000000000000026 /* HomeDevelopViewer.swift in Sources */,
 				E4A000000000000000000022 /* OpeningV21.swift in Sources */,
