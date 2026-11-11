@@ -297,8 +297,6 @@ DEFINE SCHEMA
         reporterCloudKitUserRecordName STRING,
         targetID                       STRING,
         targetType                     STRING QUERYABLE,
-        GRANT READ TO "_creator",
-        GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "MondoServer"
     );
@@ -334,6 +332,41 @@ DEFINE SCHEMA
         memberId        STRING,
         memberName      STRING,
         targetId        STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE GroupChatMessage (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        expiresAt       TIMESTAMP,
+        groupRef        REFERENCE,
+        kind            STRING,
+        photoRef        REFERENCE,
+        senderId        STRING,
+        sentAt          TIMESTAMP,
+        stickerId       STRING,
+        text            STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE GroupChatSticker (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        messageRef      REFERENCE,
+        senderId        STRING,
+        stickerId       STRING,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"

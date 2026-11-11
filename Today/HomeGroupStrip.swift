@@ -341,7 +341,14 @@ private struct HomeGroupCard: View {
                     .foregroundStyle(palette.ink)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                if let inviting = summary.invitingText {
+                if let preview = summary.chatPreview, summary.inviting == nil {
+                    // v23:最後の メッセージ
+                    Text(preview)
+                        .font(.system(size: 10.5, weight: summary.chatUnread ? .bold : .regular))
+                        .foregroundStyle(summary.chatUnread ? palette.ink : GroupCardColors.count(night: palette.isNight))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                } else if let inviting = summary.invitingText {
                     // v22:つくった ばかり・承認まち(「招待中」の ピル)
                     Text(inviting)
                         .font(.system(size: 10.5, weight: .bold))
@@ -372,6 +379,13 @@ private struct HomeGroupCard: View {
                 .strokeBorder(auraColors[1].opacity(palette.isNight ? 0.45 : 0.35), lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: HomeGroupStrip.cardRadius, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            // v23:新しい メッセージ(数字は 出さない)
+            if summary.chatUnread {
+                Circle().fill(Color(hex: "FF6A1A")).frame(width: 9, height: 9).padding(12)
+                    .accessibilityLabel("新しい メッセージ")
+            }
+        }
     }
 
     private func arrive() {

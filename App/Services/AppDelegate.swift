@@ -56,6 +56,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
         handlePhotoNotificationTapIfNeeded(userInfo: userInfo)
+        // v23:チャットの 通知(端末で 出した ローカル通知)→ その 部屋を ひらく
+        if let raw = userInfo["chatGroup"] as? String, let groupID = UUID(uuidString: raw) {
+            Task { @MainActor in NotificationCenter.default.post(name: .chatNotificationTapped, object: groupID) }
+        }
         completionHandler()
     }
 
@@ -98,6 +102,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 }
 
 extension Notification.Name {
+    /// v23:チャットの 通知を タップした(object = グループの UUID)
+    static let chatNotificationTapped = Notification.Name("chatNotificationTapped")
     /// 撮影通知(PhotoNotificationService)をタップした時に発行される。MainTabViewが
     /// これを監視してHomeタブへ切り替える。GroupSelectionStore.selectedGroupIDの更新は
     /// この通知より前に完了している。

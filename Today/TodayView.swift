@@ -71,6 +71,8 @@ struct TodayView: View {
     /// グループのシート
     @Environment(\.palette) private var palette
     @State private var sheetGroup: LaterGroup?
+    /// v23:グループの 部屋(チャット)
+    @State private var chatGroup: LaterGroup?
     /// いま入ったグループ(Home の列に「ぽんと入る」)
     @State private var arrivingGroupID: UUID?
     /// グループの招待の QR(画面いっぱいに重ねる)
@@ -312,7 +314,7 @@ struct TodayView: View {
 
     /// グループの列の要約(昨日、投稿した人数。だれが投稿したかは持たない)
     private var groupSummaries: [GroupSummary] {
-        GroupRingMath.summaries(for: sharedGroups, now: now)
+        GroupRingMath.summaries(for: sharedGroups, now: now, blocked: Set(blockedUsers.map(\.blockedCloudKitUserRecordName)))
     }
 
     /// 今日(直近の窓)預けた人数(グループごと。誰が預けたかは出さない)
@@ -470,7 +472,7 @@ struct TodayView: View {
         // グループの絞りこみは重い(全グループ × メンバー)。毎フレーム動く TimelineView の中で
         // 何度も計算しないよう、ここで1回だけ求める。
         let sharedGroups = self.sharedGroups
-        let groupSummaries = GroupRingMath.summaries(for: sharedGroups, now: now)
+        let groupSummaries = GroupRingMath.summaries(for: sharedGroups, now: now, blocked: Set(blockedUsers.map(\.blockedCloudKitUserRecordName)))
         let canCreateGroup = sharedGroups.count < GroupMembershipPolicy.maxGroupsPerUser
         return ZStack {
             (isChicHome && screen == .home ? palette.bg : Color.black).ignoresSafeArea()
@@ -497,7 +499,7 @@ struct TodayView: View {
                 avatarSwitch: avatarSwitch,
                 avatarName: currentUser?.name ?? "",
                 onDevelopTap: { developPage = 0; showingDevelopSheet = true },
-                onSelectGroup: { id in sheetGroup = sharedGroups.first { $0.id == id } },
+                onSelectGroup: { id in openChat(id) },
                 onCreateGroup: { newGroupPrefill = nil; showingNewGroup = true },
                 onJoinGroup: {
                     NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.scan)
@@ -541,7 +543,7 @@ struct TodayView: View {
                     isCovered: isHomeCovered,
                     shotEvent: shotEvent,
                     onOpenProfile: onOpenProfile,
-                    onOpenGroupSheet: { id in sheetGroup = sharedGroups.first { $0.id == id } },
+                    onOpenGroupSheet: { id in openChat(id) },
                     onAddGroup: { showingAddGroupSheet = true },
                     onCreateGroup: { prefill in
                         newGroupPrefill = prefill
@@ -760,6 +762,17 @@ struct TodayView: View {
                 toast(lockedToast)
                     .allowsHitTesting(false)
                     .transition(.opacity)
+            }
+
+            if let group = chatGroup {
+                GroupChatRoomView(
+                    group: group,
+                    friends: layerData(sharedGroups: sharedGroups).friends,
+                    onClose: { withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) { chatGroup = nil } },
+                    onOpenGroupSheet: { sheetGroup = group }
+                )
+                .transition(.move(edge: .trailing))
+                .zIndex(9)
             }
 
             if let group = sheetGroup {
@@ -1035,6 +1048,12 @@ struct TodayView: View {
         // ウィジェット:撮影・昨日をひらく・日付が変わる(状態が変わる)たびに、値を書いて更新
         .onAppear { syncWidget() }
         .onChange(of: hintBlocked, initial: true) { _, blocked in HintCenter.shared.setBlocked("today", blocked) }
+        // v23:通知(「新しいメッセージが あります」)を タップ → その 部屋
+        .onReceive(NotificationCenter.default.publisher(for: .chatNotificationTapped)) { note in
+            if let id = note.object as? UUID { openChat(id) }
+        }
+        // v23:7日を すぎた メッセージの 掃除
+        .task { await GroupChatStore.shared.prune(groups: sharedGroups) }
         .task { await refreshBumpFriends() }
         .task {
             // v21:途中で止まった RETRO-8 の書き出しを、つづきから
@@ -1315,7 +1334,7 @@ struct TodayView: View {
 
     /// 合図を 出さない 間(シート・グループ作成・現像画面・トースト)
     private var hintBlocked: Bool {
-        showingNewGroup || sheetGroup != nil || showingDevelopSheet || showingAddGroupSheet || showingFriendsHub
+        showingNewGroup || sheetGroup != nil || showingDevelopSheet || showingAddGroupSheet || showingFriendsHub || chatGroup != nil
             || revealRequest != nil || revealCover || lockedToast != nil
     }
 
@@ -2260,7 +2279,13 @@ struct TodayView: View {
 
     /// Homeの上に別の画面・シートが重なっているか
     private var isHomeCovered: Bool {
-        screen != .home || showingNewGroup || sheetGroup != nil || showingDevelopSheet || showingAddGroupSheet
+        screen != .home || showingNewGroup || sheetGroup != nil || showingDevelopSheet || showingAddGroupSheet || chatGroup != nil
+    }
+
+    /// v23:グループの 行を タップ → 部屋が 右から 入る
+    private func openChat(_ id: UUID) {
+        guard let group = sharedGroups.first(where: { $0.id == id }) else { return }
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.88)) { chatGroup = group }
     }
 
     /// 追加シートで選んだ:ごく軽く1回(えらぶ)→ シートを閉じてから、いつもの画面へ

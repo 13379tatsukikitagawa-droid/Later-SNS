@@ -21,6 +21,9 @@ struct GroupSummary: Identifiable, Equatable {
     var faceMosaicKey = ""
     /// v22:招待中(nil なら 出さない)。0 = まだ 自分だけ・N = 招待カードの 承認まち N人
     var inviting: Int? = nil
+    /// v23:最後の メッセージ(「れな: あと そらだけ…」)と、新しいのが あるか(数は 出さない)
+    var chatPreview: String? = nil
+    var chatUnread = false
 
     /// ピルの 文字(「招待中」「招待中 3人」)
     var invitingText: String? {
@@ -100,7 +103,7 @@ enum GroupRingMath {
     ]
 
     /// MEを除いた参加中のグループから、要約を作る(並び順は呼び出し側のまま。投稿数では並べない)
-    static func summaries(for groups: [LaterGroup], now: Date) -> [GroupSummary] {
+    static func summaries(for groups: [LaterGroup], now: Date, blocked: Set<String> = []) -> [GroupSummary] {
         let auras = auraIndices(for: groups.map(\.id))
         return zip(groups, auras).map { group, aura in
             GroupSummary(
@@ -115,9 +118,25 @@ enum GroupRingMath {
                 showsInitial: group.showsInitial,
                 faceMosaic: faceMosaic(for: group, now: now)?.mosaicTiny,
                 faceMosaicKey: faceMosaic(for: group, now: now)?.imageCacheKey ?? "",
-                inviting: inviting(for: group)
+                inviting: inviting(for: group),
+                chatPreview: chatPreview(for: group, blocked: blocked),
+                chatUnread: GroupChatStore.shared.hasUnread(group.id, me: CloudKitManager.current?.currentUserRecordName, blocked: blocked)
             )
         }
+    }
+
+    /// 行の 小さい文:最後の メッセージ(「れな: …」)
+    static func chatPreview(for group: LaterGroup, blocked: Set<String>) -> String? {
+        guard let last = GroupChatStore.shared.last(group.id, blocked: blocked) else { return nil }
+        let me = CloudKitManager.current?.currentUserRecordName
+        let who = last.senderId == me ? "あなた" : (group.members.first { $0.cloudKitUserRecordName == last.senderId }?.name ?? "なかま")
+        let body: String
+        switch last.kind {
+        case .sticker: body = "#" + (last.stickerId ?? "")
+        case .photoReply: body = last.text.isEmpty ? "写真に 返信" : last.text
+        default: body = last.text
+        }
+        return "\(who): \(body)"
     }
 
     /// 招待中:承認まちの 招待カードが あれば その数。なければ、まだ 自分だけの とき 0

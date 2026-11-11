@@ -21,6 +21,8 @@ enum ModerationService {
         case user
         /// Mondo(世界の昨日)の公開写真。targetID は MondoPhoto のレコード名
         case mondoPhoto
+        /// v23 グループの 部屋の メッセージ。targetID は GroupChatMessage の レコード名(本文の 写しは detail)
+        case chatMessage
     }
 
     enum ReportReason: String, CaseIterable, Identifiable {
@@ -41,10 +43,22 @@ enum ModerationService {
         detail: String,
         reporterCloudKitUserRecordName: String?
     ) async throws {
+        try await submitReport(targetType: targetType, targetID: targetID, reasonText: reason.rawValue, detail: detail,
+                               reporterCloudKitUserRecordName: reporterCloudKitUserRecordName)
+    }
+
+    /// 理由を 文字で 渡す 版(チャットの 理由:いやがらせ / 性的な 内容 / 個人情報 / そのほか)
+    static func submitReport(
+        targetType: ReportTargetType,
+        targetID: String,
+        reasonText: String,
+        detail: String,
+        reporterCloudKitUserRecordName: String?
+    ) async throws {
         let record = CKRecord(recordType: AppRecordType.report)
         record["targetType"] = targetType.rawValue
         record["targetID"] = targetID
-        record["reason"] = reason.rawValue
+        record["reason"] = reasonText
         record["detail"] = detail
         record["reporterCloudKitUserRecordName"] = reporterCloudKitUserRecordName
         record["reportedAt"] = Date()

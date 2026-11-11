@@ -875,6 +875,12 @@ final class CloudKitManager: NSObject {
         // 抜けたグループ(作った人は共有から外れられない)は、同期で届いても取りこまない
         if LeftGroupsStore.contains(record.recordID.zoneID) { return }
         switch record.recordType {
+        case ChatRecordType.message, ChatRecordType.sticker:
+            // v23 グループの 部屋:端末の JSON に 入れる(SwiftData には 入れない)
+            if let group = fetchOne(LaterGroup.self, { $0.cachedZoneID == record.recordID.zoneID }) {
+                GroupChatStore.shared.receive(record: record, groupID: group.id, myRecordName: currentUserRecordName)
+            }
+            return
         case AppRecordType.memberEvent:
             // 今日のホームの層の「ノック」(文字なし)。自分あてなら1回だけ知らせる
             if KnockInbox.handle(record: record, myRecordName: currentUserRecordName) { return }
@@ -919,6 +925,8 @@ final class CloudKitManager: NSObject {
     private func applyDeletion(recordID: CKRecord.ID, recordType: CKRecord.RecordType) {
         let recordName = recordID.recordName
         switch recordType {
+        case ChatRecordType.message, ChatRecordType.sticker:
+            GroupChatStore.shared.removeRecord(named: recordName)
         case AppRecordType.memberEvent:
             MemberEventStore.remove(id: recordName)
         case AppRecordType.photoVote:
