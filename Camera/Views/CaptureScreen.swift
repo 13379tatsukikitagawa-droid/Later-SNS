@@ -174,7 +174,8 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
         }
     }
 
-    func stop() {
+    /// 止める(stopRunning は sessionQueue で。メインでは 待たない)。onStopped は 止まりきったとき(sessionQueue)
+    func stop(onStopped: (@Sendable () -> Void)? = nil) {
         dispatchPrecondition(condition: .onQueue(.main))
         stopsWhenIdle = false
         wantsRunning = false
@@ -188,6 +189,7 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
             if self?.audioConfigured == true {
                 try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
             }
+            onStopped?()
         }
     }
 

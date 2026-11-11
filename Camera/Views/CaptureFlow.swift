@@ -10,6 +10,7 @@
 
 import SwiftUI
 import UIKit
+import os
 
 struct CaptureFlow: View {
     enum Step {
@@ -29,6 +30,8 @@ struct CaptureFlow: View {
     var onCaptureFailed: () -> Void = {}
     /// v20:録った動画(1秒以上)。保存だけ行う
     var onFinishVideo: (_ video: RecordedVideo, _ tags: [String], _ place: String?, _ shotIndex: Int) -> Void = { _, _, _, _ in }
+    /// テスト(計測)用:はじめから 撮影画面で ひらく
+    var startsAtCapture = false
 
     @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -57,6 +60,10 @@ struct CaptureFlow: View {
     /// 動きの途中のタップを無視する
     @State private var navBusy = false
     @State private var transitionToken = UUID()
+    /// v22 A:タグ画面の 出かた(はじめは 時間差・撮影画面から もどるときは すぐ 全部)
+    @State private var tagEntrance: TagScreen.Entrance = .stagger
+    /// 戻る・閉じるは 1回だけ(連打を 無視)
+    @State private var cancelled = false
 
     // 撮ったあと(ブリンク → フラッシュ → ミルク色のチェキ)
     @State private var shotStart: Date?
@@ -99,6 +106,11 @@ struct CaptureFlow: View {
         .onChange(of: tags) { _, newValue in
             if draftLoaded { TagDraft.save(newValue) }
         }
+        #if DEBUG
+        // 計測の テストから、ボタンを 押したのと 同じ 処理を 呼ぶ
+        .onReceive(NotificationCenter.default.publisher(for: BackTiming.benchChip)) { _ in backToTags() }
+        .onReceive(NotificationCenter.default.publisher(for: BackTiming.benchBack)) { _ in cancel() }
+        #endif
     }
 
     @ViewBuilder
@@ -114,7 +126,8 @@ struct CaptureFlow: View {
                 hidesCard: expandCopy,
                 onCardFrame: { cardFrame = $0 },
                 onClose: cancel,
-                onStart: { withTags in goCapture(withTags: withTags, layout: layout) }
+                onStart: { withTags in goCapture(withTags: withTags, layout: layout) },
+                entrance: tagEntrance
             )
             .transition(.opacity)
         case .capture:
@@ -202,6 +215,11 @@ struct CaptureFlow: View {
 
     private func appear() {
         haptics.prepare()
+        if startsAtCapture, step == .tags {
+            shotTags = tags
+            camera.start()
+            step = .capture
+        }
         if CaptureClock.isRestTime() {
             isRestTime = true
             haptics.playSoftDouble()
@@ -333,11 +351,19 @@ struct CaptureFlow: View {
     }
 
     /// タグのカプセルをタップ:タグ画面へもどる(なおす)
+    /// v22 A:画面を 先に 出す(時間差の 登場は しない・キーボードは そのあと)。2回目からは 無視
     private func backToTags() {
-        guard shotStart == nil else { return }
+        guard shotStart == nil, step == .capture else { return }
+        BackTiming.begin(.chipToTags)
         resetTransition()
-        withAnimation(.easeOut(duration: 0.3)) { step = .tags }
+        tagEntrance = .instant
+        withAnimation(.easeOut(duration: Self.backFade)) { step = .tags }
+        BackTiming.mark("③切りかえの開始", on: .chipToTags)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.backFade) { BackTiming.mark("⑦動きが おわる(全部 見える)", on: .chipToTags) }
     }
+
+    /// 撮影画面 → タグ画面の クロスフェード
+    static let backFade = 0.2
 
     /// v20:録った動画(1秒以上)。保存は今すぐ(見せる動きとは つなげない)。見た目は穴あきのミルク色のチェキで、ホームへ
     private func recorded(_ video: RecordedVideo, layout: CaptureLayout) {
@@ -364,9 +390,97 @@ struct CaptureFlow: View {
 
     /// 戻る・閉じる:動きの途中でも、すぐやめて Home へ
     private func cancel() {
+        guard !cancelled else { return }
+        cancelled = true
+        BackTiming.begin(.backToHome)
         resetTransition()
-        camera.stop()
+        camera.stop(onStopped: { BackTiming.mark("②カメラの停止(おわり)", on: .backToHome) })
+        BackTiming.mark("②カメラの停止(たのんだ)", on: .backToHome)
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        BackTiming.mark("④ホームへ 知らせた", on: .backToHome)
         onCancel()
+    }
+}
+
+// MARK: - 戻るの 計測(v22 A)
+
+/// 撮影画面から 戻るときの 時間を、段階ごとに はかる。
+/// os_signpost(Instruments の Points of Interest)と、コンソールの 1行(`[BackTiming]`)に 出す。
+/// 「タグの カプセル → タグ画面」と「「<」→ ホーム」の 2つ。
+enum BackTiming {
+    enum Path: String, Sendable {
+        case chipToTags = "タグのカプセル→タグ画面"
+        case backToHome = "「<」→ホーム"
+    }
+
+    struct Mark: Equatable, Sendable {
+        let stage: String
+        let ms: Double
+    }
+
+    #if DEBUG
+    static let benchChip = Notification.Name("BackTiming.benchChip")
+    static let benchBack = Notification.Name("BackTiming.benchBack")
+    #endif
+
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var path: Path?
+    nonisolated(unsafe) private static var start: CFAbsoluteTime = 0
+    nonisolated(unsafe) private static var marks: [Mark] = []
+    private static let osLog = OSLog(subsystem: "jp.shotoku.later", category: .pointsOfInterest)
+    private static let logger = Logger(subsystem: "jp.shotoku.later", category: "BackTiming")
+
+    /// ボタンを 押した 瞬間
+    static func begin(_ newPath: Path) {
+        lock.lock()
+        path = newPath
+        start = CFAbsoluteTimeGetCurrent()
+        marks = [Mark(stage: "①タップ", ms: 0)]
+        lock.unlock()
+        os_signpost(.event, log: osLog, name: "BackTiming", "%{public}s ①タップ", newPath.rawValue)
+    }
+
+    /// 段階を 記録(どのスレッドからでも よい)。その 道すじの 計測中で なければ 何もしない
+    static func mark(_ stage: String, on expected: Path? = nil) {
+        lock.lock()
+        guard let current = path, expected == nil || expected == current else { lock.unlock(); return }
+        let ms = (CFAbsoluteTimeGetCurrent() - start) * 1000
+        // 1つの 計測は 3秒まで。同じ 段階は 1回だけ(あとから 来た キーボードなどを まぜない)
+        guard ms < 3000, !marks.contains(where: { $0.stage == stage }) else { lock.unlock(); return }
+        marks.append(Mark(stage: stage, ms: ms))
+        lock.unlock()
+        os_signpost(.event, log: osLog, name: "BackTiming", "%{public}s %{public}s", current.rawValue, stage)
+        logger.notice("[BackTiming] \(current.rawValue, privacy: .public) \(stage, privacy: .public): \(ms, format: .fixed(precision: 1), privacy: .public)ms")
+    }
+
+    /// テスト・報告用:いまの 計測の 段階
+    static func snapshot() -> (path: Path?, marks: [Mark]) {
+        lock.lock(); defer { lock.unlock() }
+        return (path, marks)
+    }
+}
+
+/// 次に 画面が 描かれた 瞬間に 1回だけ 呼ぶ(CADisplayLink)
+@MainActor
+final class NextFrame: NSObject {
+    private var link: CADisplayLink?
+    private var work: (() -> Void)?
+    private static var alive: Set<NextFrame> = []
+
+    static func after(_ work: @escaping () -> Void) {
+        let probe = NextFrame()
+        probe.work = work
+        let link = CADisplayLink(target: probe, selector: #selector(fire))
+        probe.link = link
+        alive.insert(probe)
+        link.add(to: .main, forMode: .common)
+    }
+
+    @objc private func fire() {
+        link?.invalidate()
+        link = nil
+        work?()
+        work = nil
+        NextFrame.alive.remove(self)
     }
 }

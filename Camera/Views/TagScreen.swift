@@ -243,6 +243,15 @@ struct TagScreen: View {
     var onClose: () -> Void = {}
     /// 「撮る」(true)/「つけずに撮る」(false)
     var onStart: (_ withTags: Bool) -> Void = { _ in }
+    /// v22 A:出かた。撮影画面から もどるときは .instant(時間差なしで すぐ 全部・キーボードは そのあと)
+    var entrance: Entrance = .stagger
+
+    enum Entrance: Equatable {
+        /// ひらく とき:部品が 順に 出る(最大 約1.1秒)
+        case stagger
+        /// もどる とき:最初の コマから 全部 見える
+        case instant
+    }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
@@ -370,6 +379,9 @@ struct TagScreen: View {
         .preferredColorScheme(.dark)
         .onAppear(perform: appear)
         .onDisappear { placeholderTask?.cancel() }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
+            BackTiming.mark("⑥キーボードが 出た", on: .chipToTags)
+        }
         .onChange(of: inputFocused) { _, focused in
             if focused {
                 // L-1:キーボードが 出た しゅんかんに、ごく軽い tick を 1回
@@ -570,10 +582,29 @@ struct TagScreen: View {
             popular2 = rows.second
         }
         startPlaceholder()
-        DispatchQueue.main.async { phase = .shown }
-        // L-1:ひらく動き(フェードイン)が おわってから、入力欄に フォーカス(キーボードを 出す)。動きの途中だと カクつく
-        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.62)) {
+        BackTiming.mark("④タグ画面の onAppear", on: .chipToTags)
+        NextFrame.after { BackTiming.mark("⑤タグ画面の 最初の コマ", on: .chipToTags) }
+        let focusDelay: Double
+        switch entrance {
+        case .instant:
+            // 時間差の 登場を しない:最初の コマから 全部 見える(暗黙の アニメーションも 切る)
+            var instant = Transaction()
+            instant.disablesAnimations = true
+            withTransaction(instant) { phase = .shown }
+            // キーボードは、切りかえ(クロスフェード)が おわってから
+            focusDelay = CaptureFlow.backFade + 0.05
+        case .stagger:
+            DispatchQueue.main.async { phase = .shown }
+            // いちばん おそい 部品(ことばの 2列):0.48秒 待って 0.6秒
+            DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.31 : 1.08)) {
+                BackTiming.mark("⑦動きが おわる(全部 見える)", on: .chipToTags)
+            }
+            // L-1:ひらく動き(フェードイン)が おわってから、入力欄に フォーカス(キーボードを 出す)。動きの途中だと カクつく
+            focusDelay = reduceMotion ? 0.3 : 0.62
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + focusDelay) {
             guard phase == .shown, !closing, !leaving, !isFull, !voiceOver else { return }
+            BackTiming.mark("⑥キーボード(たのんだ)", on: .chipToTags)
             inputFocused = true
         }
     }

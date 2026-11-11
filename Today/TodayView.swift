@@ -1399,7 +1399,9 @@ struct TodayView: View {
         if usesV5Home {
             // 撮影後の Home:撮影画面が左へ引っこむ(視差効果を減らす が入っているときは、フェード)
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            withAnimation(reduceMotion ? .easeOut(duration: 0.25) : .spring(response: 0.45, dampingFraction: 0.86)) { screen = .home }
+            // v22 A:0.3秒で おわる(前は spring 0.45)
+            withAnimation(HomeReturnMotion.v5(reduceMotion: reduceMotion)) { screen = .home }
+            HomeReturnMotion.markStarted()
             return
         }
         isMoonAnimating = true
@@ -1426,11 +1428,14 @@ struct TodayView: View {
             moonTextOpacity = 0
             screen = .home
         }
-        withAnimation(.timingCurve(0.3, 0, 0.2, 1, duration: 0.64)) { moonScale = 1 }
-        withAnimation(.easeOut(duration: 0.455).delay(0.245)) { homeOpacity = 1 }
-        withAnimation(.easeOut(duration: 0.3).delay(0.34)) { bottomFadeOpacity = 1 }
-        withAnimation(.easeOut(duration: 0.3).delay(0.5)) { moonTextOpacity = 1 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { if moonToken == token { isMoonAnimating = false } }
+        // v22 A:ぜんぶ 0.3秒で おわる(前は 月 0.64秒・文字 〜0.8秒)
+        let m = HomeReturnMotion.moon
+        withAnimation(.timingCurve(0.3, 0, 0.2, 1, duration: m.scale)) { moonScale = 1 }
+        withAnimation(.easeOut(duration: m.homeDuration).delay(m.homeDelay)) { homeOpacity = 1 }
+        withAnimation(.easeOut(duration: m.bottomDuration).delay(m.bottomDelay)) { bottomFadeOpacity = 1 }
+        withAnimation(.easeOut(duration: m.textDuration).delay(m.textDelay)) { moonTextOpacity = 1 }
+        HomeReturnMotion.markStarted()
+        DispatchQueue.main.asyncAfter(deadline: .now() + m.total + 0.02) { if moonToken == token { isMoonAnimating = false } }
     }
 
     /// 複数グループをまたぐ画面なので、Private/Shared両DBの変更をまとめて取り込む。
@@ -2270,4 +2275,41 @@ struct RevealRequest: Identifiable {
     let key: String
     let ordinal: Int
     let playsReveal: Bool
+}
+
+
+// MARK: - 撮影画面 → ホームの 動き(v22 A:0.3秒以内)
+
+enum HomeReturnMotion {
+    struct Moon {
+        let scale: Double
+        let homeDelay: Double
+        let homeDuration: Double
+        let bottomDelay: Double
+        let bottomDuration: Double
+        let textDelay: Double
+        let textDuration: Double
+
+        /// いちばん おそく おわる 動き
+        var total: Double {
+            max(scale, homeDelay + homeDuration, bottomDelay + bottomDuration, textDelay + textDuration)
+        }
+    }
+
+    /// 月が ちぢんで もどる(ホームが うすく 出て、下の 帯・月の 文字の 順)
+    static let moon = Moon(scale: 0.3, homeDelay: 0.06, homeDuration: 0.24, bottomDelay: 0.1, bottomDuration: 0.2, textDelay: 0.14, textDuration: 0.16)
+
+    /// 撮影後の ホーム(撮影画面が 左へ 引っこむ)
+    static func v5(reduceMotion: Bool) -> Animation {
+        reduceMotion ? .easeOut(duration: 0.25) : .smooth(duration: 0.3)
+    }
+
+    static var settleTime: Double { moon.total }
+
+    @MainActor
+    static func markStarted() {
+        BackTiming.mark("③ホームへの 切りかえの開始", on: .backToHome)
+        NextFrame.after { BackTiming.mark("⑤ホームの 最初の コマ", on: .backToHome) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + settleTime) { BackTiming.mark("⑦動きが おわる", on: .backToHome) }
+    }
 }
