@@ -55,10 +55,10 @@ enum MondoGeo {
             let region = place.region.flatMap { $0.isEmpty ? nil : $0 }
             return MondoLight(
                 id: key,
-                name: region ?? place.countryName,
+                name: region ?? localCountryName(place.countryCode, fallback: place.countryName),
                 latinName: latinName(countryCode: place.countryCode, region: region) ?? (region ?? place.countryName).uppercased(),
                 countryCode: place.countryCode.uppercased(),
-                countryName: englishCountry[place.countryCode.uppercased()] ?? place.countryName,
+                countryName: latinCountryName(place.countryCode) ?? place.countryName,
                 point: point,
                 count: list.count,
                 tags: tags,
@@ -95,7 +95,7 @@ enum MondoGeo {
     static func latinName(countryCode: String, region: String?) -> String? {
         let code = countryCode.uppercased()
         if let region, !region.isEmpty, let hit = regionTable[code]?[normalize(region)] { return hit.latin }
-        if region == nil || region?.isEmpty == true { return englishCountry[code]?.uppercased() }
+        if region == nil || region?.isEmpty == true { return latinCountryName(code)?.uppercased() }
         return nil
     }
 
@@ -212,7 +212,22 @@ enum MondoGeo {
         "MM": (16.9, 96.2), "LA": (17.97, 102.6), "MO": (22.2, 113.5), "GU": (13.4, 144.8),
     ]
 
-    /// 英字の国名(カードの「国 ・ 緯度 経度」用)
+    /// 国の名前(アプリの 言語で。iOS の Locale から)。わからなければ 送られてきた 名前
+    static func localCountryName(_ code: String, fallback: String) -> String {
+        let upper = code.uppercased()
+        guard Locale.Region(upper).isISORegion else { return fallback }
+        return Locale.current.localizedString(forRegionCode: upper) ?? fallback
+    }
+
+    /// 英字の 国名(カードの「国 ・ 緯度 経度」・照準の 下)。短い 呼び名の 表 → なければ Locale(英語)
+    static func latinCountryName(_ code: String) -> String? {
+        let upper = code.uppercased()
+        if let short = englishCountry[upper] { return short }
+        guard Locale.Region(upper).isISORegion else { return nil }
+        return Locale(identifier: "en_US").localizedString(forRegionCode: upper)
+    }
+
+    /// 英字の国名(短い 呼び名。USA・UK など)
     static let englishCountry: [String: String] = [
         "JP": "Japan", "US": "USA", "KR": "Korea", "CN": "China", "TW": "Taiwan", "HK": "Hong Kong", "TH": "Thailand", "VN": "Vietnam",
         "PH": "Philippines", "ID": "Indonesia", "MY": "Malaysia", "SG": "Singapore", "IN": "India", "AU": "Australia", "NZ": "New Zealand",

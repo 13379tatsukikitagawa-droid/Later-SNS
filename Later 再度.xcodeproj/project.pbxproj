@@ -206,6 +206,11 @@
 		E4A000000000000000000032 /* HomeV23Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000031 /* HomeV23Sections.swift */; };
 		E4A000000000000000000034 /* GroupChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000033 /* GroupChat.swift */; };
 		E4A000000000000000000036 /* GroupChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000035 /* GroupChatRoom.swift */; };
+		E4A000000000000000000042 /* Fonts/InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000041 /* Fonts/InstrumentSerif-Regular.ttf */; };
+		E4A000000000000000000044 /* Fonts/InstrumentSerif-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000043 /* Fonts/InstrumentSerif-Italic.ttf */; };
+		E4A000000000000000000046 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000045 /* Localizable.xcstrings */; };
+		E4A000000000000000000048 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000047 /* InfoPlist.xcstrings */; };
+		E4A00000000000000000004A /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000049 /* AppLanguage.swift */; };
 		EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B4C22287B8F839F97B59D7 /* UserDirectoryService.swift */; };
 		EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */; };
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
@@ -435,6 +440,11 @@
 		E4A000000000000000000031 /* HomeV23Sections.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeV23Sections.swift; sourceTree = "<group>"; };
 		E4A000000000000000000033 /* GroupChat.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupChat.swift; sourceTree = "<group>"; };
 		E4A000000000000000000035 /* GroupChatRoom.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupChatRoom.swift; sourceTree = "<group>"; };
+		E4A000000000000000000041 /* Fonts/InstrumentSerif-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/InstrumentSerif-Regular.ttf"; sourceTree = "<group>"; };
+		E4A000000000000000000043 /* Fonts/InstrumentSerif-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/InstrumentSerif-Italic.ttf"; sourceTree = "<group>"; };
+		E4A000000000000000000045 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		E4A000000000000000000047 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		E4A000000000000000000049 /* AppLanguage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		E8ED391917F67A87CD691ABF /* Fonts/Caveat-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Caveat-Bold.ttf"; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingV2Views.swift; sourceTree = "<group>"; };
@@ -602,6 +612,10 @@
 				A3174132301E3AF400B48E44 /* Later 再度.entitlements */,
 				07AD18FC5056259AA8291B04 /* GoogleService-Info.plist */,
 				E8ED391917F67A87CD691ABF /* Fonts/Caveat-Bold.ttf */,
+				E4A000000000000000000047 /* InfoPlist.xcstrings */,
+				E4A000000000000000000045 /* Localizable.xcstrings */,
+				E4A000000000000000000043 /* Fonts/InstrumentSerif-Italic.ttf */,
+				E4A000000000000000000041 /* Fonts/InstrumentSerif-Regular.ttf */,
 				E3A000000000000000000007 /* Fonts/YuseiMagic-Later.ttf */,
 				71186888D37FC45B1244C6D9 /* Profile/Views/ReportSheet.swift */,
 				B46C4149AD669549389D9F96 /* Profile/Views/SquareImageCropView.swift */,
@@ -762,6 +776,7 @@
 				E4A000000000000000000023 /* HomeV22.swift */,
 				E4A00000000000000000002F /* FirstHint.swift */,
 				E4A000000000000000000031 /* HomeV23Sections.swift */,
+				E4A000000000000000000049 /* AppLanguage.swift */,
 				E4A000000000000000000035 /* GroupChatRoom.swift */,
 				E4A000000000000000000033 /* GroupChat.swift */,
 				E4A000000000000000000029 /* YesterdayGroupHero.swift */,
@@ -1047,6 +1062,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				ja,
 				Base,
 			);
 			mainGroup = A341E8002FA9DD1100E03515;
@@ -1074,6 +1090,10 @@
 				A315CD9F302201D800432037 /* Media.xcassets in Resources */,
 				0CB5597A41C7748CA695DC8A /* GoogleService-Info.plist in Resources */,
 				2F59CFC5A2704E50F22C7F5B /* Fonts/Caveat-Bold.ttf in Resources */,
+				E4A000000000000000000048 /* InfoPlist.xcstrings in Resources */,
+				E4A000000000000000000046 /* Localizable.xcstrings in Resources */,
+				E4A000000000000000000044 /* Fonts/InstrumentSerif-Italic.ttf in Resources */,
+				E4A000000000000000000042 /* Fonts/InstrumentSerif-Regular.ttf in Resources */,
 				E3A000000000000000000008 /* Fonts/YuseiMagic-Later.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1200,6 +1220,7 @@
 				E4A000000000000000000024 /* HomeV22.swift in Sources */,
 				E4A000000000000000000030 /* FirstHint.swift in Sources */,
 				E4A000000000000000000032 /* HomeV23Sections.swift in Sources */,
+				E4A00000000000000000004A /* AppLanguage.swift in Sources */,
 				E4A000000000000000000036 /* GroupChatRoom.swift in Sources */,
 				E4A000000000000000000034 /* GroupChat.swift in Sources */,
 				E4A00000000000000000002A /* YesterdayGroupHero.swift in Sources */,

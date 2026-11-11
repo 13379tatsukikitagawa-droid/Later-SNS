@@ -35,6 +35,8 @@ struct SettingsMenuView: View {
     @State private var showingGroups = false
     @State private var showingBlocked = false
     @State private var showingPromise = false
+    /// 言語 / Language
+    @State private var showingLanguage = false
     @State private var showingHowTo = false
     @State private var showingShootGuide = false
     @State private var showingPrivacy = false
@@ -126,6 +128,10 @@ struct SettingsMenuView: View {
         .sheet(isPresented: $showingGroups) { SettingsGroupsList(groups: sharedGroups, onOpen: openGroup) }
         .sheet(isPresented: $showingBlocked) { SettingsBlockedList() }
         .sheet(isPresented: $showingPromise) { LaterPromiseView() }
+        .sheet(isPresented: $showingLanguage) {
+            LanguageSheet { showingLanguage = false }
+                .presentationDetents([.height(380)])
+        }
         .fullScreenCover(isPresented: $showingHowTo) { HowToReplayView() }
         .fullScreenCover(isPresented: $showingShootGuide) { ShootGuideReplayView() }
         .sheet(isPresented: $showingPrivacy) { PrivacyPolicyView() }
@@ -194,6 +200,11 @@ struct SettingsMenuView: View {
     @ViewBuilder
     private var sections: some View {
         SettingsSection(title: "毎日") {
+            // どちらの 言語でも 両方 表記
+            SettingsRow(icon: "globe", title: "言語 / Language", action: { showingLanguage = true }) {
+                SettingsValue(AppLanguage.currentName, chevron: true)
+            }
+            SettingsDivider()
             SettingsRow(icon: "bell", title: "9:00 のお知らせ", note: "毎朝、撮影のスタートを知らせます") {
                 Toggle("9:00 のお知らせ", isOn: Binding(get: { notificationOn }, set: setNotification))
                     .toggleStyle(MonoToggleStyle())

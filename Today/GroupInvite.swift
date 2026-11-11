@@ -14,8 +14,12 @@ import UIKit
 /// - QR:中身はリンクと同じ URL
 enum InviteConfig {
     /// 共有シートに渡す文面(あおる言葉は入れない)
-    static func shareMessage(groupName: String, url: URL) -> String {
-        "「\(groupName)」に招待されました。Later で、昨日をひらきあいましょう。\n\(url.absoluteString)"
+    /// 日本語の 文面は 変えない。アプリを 英語で 使っている 人が 送る ときだけ 英語版
+    static func shareMessage(groupName: String, url: URL, english: Bool = AppLanguage.isEnglish) -> String {
+        if english {
+            return "You're invited to \"\(groupName)\". Open yesterday together on Later.\n\(url.absoluteString)"
+        }
+        return "「\(groupName)」に招待されました。Later で、昨日をひらきあいましょう。\n\(url.absoluteString)"
     }
 
     /// CKShare の URL → 招待リンク(アプリを直接ひらく later://join)

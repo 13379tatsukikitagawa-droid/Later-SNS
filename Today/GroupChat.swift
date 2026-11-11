@@ -383,7 +383,7 @@ final class GroupChatStore {
         if let last = lastNotified[message.groupID], Date().timeIntervalSince(last) < 60 { return }
         lastNotified[message.groupID] = Date()
         let content = UNMutableNotificationContent()
-        content.body = "新しいメッセージが あります"
+        content.body = String(localized: "notification.chat.new")
         content.sound = .default
         content.threadIdentifier = "chat"
         content.userInfo = ["chatGroup": message.groupID.uuidString]

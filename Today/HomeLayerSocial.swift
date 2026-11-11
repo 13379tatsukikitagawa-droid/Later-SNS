@@ -240,15 +240,15 @@ enum KnockInbox {
         seen.append(id)
         UserDefaults.standard.set(Array(seen.suffix(200)), forKey: seenKey)
 
-        let name = (record["memberName"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "だれか"
-        let text = "\(name)さんから、トントン。"
+        let name = (record["memberName"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "notification.poke.someone")
+        let text = String(format: String(localized: "notification.poke.inApp"), name)
         if UIApplication.shared.applicationState == .active {
             LayerHaptics.knock()
             MondoNotice.post(text)
         } else {
             let content = UNMutableNotificationContent()
-            content.title = "トントン。"
-            content.body = "\(name)さんが、ノックしました。"
+            content.title = String(localized: "notification.poke.title")
+            content.body = String(format: String(localized: "notification.poke.body"), name)
             content.sound = .default
             let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
             UNUserNotificationCenter.current().add(request)

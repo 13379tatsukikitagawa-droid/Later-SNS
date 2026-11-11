@@ -317,7 +317,8 @@ enum DailyOpenNotification {
         guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return false }
 
         let content = UNMutableNotificationContent()
-        content.body = OnboardingCopy.dailyNotificationBody
+        // 届いた ときの 言語で 出す
+        content.body = NSString.localizedUserNotificationString(forKey: "notification.daily.body", arguments: nil)
         content.sound = .default
         var components = DateComponents()
         components.hour = hour
