@@ -36,9 +36,9 @@ enum HomeV22Rules {
     /// 今日のカードの文
     static func card(used: Int, initial: Bool) -> (title: String, sub: String) {
         switch min(3, max(0, used)) {
-        case 0: return (initial ? "最初の1枚に、なります" : "今日の 1こま目", "撮ると、あしたの朝に 仕上がります")
+        case 0: return (initial ? "最初の1枚に、なります" : "今日の 1こま目", "0 / 3 ・ まだ からっぽ")
         case 3: return ("3こま、預けました", "あしたの 9:00 に、まとめて ひらきます")
-        default: return ("今日の1枚を、預けました", "9:00 まで ミルク色 ・ 中身は ひみつ")
+        default: return ("今日の1枚を、預けました", "9:00 まで ひみつ")
         }
     }
 

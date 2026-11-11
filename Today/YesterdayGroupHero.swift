@@ -314,12 +314,12 @@ struct YesterdayGroupHeadline: View {
     }
 }
 
-/// サブ「4〜8人のグループ。/ 1枚撮ると、みんなの写真が届きます。」
+/// サブ「4〜8人 ・ 撮った人だけ 見られる」(v23:1行に)
 struct YesterdayGroupSub: View {
     @Environment(\.palette) private var palette
 
     var body: some View {
-        Text("4〜8人のグループ。\n1枚撮ると、みんなの写真が届きます。")
+        Text("4〜8人 ・ 撮った人だけ 見られる")
             .font(.system(size: 12.5, weight: .medium))
             .lineSpacing(4)
             .multilineTextAlignment(.center)

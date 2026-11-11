@@ -959,7 +959,7 @@ struct V17WordsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            V17SectionHeader(kicker: "MONDO ・ YESTERDAY'S WORDS", title: "昨日の世界で、\n多かったことば", number: "top 5", ink: ink)
+            V17SectionHeader(kicker: "MONDO", title: "昨日の世界で、\n多かったことば", number: "top 5", ink: ink)
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, word in
                     row(index: index, word: word)
@@ -1154,7 +1154,7 @@ private struct V17FriendsEmpty: View {
                 .tracking(-0.03 * 21)
                 .foregroundStyle(Color(hex: "111111"))
                 .frame(maxWidth: 190, alignment: .leading)
-            Text("となりの人と、スマホを ふるだけ。12人まで つながれます。")
+            Text("12人まで ・ 数は 出ません")
                 .font(.system(size: 12.5, weight: .medium))
                 .lineSpacing(4)
                 .foregroundStyle(Color(hex: "6E6E73"))

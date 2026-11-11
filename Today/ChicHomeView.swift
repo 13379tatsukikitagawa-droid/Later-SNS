@@ -101,6 +101,11 @@ struct ChicHomeView: View {
                     geometry.contentOffset.y + geometry.contentInsets.top
                 } action: { _, y in
                     scroll.offset = y
+                    // v23:スポットライトの 合図(月)は、スクロールしたら 消す
+                    if y > 12, HintCenter.shared.spotlightOn {
+                        HintCenter.shared.touched(.first)
+                        HintCenter.shared.touched(.unlock)
+                    }
                 }
 
                 V17HeaderGlass(scroll: scroll, tint: palette.isNight ? palette.bg : ChicColor.paper, height: top + LaterHeader.height + 16, lineY: top + LaterHeader.height + 4)

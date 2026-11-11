@@ -522,7 +522,7 @@ struct FriendsHubView: View {
                 guard !isFull else { refuseFull(); return }
                 NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.scan)
             }
-            note("つながると", "おたがいの 投稿が 見えるよ。フォロワー数や いいね数は ないよ。")
+            Text("12人まで ・ 数は 出ません").font(.system(size: 12, weight: .semibold)).foregroundStyle(palette.ink.opacity(0.55)).frame(maxWidth: .infinity)
         }
     }
 

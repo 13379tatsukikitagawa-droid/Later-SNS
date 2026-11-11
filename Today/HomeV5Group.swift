@@ -155,6 +155,8 @@ struct HomeV5GroupPage: View {
     @State private var popGroups: [UUID: Date] = [:]
     @State private var previousShot: [UUID: Int] = [:]
     @State private var hasSeeded = false
+    /// カギの ピル(0.6秒 ロックの ままなら 出す)
+    @State private var showsLockPill = false
     @State private var played: Set<String> = []
     @State private var pendingIDs: [String] = []
     @State private var unlockTask: Task<Void, Never>?
@@ -244,7 +246,7 @@ struct HomeV5GroupPage: View {
         .scrollIndicators(.hidden)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             // タブバーのすぐ上に、小さなガラスのピル
-            if locked {
+            if showsLockPill {
                 V5LockedPill()
                     .padding(.bottom, 8)
                     .contentShape(Capsule())
@@ -253,6 +255,13 @@ struct HomeV5GroupPage: View {
             }
         }
         .animation(.easeInOut(duration: 1.4), value: locked)
+        .animation(.easeOut(duration: 0.3), value: showsLockPill)
+        // v23:解禁ずみの ときに カギが 一瞬 出ないよう、0.6秒 たっても ロックの ままの ときだけ 出す。外れるときは すぐ
+        .task(id: locked) {
+            guard locked else { showsLockPill = false; return }
+            try? await Task.sleep(for: .seconds(0.6))
+            if !Task.isCancelled, locked { showsLockPill = true }
+        }
         .onChange(of: scrollToTopToken) { _, _ in
             withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5top", anchor: .top) }
         }

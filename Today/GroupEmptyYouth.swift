@@ -88,7 +88,7 @@ struct GroupEmptyYouthView: View {
         VStack(spacing: 18) {
             GroupEmptyHero(userName: userName, isActive: isActive, onCreate: onCreate)
             headline
-            Text("4〜8人のグループ。1枚撮ると、みんなの写真が届きます。")
+            Text("4〜8人 ・ 撮った人だけ 見られる")
                 .font(.system(size: 12.5))
                 .foregroundStyle(ChicColor.sub)
                 .multilineTextAlignment(.center)

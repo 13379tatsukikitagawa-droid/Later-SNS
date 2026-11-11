@@ -680,6 +680,8 @@ struct HomeV5MondoPage: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// v19:さわれる地球儀
     @State private var globe = GlobeController()
+    /// v23:カギの 知らせ(0.6秒 ロックの ままなら 出す。解禁ずみで 一瞬 出ないように)
+    @State private var showsLockNotice = false
     @State private var toast: String?
 
     private var summaryEntries: [MondoEntry] {
@@ -737,7 +739,7 @@ struct HomeV5MondoPage: View {
                 if let announced {
                     MondoBigPrint(pick: announced, width: max(0, geo.size.width - 56), locked: locked, onOpen: onOpenAnnounced)
                         .padding(.top, 14)
-                } else if locked {
+                } else if showsLockNotice {
                     V5LockedNotice()
                         .padding(.top, 14)
                         .transition(.opacity)
@@ -755,6 +757,11 @@ struct HomeV5MondoPage: View {
                 }
                 }
                 // 跳んでいる間・着いたあとは、文字・帯・チップ・ボタンを消す
+                .task(id: locked) {
+                    guard locked else { showsLockNotice = false; return }
+                    try? await Task.sleep(for: .seconds(0.6))
+                    if !Task.isCancelled, locked { withAnimation(.easeOut(duration: 0.3)) { showsLockNotice = true } }
+                }
                 .opacity(globe.isZoomed ? 0 : 1)
                 .allowsHitTesting(!globe.isZoomed)
             }
