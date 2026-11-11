@@ -392,16 +392,8 @@ struct TodayDevelopCard: View {
             if i < shots.count {
                 let p = Self.progress(shot: shots[i].date, now: now)
                 ZStack(alignment: .topTrailing) {
-                    if let photo = shots[i].photo {
-                        DarkThumb(photo: photo, maxPixel: 300, blur: 10 - 8 * p)
-                            .saturation(0.15 + 0.6 * p)
-                            .brightness(0.45 * (1 - p) * 0.4)
-                    } else {
-                        Color(hex: "1E1E21")
-                    }
-                    LinearGradient(colors: [Color(hex: "EEF3EE"), Color(hex: "DDE6E6")], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        .opacity(0.92 - p * 0.62)
-                    ShineSweep(delay: Double(i) * 0.5)
+                    // v30:現像ビューと 同じ 式(DevelopLook)の 小さい 版
+                    DevelopFilmPhoto(photo: shots[i].photo, progress: p, blurScale: 0.5, shineDelay: Double(i) * 0.5, shinePeriod: 3.4)
                     Text(verbatim: "\(Int((p * 100).rounded()))%").font(.custom("InstrumentSerif-Italic", size: 17)).foregroundStyle(Color(hex: "3A362F"))
                         .padding(.trailing, 9).padding(.top, 7)
                 }
@@ -467,26 +459,6 @@ struct TodayDevelopCard: View {
                     .foregroundStyle(Darkroom.stamp)
             }
             .font(Darkroom.mono(10)).tracking(0.1 * 10).foregroundStyle(Darkroom.weak)
-        }
-    }
-}
-
-/// 光が 横に 流れる
-private struct ShineSweep: View {
-    let delay: Double
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var x: CGFloat = -1
-
-    var body: some View {
-        GeometryReader { proxy in
-            LinearGradient(colors: [.clear, .white.opacity(0.55), .clear], startPoint: .leading, endPoint: .trailing)
-                .frame(width: proxy.size.width * 0.6)
-                .offset(x: x * proxy.size.width * 1.4)
-        }
-        .allowsHitTesting(false)
-        .onAppear {
-            guard !reduceMotion else { x = 2; return }
-            withAnimation(.easeInOut(duration: 3.4).repeatForever(autoreverses: false).delay(delay)) { x = 1.2 }
         }
     }
 }

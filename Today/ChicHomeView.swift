@@ -177,7 +177,10 @@ struct ChicHomeView: View {
             invites = await FriendCloud.inbox()
         }
         .fullScreenCover(isPresented: $showsDevelop) {
+            // 自分の 写真だけ(撮った 時刻で さがす)。本人の 端末で ぼかして 見せる
+            let mine = UserProfile.current(from: profiles)?.photos ?? []
             HomeDevelopViewer(shots: v17.shots, videoDurations: v17.videoDurations, used: FilmCounter.shared.used, tones: tones, now: now,
+                              photos: v17.shots.map { d in mine.first { $0.captureDate == d } },
                               onClose: { showsDevelop = false }, onShoot: v17Actions.shoot)
         }
         .confirmationDialog(

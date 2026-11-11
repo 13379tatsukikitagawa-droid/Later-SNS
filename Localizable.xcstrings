@@ -222,6 +222,91 @@
         }
       }
     },
+    "develop.a11y.back": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もどる"
+          }
+        }
+      }
+    },
+    "develop.a11y.bar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Development progress"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現像の 進み"
+          }
+        }
+      }
+    },
+    "develop.a11y.frame": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frame %lld, developing %lld%%. Hidden until 9:00"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lldこま目。現像 %lld%%。中身は 9:00 まで ひみつ"
+          }
+        }
+      }
+    },
+    "develop.a11y.later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later, one by one"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あとで。1こま ずつ 順番に"
+          }
+        }
+      }
+    },
+    "develop.a11y.shoot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shoot frame %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lldこま目を 撮る"
+          }
+        }
+      }
+    },
     "notification.chat.new": {
       "extractionState": "manual",
       "localizations": {
