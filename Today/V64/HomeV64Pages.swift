@@ -434,6 +434,7 @@ struct HVPager: View {
     var onChange: (Int) -> Void = { _ in }
     @State private var drag: CGFloat = 0
     @State private var horizontal: Bool? = nil
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let pos = CGFloat(page) - drag / width            // いまの 位置(ページ数)
@@ -444,8 +445,8 @@ struct HVPager: View {
                 pages[i]
                     .frame(width: width)
                     .offset(x: d * width)
-                    .rotation3DEffect(.degrees(Double(-d) * 14), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
-                    .scaleEffect(1 - 0.08 * a)
+                    .rotation3DEffect(.degrees(reduceMotion ? 0 : Double(-d) * 14), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
+                    .scaleEffect(reduceMotion ? 1 : 1 - 0.08 * a)
                     .opacity(1 - 0.45 * Double(a))
                     .opacity(abs(d) < 1.2 ? 1 : 0)
                     .allowsHitTesting(i == page && drag == 0)
