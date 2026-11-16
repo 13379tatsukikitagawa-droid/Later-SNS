@@ -518,7 +518,7 @@ struct V17DaySection: View {
     var body: some View {
         let phase = HomeV17Rules.phase(hour: hour)
         VStack(alignment: .leading, spacing: 0) {
-            V17SectionHeader(kicker: "A DAY ON LATER", title: "Later の1日", accent: "a day", number: "24h", ink: ink)
+            V17SectionHeader(kicker: "A DAY ON LATER", title: "Lattag の1日", accent: "a day", number: "24h", ink: ink)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     HStack(alignment: .lastTextBaseline, spacing: 6) {
@@ -639,7 +639,7 @@ struct V17DaySection: View {
         }
         .frame(height: 46)
         .accessibilityElement()
-        .accessibilityLabel("Later の1日")
+        .accessibilityLabel("Lattag の1日")
         .accessibilityValue("\(HomeV17Rules.clockText(hour))、\(HomeV17Rules.phase(hour: hour).title)")
         .accessibilityAdjustableAction { direction in
             let step: Double = direction == .increment ? 1 : -1
@@ -1610,7 +1610,7 @@ struct V17PromisesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            V17SectionHeader(kicker: "3 PROMISES", title: "Later の、3つの\nやくそく", accent: "promises", ink: ink)
+            V17SectionHeader(kicker: "3 PROMISES", title: "Lattag の、3つの\nやくそく", accent: "promises", ink: ink)
             ScrollView(.horizontal) {
                 HStack(spacing: 14) {
                     ForEach(cards) { card in
@@ -1692,7 +1692,7 @@ struct V17EndSection: View {
                 .accessibilityLabel("またあした")
                 .accessibilityAddTraits(.isButton)
             HStack(alignment: .top, spacing: -2) {
-                Text("Later")
+                Text("Lattag")
                     .font(.system(size: 58, weight: .black))
                     .tracking(-0.06 * 58)
                     .foregroundStyle(ink.ink)

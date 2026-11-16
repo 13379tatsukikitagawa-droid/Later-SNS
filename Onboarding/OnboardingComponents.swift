@@ -640,7 +640,7 @@ struct OnboardingOpeningView: View {
     static let contentStartTime: TimeInterval = 7.15
 
     private static let irisRadius: CGFloat = 96
-    private static let wordmark = Array("Later")
+    private static let wordmark = Array("Lattag")
 
     var body: some View {
         TimelineView(.animation) { context in
@@ -660,7 +660,7 @@ struct OnboardingOpeningView: View {
         }
         .allowsHitTesting(false)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Later")
+        .accessibilityLabel("Lattag")
     }
 
     // MARK: 角

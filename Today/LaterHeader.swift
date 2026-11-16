@@ -152,11 +152,11 @@ struct LaterHeader: View {
 
     private var logo: some View {
         HStack(alignment: .center, spacing: 4) {
-            Text("Later")
+            Text("Lattag")
                 .font(HeaderFont.logo())
                 .tracking(-0.05 * 31)
                 .foregroundStyle(palette.ink)
-                .accessibilityLabel("Later")
+                .accessibilityLabel("Lattag")
             homeLabel
                 .offset(y: -14)
         }

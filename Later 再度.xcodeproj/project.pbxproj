@@ -215,6 +215,16 @@
 		EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */; };
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
 		F8F989379BFA17B7600AA6D2 /* EmailSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4223DCBF41BC23820D06D5F9 /* EmailSignInView.swift */; };
+		00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769863F83DF8CA3E06CAE493 /* SampleData.swift */; };
+		01C86E7D093E315A9ECF5307 /* LGFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED44F2F13C3467FBD25D831F /* LGFont.swift */; };
+		16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8074893E58921F0B4509881 /* DesignSystemPreview.swift */; };
+		1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EFD2BE01B050559B5C12A7E /* DebugState.swift */; };
+		7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D0F07632A5009E1A3721A3 /* LGPressable.swift */; };
+		A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D881D698B13AD2783A958080 /* DebugStateMenu.swift */; };
+		A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB985051FDA08E630C624743 /* LGGlass.swift */; };
+		CE1D9C63DC55C6DDB817A8F0 /* LGColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9D5130364708000DD034B2 /* LGColor.swift */; };
+		E6F5FA8BB34DA0FC6BD6A419 /* Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17B7C532BC0449E2A88C64A /* Brand.swift */; };
+		F27CC6ECC52DCB98DAD70845 /* LGMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0159D1A97715D4F4D7AB1471 /* LGMotion.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -456,6 +466,16 @@
 		F96C7548AF2068DC5BCAAB24 /* AccountDeletionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccountDeletionService.swift; sourceTree = "<group>"; };
 		FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CKRecordConvertible.swift; sourceTree = "<group>"; };
 		FDDA929744097E460EF15420 /* Services/FirebaseConfigurator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Services/FirebaseConfigurator.swift; sourceTree = "<group>"; };
+		0159D1A97715D4F4D7AB1471 /* LGMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGMotion.swift; sourceTree = "<group>"; };
+		48D0F07632A5009E1A3721A3 /* LGPressable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGPressable.swift; sourceTree = "<group>"; };
+		4EFD2BE01B050559B5C12A7E /* DebugState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugState.swift; sourceTree = "<group>"; };
+		769863F83DF8CA3E06CAE493 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		AC9D5130364708000DD034B2 /* LGColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGColor.swift; sourceTree = "<group>"; };
+		B17B7C532BC0449E2A88C64A /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
+		D8074893E58921F0B4509881 /* DesignSystemPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemPreview.swift; sourceTree = "<group>"; };
+		D881D698B13AD2783A958080 /* DebugStateMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugStateMenu.swift; sourceTree = "<group>"; };
+		ED44F2F13C3467FBD25D831F /* LGFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGFont.swift; sourceTree = "<group>"; };
+		FB985051FDA08E630C624743 /* LGGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGGlass.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -631,6 +651,8 @@
 				A3B6282E302D6A110010ACBB /* Profile */,
 				A3B62831302D6A160010ACBB /* Notifications */,
 				A3B62834302D6A1B0010ACBB /* Theme */,
+				E338CAF40E05DD02A65E25F3 /* DesignSystem */,
+				0B4DCE8A177EE31BEE652FEE /* Debug */,
 				A3B62835302D6A1D0010ACBB /* Settings */,
 				A3B62836302D6A1E0010ACBB /* Utilities */,
 				74511EB594B4472DBB9BC3B2 /* Services */,
@@ -831,6 +853,7 @@
 			isa = PBXGroup;
 			children = (
 				A3FDAEEE2FB71C5B001484F7 /* Theme.swift */,
+				B17B7C532BC0449E2A88C64A /* Brand.swift */,
 				A3CEC63F2FBDE324001F650B /* AppTheme.swift */,
 				A3B65AD12FBFD72D00ADFC09 /* AppColors.swift */,
 				A3CEC6372FBDDDC7001F650B /* ColorExtensions.swift */,
@@ -969,6 +992,29 @@
 				3E20E050E410BA1D32F171B6 /* MainNavigationView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		E338CAF40E05DD02A65E25F3 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				AC9D5130364708000DD034B2 /* LGColor.swift */,
+				ED44F2F13C3467FBD25D831F /* LGFont.swift */,
+				0159D1A97715D4F4D7AB1471 /* LGMotion.swift */,
+				48D0F07632A5009E1A3721A3 /* LGPressable.swift */,
+				FB985051FDA08E630C624743 /* LGGlass.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		0B4DCE8A177EE31BEE652FEE /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				4EFD2BE01B050559B5C12A7E /* DebugState.swift */,
+				D881D698B13AD2783A958080 /* DebugStateMenu.swift */,
+				769863F83DF8CA3E06CAE493 /* SampleData.swift */,
+				D8074893E58921F0B4509881 /* DesignSystemPreview.swift */,
+			);
+			path = Debug;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1158,6 +1204,16 @@
 				A3B6283C302DB2240010ACBB /* GroupCreatedShareView.swift in Sources */,
 				A3D53C4C2FC88DB800D675AE /* Color+Neon.swift in Sources */,
 				A3348FA52FC69629006568EE /* QRCodeGenerator.swift in Sources */,
+				E6F5FA8BB34DA0FC6BD6A419 /* Brand.swift in Sources */,
+				CE1D9C63DC55C6DDB817A8F0 /* LGColor.swift in Sources */,
+				01C86E7D093E315A9ECF5307 /* LGFont.swift in Sources */,
+				F27CC6ECC52DCB98DAD70845 /* LGMotion.swift in Sources */,
+				7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */,
+				A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */,
+				1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */,
+				A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */,
+				00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */,
+				16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */,
 				A3B6283A302DAE4D0010ACBB /* GroupJoinLink.swift in Sources */,
 				E2769FC08918D737940BCAB8 /* MainNavigationView.swift in Sources */,
 				A3FBC86E2FAB1FDB0020FAF9 /* UserProfile.swift in Sources */,

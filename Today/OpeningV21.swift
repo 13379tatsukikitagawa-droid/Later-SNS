@@ -98,7 +98,7 @@ struct OpeningV21View: View {
         .onAppear(perform: scheduleHaptics)
         .onDisappear { ramp.stop() }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Later。タップで とばす")
+        .accessibilityLabel("Lattag。タップで とばす")
         .accessibilityAddTraits(.isButton)
     }
 
@@ -221,7 +221,7 @@ struct OpeningV21View: View {
     private func wordmark(t: Double) -> some View {
         HStack(alignment: .lastTextBaseline, spacing: 10) {
             HStack(spacing: -2) {
-                ForEach(Array("Later".enumerated()), id: \.offset) { i, ch in
+                ForEach(Array("Lattag".enumerated()), id: \.offset) { i, ch in
                     let p = min(1, max(0, (t - tl.letters - Double(i) * 0.07) / 0.42))
                     Text(String(ch)).font(.system(size: 46, weight: .black)).tracking(-0.06 * 46).foregroundStyle(Color(hex: "111111"))
                         .opacity(p).offset(y: 12 * (1 - p)).blur(radius: 7 * (1 - p))

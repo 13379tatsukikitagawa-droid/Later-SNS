@@ -108,7 +108,7 @@ struct SettingsMenuView: View {
             }
             Button("とじる", role: .cancel) {}
         } message: {
-            Text("iPhone の設定で、Later の通知を許可してください。")
+            Text("iPhone の設定で、Lattag の通知を許可してください。")
         }
         .alert("ログアウトしますか?", isPresented: $showingSignOutConfirm) {
             Button("ログアウト", role: .destructive) { signOut() }
@@ -277,8 +277,8 @@ struct SettingsMenuView: View {
                 SettingsValue("\(blocked.count)", chevron: true)
             }
         }
-        SettingsSection(title: "Later について") {
-            SettingsRow(icon: "heart.slash", title: "Later の約束", note: "いいねも、フォロワー数も、ありません", action: { showingPromise = true }) {
+        SettingsSection(title: "Lattag について") {
+            SettingsRow(icon: "heart.slash", title: "Lattag の約束", note: "いいねも、フォロワー数も、ありません", action: { showingPromise = true }) {
                 SettingsValue("", chevron: true)
             }
             SettingsDivider()
@@ -671,7 +671,7 @@ struct LaterPromiseView: View {
     ]
 
     var body: some View {
-        SettingsSubpage(title: "Later の約束", dismiss: dismiss) {
+        SettingsSubpage(title: "Lattag の約束", dismiss: dismiss) {
             VStack(alignment: .leading, spacing: 22) {
                 ForEach(Array(Self.promises.enumerated()), id: \.offset) { index, promise in
                     HStack(alignment: .top, spacing: 14) {

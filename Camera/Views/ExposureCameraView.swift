@@ -344,7 +344,7 @@ struct ExposureCameraView: View {
     private func header(chrome: Double) -> some View {
         ZStack {
             // ロゴは押せない(タップを通す)
-            Text("Later")
+            Text("Lattag")
                 .font(CaptureFonts.interBlack(21))
                 .tracking(-0.04 * 21)
                 .foregroundStyle(.white)

@@ -27,11 +27,11 @@ struct LocalizationTests {
     }
 
     @Test func 招待文は日本語のまま_英語の人だけ英語() {
-        let url = URL(string: "later://join?shareUrl=https://www.icloud.com/share/abc")!
+        let url = URL(string: "lattag://join?shareUrl=https://www.icloud.com/share/abc")!
         #expect(InviteConfig.shareMessage(groupName: "部活", url: url, english: false)
-                == "「部活」に招待されました。Later で、昨日をひらきあいましょう。\nlater://join?shareUrl=https://www.icloud.com/share/abc")
+                == "「部活」に招待されました。Lattag で、昨日をひらきあいましょう。\nlattag://join?shareUrl=https://www.icloud.com/share/abc")
         #expect(InviteConfig.shareMessage(groupName: "club", url: url, english: true)
-                == "You're invited to \"club\". Open yesterday together on Later.\nlater://join?shareUrl=https://www.icloud.com/share/abc")
+                == "You're invited to \"club\". Open yesterday together on Lattag.\nlattag://join?shareUrl=https://www.icloud.com/share/abc")
     }
 
     @Test func 国名はLocaleから() {

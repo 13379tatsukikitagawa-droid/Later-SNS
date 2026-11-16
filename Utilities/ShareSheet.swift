@@ -54,7 +54,7 @@ final class ProfileShareItem: NSObject, UIActivityItemSource {
     }
 
     func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
-        return "\(name) (@\(username)) on Later"
+        return "\(name) (@\(username)) on Lattag"
     }
 
     func activityViewControllerLinkMetadata(_ activityViewController: UIActivityViewController) -> LPLinkMetadata? {
@@ -64,7 +64,7 @@ final class ProfileShareItem: NSObject, UIActivityItemSource {
         if let desc = descriptionText, !desc.isEmpty {
             metadata.title = "\(name) (@\(username)) — \(desc)"
         } else {
-            metadata.title = "\(name) (@\(username)) on Later"
+            metadata.title = "\(name) (@\(username)) on Lattag"
         }
         return metadata
     }

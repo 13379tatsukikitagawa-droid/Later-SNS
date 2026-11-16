@@ -73,7 +73,7 @@ struct ProfileImmersiveView: View {
     }
 
     private var displayName: String {
-        profile?.name.isEmpty == false ? profile!.name : "Later"
+        profile?.name.isEmpty == false ? profile!.name : "Lattag"
     }
 
     var body: some View {

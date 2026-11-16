@@ -46,7 +46,7 @@ struct ApertureLogoView: View {
                 if isAnimated { isPulsing = true }
             }
 
-            Text("Later")
+            Text("Lattag")
                 .font(.system(size: 44, weight: wordmarkWeight))
                 .foregroundStyle(resolvedWordmarkColor)
         }

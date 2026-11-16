@@ -279,7 +279,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Later, one by one"
+            "value": "Lattag, one by one"
           }
         },
         "ja": {
@@ -500,13 +500,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose a language and Later opens iPhone Settings. Pick it under Later › Language."
+            "value": "Choose a language and Lattag opens iPhone Settings. Pick it under Lattag › Language."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "えらぶと、iPhone の 設定が ひらきます。Later › 言語 で えらんでください。"
+            "value": "えらぶと、iPhone の 設定が ひらきます。Lattag › 言語 で えらんでください。"
           }
         }
       }

@@ -9,7 +9,7 @@ import UIKit
 enum JoinNotice {
     /// 入る前の説明(3行固定)
     static let lines = [
-        "あなたの名前とアイコン(Later内のもの)が、メンバーに見えます。",
+        "あなたの名前とアイコン(Lattag内のもの)が、メンバーに見えます。",
         "撮ると、このグループの昨日もひらけます。",
         "いつでも抜けられます。",
     ]
@@ -1098,7 +1098,7 @@ struct InvitePasteSheet: View {
                 if let shareURL = urls.lazy.compactMap(InviteConfig.shareURL(from:)).first {
                     onLink(shareURL)
                 } else {
-                    message = "Later の招待ではありません"
+                    message = "Lattag の招待ではありません"
                 }
             }
             .buttonBorderShape(.capsule)

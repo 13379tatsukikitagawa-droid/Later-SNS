@@ -147,14 +147,14 @@ enum OnboardingCopy {
     static let nameTitle = "ニックネームを\n決めてください。"
     static let nameSub = "本名でなくて大丈夫です。\nあとから変えられます。"
     // ③
-    static let dayTitle = "Laterの一日"
+    static let dayTitle = "Lattagの一日"
     static func daySub(name: String) -> String { "\(name)さんの一日は、こう流れます。" }
     // ④(数字は出典から切り離さない。根拠が確認できる表現にだけ変える)
     static let quietTitle = "比べてしまうのは、\n仕組みの問題です。"
     static let quietStat = "約3人に1人"
     static let quietStatBody = "体に悩んだことのある10代の女性が、\nInstagramによって悩みが悪化したと\n答えました。"
     static let quietSource = "出典:Facebook社内調査(Instagram)2021年\nWSJ報道・米議会提出資料"
-    static let quietAnswer = "Laterには、\nいいねもフォロワー数もありません。"
+    static let quietAnswer = "Lattagには、\nいいねもフォロワー数もありません。"
     // ⑤
     static let photoTitle = "あなたを表す1枚を\n撮ってください。"
     static let photoSub = "景色でも、手元でも大丈夫です。\n翌朝9:00まで、あなたにも見えません。"

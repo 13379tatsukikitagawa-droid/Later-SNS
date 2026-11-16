@@ -13,6 +13,7 @@
 			<string>jp.shotoku.later</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>lattag</string>
 				<string>laterapp</string>
 				<string>later</string>
 			</array>

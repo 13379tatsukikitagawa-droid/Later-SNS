@@ -36,7 +36,7 @@ extension FriendRules {
     }
 
     static func recordName(from url: URL) -> String? {
-        guard url.scheme == "later", url.host == "friend" else { return nil }
+        guard Brand.isOurScheme(url), url.host == "friend" else { return nil }
         return URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "u" }?.value
     }
 }
@@ -504,7 +504,7 @@ struct FriendsHubView: View {
             HStack(spacing: 10) {
                 bigButton("送る", primary: true) {
                     guard !isFull else { refuseFull(); return }
-                    shareItems = ["\(myName) と Later で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"]
+                    shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"]
                 }
                 bigButton("リンクを コピー", primary: false) {
                     guard !isFull else { refuseFull(); return }

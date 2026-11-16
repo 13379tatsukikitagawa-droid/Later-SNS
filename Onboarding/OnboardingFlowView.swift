@@ -1471,7 +1471,7 @@ private struct NotificationCardSample: View {
                 .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 1))
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
-                    Text("Later")
+                    Text("Lattag")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.white)
                     Spacer()

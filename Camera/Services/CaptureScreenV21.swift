@@ -164,7 +164,7 @@ struct CaptureScreenV21: View {
             .accessibilityLabel("もどる")
             Spacer()
             HStack(alignment: .top, spacing: -2) {
-                Text("Later").font(.system(size: 22, weight: .black)).tracking(-0.05 * 22).foregroundStyle(.white)
+                Text("Lattag").font(.system(size: 22, weight: .black)).tracking(-0.05 * 22).foregroundStyle(.white)
                 Text("today").font(.system(size: 12, design: .serif).italic()).foregroundStyle(Color(hex: "8E8E95")).offset(y: -6)
             }
             Spacer()

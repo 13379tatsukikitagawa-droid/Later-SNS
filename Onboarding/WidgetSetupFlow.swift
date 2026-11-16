@@ -56,7 +56,7 @@ enum WidgetPlace: CaseIterable, Identifiable {
             return [
                 .init(title: "ホーム画面を、長押しする", body: "アイコンのない所を、1秒ほど押し続ける。", tip: "アイコンがゆれたら、できている。", scene: .homeGrid, target: CGPoint(x: 195, y: 560), label: "長押し(約1秒)", longPress: true),
                 .init(title: "左上の「＋」を押す", body: "iOS 18 では「編集」と出る。そこから「ウィジェットを追加」を選ぶ。", tip: nil, scene: .homeEdit, target: CGPoint(x: 38, y: 72), label: "押す", longPress: false),
-                .init(title: "「Later」を探す", body: "検索欄に「Later」と入れて、Later を押す。", tip: nil, scene: .homeSearch, target: CGPoint(x: 195, y: 262), label: "押す", longPress: false),
+                .init(title: "「Lattag」を探す", body: "検索欄に「Lattag」と入れて、Lattag を押す。", tip: nil, scene: .homeSearch, target: CGPoint(x: 195, y: 262), label: "押す", longPress: false),
                 .init(title: "大きさを選んで、追加する", body: "横にスワイプして、小・中・大から選ぶ。「ウィジェットを追加」を押す。", tip: nil, scene: .homeSizes, target: CGPoint(x: 195, y: 472), label: "押す", longPress: false, focusY: 372),
                 .init(title: "置く場所を決めて、完了", body: "好きな場所へ動かし、右上の「完了」を押す。", tip: nil, scene: .homeDone, target: CGPoint(x: 346, y: 72), label: "押す", longPress: false),
             ]
@@ -65,14 +65,14 @@ enum WidgetPlace: CaseIterable, Identifiable {
                 .init(title: "ロック画面を、長押しする", body: "Face ID でロックを解いたあと、ホームへ進まずに画面を押し続ける。", tip: nil, scene: .lockScreen, target: CGPoint(x: 195, y: 410), label: "長押し(約1秒)", longPress: true, focusY: 300),
                 .init(title: "「カスタマイズ」→「ロック画面」", body: "「ホーム画面」は壁紙の設定なので、まちがえない。", tip: nil, scene: .lockCustomize, target: CGPoint(x: 112, y: 420), label: "押す", longPress: false),
                 .init(title: "時計の下の枠を押す", body: "日付のとなりの1行も、日付を押して置ける。", tip: nil, scene: .lockSlots, target: CGPoint(x: 195, y: 292), label: "押す", longPress: false),
-                .init(title: "Later を選ぶ", body: "長方形・丸から選ぶ。枠は全部で4つ分。長方形は2つ分。", tip: "「長方形 + 丸 + 丸」がそろう。", scene: .lockPicker, target: CGPoint(x: 128, y: 640), label: "押す", longPress: false),
+                .init(title: "Lattag を選ぶ", body: "長方形・丸から選ぶ。枠は全部で4つ分。長方形は2つ分。", tip: "「長方形 + 丸 + 丸」がそろう。", scene: .lockPicker, target: CGPoint(x: 128, y: 640), label: "押す", longPress: false),
                 .init(title: "完了を押す", body: "右上の「完了」。", tip: nil, scene: .lockDone, target: CGPoint(x: 346, y: 72), label: "押す", longPress: false),
             ]
         case .controls:
             return [
                 .init(title: "下のボタンの「−」を押す", body: "入りかたは、ロック画面の 1・2 と同じ。", tip: nil, scene: .controlsMinus, target: CGPoint(x: 72, y: 742), label: "押す", longPress: false),
                 .init(title: "あいた場所の「＋」を押す", body: "左のボタンの場所に「＋」が出る。", tip: nil, scene: .controlsPlus, target: CGPoint(x: 72, y: 762), label: "押す", longPress: false),
-                .init(title: "「今日を撮る」を選ぶ", body: "検索欄に「Later」と入れる。", tip: "左に「今日を撮る」、右に「昨日をひらく」が使いやすい。", scene: .controlsPicker, target: CGPoint(x: 195, y: 560), label: "押す", longPress: false),
+                .init(title: "「今日を撮る」を選ぶ", body: "検索欄に「Lattag」と入れる。", tip: "左に「今日を撮る」、右に「昨日をひらく」が使いやすい。", scene: .controlsPicker, target: CGPoint(x: 195, y: 560), label: "押す", longPress: false),
                 .init(title: "完了を押す", body: "右上の「完了」。", tip: nil, scene: .controlsDone, target: CGPoint(x: 346, y: 72), label: "押す", longPress: false),
             ]
         }
@@ -406,10 +406,10 @@ struct WidgetSetupFlow: View {
                         reduceMotion: reduceMotion
                     )
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("一覧に Later が出ないとき")
+                        Text("一覧に Lattag が出ないとき")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.white)
-                        Text("Later を一度ひらいてから、もう一度、追加の画面を見てください。それでも出ないときは、iPhone を再起動すると出ることがあります。")
+                        Text("Lattag を一度ひらいてから、もう一度、追加の画面を見てください。それでも出ないときは、iPhone を再起動すると出ることがあります。")
                             .font(.system(size: 14))
                             .lineSpacing(14 * 0.6 - 4)
                             .foregroundStyle(OnboardingPalette.secondaryText)
@@ -879,15 +879,15 @@ struct WidgetMockScreen: View {
             case .homeSearch:
                 ghostGrid(jiggle: true).opacity(0.4)
                 sheet(top: 120) {
-                    searchField("Later").padding(.top, 24)
-                    pickerRow(title: "Later", y: 0).padding(.top, 30)
+                    searchField("Lattag").padding(.top, 24)
+                    pickerRow(title: "Lattag", y: 0).padding(.top, 30)
                     ghostRow().padding(.top, 14)
                     ghostRow().padding(.top, 14)
                 }
             case .homeSizes:
                 ghostGrid(jiggle: true).opacity(0.4)
                 sheet(top: 120) {
-                    Text("Later").font(.system(size: 22, weight: .bold)).foregroundStyle(.white).padding(.top, 28)
+                    Text("Lattag").font(.system(size: 22, weight: .bold)).foregroundStyle(.white).padding(.top, 28)
                     LaterSceneView(state: WidgetSamples.shoot, family: .systemSmall)
                         .frame(width: 170, height: 170)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -937,7 +937,7 @@ struct WidgetMockScreen: View {
             case .lockPicker:
                 lockClock().opacity(0.5)
                 sheet(top: 470) {
-                    Text("Later").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).padding(.top, 22)
+                    Text("Lattag").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).padding(.top, 22)
                     HStack(spacing: 14) {
                         LaterRectangularView(state: WidgetSamples.developing)
                             .foregroundStyle(.white)
@@ -975,7 +975,7 @@ struct WidgetMockScreen: View {
             case .controlsPicker:
                 lockClock().opacity(0.4)
                 sheet(top: 380) {
-                    searchField("Later").padding(.top, 24)
+                    searchField("Lattag").padding(.top, 24)
                     pickerRow(title: "今日を撮る", y: 0, icon: "circle.circle").padding(.top, 40)
                     pickerRow(title: "昨日をひらく", y: 0, icon: "circle.dashed").padding(.top, 12)
                 }

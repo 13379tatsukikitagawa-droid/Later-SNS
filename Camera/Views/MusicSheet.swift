@@ -242,7 +242,7 @@ struct MusicSheet: View {
             connect(text: "Apple Music に つなぐと、曲を さがして つけられます。\nその人の ライブラリは 読みません。")
         case .denied:
             VStack(alignment: .leading, spacing: 10) {
-                note("Apple Music の 許可が ありません。設定アプリの「Later」で「メディアと Apple Music」を オンにしてください。\nApple Music に 入っていない 場合は、リンクを はる 方法を 使ってください。")
+                note("Apple Music の 許可が ありません。設定アプリの「Lattag」で「メディアと Apple Music」を オンにしてください。\nApple Music に 入っていない 場合は、リンクを はる 方法を 使ってください。")
                 linkField(placeholder: "music.apple.com の リンクを はる")
                 linkResult
             }

@@ -23,7 +23,7 @@ struct LaterSceneWidget: Widget {
         StaticConfiguration(kind: LaterWidgetShared.sceneKind, provider: LaterProvider()) { entry in
             LaterSceneEntryView(entry: entry)
         }
-        .configurationDisplayName("Later")
+        .configurationDisplayName("Lattag")
         .description("ひとつの光。一日のなかで、景色が変わります。")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
         .contentMarginsDisabled()

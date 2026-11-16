@@ -17,7 +17,7 @@ struct LaterDayView: View {
     }
 
     static let scenes: [Scene] = [
-        Scene(duration: 3.8, title: "Laterとは", body: "4〜8人のグループで、1日1枚の写真を見せ合うアプリです。"),
+        Scene(duration: 3.8, title: "Lattagとは", body: "4〜8人のグループで、1日1枚の写真を見せ合うアプリです。"),
         Scene(duration: 4.3, title: "9:00、全員が同時にひらく", body: "毎朝9:00になると、グループ全員が同じ時刻に撮れるようになります。"),
         Scene(duration: 4.5, title: "1日1枚、長押しで撮る", body: "タグを選んで、1.5秒の長押し。プレビューも撮り直しもありません。"),
         Scene(duration: 4.0, title: "撮ると、昨日がひらく", body: "今日を撮った人だけが、みんなの昨日の写真を見られます。"),
@@ -394,7 +394,7 @@ struct OnboardingWelcomeView: View {
     @State private var finished = false
     @State private var simpleFade = 1.0
 
-    private static let lines = ["ようこそ", "Laterへ"]
+    private static let lines = ["ようこそ", "Lattagへ"]
 
     var body: some View {
         GeometryReader { proxy in
@@ -417,9 +417,9 @@ struct OnboardingWelcomeView: View {
         }
         .allowsHitTesting(true) // 演出中は入力を受け付けない
         .accessibilityElement()
-        .accessibilityLabel("ようこそ、Laterへ")
+        .accessibilityLabel("ようこそ、Lattagへ")
         .onAppear {
-            UIAccessibility.post(notification: .announcement, argument: "ようこそ、Laterへ")
+            UIAccessibility.post(notification: .announcement, argument: "ようこそ、Lattagへ")
             if reduceMotion || voiceOverEnabled {
                 // 全文を1.6秒見せて、0.4秒のクロスフェードで Home へ
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {

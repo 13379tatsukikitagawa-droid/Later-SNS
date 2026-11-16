@@ -204,6 +204,9 @@ struct RootView: View {
         .onAppear {
             // 初回起動(初回設定がまだ)は、起動アニメーションではなくオンボーディング。
             if !isSetupCompleted { LaunchCoordinator.hasPlayedInProcess = true }
+            #if DEBUG
+            DebugMenuInstaller.install()  // 3本指 長押しで 状態メニュー
+            #endif
             resetIfNeeded()
             ensurePersonalSpaceForCurrentUser()
             ensureWelcomeSeenForExistingUser()
@@ -295,7 +298,7 @@ struct RootView: View {
             }
             // ウィジェット・コントロール・ライブアクティビティ:later://widget/<U|R|D|M>
             // U → 撮影へ(タグ選び)/ R → Home(月を長押しで昨日をひらく)/ D・M → Home
-            if url.scheme == "later", url.host == "widget" {
+            if Brand.isOurScheme(url), url.host == "widget" {
                 NotificationCenter.default.post(name: .photoNotificationTapped, object: nil)
                 if url.lastPathComponent == LaterWidgetPhase.U.rawValue {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

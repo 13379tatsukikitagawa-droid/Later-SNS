@@ -65,9 +65,12 @@ struct GroupInviteTests {
 
     private let shareURL = URL(string: "https://www.icloud.com/share/0abcDEF123#Later")!
 
-    @Test func 招待リンクは以前の_later_join() {
+    @Test func 招待リンクは_lattag_join_で作り_古い_later_も読める() {
         let link = InviteConfig.joinLink(shareURL: shareURL)
-        #expect(link.scheme == "later")
+        #expect(link.scheme == "lattag")
+        // すでに 送った 古い later://join も 開ける
+        let legacy = URL(string: "later://join?shareUrl=\(shareURL.absoluteString)")!
+        #expect(InviteConfig.shareURL(from: legacy) == shareURL)
         #expect(link.host == "join")
         #expect(InviteConfig.shareURL(from: link) == shareURL)
         // 素の CKShare URL も受けとれる。ちがう URL は受けとらない
@@ -77,7 +80,7 @@ struct GroupInviteTests {
 
     @Test func 招待リンクはエンコードなしで作り_あり_なしの両方を読める() {
         let link = InviteConfig.joinLink(shareURL: shareURL)
-        #expect(link.absoluteString == "later://join?shareUrl=\(shareURL.absoluteString)")
+        #expect(link.absoluteString == "lattag://join?shareUrl=\(shareURL.absoluteString)")
         let plain = URL(string: "later://join?shareUrl=https://www.icloud.com/share/048QUuOQglIyxDdrKDRVre3wg")!
         #expect(InviteConfig.shareURL(from: plain)?.absoluteString == "https://www.icloud.com/share/048QUuOQglIyxDdrKDRVre3wg")
         let encoded = URL(string: "later://join?shareUrl=https%3A%2F%2Fwww.icloud.com%2Fshare%2F048QUuOQglIyxDdrKDRVre3wg")!
@@ -118,7 +121,7 @@ struct GroupInviteTests {
 
     @Test func 共有の文面にあおる言葉を入れない() {
         let text = InviteConfig.shareMessage(groupName: "よいしょー", url: InviteConfig.joinLink(shareURL: shareURL))
-        #expect(text == "「よいしょー」に招待されました。Later で、昨日をひらきあいましょう。\nlater://join?shareUrl=\(shareURL.absoluteString)")
+        #expect(text == "「よいしょー」に招待されました。Lattag で、昨日をひらきあいましょう。\nlattag://join?shareUrl=\(shareURL.absoluteString)")
         for word in ["早く", "いまだけ", "今だけ", "急いで"] { #expect(!text.contains(word)) }
     }
 

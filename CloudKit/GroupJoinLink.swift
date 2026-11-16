@@ -9,7 +9,7 @@ import Foundation
 /// 既存のGroupSharingService.resolveShareMetadata/acceptShareをそのまま再利用する
 /// (このラッパーはURLの組み立て/分解だけを担当し、CloudKit連携ロジックには一切手を入れない)。
 enum GroupJoinLink {
-    static let scheme = "later"
+    static let scheme = Brand.scheme  // 新しい リンク。古い later:// も 受けつける
     static let host = "join"
 
     /// CKShareの標準URLから、アプリ直接起動用のカスタムURLを組み立てる。
@@ -28,7 +28,7 @@ enum GroupJoinLink {
     /// later://join?shareUrl=... から、元のCKShare標準URLを取り出す(エンコードあり・なし どちらも読める)。
     /// scheme/hostが一致しない、またはshareUrlクエリが無い/不正な場合はnilを返す。
     static func extractShareURL(from url: URL) -> URL? {
-        guard url.scheme == scheme, url.host == host else { return nil }
+        guard Brand.isOurScheme(url), url.host == host else { return nil }
         // shareUrl= のうしろを そのまま 取る(エンコードなしだと、CKShare の URL の中の ? や # で 切れることがあるため)
         let text = url.absoluteString
         guard let range = text.range(of: "shareUrl=") else { return nil }

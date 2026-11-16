@@ -511,7 +511,7 @@ struct QRScanView: View {
                     hasClipboardURL = false
                     lock(shareURL, haptic: true)
                 } else {
-                    showNotice("Later の招待ではありません")
+                    showNotice("Lattag の招待ではありません")
                 }
             }
             .buttonBorderShape(.capsule)
@@ -741,7 +741,7 @@ struct QRScanView: View {
         } else if ignoredCode != code {
             // 触覚なし・音なし・揺れなし・リンクも開かない。同じQRで何度も出さない
             ignoredCode = code
-            showNotice("Later の招待ではありません")
+            showNotice("Lattag の招待ではありません")
         }
     }
 
@@ -797,7 +797,7 @@ struct QRScanView: View {
             return
         }
         guard let url = URL(string: string), let shareURL = InviteConfig.shareURL(from: url) else {
-            showNotice("Later の招待ではありません")
+            showNotice("Lattag の招待ではありません")
             return
         }
         // 窓の中に、選んだ写真を出して、同じ流れへ

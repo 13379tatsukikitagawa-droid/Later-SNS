@@ -277,7 +277,7 @@ struct ProfileShelfSettingsSheet: View {
             }
             Button("とじる", role: .cancel) {}
         } message: {
-            Text("iPhone の設定で、Later の通知を許可してください。")
+            Text("iPhone の設定で、Lattag の通知を許可してください。")
         }
     }
 
@@ -417,7 +417,7 @@ struct ProfileShelfEditSheet: View {
         ProfileShelfSheetFrame(colors: colors, onDismiss: onCancel) {
             sheetTitle("プロフィールを編集")
 
-            label("名前(Later の中だけの名前)")
+            label("名前(Lattag の中だけの名前)")
             TextField("名前を入れてください", text: $name)
                 .focused($focus, equals: .name)
                 .submitLabel(.done)
