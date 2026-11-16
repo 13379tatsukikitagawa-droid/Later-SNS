@@ -14,12 +14,19 @@ struct YesterdayV64Input {
     var mondoPhoto: UIImage?
     var mondoTag = "#夕焼け"
     var mondoCity = "鎌倉市"
-    var cities: [(String, String)] = [("SEOUL", "21:03"), ("BANGKOK", "19:03"), ("PARIS", "13:03")]
+    var cities: [(String, String)] {
+        let list: [(String, String)] = [("SEOUL", "Asia/Seoul"), ("BANGKOK", "Asia/Bangkok"), ("PARIS", "Europe/Paris"), ("NEW YORK", "America/New_York"), ("SYDNEY", "Australia/Sydney")]
+        return list.map { name, tz in
+            let f = DateFormatter(); f.dateFormat = "HH:mm"; f.timeZone = TimeZone(identifier: tz)
+            return (name, f.string(from: now))
+        }
+    }
     var dateLabel = "NOV 15"
     var avatar: UIImage?
     var now = Date()
     var startTab = 0
     var startViewing: String? = nil
+    var scrollToMe = false
     var locked: Bool { shotsUsed == 0 }
 }
 
@@ -45,7 +52,7 @@ struct YesterdayV64View: View {
         GeometryReader { g in
             ZStack(alignment: .topLeading) {
                 Color.white
-                ScrollView(.vertical, showsIndicators: false) {
+                ScrollViewReader { proxy in ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
                         Color.clear.frame(height: 182)
                         if tab == 0 { friendsTab(w: g.size.width) } else { mondoTab(w: g.size.width) }
@@ -53,6 +60,7 @@ struct YesterdayV64View: View {
                     }
                     .animation(.timingCurve(0.3, 1.2, 0.4, 1, duration: 0.4), value: tab)
                 }
+                .onAppear { if input.scrollToMe { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo("me", anchor: UnitPoint(x: 0.5, y: 0.1)) } } } }
                 header
                 tabBar.frame(width: g.size.width).offset(y: g.size.height - 96)
             }
@@ -156,6 +164,9 @@ struct YesterdayV64View: View {
                     }.buttonStyle(HVPress(scale: 0.97))
                 }
             }.padding(.horizontal, 14)
+            meCard.padding(.horizontal, 18).padding(.top, 12).id("me")
+            friendStrip.padding(.horizontal, 18)
+            tripsSection
             if input.cells.isEmpty {
                 Text("友だちを ふやすと、ここに きのうが 並びます").font(LF.inter(600, 14)).foregroundStyle(HV.gray).frame(maxWidth: .infinity).padding(.top, 10)
             }
@@ -224,6 +235,53 @@ struct YesterdayV64View: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
             .frame(width: w - 36, height: 400).clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous)).padding(.horizontal, 18)
+        }
+    }
+
+    // MARK: 下へ(Y05):ME ・ Friend ・ TRIPS
+
+    private var meCard: some View {
+        ZStack(alignment: .bottomLeading) {
+            RoundedRectangle(cornerRadius: 40, style: .continuous).fill(Color(hex: "F2F2F4"))
+            HStack(spacing: -40) {
+                ForEach(0..<3, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(LinearGradient(colors: [[Color(hex: "EE5E9C"), Color(hex: "9B8CFF")], [Color(hex: "BFEFD0"), Color(hex: "9ED8FF")], [Color(hex: "C060A0"), Color(hex: "F0A0C0")]][i], startPoint: .top, endPoint: .bottom))
+                        .frame(width: 108, height: 160).rotationEffect(.degrees(Double(i) * 7 - 4)).offset(y: CGFloat(i) * 6)
+                }
+            }.frame(maxWidth: .infinity, alignment: .trailing).offset(x: 30, y: -30)
+            Text("ME").font(LF.inter(900, 100)).tracking(-7).foregroundStyle(HV.ink).offset(x: 24, y: -60)
+            Text("きのうの まい ・ 7日で きえる").font(LF.inter(700, 15)).foregroundStyle(HV.gray).padding(.leading, 28).padding(.bottom, 28)
+            Image(systemName: "arrow.up.right").font(.system(size: 20, weight: .bold)).foregroundStyle(HV.ink).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing).padding(28)
+        }.frame(height: 245).clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
+            .onTapGesture { Haptics.play(.pop); actions.openProfile() }
+    }
+
+    private var friendStrip: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 36, style: .continuous).fill(Color(hex: "F2F2F7")).overlay(RoundedRectangle(cornerRadius: 36, style: .continuous).strokeBorder(.black.opacity(0.06), lineWidth: 1))
+            (Text("F").font(LF.serif(44, italic: true)).foregroundColor(Color(hex: "24A03C")) + Text("riend").font(LF.serif(44)).foregroundColor(HV.ink)).padding(.leading, 26).padding(.top, 14)
+            HStack(spacing: 14) {
+                VStack(spacing: 8) {
+                    Button { Haptics.play(.sel); actions.addFriends() } label: { Image(systemName: "plus").font(.system(size: 30, weight: .bold)).foregroundStyle(.white).frame(width: 52, height: 52).background(Color(hex: "24A03C"), in: Circle()).shadow(color: Color(hex: "24A03C").opacity(0.4), radius: 10, y: 8) }.buttonStyle(.plain)
+                    Text("Add").font(LF.inter(800, 14)).foregroundStyle(Color(hex: "24A03C"))
+                }
+                ForEach(0..<3, id: \.self) { _ in Circle().strokeBorder(.black.opacity(0.1), style: StrokeStyle(lineWidth: 1, dash: [3, 3])).frame(width: 52, height: 52).offset(y: -9) }
+            }.padding(.leading, 20).padding(.top, 64)
+            Circle().fill(HV.ink).frame(width: 36, height: 36).overlay(Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)).frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 16).padding(.top, 16)
+        }.frame(height: 146)
+    }
+
+    private var tripsSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Rectangle().fill(HV.ink).frame(height: 1).padding(.horizontal, 22).padding(.top, 14)
+            HStack { Text("TRIPS").font(LF.mono(11)).tracking(3).foregroundStyle(HV.gray); Spacer(); Text("1日 23枚 ・ みんなで").font(LF.inter(700, 13)).foregroundStyle(HV.gray) }.padding(.horizontal, 22)
+            VStack(spacing: 8) {
+                Image(systemName: "plus").font(.system(size: 26, weight: .bold)).foregroundStyle(.white).frame(width: 44, height: 44).background(Color(hex: "24A03C"), in: Circle())
+                Text("New trip").font(LF.serif(24)).foregroundStyle(HV.ink)
+                Text("旅行 ・ 合宿 ・ イベント").font(LF.inter(600, 11)).foregroundStyle(HV.gray)
+            }.frame(width: 124, height: 200).overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).strokeBorder(.black.opacity(0.25), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))).padding(.leading, 20)
+                .onTapGesture { Haptics.play(.tick); actions.shoot() }
         }
     }
 

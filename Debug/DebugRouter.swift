@@ -19,6 +19,7 @@ enum DebugRouter {
         case "opening": show(OpeningV21View(variant: .full, start: Date(), onFinish: { hide() })); OpeningDebug.frozenT = t
         case "home": show(HomeV64Preview())
         case "yesterday": show(YesterdayV64Preview())
+        case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
         case "tag": show(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black))
         default: return false
         }
@@ -147,6 +148,7 @@ struct YesterdayV64Preview: View {
         var y = YesterdayV64Input()
         y.shotsUsed = d.integer(forKey: "debugShots")
         y.startTab = d.integer(forKey: "debugTab")
+        y.scrollToMe = d.bool(forKey: "debugScrollMe")
         y.startViewing = d.string(forKey: "debugViewing")
         y.shotFriends = d.integer(forKey: "debugShotFriends")
         y.requestCount = d.integer(forKey: "debugRequests")

@@ -24,6 +24,7 @@
 		49013B6816DB416B81AAFF62 /* PhotoImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119556FA11AB4599AE228BA8 /* PhotoImageCache.swift */; };
 		59F80A436DE7C20220C14325 /* Profile/Views/SquareImageCropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46C4149AD669549389D9F96 /* Profile/Views/SquareImageCropView.swift */; };
 		5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7259E737667BD9D41829457 /* HomeMoon.swift */; };
+		EF1ACD90ED1193CE169C4851 /* V64/DevelopV64View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5151B98D9817974A8A5B4D4B /* V64/DevelopV64View.swift */; };
 		095C9283B37335410D2F8521 /* V64/DirectMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */; };
 		73AE4F5B71C4CE851B12BD98 /* V64/DirectMessageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99250B0EB5E496A94CD226D2 /* V64/DirectMessageService.swift */; };
 		B9144BB237EBBF08EDC37109 /* V64/FriendRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */; };
@@ -391,6 +392,7 @@
 		C41C00000000000000000002 /* ChicTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChicTheme.swift; sourceTree = "<group>"; };
 		C41C00000000000000000004 /* ChicHomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChicHomeView.swift; sourceTree = "<group>"; };
 		C7259E737667BD9D41829457 /* HomeMoon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMoon.swift; sourceTree = "<group>"; };
+		5151B98D9817974A8A5B4D4B /* V64/DevelopV64View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/DevelopV64View.swift; sourceTree = "<group>"; };
 		72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/DirectMessageView.swift; sourceTree = "<group>"; };
 		99250B0EB5E496A94CD226D2 /* V64/DirectMessageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/DirectMessageService.swift; sourceTree = "<group>"; };
 		090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FriendRequestsView.swift; sourceTree = "<group>"; };
@@ -776,6 +778,7 @@
 				C41C00000000000000000002 /* ChicTheme.swift */,
 				C41C00000000000000000004 /* ChicHomeView.swift */,
 				C7259E737667BD9D41829457 /* HomeMoon.swift */,
+				5151B98D9817974A8A5B4D4B /* V64/DevelopV64View.swift */,
 				72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */,
 				99250B0EB5E496A94CD226D2 /* V64/DirectMessageService.swift */,
 				090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */,
@@ -1270,6 +1273,7 @@
 				C41C00000000000000000001 /* ChicTheme.swift in Sources */,
 				C41C00000000000000000003 /* ChicHomeView.swift in Sources */,
 				5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */,
+				EF1ACD90ED1193CE169C4851 /* V64/DevelopV64View.swift in Sources */,
 				095C9283B37335410D2F8521 /* V64/DirectMessageView.swift in Sources */,
 				73AE4F5B71C4CE851B12BD98 /* V64/DirectMessageService.swift in Sources */,
 				B9144BB237EBBF08EDC37109 /* V64/FriendRequestsView.swift in Sources */,

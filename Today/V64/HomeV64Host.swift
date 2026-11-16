@@ -7,6 +7,7 @@ struct HomeV64Host: View {
     @State private var sessionStart = Date()
     @State private var showYesterday = false
     @State private var showRequests = false
+    @State private var showDevelop = false
     @State private var chatWith: (id: String, name: String)?
     @State private var incoming: [FriendRequests.Request] = []
 
@@ -18,6 +19,9 @@ struct HomeV64Host: View {
         .task { await refreshRequests() }
         .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
         .sheet(isPresented: Binding(get: { chatWith != nil }, set: { if !$0 { chatWith = nil } })) { if let c = chatWith { DirectMessageView(friendID: c.id, friendName: c.name) } }
+        .fullScreenCover(isPresented: $showDevelop) {
+            DevelopV64View(count: max(1, src.shotsToday), times: { let f = DateFormatter(); f.dateFormat = "HH:mm"; return src.todayShots.map { f.string(from: $0.takenAt) } }(), now: Date()) { showDevelop = false }
+        }
         .fullScreenCover(isPresented: $showYesterday) {
             YesterdayV64View(input: makeYesterdayInput(now: Date()), actions: makeYesterdayActions())
         }
@@ -123,7 +127,7 @@ struct HomeV64Host: View {
         a.openRequests = { showRequests = true }
         a.openChat = { id, name in chatWith = (id, name) }
         a.openProfile = src.onOpenProfile
-        a.openDevelop = src.onDevelopTap
+        a.openDevelop = { showDevelop = true }
         a.openTrip = src.onCreateGroup
         a.openMondo = src.v17Actions.openMondo
         return a
