@@ -311,7 +311,7 @@ struct TagScreen: View {
 
                     // L:文字を へらす。見出しだけ(×の すぐ下)
                     Text("今日は、どんな日?")
-                        .font(.system(size: 30, weight: .black)).tracking(-0.04 * 30)
+                        .font(LGFont.mincho(29)).tracking(-0.145)   // v64:Later Mincho 700 29pt(C01)
                         .foregroundStyle(.white)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .padding(.leading, 26)

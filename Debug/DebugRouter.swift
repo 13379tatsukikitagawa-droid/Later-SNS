@@ -18,6 +18,8 @@ enum DebugRouter {
         case "hide": hide()
         case "opening": show(OpeningV21View(variant: .full, start: Date(), onFinish: { hide() })); OpeningDebug.frozenT = t
         case "home": show(HomeV64Preview())
+        case "yesterday": show(YesterdayV64Preview())
+        case "tag": show(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black))
         default: return false
         }
         return true
@@ -134,6 +136,22 @@ extension SampleData {
                 ctx.cgContext.fillEllipse(in: CGRect(x: CGFloat(i * 53 % 200), y: CGFloat(i * 97 % 280), width: 120, height: 120))
             }
         }
+    }
+}
+
+/// DEBUG:Lattag yesterday(`-debugShots 2 -debugTab 1 -debugRequests 1`)
+struct YesterdayV64Preview: View {
+    var body: some View {
+        let d = UserDefaults.standard
+        var y = YesterdayV64Input()
+        y.shotsUsed = d.integer(forKey: "debugShots")
+        y.startTab = d.integer(forKey: "debugTab")
+        y.requestCount = d.integer(forKey: "debugRequests")
+        y.requestFaces = SampleData.faces(count: y.requestCount > 0 ? 3 : 0)
+        y.cells = [.init(id: "a", photo: SampleData.photo("a"), name: "あや", time: "17:05", tag: nil), .init(id: "b", photo: SampleData.photo("d"), name: "れな", time: "12:40", tag: nil), .init(id: "c", photo: SampleData.photo("b"), name: "そら", time: "09:12", tag: nil), .init(id: "d", photo: SampleData.photo("e"), name: "you", time: "16:05", tag: nil)]
+        y.mondoPhoto = SampleData.photo("a")
+        y.now = Calendar.current.date(bySettingHour: 12, minute: 3, second: 0, of: Date()) ?? Date()
+        return YesterdayV64View(input: y)
     }
 }
 #endif

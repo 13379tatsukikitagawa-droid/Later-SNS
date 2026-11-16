@@ -5,12 +5,47 @@ import SwiftUI
 struct HomeV64Host: View {
     let src: HomeViewSwitch
     @State private var sessionStart = Date()
+    @State private var showYesterday = false
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { ctx in
             HomeV64View(input: makeInput(now: ctx.date), actions: makeActions())
         }
         .accessibilityElement(children: .contain)
+        .fullScreenCover(isPresented: $showYesterday) {
+            YesterdayV64View(input: makeYesterdayInput(now: Date()), actions: makeYesterdayActions())
+        }
+    }
+
+    // MARK: Lattag yesterday(P06)
+
+    private func makeYesterdayInput(now: Date) -> YesterdayV64Input {
+        var y = YesterdayV64Input()
+        let L = src.layerData
+        let df = DateFormatter(); df.dateFormat = "HH:mm"
+        y.shotsUsed = min(FilmRoll.shotsPerDay, src.shotsToday)
+        y.now = now
+        y.avatar = src.avatarImage
+        y.cells = L.yesterday.map { c in
+            .init(id: c.id, photo: image(c.imageData) ?? image(c.mosaicTiny), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), tag: c.tag)
+        }
+        y.friendCount = L.friends.filter { !$0.isMe }.count
+        y.mondoPhoto = L.yesterday.first.flatMap { image($0.imageData) ?? image($0.mosaicTiny) }
+        y.mondoTag = L.words.first.map { "#\($0)" } ?? "#夕焼け"
+        if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }
+        return y
+    }
+
+    private func makeYesterdayActions() -> YesterdayV64Actions {
+        var a = YesterdayV64Actions()
+        let groups = Dictionary(src.layerData.yesterday.map { ($0.id, $0.groupID) }, uniquingKeysWith: { f, _ in f })
+        a.close = { showYesterday = false }
+        a.openPhoto = { id in if let g = groups[id] { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.layerActions.openYesterdayPhoto(g, id) } } }
+        let friends = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.layerActions.openFriends() } }
+        a.addFriends = friends; a.openRequests = friends; a.openFriends = friends; a.scanQR = friends
+        a.shoot = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }
+        a.openProfile = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenProfile() } }
+        return a
     }
 
     private func image(_ data: Data?) -> UIImage? { data.flatMap(UIImage.init(data:)) }
@@ -67,7 +102,7 @@ struct HomeV64Host: View {
             if FilmCounter.shared.remaining == 0 { Haptics.play(.warn); src.layerActions.toast("今日は、ここまで") }
             else { CaptureRequestStore.shared.pendingRequestID = UUID() }
         }
-        a.openYesterday = src.onOpenYesterday
+        a.openYesterday = { showYesterday = true }
         a.openFriends = src.layerActions.openFriends
         a.addFriends = src.layerActions.openFriends
         a.openProfile = src.onOpenProfile

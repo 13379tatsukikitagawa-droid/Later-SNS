@@ -261,7 +261,7 @@ struct TodayView: View {
     }
 
     /// 昨日のホーム(v5:MONDO / GROUP / カレンダー)を見せているか。
-    private var usesV5Home: Bool { homeKind == .yesterday && !UIFlag.v64 }
+    private var usesV5Home: Bool { homeKind == .yesterday }
 
     /// 今日を撮る前に、手で昨日のホームをひらいている(昨日のものは、ぼかしてロック)
     private var yesterdayLocked: Bool { usesV5Home && !state.usesGroupHome }
@@ -481,7 +481,7 @@ struct TodayView: View {
 
             if rendersToday {
             TimelineView(.animation(paused: launchClock == nil && sparkleStart == nil)) { context in
-            HomeViewSwitch(
+            HomeView(
                 state: state,
                 now: now,
                 light: WorldCountStore.shared.light,
@@ -613,8 +613,7 @@ struct TodayView: View {
                     let frame = launchFrame(at: context.date)
                     moonLayer(size: proxy.size, launch: frame)
                         .offset(y: frame.moonOffset)
-                        .opacity(frame.moonOpacity * (isDivingToMondo || UIFlag.v64 ? 0 : 1))
-                        .allowsHitTesting(!UIFlag.v64)
+                        .opacity(frame.moonOpacity * (isDivingToMondo ? 0 : 1))
                         .animation(.easeOut(duration: 0.32), value: isDivingToMondo)
                 }
                 .onAppear { screenSize = proxy.size }
