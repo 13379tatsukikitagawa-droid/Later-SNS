@@ -120,17 +120,18 @@ struct HomeV17Tests {
         #expect(UserDefaults.standard.object(forKey: ExposureHaptics.enabledDefaultsKey) as? Bool == false)
     }
 
+    /// HAPTICS.md(モック v64)の 表に そろえた 値
     @Test func バイブの表() {
-        #expect(Haptics.Tuning.beats(.tick).first?.intensity == 0.45 && Haptics.Tuning.beats(.tick).first?.sharpness == 0.9)
+        #expect(Haptics.Tuning.beats(.tick).first?.intensity == 0.35 && Haptics.Tuning.beats(.tick).first?.sharpness == 0.6)
         #expect(Haptics.Tuning.beats(.detent).first?.intensity == 0.6)
-        #expect(Haptics.Tuning.beats(.pop).first?.intensity == 0.75)
-        #expect(Haptics.Tuning.beats(.click).first?.intensity == 0.8)
-        #expect(Haptics.Tuning.beats(.thud).first?.intensity == 1.0 && Haptics.Tuning.beats(.thud).first?.sharpness == 0.25)
-        #expect(Haptics.Tuning.beats(.soft).first?.intensity == 0.35)
+        #expect(Haptics.Tuning.beats(.pop).first?.intensity == 0.70)
+        #expect(Haptics.Tuning.beats(.click).first?.intensity == 0.65)
+        #expect(Haptics.Tuning.beats(.thud).first?.intensity == 1.0 && Haptics.Tuning.beats(.thud).first?.sharpness == 0.3)
+        #expect(Haptics.Tuning.beats(.soft).first?.intensity == 0.30)
         #expect(Haptics.Tuning.beats(.double).map(\.time) == [0, 0.07])
-        #expect(Haptics.Tuning.beats(.heart).map(\.intensity) == [0.9, 0.6])
+        #expect(Haptics.Tuning.beats(.heart).map(\.intensity) == [0.9, 0.55])
         #expect(Haptics.Tuning.beats(.burst).last?.time == 0.3)
-        #expect(Haptics.Tuning.beats(.success).map(\.intensity) == [0.6, 0.6, 1.0])
+        #expect(Haptics.Tuning.beats(.success).map(\.intensity) == [0.9, 0.9, 0.9])
     }
 
     @Test func 日付の文字() {

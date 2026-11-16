@@ -311,6 +311,12 @@ struct RootView: View {
                 }
                 return
             }
+            // 友だちリンク(lattag://friend?u=…):相手を 控えて おく(初回設定の「ともだちを さがす」で 申請の 行に 出る)
+            if let friend = FriendRules.recordName(from: url) {
+                UserDefaults.standard.set(friend, forKey: "pendingFriendRecordName")
+                NotificationCenter.default.post(name: .friendLinkOpened, object: friend)
+                return
+            }
             // 招待リンク(later://join)・素の CKShare URL(LINE などから、OS の受け入れ経路が動かなかったとき)
             if let shareURL = InviteConfig.shareURL(from: url) {
                 handleInviteLink(shareURL)

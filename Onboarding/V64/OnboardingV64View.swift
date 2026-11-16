@@ -47,6 +47,7 @@ struct OnboardingV64View: View {
     @State private var sentAddress = ""
     @State private var invitedBy: String?
     @State private var requestedInvite = false
+    @State private var invitedRecord: String?
     @FocusState private var focus: Field?
     enum Field { case name, mail, tag }
 
@@ -59,6 +60,8 @@ struct OnboardingV64View: View {
     @State private var holdLevel = 0.0
     @State private var finishStart: Date?
     @State private var sparks: [Spark] = []
+    /// キーボードの 上の はし(画面の y)。出ていない ときは 無限大
+    @State private var kbTop: CGFloat = .greatestFiniteMagnitude
 
     struct Spark: Identifiable { let id = UUID(); let angle: Double; let radius: Double; let born = Date() }
 
@@ -66,6 +69,16 @@ struct OnboardingV64View: View {
     @State private var col = 0
     private var colors: (Color, Color) { OB.palette[col] }
     private var initial: String { name.first.map(String.init) ?? "" }
+    /// 入力欄の 下の 位置(モックの y)。キーボードで 下の ボタンが 上がった とき、ここが 隠れない ように 押し上げる
+    private func contentBottom(_ s: OBStep) -> CGFloat { s == .name ? 684 : (s == .mail ? 604 : (s == .tag ? 716 : 0)) }
+    private func lift(mid: CGFloat) -> CGFloat {
+        let b = contentBottom(step)
+        guard b > 0, kbTop < .greatestFiniteMagnitude else { return 0 }
+        // 下の ボタンは キーボードの 上に のる(下の すきま 34pt)。入力欄の 下は その ボタンより 上に
+        let groupHeight: CGFloat = (step == .mail) ? 106 : 60
+        let buttonTop = kbTop - 34 - groupHeight
+        return max(0, b + mid + 14 - buttonTop)
+    }
     private var validName: Bool { OnboardingRules.validateName(name).problem == nil }
 
     var body: some View {
@@ -88,6 +101,10 @@ struct OnboardingV64View: View {
             }
         }
         .background(OB.bg.ignoresSafeArea())
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { note in
+            guard let end = (note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
+            kbTop = end.minY >= UIScreen.main.bounds.height - 1 ? .greatestFiniteMagnitude : end.minY
+        }
         .statusBarHidden()
         .preferredColorScheme(.dark)
         .onAppear(perform: start)
@@ -116,6 +133,7 @@ struct OnboardingV64View: View {
         GeometryReader { g in
             let W = g.size.width, H = g.size.height
             let mid = (H - 844) / 2
+            let up = lift(mid: mid)
             ZStack(alignment: .topLeading) {
                 OB.bg
                 OBGlow(c1: colors.0, c2: colors.1, opacity: step == .signin ? 0.16 : 0.26)
@@ -134,7 +152,7 @@ struct OnboardingV64View: View {
                     .position(x: W / 2, y: step.chekiTop + mid + 108)
                     .offset(y: entered ? 0 : -300)
                     .rotationEffect(.degrees(entered ? 0 : -14))
-                    .opacity(entered ? 1 : 0)
+                    .opacity(entered ? 1 - min(1, up / 60) : 0)
                     .animation(.timingCurve(0.3, 1.2, 0.4, 1, duration: 0.6), value: step)
                     .onTapGesture { if step == .tag { Haptics.play(.pop); showPhotoPicker = true } }
                 if step == .nt { OBNoticeCard().frame(width: W).offset(y: 104).transition(.opacity.combined(with: .offset(y: -20))) }
@@ -148,7 +166,8 @@ struct OnboardingV64View: View {
                 }
                 // 見出し・入力・チップ
                 content(step, W: W, mid: mid)
-                    .offset(y: slideY).opacity(slideOpacity)
+                    .offset(y: slideY - up).opacity(slideOpacity)
+                    .animation(.easeOut(duration: 0.25), value: up)
                 // ながおしの 光
                 if step == .go {
                     RadialGradient(colors: [OB.stamp.opacity(0.8 * holdLevel), .clear], center: UnitPoint(x: 0.5, y: 0.66), startRadius: 0, endRadius: max(W, H) * (0.18 + holdLevel * 0.62))
@@ -201,7 +220,7 @@ struct OnboardingV64View: View {
             heading([("メールアドレス", false)]).offset(y: 448 + mid)
             VStack(spacing: 0) {
                 ZStack {
-                    if email.isEmpty { Text("you@example.com").font(LF.inter(700, 19)).foregroundStyle(OB.sub.opacity(0.5)) }
+                    if email.isEmpty { Text(verbatim: "you@example.com").font(LF.inter(700, 19)).foregroundStyle(OB.sub.opacity(0.5)) }
                     TextField("", text: $email)
                         .font(LF.inter(700, 19)).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
                         .keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -369,10 +388,15 @@ struct OnboardingV64View: View {
                 switch step {
                 case .signin:
                     VStack(spacing: 10) {
-                        SignInWithAppleButton(.continue) { request in
-                            Haptics.play(.click); request.requestedScopes = [.fullName]
-                        } onCompletion: { result in appleDone(result) }
-                            .signInWithAppleButtonStyle(.white).frame(height: 60).clipShape(Capsule())
+                        Button { startApple() } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "apple.logo").font(.system(size: 18, weight: .semibold)).offset(y: -1)
+                                Text("Apple で つづける")
+                            }
+                            .font(LF.inter(800, 16.5)).tracking(0.165).foregroundStyle(Color(hex: "111111"))
+                            .frame(maxWidth: .infinity).frame(height: 60).background(Color.white, in: Capsule())
+                        }
+                        .buttonStyle(OBPressStyle()).accessibilityLabel("Apple で つづける")
                         Button { googleSignIn() } label: { Text("Google で つづける") }.buttonStyle(OBButtonStyle(kind: .secondary))
                         Button { Haptics.play(.sel); go(.mail) } label: { Text("メールで つづける") }.buttonStyle(OBButtonStyle(kind: .secondary))
                         HStack(spacing: 0) {
@@ -446,6 +470,7 @@ struct OnboardingV64View: View {
 
     private func arrive(_ s: OBStep) {
         if s == .nt { Haptics.play(.soft) }
+        if s == .fr { loadInviter() }
         if s == .go { Haptics.play(.success) }
         if s == .name || s == .mail {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { if step == s { focus = (s == .name ? .name : .mail) } }
@@ -458,7 +483,7 @@ struct OnboardingV64View: View {
         switch step {
         case .name: confirmName(); go(.tag)
         case .tag: confirmTags(); go(.fr)
-        case .fr: go(.nt)
+        case .fr: sendFriendRequest(); go(.nt)
         default: break
         }
     }
@@ -477,11 +502,11 @@ struct OnboardingV64View: View {
             if let n = UserDefaults.standard.string(forKey: "debugName") { name = n }
             if UserDefaults.standard.object(forKey: "debugT") != nil { OnboardingDebug.introT = UserDefaults.standard.double(forKey: "debugT") }
             if raw == "intro" { entered = false; introStart = Date(); return }
-            if raw == "finish" { finishStart = Date(); return }
-            if let s = OBStep(rawValue: raw) { step = s; return }
+            if raw == "finish" { if UserDefaults.standard.object(forKey: "debugT") != nil { OnboardingDebug.finishT = UserDefaults.standard.double(forKey: "debugT") }; finishStart = Date(); return }
+            if let s = OBStep(rawValue: raw) { step = s; arrive(s); return }
         }
         #endif
-        if let resumed = resumeStep() { step = resumed; if resumed == .signin { handleSignInChange() }; return }
+        if let resumed = resumeStep() { step = resumed; arrive(resumed); if resumed == .signin { handleSignInChange() }; return }
         entered = false
         introStart = Date()
     }
@@ -522,6 +547,16 @@ struct OnboardingV64View: View {
             Haptics.play(.warn); say(OnboardingCopy.appleSignInFailed)
         }
     }
+
+    /// 「Apple で つづける」:自前の ボタンから 公式の 認証画面を 出す(しくみは AppleSignInView.applySignIn のまま)
+    private func startApple() {
+        guard !busy else { return }
+        Haptics.play(.click)
+        let c = OBAppleCoordinator { result in appleDone(result); apple = nil }
+        apple = c
+        c.start()
+    }
+    @State private var apple: OBAppleCoordinator?
 
     private func googleSignIn() {
         guard !busy else { return }
@@ -651,6 +686,29 @@ struct OnboardingV64View: View {
         if let manager = CloudKitManager.current { for group in profile.groups { manager.markForUpload(userProfile: profile, in: group) } }
     }
 
+    // MARK: - 友だち(O09)
+
+    /// 開いた 友だちリンクの 相手を 申請の 行に 出す(名前は 公開ディレクトリから)
+    private func loadInviter() {
+        guard invitedBy == nil, let rn = UserDefaults.standard.string(forKey: "pendingFriendRecordName") else { return }
+        invitedRecord = rn
+        Task { @MainActor in
+            let profile = await UserDirectoryService.fetchProfile(cloudKitUserRecordName: rn)
+            invitedBy = (profile?.name.isEmpty == false) ? profile!.name : "ともだち"
+        }
+    }
+
+    /// 「申請」を 押した まま 次へ 進んだ:つながる(相手も 押すと 相互)。通信が まだ なら 控えを 残して あとで
+    private func sendFriendRequest() {
+        guard requestedInvite, let rn = invitedRecord else { return }
+        let myName = name
+        Task { @MainActor in
+            if case .success = await FriendCloud.connect(to: rn, myName: myName, myCount: 0, theirCount: 0) {
+                UserDefaults.standard.removeObject(forKey: "pendingFriendRecordName")
+            }
+        }
+    }
+
     // MARK: - タグ・色・写真
 
     private func pickColor(_ i: Int) { photo = nil; col = i }
@@ -709,7 +767,13 @@ struct OnboardingV64View: View {
     }
 
     /// 演出が おわった:Home へ
-    private func completeFinish() { markCompleted() }
+    private func completeFinish() {
+        #if DEBUG
+        // 見た目の 確認用:完了に しないで もどす(-debugNoComplete 1)
+        if UserDefaults.standard.bool(forKey: "debugNoComplete") { finishStart = nil; return }
+        #endif
+        markCompleted()
+    }
 
     private func markCompleted() {
         savedStep = ""
@@ -736,6 +800,33 @@ struct OnboardingV64View: View {
 // MARK: - 小さな 部品
 
 private struct OBSendTimeout: Error {}
+
+private struct OBPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(.timingCurve(0.3, 1.6, 0.4, 1, duration: 0.25), value: configuration.isPressed)
+    }
+}
+
+/// Sign in with Apple を コードから 出す(名前だけ もらう)
+final class OBAppleCoordinator: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    private let done: (Result<ASAuthorization, Error>) -> Void
+    init(done: @escaping (Result<ASAuthorization, Error>) -> Void) { self.done = done }
+
+    @MainActor func start() {
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        request.requestedScopes = [.fullName]
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) { done(.success(authorization)) }
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) { done(.failure(error)) }
+    @MainActor func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
+    }
+}
 
 private struct OBChipPress: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
@@ -814,7 +905,11 @@ struct OBFinishView: View {
     var body: some View {
         GeometryReader { g in
             TimelineView(.animation) { ctx in
+                #if DEBUG
+                let t = OnboardingDebug.finishT ?? ctx.date.timeIntervalSince(start)
+                #else
                 let t = ctx.date.timeIntervalSince(start)
+                #endif
                 let end = reduceMotion ? 1.4 : 2.4
                 content(t: t, size: g.size)
                     .onChange(of: t >= end) { _, d in if d { finish() } }

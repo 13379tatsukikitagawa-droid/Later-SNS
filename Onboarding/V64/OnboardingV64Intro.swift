@@ -128,5 +128,11 @@ struct OBIntroView: View {
 /// DEBUG:入口の 時間を 止めて 撮る
 enum OnboardingDebug {
     nonisolated(unsafe) static var introT: Double?
+    nonisolated(unsafe) static var finishT: Double?
 }
 #endif
+
+extension Notification.Name {
+    /// 友だちリンクを ひらいた(object = 相手の CloudKit ユーザー名)
+    static let friendLinkOpened = Notification.Name("friendLinkOpened")
+}
