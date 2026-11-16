@@ -191,7 +191,7 @@ struct RootView: View {
                     if !isSetupCompleted {
                         // 新規ユーザーの初回設定 v2(開幕・はじめる・ニックネーム・Laterの一日・
                         // 仕組みの問題・最初の1枚・預けました)。既存ユーザー(isSetupCompleted済み)は通らない。
-                        OnboardingFlowView()
+                        OnboardingV64View()
                     }
                 }
                 .transition(.opacity)
@@ -206,6 +206,7 @@ struct RootView: View {
             if !isSetupCompleted { LaunchCoordinator.hasPlayedInProcess = true }
             #if DEBUG
             DebugMenuInstaller.install()  // 3本指 長押しで 状態メニュー
+            DebugRouter.runLaunchRoute()
             #endif
             resetIfNeeded()
             ensurePersonalSpaceForCurrentUser()
@@ -275,6 +276,9 @@ struct RootView: View {
             }
         }
         .onOpenURL { url in
+            #if DEBUG
+            if DebugRouter.handle(url) { return }
+            #endif
             if FirebaseAuthService.isSignInLink(url) {
                 // 初回設定の画面を「確認中」にする。同じ端末でリンクを開けた場合(pendingEmailが
                 // 残っている)は、ここでそのままサインインを完了する。別の端末で開いた場合は、

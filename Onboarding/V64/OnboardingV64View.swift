@@ -1,0 +1,863 @@
+import SwiftUI
+import SwiftData
+import AuthenticationServices
+import PhotosUI
+
+/// P01:はじめての設定(モック v64:in → mail → sent → name → tag → fr → nt → go)。
+/// 見た目と 流れだけ モックに 合わせ、保存・認証・通知の しくみは これまでの OnboardingFlowView と 同じ もの(UserProfile ・ FirebaseAuthService ・ DailyOpenNotification)を 使う。
+struct OnboardingV64View: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+
+    @AppStorage(OnboardingStorage.stepKey) private var savedStep: String = ""
+    @AppStorage(OnboardingStorage.completedKey) private var onboardingCompleted = false
+    @AppStorage("isSetupCompleted") private var isSetupCompleted = false
+    @AppStorage("isProfileSetupCompleted") private var isProfileSetupCompleted = false
+    @AppStorage("hasSeenWelcomeOnboarding") private var hasSeenWelcomeOnboarding = false
+    @AppStorage("hasCompletedSurvey") private var hasCompletedSurvey = false
+    @AppStorage("hasSeenAboutLaterIntro") private var hasSeenAboutLaterIntro = false
+    @AppStorage("appleUserID") private var appleUserID: String = ""
+    @AppStorage("firebaseUID") private var firebaseUID: String = ""
+    @AppStorage("firebaseEmail") private var firebaseEmail: String = ""
+    @AppStorage("currentProfileID") private var currentProfileID: String = ""
+    @AppStorage("userName") private var userName: String = ""
+    @AppStorage("userID") private var userID: String = ""
+
+    @Query private var profiles: [UserProfile]
+
+    // 場面
+    @State private var step: OBStep = .signin
+    @State private var started = false
+    @State private var introStart: Date?
+    @State private var entered = true
+    @State private var slideY: CGFloat = 0
+    @State private var slideOpacity = 1.0
+    @State private var transitioning = false
+
+    // 入力
+    @State private var name = ""
+    @State private var tags: [String] = []          // 「#」なしで 保存(TagRules と 同じ)
+    @State private var customDraft = ""
+    @State private var addingTag = false
+    @State private var photo: UIImage?
+    @State private var photoItem: PhotosPickerItem?
+    @State private var showPhotoPicker = false
+    @State private var email = ""
+    @State private var sentAddress = ""
+    @State private var invitedBy: String?
+    @State private var requestedInvite = false
+    @FocusState private var focus: Field?
+    enum Field { case name, mail, tag }
+
+    // 状態
+    @State private var busy = false
+    @State private var toast: String?
+    @State private var showingPolicy = false
+    @State private var showingShare = false
+    @State private var isCheckingAccount = false
+    @State private var holdLevel = 0.0
+    @State private var finishStart: Date?
+    @State private var sparks: [Spark] = []
+
+    struct Spark: Identifiable { let id = UUID(); let angle: Double; let radius: Double; let born = Date() }
+
+    /// 名前を 書くと ハッシュで 決まり、色の 丸で えらびなおせる(モックの OB.col)
+    @State private var col = 0
+    private var colors: (Color, Color) { OB.palette[col] }
+    private var initial: String { name.first.map(String.init) ?? "" }
+    private var validName: Bool { OnboardingRules.validateName(name).problem == nil }
+
+    var body: some View {
+        ZStack {
+            stage.ignoresSafeArea()
+            bottomLayer.ignoresSafeArea(.container)
+            if let introStart {
+                OBIntroView(start: introStart) { finishIntro() }.transition(.opacity)
+            }
+            if let finishStart {
+                OBFinishView(start: finishStart, onDone: completeFinish).ignoresSafeArea()
+            }
+            if let toast {
+                Text(toast).font(LF.inter(700, 13)).foregroundStyle(.white)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .lgGlass(radius: 18)
+                    .frame(maxHeight: .infinity, alignment: .bottom).padding(.bottom, 190)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .allowsHitTesting(false)
+            }
+        }
+        .background(OB.bg.ignoresSafeArea())
+        .statusBarHidden()
+        .preferredColorScheme(.dark)
+        .onAppear(perform: start)
+        .onChange(of: appleUserID) { _, _ in handleSignInChange() }
+        .onChange(of: firebaseUID) { _, _ in handleSignInChange() }
+        .onChange(of: photoItem) { _, item in loadPhoto(item) }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
+        .sheet(isPresented: $showingPolicy) { PrivacyPolicyView() }
+        .sheet(isPresented: $showingShare) { ShareSheet(activityItems: shareItems) { _ in } }
+        .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkOpened)) { _ in
+            guard step == .mail || step == .sent else { return }
+            say("確認しています…")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkFailed)) { note in
+            guard step == .mail || step == .sent else { return }
+            let failure = (note.object as? Error).map { EmailSignInFailure.from($0) } ?? .missingEmail
+            Haptics.play(.warn)
+            say(failure.title.replacingOccurrences(of: "\n", with: ""))
+            if step == .sent { go(.mail, back: true) }
+        }
+    }
+
+    // MARK: - 画面(上から 下まで・キーボードで ずれない)
+
+    private var stage: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let mid = (H - 844) / 2
+            ZStack(alignment: .topLeading) {
+                OB.bg
+                OBGlow(c1: colors.0, c2: colors.1, opacity: step == .signin ? 0.16 : 0.26)
+                OBWall(opacity: step.wallOpacity).frame(width: W, height: H).clipped()
+                    .opacity(entered ? 1 : 0)
+                // 「Lattag today」(サインイン・メール)
+                brandHeader.frame(width: W).offset(y: 64)
+                    .opacity(step.showsBrand && entered ? 1 : 0).animation(.easeOut(duration: 0.4), value: step)
+                // ページの 目印「01 / 04  YOU」
+                if let n = step.page { pageMark(n).frame(width: W).offset(y: 66).transition(.opacity) }
+                // チェキ
+                OBCheki(step: step, initial: initial, colors: colors, photo: photo, tags: tags,
+                        friendInitials: requestedInvite ? [(invitedBy.map { String($0.prefix(1)) } ?? "", colors.0)] : [])
+                    .scaleEffect(step.chekiScale)
+                    .rotationEffect(.degrees(step.chekiRotation))
+                    .position(x: W / 2, y: step.chekiTop + mid + 108)
+                    .offset(y: entered ? 0 : -300)
+                    .rotationEffect(.degrees(entered ? 0 : -14))
+                    .opacity(entered ? 1 : 0)
+                    .animation(.timingCurve(0.3, 1.2, 0.4, 1, duration: 0.6), value: step)
+                    .onTapGesture { if step == .tag { Haptics.play(.pop); showPhotoPicker = true } }
+                if step == .nt { OBNoticeCard().frame(width: W).offset(y: 104).transition(.opacity.combined(with: .offset(y: -20))) }
+                // 戻る
+                if step.back != nil {
+                    Button { Haptics.play(.tick); go(step.back!, back: true) } label: {
+                        Image(systemName: "chevron.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44).background(OB.line, in: Circle())
+                    }
+                    .buttonStyle(.plain).offset(x: 16, y: 52).accessibilityLabel("もどる")
+                }
+                // 見出し・入力・チップ
+                content(step, W: W, mid: mid)
+                    .offset(y: slideY).opacity(slideOpacity)
+                // ながおしの 光
+                if step == .go {
+                    RadialGradient(colors: [OB.stamp.opacity(0.8 * holdLevel), .clear], center: UnitPoint(x: 0.5, y: 0.66), startRadius: 0, endRadius: max(W, H) * (0.18 + holdLevel * 0.62))
+                        .allowsHitTesting(false)
+                }
+                ForEach(sparks) { s in OBSparkView(spark: s, center: CGPoint(x: W / 2, y: 560 + mid), strength: holdLevel) }
+            }
+            .frame(width: W, height: H, alignment: .topLeading)
+            .contentShape(Rectangle())
+            .onTapGesture { focus = nil }
+        }
+    }
+
+    private var brandHeader: some View {
+        HStack(alignment: .top, spacing: 3) {
+            Text(Brand.name).font(LF.inter(900, 34)).tracking(-0.065 * 34).foregroundStyle(.white).frame(height: 34)
+            Text("today").font(LF.serif(15, italic: true)).foregroundStyle(OB.sub)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func pageMark(_ n: Int) -> some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 0) {
+                Text(String(format: "%02d", n)).font(LF.mono(13)).tracking(0.78).foregroundStyle(.white)
+                Text(" / 04").font(LF.mono(11)).tracking(1.54).foregroundStyle(OB.sub)
+            }
+            Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 18)
+            Text(step.pageLabel).font(LF.mono(11)).tracking(1.54).foregroundStyle(OB.stamp)
+        }
+        .frame(maxWidth: .infinity).frame(height: 20)
+    }
+
+    // MARK: - 中身(場面ごと・モックの y を そのまま)
+
+    @ViewBuilder
+    private func content(_ s: OBStep, W: CGFloat, mid: CGFloat) -> some View {
+        let w = W - 48
+        switch s {
+        case .signin:
+            VStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    Circle().fill(OB.stamp).frame(width: 6, height: 6).shadow(color: OB.stamp, radius: 4)
+                    Text("FILM FOR TOMORROW").font(LF.mono(10)).tracking(2.4).foregroundStyle(OB.kicker)
+                }
+                OBHeading(parts: [("撮る。\nあした、", false), ("ひらく。", true)])
+            }
+            .frame(width: W).offset(y: 424 + mid)
+        case .mail:
+            heading([("メールアドレス", false)]).offset(y: 448 + mid)
+            VStack(spacing: 0) {
+                ZStack {
+                    if email.isEmpty { Text("you@example.com").font(LF.inter(700, 19)).foregroundStyle(OB.sub.opacity(0.5)) }
+                    TextField("", text: $email)
+                        .font(LF.inter(700, 19)).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
+                        .keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .submitLabel(.send).focused($focus, equals: .mail).onSubmit(sendLink)
+                }
+                .frame(height: 58)
+                Rectangle().fill(focus == .mail ? OB.accent : .white).frame(height: 2.5)
+                Text("パスワードは いりません").font(LF.inter(500, 13)).foregroundStyle(OB.sub).padding(.top, 9)
+            }
+            .frame(width: w).offset(x: 24, y: 513.3 + mid)
+        case .sent:
+            VStack(spacing: 9) {
+                heading([("メールを\nおくりました", false)])
+                Text("\(sentAddress)\nリンクを タップすると、もどってきます").font(LF.inter(500, 13)).lineSpacing(7.8)
+                    .foregroundStyle(OB.sub).multilineTextAlignment(.center)
+            }
+            .frame(width: W).offset(y: 448 + mid)
+        case .name:
+            VStack(spacing: 0) {
+                Text("Name").font(LF.serif(64, italic: true)).tracking(-1.28).foregroundStyle(.white).frame(height: 64)
+                Text("\(Brand.name) で よばれる なまえ").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8)
+            }
+            .frame(width: W).offset(y: 453 + mid)
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack {
+                    if name.isEmpty { Text("なまえ").font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(OB.sub.opacity(0.5)) }
+                    TextField("", text: $name)
+                        .font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
+                        .submitLabel(.next).focused($focus, equals: .name)
+                        .onSubmit { if validName { next() } }
+                        .onChange(of: name) { _, v in
+                            if v.count > OnboardingRules.nameMaxLength { name = String(v.prefix(OnboardingRules.nameMaxLength)) }
+                            Haptics.play(.tick, gap: 0.04)
+                            col = v.isEmpty ? 0 : OB.colorIndex(for: v)
+                        }
+                }
+                .frame(height: 58)
+                Rectangle().fill(focus == .name ? OB.accent : .white).frame(height: 2.5)
+                Text("\(name.count) / 12").font(LF.mono(11.5, bold: true)).foregroundStyle(OB.sub).padding(.top, 8)
+            }
+            .frame(width: w).offset(x: 24, y: 597.2 + mid)
+        case .tag:
+            heading([("じぶんを、", false), ("タグ", true), ("で。", false)]).offset(y: 424 + mid)
+            swatches.frame(width: W).offset(y: 488 + mid)
+            OBFlow(spacing: 8, rowSpacing: 8) { chips }.frame(width: w).offset(x: 24, y: 539 + mid)
+        case .fr:
+            heading([("ともだちを さがす", false)]).offset(y: 424 + mid)
+            VStack(spacing: 8) {
+                if let invitedBy { inviteRow(invitedBy) }
+                Button { Haptics.play(.click); say("連絡先の 許可は このあと 友だちの 画面で") } label: {
+                    HStack(spacing: 8) { Image(systemName: "person.badge.plus").font(.system(size: 16, weight: .bold)); Text("連絡先から さがす") }
+                        .font(LF.inter(800, 15)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 56)
+                        .background(OB.line, in: RoundedRectangle(cornerRadius: 20))
+                }.buttonStyle(.plain)
+                HStack(spacing: 12) {
+                    Button { Haptics.play(.heart); say("となりの人と、スマホを ふる") } label: { Text("ふって つながる").frame(height: 44).padding(.horizontal, 12) }
+                    Button { Haptics.play(.pop); showingShare = true } label: { Text("リンクを おくる").frame(height: 44).padding(.horizontal, 12) }
+                }
+                .font(LF.inter(700, 13)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2)
+            }
+            .frame(width: w).offset(x: 24, y: 489 + mid)
+        case .nt:
+            VStack(spacing: 9) {
+                (Text("9:00").font(LF.serif(36, italic: true)).foregroundColor(OB.stamp) + Text(" に、しらせる。").font(LGFont.mincho(29)).foregroundColor(.white))
+                    .lineSpacing(0)
+                Text("朝の 1回と、なかまの ことだけ").font(LF.inter(500, 13)).foregroundStyle(OB.sub)
+            }
+            .frame(width: W).offset(y: 492 + mid)
+        case .go:
+            heading([("ようこそ、\n\(name.isEmpty ? "あなた" : name)。", false)], size: 31).offset(y: 487.7 + mid)
+        }
+    }
+
+    private func heading(_ parts: [(String, Bool)], size: CGFloat = 29) -> some View {
+        OBHeading(parts: parts, size: size).frame(maxWidth: .infinity)
+    }
+
+    private var swatches: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<OB.palette.count, id: \.self) { i in
+                let on = photo == nil && col == i
+                Button { Haptics.play(.sel); pickColor(i) } label: {
+                    Circle().fill(LinearGradient(colors: [OB.palette[i].0, OB.palette[i].1], startPoint: UnitPoint(x: 0.15, y: 0), endPoint: UnitPoint(x: 0.85, y: 1)))
+                        .frame(width: 34, height: 34)
+                        .overlay(Circle().stroke(OB.bg, lineWidth: on ? 2.5 : 0).padding(on ? -2.5 : 0))
+                        .overlay(Circle().stroke(.white, lineWidth: on ? 2.5 : 0).padding(on ? -5 : 0))
+                        .scaleEffect(on ? 1.08 : 1)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).accessibilityLabel("色 \(i + 1)")
+            }
+            Button { Haptics.play(.pop); showPhotoPicker = true } label: {
+                Image(systemName: "camera").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                    .frame(width: 34, height: 34).background(OB.line, in: Circle())
+                    .overlay(Circle().stroke(OB.bg, lineWidth: photo != nil ? 2.5 : 0).padding(photo != nil ? -2.5 : 0))
+                    .overlay(Circle().stroke(.white, lineWidth: photo != nil ? 2.5 : 0).padding(photo != nil ? -5 : 0))
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).accessibilityLabel("写真を えらぶ")
+        }
+        .frame(maxWidth: .infinity)
+        .animation(.timingCurve(0.3, 1.6, 0.4, 1, duration: 0.3), value: col)
+        .padding(.top, -5)
+    }
+
+    @ViewBuilder
+    private var chips: some View {
+        let custom = tags.map { "#" + $0 }.filter { !OB.tags.contains($0) }
+        ForEach(OB.tags + custom, id: \.self) { t in
+            let on = tags.contains(String(t.dropFirst()))
+            Button { toggleTag(String(t.dropFirst())) } label: {
+                Text(t).font(LF.inter(700, 14)).foregroundStyle(on ? Color(hex: "111111") : .white)
+                    .padding(.horizontal, 14).frame(height: 38)
+                    .background(on ? Color.white : OB.line, in: Capsule())
+            }
+            .buttonStyle(OBChipPress())
+        }
+        if addingTag {
+            ZStack(alignment: .leading) {
+                if customDraft.isEmpty { Text("#じぶんで").font(LF.inter(700, 14)).foregroundStyle(OB.sub.opacity(0.5)) }
+                TextField("", text: $customDraft)
+                    .font(LF.inter(700, 14)).foregroundStyle(.white).tint(OB.accent)
+                    .focused($focus, equals: .tag).submitLabel(.done).onSubmit(commitCustomTag)
+            }
+            .padding(.horizontal, 14).frame(width: 120, height: 38)
+                .overlay(Capsule().strokeBorder(OB.accent, lineWidth: 1.5))
+        } else {
+            Button { Haptics.play(.sel); addingTag = true; focus = .tag } label: {
+                Text("+ じぶんで").font(LF.inter(700, 14)).foregroundStyle(.white).padding(.horizontal, 14).frame(height: 38)
+                    .background(OB.line, in: Capsule())
+            }
+            .buttonStyle(OBChipPress())
+        }
+    }
+
+    private func inviteRow(_ n: String) -> some View {
+        HStack(spacing: 12) {
+            Text(String(n.prefix(1))).font(LF.inter(800, 15)).foregroundStyle(.white)
+                .frame(width: 40, height: 40).background(LinearGradient(colors: [colors.0, colors.1], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(n).font(LF.inter(800, 15)).foregroundStyle(.white)
+                Text("招待してくれた").font(LF.inter(500, 11)).foregroundStyle(OB.sub)
+            }
+            Spacer(minLength: 0)
+            Button {
+                requestedInvite.toggle(); Haptics.play(requestedInvite ? .pop : .tick)
+            } label: {
+                Text(requestedInvite ? "申請した" : "申請").font(LF.inter(900, 13))
+                    .foregroundStyle(requestedInvite ? OB.sub : Color(hex: "111111")).padding(.horizontal, 16).frame(height: 36)
+                    .background(requestedInvite ? Color.clear : Color.white, in: Capsule())
+                    .overlay(Capsule().strokeBorder(requestedInvite ? OB.line : .clear, lineWidth: 1.2))
+            }.buttonStyle(.plain)
+        }
+        .padding(10).frame(height: 60)
+        .background(Color(red: 0.137, green: 0.62, blue: 0.235).opacity(0.16), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color(red: 0.137, green: 0.62, blue: 0.235).opacity(0.55), lineWidth: 1.2))
+    }
+
+    // MARK: - 下の ボタン(キーボードの 上に のる)
+
+    private var bottomLayer: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            Group {
+                switch step {
+                case .signin:
+                    VStack(spacing: 10) {
+                        SignInWithAppleButton(.continue) { request in
+                            Haptics.play(.click); request.requestedScopes = [.fullName]
+                        } onCompletion: { result in appleDone(result) }
+                            .signInWithAppleButtonStyle(.white).frame(height: 60).clipShape(Capsule())
+                        Button { googleSignIn() } label: { Text("Google で つづける") }.buttonStyle(OBButtonStyle(kind: .secondary))
+                        Button { Haptics.play(.sel); go(.mail) } label: { Text("メールで つづける") }.buttonStyle(OBButtonStyle(kind: .secondary))
+                        HStack(spacing: 0) {
+                            Text("つづけると ")
+                            Button { showingPolicy = true } label: { Text("利用規約").underline() }
+                            Text(" ・ ")
+                            Button { showingPolicy = true } label: { Text("プライバシー").underline() }
+                            Text(" に 同意(13歳以上)")
+                        }
+                        .font(LF.inter(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2).frame(height: 15)
+                    }
+                    .padding(.bottom, 44)
+                case .mail:
+                    VStack(spacing: 10) {
+                        Button { sendLink() } label: { Text("リンクを おくる") }
+                            .buttonStyle(OBButtonStyle()).disabled(!Self.isValidEmail(email) || busy)
+                        Button { Haptics.play(.tick); go(.signin, back: true) } label: { Text("ほかの 方法") }.buttonStyle(OBButtonStyle(kind: .plain))
+                    }.padding(.bottom, 34)
+                case .sent:
+                    VStack(spacing: 10) {
+                        Button { openMailApp() } label: { Text("メールを ひらく") }.buttonStyle(OBButtonStyle())
+                        Button { resend() } label: { Text("もういちど おくる") }.buttonStyle(OBButtonStyle(kind: .plain))
+                    }.padding(.bottom, 34)
+                case .name:
+                    Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!validName).padding(.bottom, 34)
+                case .tag:
+                    Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).padding(.bottom, 34)
+                case .fr:
+                    Button { next() } label: { Text(requestedInvite ? "つぎへ" : "あとで") }.buttonStyle(OBButtonStyle()).padding(.bottom, 34)
+                case .nt:
+                    VStack(spacing: 10) {
+                        Button { allowNotifications() } label: { Text("通知を うけとる") }.buttonStyle(OBButtonStyle())
+                        Button { Haptics.play(.soft); go(.go) } label: { Text("あとで") }.buttonStyle(OBButtonStyle(kind: .plain))
+                    }.padding(.bottom, 34)
+                case .go:
+                    VStack(spacing: 0) {
+                        OBHoldButton(onProgress: { level in
+                            holdLevel = level
+                            if level > 0.05 { spawnSpark() }
+                        }, onFinish: beginFinish)
+                        Text("HOLD").font(LF.mono(10)).tracking(2.6).foregroundStyle(OB.sub).padding(.top, 27)
+                        Text("ながおしで はじめる").font(LF.inter(500, 11.5)).tracking(0.23).foregroundStyle(OB.sub).padding(.top, 6)
+                    }.padding(.bottom, 44)
+                }
+            }
+            .padding(.horizontal, 24)
+            .offset(y: slideY).opacity(slideOpacity)
+            .opacity(entered ? 1 : 0)
+        }
+    }
+
+    // MARK: - 遷移
+
+    /// 出る(-14pt・0.17秒)→ 入る(+22pt から・0.44秒・`cubic-bezier(.3,1.3,.5,1)`)
+    private func go(_ s: OBStep, back: Bool = false) {
+        guard !transitioning, s != step else { return }
+        focus = nil
+        if reduceMotion { step = s; savedStep = s.rawValue; arrive(s); return }
+        transitioning = true
+        let d: CGFloat = back ? -1 : 1
+        withAnimation(.easeIn(duration: 0.17)) { slideY = -14 * d; slideOpacity = 0 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            step = s; savedStep = s.rawValue
+            var t = Transaction(); t.disablesAnimations = true
+            withTransaction(t) { slideY = 22 * d }
+            withAnimation(.timingCurve(0.3, 1.3, 0.5, 1, duration: 0.44)) { slideY = 0; slideOpacity = 1 }
+            arrive(s)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.46) { transitioning = false }
+        }
+    }
+
+    private func arrive(_ s: OBStep) {
+        if s == .nt { Haptics.play(.soft) }
+        if s == .go { Haptics.play(.success) }
+        if s == .name || s == .mail {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { if step == s { focus = (s == .name ? .name : .mail) } }
+        }
+    }
+
+    /// 「つぎへ」
+    private func next() {
+        Haptics.play(.click)
+        switch step {
+        case .name: confirmName(); go(.tag)
+        case .tag: confirmTags(); go(.fr)
+        case .fr: go(.nt)
+        default: break
+        }
+    }
+
+    // MARK: - 開始・再開
+
+    private func start() {
+        guard !started else { return }
+        started = true
+        name = UserProfile.current(from: profiles)?.name ?? userName
+        if onboardingCompleted { markCompleted(); return }
+        #if DEBUG
+        if let raw = UserDefaults.standard.string(forKey: "debugOnbStep") {
+            UserDefaults.standard.removeObject(forKey: "debugOnbStep")   // 1回だけ(起動引数の ときは 残る)
+            if let inv = UserDefaults.standard.string(forKey: "debugInvite") { invitedBy = inv }
+            if let n = UserDefaults.standard.string(forKey: "debugName") { name = n }
+            if UserDefaults.standard.object(forKey: "debugT") != nil { OnboardingDebug.introT = UserDefaults.standard.double(forKey: "debugT") }
+            if raw == "intro" { entered = false; introStart = Date(); return }
+            if raw == "finish" { finishStart = Date(); return }
+            if let s = OBStep(rawValue: raw) { step = s; return }
+        }
+        #endif
+        if let resumed = resumeStep() { step = resumed; if resumed == .signin { handleSignInChange() }; return }
+        entered = false
+        introStart = Date()
+    }
+
+    private func resumeStep() -> OBStep? {
+        let signedIn = !appleUserID.isEmpty || !firebaseUID.isEmpty
+        guard !savedStep.isEmpty else { return nil }
+        guard let saved = OBStep(rawValue: savedStep) else { return signedIn ? .name : .signin }   // 古い 版の 場面
+        switch saved {
+        case .mail, .sent:
+            if signedIn { return .name }
+            if let p = FirebaseAuthService.pendingEmail { sentAddress = p; return .sent }
+            return .signin
+        case .signin: return signedIn ? .name : .signin
+        default: return signedIn ? saved : .signin
+        }
+    }
+
+    /// 入口が おわった:チェキが 落ちてきて、ほかが 浮かんで 入る(`obIntroEnd`)
+    private func finishIntro() {
+        withAnimation(.easeOut(duration: 0.7)) { introStart = nil }
+        if reduceMotion { entered = true; return }
+        withAnimation(.timingCurve(0.3, 1.2, 0.4, 1, duration: 0.9).delay(0.12)) { entered = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.02) { Haptics.play(.land, gap: 0) }
+    }
+
+    // MARK: - サインイン(しくみは これまでと 同じ)
+
+    private func appleDone(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success:
+            if let message = AppleSignInView.applySignIn(result, modelContext: modelContext) {
+                print("[AppleSignIn] 結果の保存に失敗: \(message)")
+                Haptics.play(.warn); say(OnboardingCopy.appleSignInFailed)
+            } else { Haptics.play(.success) }
+        case .failure(let error):
+            if (error as? ASAuthorizationError)?.code == .canceled { return }
+            Haptics.play(.warn); say(OnboardingCopy.appleSignInFailed)
+        }
+    }
+
+    private func googleSignIn() {
+        guard !busy else { return }
+        busy = true
+        Haptics.play(.click)
+        Task { @MainActor in
+            defer { busy = false }
+            do {
+                let result = try await FirebaseAuthService.signInWithGoogle()
+                UserDefaults.standard.set(result.email ?? "", forKey: "firebaseEmail")
+                Haptics.play(.success)
+                firebaseUID = result.uid
+            } catch FirebaseAuthService.ServiceError.cancelled {
+                return
+            } catch {
+                print("[GoogleSignIn] failed: \(FirebaseAuthService.debugLabel(for: error))")
+                Haptics.play(.warn); say("Google サインインは まだ 使えません")
+            }
+        }
+    }
+
+    static func isValidEmail(_ raw: String) -> Bool {
+        let v = raw.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return v.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$"#, options: .regularExpression) != nil
+    }
+
+    private func sendLink() {
+        guard Self.isValidEmail(email), !busy else { return }
+        let address = email.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        sentAddress = address
+        busy = true; focus = nil
+        Haptics.play(.click)
+        Task { @MainActor in
+            defer { busy = false }
+            do {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    group.addTask { try await FirebaseAuthService.sendSignInLink(to: address) }
+                    group.addTask { try await Task.sleep(for: .seconds(10)); throw OBSendTimeout() }
+                    try await group.next()
+                    group.cancelAll()
+                }
+                go(.sent)
+            } catch {
+                Haptics.play(.warn)
+                say((error is OBSendTimeout ? EmailSignInFailure.network : EmailSignInFailure.from(error)).title.replacingOccurrences(of: "\n", with: ""))
+            }
+        }
+    }
+
+    private func resend() {
+        guard !sentAddress.isEmpty, !busy else { return }
+        busy = true; Haptics.play(.sel)
+        Task { @MainActor in
+            defer { busy = false }
+            do { try await FirebaseAuthService.sendSignInLink(to: sentAddress); say("もういちど おくりました") }
+            catch { Haptics.play(.warn); say(EmailSignInFailure.from(error).title.replacingOccurrences(of: "\n", with: "")) }
+        }
+    }
+
+    private func openMailApp() {
+        Haptics.play(.success)
+        if let url = URL(string: "message://") { UIApplication.shared.open(url) }
+    }
+
+    /// サインインが 済んだ:名前の 画面へ(あとで 既存アカウントか 確かめる)
+    private func handleSignInChange() {
+        guard step == .signin || step == .mail || step == .sent, !appleUserID.isEmpty || !firebaseUID.isEmpty, !isCheckingAccount else { return }
+        if isSetupCompleted { markCompleted(); return }
+        if let existing = existingProfile() { currentProfileID = existing.id.uuidString; markCompleted(); return }
+        go(.name)
+        checkExistingAccountInBackground()
+    }
+
+    private func checkExistingAccountInBackground() {
+        guard !isCheckingAccount else { return }
+        isCheckingAccount = true
+        Task { @MainActor in
+            defer { isCheckingAccount = false }
+            for _ in 0..<40 where CloudKitManager.current == nil { try? await Task.sleep(for: .seconds(0.5)) }
+            guard let manager = CloudKitManager.current else { return }
+            await manager.fetchPrivateChangesNow()
+            await manager.fetchSharedChangesNow()
+            guard !isSetupCompleted, finishStart == nil, let existing = existingProfile() else { return }
+            currentProfileID = existing.id.uuidString
+            markCompleted()
+        }
+    }
+
+    private func existingProfile() -> UserProfile? {
+        let all = (try? modelContext.fetch(FetchDescriptor<UserProfile>())) ?? []
+        let recordName = CloudKitManager.current?.currentUserRecordName
+        return all.first { p in
+            if !appleUserID.isEmpty, p.appleUserID == appleUserID { return true }
+            if !firebaseUID.isEmpty, p.firebaseUID == firebaseUID { return true }
+            if let recordName, p.cloudKitUserRecordName == recordName, !p.name.isEmpty { return true }
+            return false
+        }
+    }
+
+    // MARK: - 保存(これまでと 同じ)
+
+    private func confirmName() {
+        let validation = OnboardingRules.validateName(name)
+        guard validation.problem == nil else { return }
+        let n = validation.name
+        let profile: UserProfile
+        if let existing = UserProfile.current(from: profiles) { profile = existing }
+        else { profile = UserProfile(name: n, username: OnboardingRules.generatedUsername()); modelContext.insert(profile) }
+        profile.name = n
+        if profile.username.isEmpty { profile.username = OnboardingRules.generatedUsername() }
+        if !appleUserID.isEmpty { profile.appleUserID = appleUserID }
+        if !firebaseUID.isEmpty { profile.firebaseUID = firebaseUID; profile.firebaseEmail = firebaseEmail.isEmpty ? nil : firebaseEmail }
+        profile.profileUpdatedAt = Date()
+        LaterGroup.ensurePersonalSpace(for: profile, context: modelContext)
+        do { try modelContext.save() } catch { print("[Onboarding] 名前の保存に失敗: \(error)") }
+        currentProfileID = profile.id.uuidString
+        userName = n
+        userID = profile.username
+        Task { await UserDirectoryService.publish(profile) }
+    }
+
+    private func confirmTags() {
+        guard let profile = UserProfile.current(from: profiles) else { return }
+        profile.selfTags = tags
+        profile.profileUpdatedAt = Date()
+        try? modelContext.save()
+        if let manager = CloudKitManager.current { for group in profile.groups { manager.markForUpload(userProfile: profile, in: group) } }
+    }
+
+    // MARK: - タグ・色・写真
+
+    private func pickColor(_ i: Int) { photo = nil; col = i }
+
+    private func toggleTag(_ t: String) {
+        if let i = tags.firstIndex(of: t) { tags.remove(at: i); Haptics.play(.tick); return }
+        guard tags.count < 3 else { Haptics.play(.warn); say("タグは 3つまで"); return }
+        tags.append(t); Haptics.play(.pop)
+    }
+
+    private func commitCustomTag() {
+        addingTag = false
+        guard let t = OnboardingRules.normalizedTag(customDraft) else { customDraft = ""; return }
+        customDraft = ""
+        if !tags.contains(t) { toggleTag(t) }
+    }
+
+    private func loadPhoto(_ item: PhotosPickerItem?) {
+        guard let item else { return }
+        Task { @MainActor in
+            guard let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else { return }
+            photo = image
+            Haptics.play(.pop)
+            if let profile = UserProfile.current(from: profiles) {
+                ProfilePhotoDevelopment.store(CapturedImageCompressor.compressedImageData(from: data), for: profile, context: modelContext)
+            }
+        }
+    }
+
+    // MARK: - 通知 → はじまる
+
+    private func allowNotifications() {
+        guard !busy else { return }
+        busy = true
+        Haptics.play(.success)
+        Task { @MainActor in
+            defer { busy = false }
+            _ = await DailyOpenNotification.requestAuthorization(timeout: 10)
+            Task { _ = await DailyOpenNotification.schedule() }
+            go(.go)
+        }
+    }
+
+    private func spawnSpark() {
+        guard !reduceMotion, sparks.count < 24 else { return }
+        sparks.append(Spark(angle: .random(in: 0..<(2 * .pi)), radius: 170 + .random(in: 0..<90)))
+        let cutoff = Date().addingTimeInterval(-0.6)
+        sparks.removeAll { $0.born < cutoff }
+    }
+
+    private func beginFinish() {
+        onboardingCompleted = true     // 途中で 閉じても やり直させない
+        savedStep = ""
+        sparks = []
+        finishStart = Date()
+    }
+
+    /// 演出が おわった:Home へ
+    private func completeFinish() { markCompleted() }
+
+    private func markCompleted() {
+        savedStep = ""
+        onboardingCompleted = true
+        if UserDefaults.standard.object(forKey: "onboardingCompletedAt") == nil { UserDefaults.standard.set(Date(), forKey: "onboardingCompletedAt") }
+        hasSeenWelcomeOnboarding = true; hasCompletedSurvey = true; hasSeenAboutLaterIntro = true
+        isProfileSetupCompleted = true
+        isSetupCompleted = true
+    }
+
+    // MARK: - 小物
+
+    private func say(_ text: String) {
+        withAnimation(.easeOut(duration: 0.2)) { toast = text }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { if toast == text { withAnimation(.easeIn(duration: 0.2)) { toast = nil } } }
+    }
+
+    private var shareItems: [Any] {
+        guard let rn = CloudKitManager.current?.currentUserRecordName else { return ["\(Brand.name) で ともだちに なろう"] }
+        return ["\(Brand.name) で ともだちに なろう", FriendRules.link(recordName: rn)]
+    }
+}
+
+// MARK: - 小さな 部品
+
+private struct OBSendTimeout: Error {}
+
+private struct OBChipPress: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .animation(.timingCurve(0.3, 1.6, 0.4, 1, duration: 0.2), value: configuration.isPressed)
+    }
+}
+
+/// 中央そろえで 折り返す(チップ)
+struct OBFlow: Layout {
+    var spacing: CGFloat = 8
+    var rowSpacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(in: proposal.width ?? 390, subviews: subviews)
+        let h = rows.reduce(0) { $0 + $1.height } + CGFloat(max(0, rows.count - 1)) * rowSpacing
+        return CGSize(width: proposal.width ?? 390, height: h)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(in: bounds.width, subviews: subviews) {
+            var x = bounds.minX + (bounds.width - row.width) / 2
+            for i in row.indices {
+                let s = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
+                x += s.width + spacing
+            }
+            y += row.height + rowSpacing
+        }
+    }
+
+    private struct Row { var indices: [Int] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
+
+    private func rows(in width: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = [Row()]
+        for i in subviews.indices {
+            let s = subviews[i].sizeThatFits(.unspecified)
+            let add = (rows[rows.count - 1].indices.isEmpty ? 0 : spacing) + s.width
+            if rows[rows.count - 1].width + add > width, !rows[rows.count - 1].indices.isEmpty { rows.append(Row()) }
+            let k = rows.count - 1
+            rows[k].width += (rows[k].indices.isEmpty ? 0 : spacing) + s.width
+            rows[k].height = max(rows[k].height, s.height)
+            rows[k].indices.append(i)
+        }
+        return rows
+    }
+}
+
+/// ながおしの 火花(外から 中心へ すいこまれる)
+private struct OBSparkView: View {
+    let spark: OnboardingV64View.Spark
+    let center: CGPoint
+    let strength: Double
+
+    var body: some View {
+        TimelineView(.animation) { ctx in
+            let k = min(1, ctx.date.timeIntervalSince(spark.born) / (0.52 - strength * 0.2))
+            let r = spark.radius * (1 - k)
+            Circle().fill(Color(hex: "86E499")).frame(width: 4, height: 4)
+                .shadow(color: OB.stamp, radius: 4)
+                .scaleEffect(1 - 0.6 * k).opacity(k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8)
+                .position(x: center.x + cos(spark.angle) * r, y: center.y + sin(spark.angle) * r)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// はじまりの 演出(`obFinish`):まっ白 → 「Lattag」が どんと → ブイッ → 白い 円が ひろがって Home へ(2.4秒)
+struct OBFinishView: View {
+    let start: Date
+    let onDone: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var done = false
+
+    var body: some View {
+        GeometryReader { g in
+            TimelineView(.animation) { ctx in
+                let t = ctx.date.timeIntervalSince(start)
+                let end = reduceMotion ? 1.4 : 2.4
+                content(t: t, size: g.size)
+                    .onChange(of: t >= end) { _, d in if d { finish() } }
+            }
+        }
+        .onAppear(perform: schedule)
+        .allowsHitTesting(true)
+    }
+
+    private func p(_ t: Double, _ s: Double, _ d: Double) -> Double { min(1, max(0, (t - s) / d)) }
+
+    private func content(t: Double, size: CGSize) -> some View {
+        let flash: Double = reduceMotion ? 0 : { let q = p(t, 0, 0.62); return q < 0.25 ? 1 : 1 - (q - 0.25) / 0.75 }()
+        let k = OpeningEase.bezier(0.2, 0.8, 0.3, 1, p(t, 0.16, 0.64))
+        let scale: CGFloat = reduceMotion ? 1 : (k < 0.6 ? 3.2 - 2.28 * CGFloat(k / 0.6) : (k < 0.8 ? 0.92 + 0.11 * CGFloat((k - 0.6) / 0.2) : 1.03 - 0.03 * CGFloat((k - 0.8) / 0.2)))
+        let iris = OpeningEase.bezier(0.6, 0, 0.2, 1, p(t, 1.7, 0.76))
+        // 0.52s から 0.32秒:画面が ぶるっと ゆれる
+        let sh = p(t, 0.52, 0.32)
+        let dx: CGFloat = reduceMotion || sh <= 0 || sh >= 1 ? 0 : [-6, 5, -3, 0][min(3, Int(sh * 4))]
+        let dy: CGFloat = reduceMotion || sh <= 0 || sh >= 1 ? 0 : [3, -4, 2, 0][min(3, Int(sh * 4))]
+        return ZStack {
+            Color.black
+            Text(Brand.name).font(LF.inter(900, 112)).tracking(-0.075 * 112).foregroundStyle(.white).fixedSize()
+                .scaleEffect(scale).blur(radius: reduceMotion ? 0 : 16 * (1 - k)).opacity(reduceMotion ? 1 : k)
+                .offset(x: dx, y: dy)
+            Color.white.opacity(flash)
+            Circle().fill(.white).frame(width: 600, height: 600)
+                .scaleEffect(reduceMotion ? 0 : 3.4 * iris)
+                .position(x: size.width / 2, y: size.height)
+        }
+        .frame(width: size.width, height: size.height)
+    }
+
+    private func schedule() {
+        Haptics.play(.shutter)
+        func at(_ s: Double, _ work: @escaping () -> Void) { DispatchQueue.main.asyncAfter(deadline: .now() + s) { if !done { work() } } }
+        at(0.52) { Haptics.play(.vui) }
+        at(1.7) { Haptics.play(.soft) }
+    }
+
+    private func finish() {
+        guard !done else { return }
+        done = true
+        onDone()
+    }
+}

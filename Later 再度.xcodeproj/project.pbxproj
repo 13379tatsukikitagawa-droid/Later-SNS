@@ -80,6 +80,9 @@
 		A419A8BAE368E5D357C25703 /* GroupSharingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C61911DB4CF172CE8BAA8EE /* GroupSharingService.swift */; };
 		A76B1D8370E9671F3A761E47 /* ChekiPhotoFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDF5F2153F01F43089097247 /* ChekiPhotoFrame.swift */; };
 		A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF193B5747AE398EAD547C74 /* OnboardingModel.swift */; };
+		70C2DD422C8F389F0CC87EF0 /* V64/OnboardingV64View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F02DF031CD33AD4DDCE09 /* V64/OnboardingV64View.swift */; };
+		2F7070662E0296EBCCD8EEBC /* V64/OnboardingV64Intro.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E9DB1C6BDABEC5960E53B18 /* V64/OnboardingV64Intro.swift */; };
+		E7390D2B2CBE0B9D3FC410BD /* V64/OnboardingV64Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B219B02437086612F96FD945 /* V64/OnboardingV64Parts.swift */; };
 		AA02B084116A54FB2CDB13B8 /* ProfileImmersiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */; };
 		AF28ECC8E62CE129DE0FEF60 /* ExposureHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2CF92F275B089847890306 /* ExposureHaptics.swift */; };
 		B1A100000000000000000001 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A100000000000000000002 /* Palette.swift */; };
@@ -219,6 +222,7 @@
 		01C86E7D093E315A9ECF5307 /* LGFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED44F2F13C3467FBD25D831F /* LGFont.swift */; };
 		16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8074893E58921F0B4509881 /* DesignSystemPreview.swift */; };
 		1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EFD2BE01B050559B5C12A7E /* DebugState.swift */; };
+		0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F36AA1B5669102F3368268 /* DebugRouter.swift */; };
 		7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D0F07632A5009E1A3721A3 /* LGPressable.swift */; };
 		A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D881D698B13AD2783A958080 /* DebugStateMenu.swift */; };
 		A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB985051FDA08E630C624743 /* LGGlass.swift */; };
@@ -341,6 +345,9 @@
 		B8289C9CCB22AFFDABCEC81E /* ModerationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ModerationService.swift; sourceTree = "<group>"; };
 		BA74312F8635A2490D14152A /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BF193B5747AE398EAD547C74 /* OnboardingModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingModel.swift; sourceTree = "<group>"; };
+		6A0F02DF031CD33AD4DDCE09 /* V64/OnboardingV64View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/OnboardingV64View.swift; sourceTree = "<group>"; };
+		6E9DB1C6BDABEC5960E53B18 /* V64/OnboardingV64Intro.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/OnboardingV64Intro.swift; sourceTree = "<group>"; };
+		B219B02437086612F96FD945 /* V64/OnboardingV64Parts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/OnboardingV64Parts.swift; sourceTree = "<group>"; };
 		C0145923FD77E4FE2AB8680D /* HomeLightOrb.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeLightOrb.swift; sourceTree = "<group>"; };
 		C02AE58D430B45F33B2EDE33 /* ChekiDevelopImage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChekiDevelopImage.swift; sourceTree = "<group>"; };
 		C033E6C4BEE6E0ED1CCBEE51 /* DevelopSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevelopSheet.swift; sourceTree = "<group>"; };
@@ -469,6 +476,7 @@
 		0159D1A97715D4F4D7AB1471 /* LGMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGMotion.swift; sourceTree = "<group>"; };
 		48D0F07632A5009E1A3721A3 /* LGPressable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGPressable.swift; sourceTree = "<group>"; };
 		4EFD2BE01B050559B5C12A7E /* DebugState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugState.swift; sourceTree = "<group>"; };
+		57F36AA1B5669102F3368268 /* DebugRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRouter.swift; sourceTree = "<group>"; };
 		769863F83DF8CA3E06CAE493 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		AC9D5130364708000DD034B2 /* LGColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGColor.swift; sourceTree = "<group>"; };
 		B17B7C532BC0449E2A88C64A /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
@@ -715,6 +723,9 @@
 			isa = PBXGroup;
 			children = (
 				BF193B5747AE398EAD547C74 /* OnboardingModel.swift */,
+				6A0F02DF031CD33AD4DDCE09 /* V64/OnboardingV64View.swift */,
+				6E9DB1C6BDABEC5960E53B18 /* V64/OnboardingV64Intro.swift */,
+				B219B02437086612F96FD945 /* V64/OnboardingV64Parts.swift */,
 				9BF6389BC965BF1D800AEC6D /* OnboardingComponents.swift */,
 				EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */,
 				EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */,
@@ -1010,6 +1021,7 @@
 			isa = PBXGroup;
 			children = (
 				4EFD2BE01B050559B5C12A7E /* DebugState.swift */,
+				57F36AA1B5669102F3368268 /* DebugRouter.swift */,
 				D881D698B13AD2783A958080 /* DebugStateMenu.swift */,
 				769863F83DF8CA3E06CAE493 /* SampleData.swift */,
 				D8074893E58921F0B4509881 /* DesignSystemPreview.swift */,
@@ -1176,6 +1188,9 @@
 				A3FDAEEF2FB71C5C001484F7 /* Theme.swift in Sources */,
 				A3348FA12FC689B8006568EE /* Color+Extensions.swift in Sources */,
 				A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */,
+				70C2DD422C8F389F0CC87EF0 /* V64/OnboardingV64View.swift in Sources */,
+				2F7070662E0296EBCCD8EEBC /* V64/OnboardingV64Intro.swift in Sources */,
+				E7390D2B2CBE0B9D3FC410BD /* V64/OnboardingV64Parts.swift in Sources */,
 				B7824F0868F782C69F76B8D7 /* OnboardingComponents.swift in Sources */,
 				8AEC2FC399D74E06D7A981E1 /* OnboardingFlowView.swift in Sources */,
 				8AEC2FC399D74E06D7A981E2 /* OnboardingV2Views.swift in Sources */,
@@ -1211,6 +1226,7 @@
 				7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */,
 				A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */,
 				1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */,
+				0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */,
 				A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */,
 				00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */,
 				16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */,

@@ -13,7 +13,7 @@
 
 ## 1. 画面 ID ごとの 対応
 
-### P01 オープニング・はじめての 設定(O01〜O11)
+### P01 オープニング・はじめての 設定(O01〜O11)— **P01 で 作りなおし 済(2026-11-16)**:`Today/OpeningV21.swift`(O01/O02)・ `Onboarding/V64/*`(O03〜O11)。古い `OnboardingFlowView` / `OnboardingOpeningView` は 未使用
 
 | ID | いまの View | 判定 | メモ |
 |---|---|---|---|

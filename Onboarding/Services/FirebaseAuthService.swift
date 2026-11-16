@@ -24,6 +24,8 @@ enum FirebaseAuthService {
     enum ServiceError: Error {
         case firebaseNotConfigured
         case missingEmail
+        /// 本人が 途中で やめた
+        case cancelled
     }
 
     /// 開発中とTestFlightのときだけ、失敗の内訳(domain / code / 名前)を画面の小さな文字で出す。
@@ -60,6 +62,22 @@ enum FirebaseAuthService {
         settings.linkDomain = linkDomain
         try await Auth.auth().sendSignInLink(toEmail: email, actionCodeSettings: settings)
         UserDefaults.standard.set(email, forKey: pendingEmailKey)
+    }
+
+    /// P01:Google で つづける。Firebase Auth の OAuth(`google.com`)を 使う(追加の SDK は いらない)。
+    /// 動かすには Firebase コンソールで Google を 有効に して、GoogleService-Info.plist を 入れかえ、
+    /// REVERSED_CLIENT_ID を URL スキームに 足す 必要が ある(未設定の あいだは 失敗の 表示に なる)。
+    static func signInWithGoogle() async throws -> (uid: String, email: String?) {
+        guard FirebaseConfigurator.isConfigured else { throw ServiceError.firebaseNotConfigured }
+        let provider = OAuthProvider(providerID: "google.com")
+        provider.scopes = ["email", "profile"]
+        do {
+            let credential = try await provider.credential(with: nil)
+            let result = try await Auth.auth().signIn(with: credential)
+            return (result.user.uid, result.user.email)
+        } catch let error as NSError where error.domain == AuthErrorDomain && error.code == AuthErrorCode.webContextCancelled.rawValue {
+            throw ServiceError.cancelled
+        }
     }
 
     /// sendSignInLink(to:)の直後にこの端末へ保存された、送信先メールアドレス。

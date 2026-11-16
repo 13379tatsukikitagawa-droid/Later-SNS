@@ -55,13 +55,20 @@ final class DebugState {
 
     /// オープニングを もう一度
     func replayOpening() {
-        NotificationCenter.default.post(name: .replayLaunchAnimation, object: nil, userInfo: nil)
+        DebugRouter.playOpening()
     }
 
     /// はじめての 設定を もう一度(アプリを 作りなおす まで 反映されない 場合は 再起動)
     func replayOnboarding() {
+        d.removeObject(forKey: OnboardingStorage.stepKey)
         d.set(false, forKey: "isSetupCompleted")
         d.set(false, forKey: OnboardingStorage.completedKey)
+    }
+
+    /// 設定の ある 画面から はじめる(intro / in / mail / sent / name / tag / fr / nt / go)。見本を 撮る ときに 使う
+    func jumpToOnboarding(_ step: String) {
+        d.set(step, forKey: "debugOnbStep")
+        replayOnboarding()
     }
 
     /// ぜんぶ 最初から(debug.* と 初回設定の 旗。サインインは そのまま)

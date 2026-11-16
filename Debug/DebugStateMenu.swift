@@ -42,6 +42,11 @@ struct DebugStateMenu: View {
                     Button("はじめての 設定を もう一度") { state.replayOnboarding(); dismiss() }
                     Button("ぜんぶ 最初から", role: .destructive) { state.resetAll(); shots = 0 }
                 }
+                Section("はじめての 設定の 画面へ(O03〜O11)") {
+                    ForEach(["intro", "in", "mail", "sent", "name", "tag", "fr", "nt", "go"], id: \.self) { step in
+                        Button(step) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { state.jumpToOnboarding(step) } }
+                    }
+                }
                 Section("確かめる") {
                     Button("書体 ・ バイブ ・ ガラス の プレビュー") { showPreview = true }
                 }
