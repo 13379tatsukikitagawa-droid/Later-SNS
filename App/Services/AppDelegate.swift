@@ -28,7 +28,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         // 新規ユーザーには、初回設定の「通知」の場面(DailyOpenNotification)で許可を求める。
         // 起動直後には出さず、初回設定を終えた既存ユーザーだけ、これまで通りここで求める。
-        if UserDefaults.standard.bool(forKey: "isSetupCompleted") {
+        #if DEBUG
+        let skipNotificationPrompt = UserDefaults.standard.bool(forKey: "debugNoNotifPrompt")   // シミュレータで ダイアログが 画面を ふさがない ように
+        #else
+        let skipNotificationPrompt = false
+        #endif
+        if UserDefaults.standard.bool(forKey: "isSetupCompleted"), !skipNotificationPrompt {
             // async 版(返事は呼び出し元へ戻る)。失敗してもアプリは止めない。
             Task { @MainActor in
                 do {

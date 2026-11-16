@@ -47,6 +47,9 @@ struct DebugStateMenu: View {
                         Button(step) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { state.jumpToOnboarding(step) } }
                     }
                 }
+                Section("新しい Home(V64)") {
+                    Toggle("V64 の Home を つかう(切りかえたら 再起動)", isOn: Binding(get: { UIFlag.v64 }, set: { UserDefaults.standard.set($0, forKey: UIFlag.v64Key) }))
+                }
                 Section("確かめる") {
                     Button("書体 ・ バイブ ・ ガラス の プレビュー") { showPreview = true }
                 }

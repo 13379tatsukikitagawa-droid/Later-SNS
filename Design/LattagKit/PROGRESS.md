@@ -4,9 +4,9 @@
 |---|---|---|---|---|
 | P00 | 準備 ・ 土台 ・ DEBUG メニュー ・ 名前 | — | ✓ | 2026-11-16。テスト 全部 成功 ・ シミュレータ(17e)で 起動 ・ lattag:// と later:// 両方 受けつけを 確認。3本指 メニューの 実機/シミュレータ 操作は 未確認 |
 | P01 | オープニング ・ はじめての 設定 | O01〜O11 | ✓ | 2026-11-16。テスト 457件 成功 ・ 全11画面 score 8 以下。Google サインインは コード だけ(Firebase 側の 設定が 必要)・ 実機の バイブ / 長押し〜Home入りは 未確認 |
-| P02 | Home の 上 ・ カメラカード | H01〜H10 | ☐ | |
-| P03 | 横スライド ・ 目次 ・ Mondo | H11〜H18 | ☐ | |
-| P04 | Home の 下 | L01〜L11 | ☐ | |
+| P02 | Home の 上 ・ カメラカード | H01〜H10 | ✓(見た目)| 2026-11-17。ぼかし写真 + ガラスの カード ・ レンズ ・ 四すみ ・ ピル ・ チップ ・ 目次 ・ 月 ・ ライブパネル ・ はじめの 合図。入場 / シャッターの 動きと 実機の バイブは 未仕上げ |
+| P03 | 横スライド ・ 目次 ・ Mondo | H11〜H18 | ✓(見た目)| 2026-11-17。5ページの 横スライド(3D ・ ゴム ・ ±1ページ)・ Friends / Trip / Mondo(本物の 海岸線の 地球)/ Yesterday。ページ入場の ずらし動き ・ 浮かぶ チェキは 未 |
+| P04 | Home の 下 | L01〜L11 | ◐ | 2026-11-17。Today ・ Active ・ Yesterday ・ Mondo ・ Albums ・ On this day ・ Friends カードを 作成。L01 だけ 位置あわせ 済(7.4)。L02〜L10 の 位置あわせと L11(現像を ひらく = 既存の ビューア)は これから |
 | P05 | 撮る(タグ ・ 撮影 ・ 現像) | C01〜C11 | ☐ | |
 | P06 | Lattag yesterday | Y01〜Y06 | ☐ | |
 | P07 | Friends ・ Profile ・ ME | F01〜F10 | ☐ | |
@@ -28,6 +28,25 @@
 | O09_onboarding_fr | 2.8 | 2026-11-16 | `-debugInvite あや` で 見本の 申請の 行 |
 | O10_onboarding_nt | 4.0 | 2026-11-16 | |
 | O11_onboarding_go | 2.7 | 2026-11-16 | |
+| H01_home | 9.6 | 2026-11-17 | 見本写真は DEBUG の /tmp(モックから 取り出した)で 比較。本番は 友だちの モザイク |
+| H02_home_hint | 17.2 | 2026-11-17 | 合図の ぼかし(うすさ)を 調整 余地 |
+| H03_home_press | 10.9 | 2026-11-17 | |
+| H04_home_1shot | 9.6 | 2026-11-17 | |
+| H05_home_2shot | 9.7 | 2026-11-17 | |
+| H06_home_3shot | 9.7 | 2026-11-17 | |
+| H07_home_friends | 9.9 | 2026-11-17 | |
+| H08_home_firstday | 10.9 | 2026-11-17 | |
+| H09_home_night | 9.5 | 2026-11-17 | 夜も 見本どおり 同じ 見た目 |
+| H10_live_panel | 12.1 | 2026-11-17 | |
+| H11_page_friends | 12.7 | 2026-11-17 | |
+| H12_page_friends_filled | 12.4 | 2026-11-17 | |
+| H13_page_trip | 15.3 | 2026-11-17 | |
+| H14_page_mondo_locked | 11.3 | 2026-11-17 | |
+| H15_page_mondo_open | 11.0 | 2026-11-17 | |
+| H16_page_yesterday | 14.0 | 2026-11-17 | |
+| H17_page_yesterday_open | 13.7 | 2026-11-17 | |
+| H18_page_yesterday_firstday | 12.3 | 2026-11-17 | |
+| L01_today | 7.4 | 2026-11-17 | スクロール 936 |
 
 ## P00 メモ(2026-11-16)
 
@@ -47,3 +66,10 @@
 - **Google サインイン**:Firebase Auth の OAuth(`google.com`)で 書いた。`GoogleService-Info.plist` に CLIENT_ID が 無い ので、Firebase コンソールで Google を 有効に → plist を 入れかえ → URL スキーム(REVERSED_CLIENT_ID)を 足す まで は 押すと「準備中」の 表示。
 - 友だち(O09):連絡先検索 ・ 申請の 実データは 無い ので、行は「招待してくれた 人」が いる とき(いまは DEBUG の 見本のみ)だけ。「リンクを おくる」は 既存の 友だちリンク。「ふって つながる」は ひと言 出すだけ。
 - 注意:シミュレータで 通知の 許可ダイアログが 残ると 以後の スクショが ぜんぶ 崩れる(`simctl shutdown` → `boot` で 消える)。
+
+## P02〜P04 メモ(2026-11-17)
+
+- 新しい Home は `Today/V64/`(Parts ・ View ・ Pages ・ Lower ・ Host ・ ViewSwitch)。`TodayView` の `HomeView(` を `HomeViewSwitch(` に 1か所 かえただけ(`usesV5Home` に `&& !UIFlag.v64`、古い 月は `UIFlag.v64` の とき 見えなく)。DEBUG の 状態メニューで 切りかえ(UserDefaults `ui.v64`、既定 ON)。
+- 古い 昨日の Home(`HomeV5Container`)は V64 の あいだ 出ない。昨日の 画面は P06 で 作る(それまで「yesterday」「Yesterday の 四すみ」は 既存の ビューアへ)。
+- DEBUG:`scripts/snapto.sh <ID> home -- -debugBackdrop 1 -debugShots 2 -debugFriends 3 -debugPage 1 -debugScroll 936 …`(`Debug/DebugRouter.swift` の HomeV64Preview)。見本写真は モックから 取り出して `/tmp/lattag_ph/`(リポジトリの 外)に 置く。
+- 撮る:`CaptureRequestStore.shared.pendingRequestID = UUID()`(通知 / ウィジェットと 同じ 入口)。のこり 0 の ときは「今日は、ここまで」。
