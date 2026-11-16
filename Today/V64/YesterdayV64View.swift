@@ -10,6 +10,7 @@ struct YesterdayV64Input {
     var requestFaces: [HomeV64Face] = []
     var requestCount = 0
     var friendCount = 0
+    var shotFriends = 0
     var mondoPhoto: UIImage?
     var mondoTag = "#夕焼け"
     var mondoCity = "鎌倉市"
@@ -18,6 +19,7 @@ struct YesterdayV64Input {
     var avatar: UIImage?
     var now = Date()
     var startTab = 0
+    var startViewing: String? = nil
     var locked: Bool { shotsUsed == 0 }
 }
 
@@ -37,6 +39,7 @@ struct YesterdayV64View: View {
     var actions = YesterdayV64Actions()
     @State private var tab = 0   // 0 = Friends(先)・ 1 = Mondo
     @State private var seeded = false
+    @State private var viewing: YesterdayV64Input.Cell?
 
     var body: some View {
         GeometryReader { g in
@@ -56,7 +59,8 @@ struct YesterdayV64View: View {
             .frame(width: g.size.width, height: g.size.height)
         }
         .ignoresSafeArea()
-        .onAppear { if !seeded { tab = input.startTab; seeded = true } }
+        .overlay { if let v = viewing { photoViewer(v).transition(.opacity) } }
+        .onAppear { if !seeded { tab = input.startTab; seeded = true; if let id = input.startViewing { viewing = input.cells.first { $0.id == id } } } }
     }
 
     // MARK: ヘッダー(白)
@@ -108,7 +112,7 @@ struct YesterdayV64View: View {
                     HStack {
                         VStack(spacing: 2) { Text("6d").font(LF.serif(34, italic: true)); Text("Left").font(LF.inter(600, 14)).opacity(0.8) }
                         Spacer()
-                        VStack(spacing: 4) { Rectangle().fill(Color(hex: "3BD35A")).frame(width: 44, height: 2); Text("まだ").font(LF.inter(600, 14)).opacity(0.8) }
+                        VStack(spacing: 6) { if input.shotFriends > 0 { Circle().fill(Color(hex: "3BD35A")).frame(width: 16, height: 16); Text("\(input.shotFriends) shot today").font(LF.inter(600, 14)).opacity(0.85) } else { Rectangle().fill(Color(hex: "3BD35A")).frame(width: 44, height: 2); Text("まだ").font(LF.inter(600, 14)).opacity(0.8) } }
                         Spacer()
                         VStack(spacing: 2) { Image(systemName: "chevron.right").font(.system(size: 16, weight: .bold)); Text("Friends").font(LF.inter(600, 14)).opacity(0.8) }
                     }.foregroundStyle(.white).padding(.horizontal, 36).padding(.top, 18)
@@ -139,7 +143,7 @@ struct YesterdayV64View: View {
             // 友だちの きのうの 写真の 並び
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 ForEach(input.cells) { c in
-                    Button { Haptics.play(.pop); if !input.locked { actions.openPhoto(c.id) } else { Haptics.play(.warn) } } label: {
+                    Button { Haptics.play(.pop); if !input.locked { withAnimation(.easeOut(duration: 0.25)) { viewing = c } } else { Haptics.play(.warn) } } label: {
                         ZStack(alignment: .bottomLeading) {
                             Rectangle().fill(Color(hex: "E8E8ED"))
                             if let img = c.photo { Image(uiImage: img).resizable().scaledToFill().blur(radius: input.locked ? 14 : 0) }
@@ -181,10 +185,20 @@ struct YesterdayV64View: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 8) { Circle().fill(Color(hex: "3BD35A")).frame(width: 9, height: 9); Text("MONDO · \(input.dateLabel)").font(LF.mono(11)).tracking(3).foregroundStyle(HV.gray) }.padding(.horizontal, 20)
             VStack(alignment: .leading, spacing: -8) {
-                Text("The world,").font(LF.serif(76)).tracking(-2).foregroundStyle(HV.ink)
-                Text("yesterday.").font(LF.serif(76, italic: true)).tracking(-2)
+                HStack(spacing: 0) {
+                    Text("The w").font(LF.serif(58)).tracking(-1.4)
+                    ZStack {
+                        Circle().fill(Color(hex: "24A03C")).frame(width: 40, height: 40)
+                        Circle().stroke(HV.ink, lineWidth: 3).frame(width: 40, height: 40)
+                        Ellipse().stroke(HV.ink.opacity(0.85), lineWidth: 2).frame(width: 18, height: 40)
+                        Rectangle().fill(HV.ink.opacity(0.85)).frame(width: 40, height: 2)
+                        Circle().fill(Color(hex: "FFD60A")).frame(width: 9, height: 9).overlay(Circle().stroke(HV.ink, lineWidth: 1.5)).offset(x: 9, y: -14)
+                    }.padding(.horizontal, 2).offset(y: 6)
+                    Text("rld,").font(LF.serif(58)).tracking(-1.4)
+                }.foregroundStyle(HV.ink).frame(height: 62, alignment: .leading)
+                Text("yesterday.").font(LF.serif(58, italic: true)).tracking(-1.4).frame(height: 62, alignment: .leading)
                     .foregroundStyle(LinearGradient(colors: [Color(hex: "24A03C"), Color(hex: "7EE08F")], startPoint: .leading, endPoint: .trailing))
-                    .overlay(alignment: .bottomLeading) { Capsule().fill(Color(hex: "C8F25A")).frame(width: 220, height: 6).offset(y: 6) }
+                    .overlay(alignment: .bottomLeading) { Capsule().fill(Color(hex: "C8F25A")).frame(width: 200, height: 5).offset(y: 4) }
             }.padding(.horizontal, 20)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 28) {
@@ -206,9 +220,42 @@ struct YesterdayV64View: View {
                 }
                 Text(input.mondoTag).font(LF.inter(900, 18)).foregroundStyle(HV.ink).padding(.horizontal, 14).padding(.vertical, 8)
                     .background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(-6))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing).padding(.top, 70).padding(.trailing, 28)
+                    .padding(.top, 60).padding(.trailing, 20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
-            .frame(width: w - 28, height: 600).clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous)).padding(.horizontal, 14)
+            .frame(width: w - 36, height: 400).clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous)).padding(.horizontal, 18)
+        }
+    }
+
+    // MARK: 写真を ひらいた ところ(Y06)
+
+    private func photoViewer(_ c: YesterdayV64Input.Cell) -> some View {
+        ZStack(alignment: .top) {
+            Color(hex: "0A0A0B").ignoresSafeArea()
+            VStack(spacing: 0) {
+                ZStack {
+                    VStack(spacing: 2) {
+                        Text(c.name).font(LF.inter(500, 26)).foregroundStyle(.white)
+                        Text(c.time.map { "yesterday · \($0)" } ?? "today's one · picked by the world").font(LF.inter(500, 13)).foregroundStyle(Color(hex: "8E8E93"))
+                    }
+                    HStack { Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.25)) { viewing = nil } } label: {
+                        Image(systemName: "arrow.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 48, height: 48).background(Color(hex: "161618"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }.buttonStyle(.plain); Spacer() }.padding(.leading, 14)
+                }.padding(.top, 54)
+                ZStack(alignment: .bottomLeading) {
+                    Color(hex: "2A2326")
+                    if let img = c.photo { Image(uiImage: img).resizable().scaledToFill() }
+                    if let tag = c.tag {
+                        Text(tag.hasPrefix("#") ? tag : "#\(tag)").font(LF.inter(900, 16)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 7)
+                            .background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(-6)).padding(.leading, 16).padding(.bottom, 20)
+                    }
+                }
+                .frame(maxWidth: .infinity).frame(height: 560).clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous)).padding(.horizontal, 14).padding(.top, 12)
+                Spacer()
+                Button { Haptics.play(.pop); actions.openPhoto(c.id) } label: {
+                    Text("reply").font(LF.inter(800, 20)).foregroundStyle(HV.ink).frame(width: 106, height: 56).background(.white, in: Capsule())
+                }.buttonStyle(HVPress(scale: 0.96)).padding(.bottom, 44)
+            }
         }
     }
 

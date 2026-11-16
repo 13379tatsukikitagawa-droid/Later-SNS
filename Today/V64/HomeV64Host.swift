@@ -42,6 +42,7 @@ struct HomeV64Host: View {
             .init(id: c.id, photo: image(c.imageData) ?? image(c.mosaicTiny), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), tag: c.tag)
         }
         y.friendCount = L.friends.filter { !$0.isMe }.count
+        y.shotFriends = L.friends.filter { !$0.isMe && $0.hasShot }.count
         y.mondoPhoto = L.yesterday.first.flatMap { image($0.imageData) ?? image($0.mosaicTiny) }
         y.mondoTag = L.words.first.map { "#\($0)" } ?? "#夕焼け"
         if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }

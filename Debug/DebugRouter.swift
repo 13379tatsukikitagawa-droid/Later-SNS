@@ -98,6 +98,7 @@ struct HomeV64Preview: View {
         input.yesterdayThumbs = true ? [HomeV64Thumb(id: "t0", image: SampleData.photo("a"), time: "18:42"), HomeV64Thumb(id: "t1", image: SampleData.photo("b"), time: "16:05"), HomeV64Thumb(id: "t2", image: SampleData.photo("c"), time: "21:13")] : []
         input.tripSamples = ["f", "b", "d"].compactMap { SampleData.photo($0) }
         input.debugScroll = CGFloat(d.integer(forKey: "debugScroll"))
+        input.debugSection = d.string(forKey: "debugSection")
         var low = HomeV64LowerData()
         let P = SampleData.photo
         low.today = .init(thumbs: [P("c"), P("a"), P("e")], times: ["16:05"])
@@ -146,6 +147,8 @@ struct YesterdayV64Preview: View {
         var y = YesterdayV64Input()
         y.shotsUsed = d.integer(forKey: "debugShots")
         y.startTab = d.integer(forKey: "debugTab")
+        y.startViewing = d.string(forKey: "debugViewing")
+        y.shotFriends = d.integer(forKey: "debugShotFriends")
         y.requestCount = d.integer(forKey: "debugRequests")
         y.requestFaces = SampleData.faces(count: y.requestCount > 0 ? 3 : 0)
         y.cells = [.init(id: "a", photo: SampleData.photo("a"), name: "あや", time: "17:05", tag: nil), .init(id: "b", photo: SampleData.photo("d"), name: "れな", time: "12:40", tag: nil), .init(id: "c", photo: SampleData.photo("b"), name: "そら", time: "09:12", tag: nil), .init(id: "d", photo: SampleData.photo("e"), name: "you", time: "16:05", tag: nil)]

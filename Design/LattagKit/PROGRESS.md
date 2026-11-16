@@ -6,9 +6,9 @@
 | P01 | オープニング ・ はじめての 設定 | O01〜O11 | ✓ | 2026-11-16。テスト 457件 成功 ・ 全11画面 score 8 以下。Google サインインは コード だけ(Firebase 側の 設定が 必要)・ 実機の バイブ / 長押し〜Home入りは 未確認 |
 | P02 | Home の 上 ・ カメラカード | H01〜H10 | ✓(見た目)| 2026-11-17。ぼかし写真 + ガラスの カード ・ レンズ ・ 四すみ ・ ピル ・ チップ ・ 目次 ・ 月 ・ ライブパネル ・ はじめの 合図。入場 / シャッターの 動きと 実機の バイブは 未仕上げ |
 | P03 | 横スライド ・ 目次 ・ Mondo | H11〜H18 | ✓(見た目)| 2026-11-17。5ページの 横スライド(3D ・ ゴム ・ ±1ページ)・ Friends / Trip / Mondo(本物の 海岸線の 地球)/ Yesterday。ページ入場の ずらし動き ・ 浮かぶ チェキは 未 |
-| P04 | Home の 下 | L01〜L11 | ◐ | 2026-11-17。Today ・ Active ・ Yesterday ・ Mondo ・ Albums ・ On this day ・ Friends カードを 作成。L01 だけ 位置あわせ 済(7.4)。L02〜L10 の 位置あわせと L11(現像を ひらく = 既存の ビューア)は これから |
+| P04 | Home の 下 | L01〜L11 | ✓(見た目)| 2026-11-17。Today ・ Active ・ Yesterday ・ Mondo(縦長カード)・ Albums(4列)・ On this day ・ Friends カード(空っぽの キャラ / ポラロイドの 壁)・ はじめての 日の 空カードを 作り、L01 / L04〜L10 を 位置あわせ(4.4〜16)。L02 / L03 は 未計測、L11(現像を ひらく)は 既存の ビューア |
 | P05 | 撮る(タグ ・ 撮影 ・ 現像) | C01〜C11 | ◐ | 2026-11-17。C01(タグ画面)は 既存の 画面が ほぼ 見本どおり だったので 題字を Later Mincho 29pt に 直した(10.2)。C02〜C11(撮影 ・ 撮った あと ・ 現像 ・ レア ・ チェキ)は シミュレータに カメラが 無く 見くらべ 不能 → 既存の 実装の まま(未計測)|
-| P06 | Lattag yesterday | Y01〜Y06 | ◐ | 2026-11-17。白い ページ + 大きな カード + 下の ガラスタブ(Friends が 先 / Mondo)を `YesterdayV64View` で 作成。Home の yesterday ・ 四すみから ひらく。Y03(Mondo タブ)は 地球の 文字 ・ 都市の 時計の 作りこみが 未。Y04〜Y06 は 未計測 |
+| P06 | Lattag yesterday | Y01〜Y06 | ✓(見た目)| 2026-11-17。白い ページ + 大きな カード + 下の ガラスタブ(Friends が 先 / Mondo)を `YesterdayV64View` で 作成。Mondo タブの 地球の 文字 ・ 写真を ひらく画面(reply で 既存の ビューアへ)まで。Y05(下へスクロール)は 未計測 |
 | P07 | Friends ・ Profile ・ ME | F01〜F10 | ◐ | 2026-11-17。**申請 → 承認**(`FriendRequests`:ConnectionRequest / ConnectionResponse)と **1対1 チャット**(`DirectMessages`:DirectMessage)を 実装し、Home の Friends ページ / 下の Friends カードの「Requests」と 友だちの 丸から ひらく。純粋な 決まりは テスト 済(463件)。CloudKit との 実際の やりとりは 未確認(本番スキーマに 3つの レコードタイプが 入って いる 必要)。連絡先から さがす ・ Friend 画面 / Profile / ME の 見た目の 作りなおしは 未 |
 | P08 | Trip | T01〜T09 | ◐ | 2026-11-17。Home の Trip ページ(H13)と Active の「New trip」カードは 作成 済。T01〜T08(つくる ・ パス ・ 設定 ・ 部屋 ・ 招待)は 既存の `NewGroupFlowView` / `GroupSettings` / `GroupChatRoom` / `GroupInvite` が すでに v58(Trip パス ・ Cover ・ KEY ・ QR)の 作りで、このフェーズでは 触って いない(見くらべ 未)。23枚の 予約は 未 |
 | P09 | データ ・ 仕上げ ・ 全画面の 確認 | 全76 | ◐ | 2026-11-17。DEBUG だけの コードは Release ビルドで 外れる ことを 確認(Release ビルド 成功)。Reduce Motion は 新しい 画面の くり返し動き ・ ページャーの 3D で 止める。全76画面の 再比較 ・ 動き14本の 画面収録 ・ Instruments ・ VoiceOver の 通し確認 ・ 「Cloud Functions」(サーバー側の 9:00 処理)は 未 |
@@ -50,7 +50,16 @@
 | C01_tag | 10.2 | 2026-11-17 | 既存の TagScreen + 題字だけ 直した |
 | Y01_yesterday_locked | 13.4 | 2026-11-17 | |
 | Y02_yesterday_open | 13.8 | 2026-11-17 | |
-| Y03_yesterday_mondo_tab | 24.0 | 2026-11-17 | まだ 差が 大きい |
+| Y03_yesterday_mondo_tab | 12.1 | 2026-11-17 | |
+| Y04_yesterday_friends_tab | 13.5 | 2026-11-17 | |
+| Y06_photo_viewer | 10.2 | 2026-11-17 | |
+| L04_yesterday_open | 14.0 | 2026-11-17 | `-debugSection sec-yesterday:97` |
+| L05_mondo_row | 11.5 | 2026-11-17 | `sec-mondo:157` |
+| L06_albums | 13.2 | 2026-11-17 | `sec-albums:137` |
+| L07_onthisday | 14.2 | 2026-11-17 | `sec-onthisday:157` |
+| L08_friends_card_empty | 10.3 | 2026-11-17 | `sec-friends:151` |
+| L09_friends_card | 16.1 | 2026-11-17 | `sec-friends:210` |
+| L10_firstday_yesterday | 4.4 | 2026-11-17 | `sec-yesterday:200` |
 
 ## P00 メモ(2026-11-16)
 

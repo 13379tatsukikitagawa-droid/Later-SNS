@@ -93,6 +93,7 @@ struct HVActiveRow: View {
     let actions: HomeV64Actions
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+            HVAnchor(id: "sec-active")
             HVLabel(text: "ACTIVE")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -138,12 +139,15 @@ struct HVYesterdayBlock: View {
     var body: some View {
         let locked = input.locked
         VStack(alignment: .leading, spacing: 16) {
+            HVAnchor(id: "sec-yesterday")
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
             HVLabel(text: "YESTERDAY", trailing: data.weekday)
-            hero(locked: locked)
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                ForEach(data.tiles) { t in tile(t, locked: locked) }
-            }.padding(.horizontal, 14)
+            if input.isFirstDay { firstDay } else { hero(locked: locked) }
+            if !input.isFirstDay {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                    ForEach(data.tiles) { t in tile(t, locked: locked) }
+                }.padding(.horizontal, 14)
+            }
         }
     }
 
@@ -189,6 +193,31 @@ struct HVYesterdayBlock: View {
         .padding(.horizontal, 14)
     }
 
+    /// はじめての 日:空っぽの カード(点線の チェキ 3つ + 「TODAY'S 1ST」+ カウントダウン)
+    private var firstDay: some View {
+        let cal = Calendar.current
+        let open = cal.date(bySettingHour: 9, minute: 0, second: 0, of: cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: input.now)) ?? input.now) ?? input.now
+        let sec = max(0, Int(open.timeIntervalSince(input.now)))
+        return VStack(spacing: 0) {
+            ZStack {
+                ForEach([-1, 1], id: \.self) { sgn in
+                    RoundedRectangle(cornerRadius: 6).strokeBorder(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [4, 4])).frame(width: 96, height: 118)
+                        .rotationEffect(.degrees(Double(sgn) * 10)).offset(x: CGFloat(sgn) * 70, y: 12)
+                }
+                RoundedRectangle(cornerRadius: 6).strokeBorder(.white.opacity(0.5), lineWidth: 1).background(RadialGradient(colors: [HV.lime.opacity(0.18), .clear], center: .center, startRadius: 0, endRadius: 60), in: RoundedRectangle(cornerRadius: 6)).frame(width: 96, height: 118)
+                    .overlay(Text("TODAY'S 1ST").font(LF.mono(9)).tracking(1.6).foregroundStyle(HV.lime).padding(.bottom, 12), alignment: .bottom)
+            }.frame(height: 150).padding(.top, 26)
+            Text("Yesterday").font(LF.serif(52)).tracking(-1).foregroundStyle(.white).padding(.top, 40)
+            Text("今日 撮った 1枚が、あしたの 朝 9:00 に\nここで ひらきます。").font(LF.inter(500, 13)).foregroundStyle(.white.opacity(0.66)).multilineTextAlignment(.center).lineSpacing(4).padding(.top, 30)
+            HStack(spacing: 10) {
+                HVLiveDot()
+                Text("9:00 まで \(sec / 3600)h \(String(format: "%02d", (sec % 3600) / 60))m").font(LF.mono(11, bold: true).italic()).tracking(1.4).foregroundStyle(.white.opacity(0.85))
+            }.padding(.horizontal, 18).frame(height: 34).background(Color.white.opacity(0.06), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 1)).padding(.vertical, 20)
+        }
+        .frame(width: 362).background(Color(hex: "161618"), in: RoundedRectangle(cornerRadius: 30))
+        .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(.white.opacity(0.08), lineWidth: 1)).padding(.horizontal, 14)
+    }
+
     private func stat(_ n: String, _ l: String) -> some View {
         VStack(spacing: 2) { Text(n).font(LF.serif(34, italic: true)).foregroundStyle(.white); Text(l).font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.75)) }
     }
@@ -211,38 +240,53 @@ struct HVYesterdayBlock: View {
     }
 }
 
-/// Mondo の 列(人気タグ 3つ)
+/// セクションの 頭に 置く 目印(DEBUG の 位置あわせ ・ 目次から の スクロール 用)
+struct HVAnchor: View {
+    let id: String
+    var body: some View { Color.clear.frame(height: 0).id(id) }
+}
+
+/// Mondo の 列(人気タグ):高さ 188 の 縦長カード(数字 ・ タグ)
 struct HVMondoRow: View {
     let input: HomeV64Input
     let data: HomeV64LowerData
     let actions: HomeV64Actions
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HVLabel(text: "MONDO", trailing: "9:00 の 世界 ›")
+        VStack(alignment: .leading, spacing: 0) {
+            HVAnchor(id: "sec-mondo")
+            Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
+            HVLabel(text: "MONDO", trailing: "TOP 5").padding(.top, 18)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Array(data.mondo.enumerated()), id: \.offset) { i, m in
                         Button { input.locked ? Haptics.play(.warn) : actions.openMondo() } label: {
                             ZStack(alignment: .bottomLeading) {
-                                if let img = m.photo { Image(uiImage: img).resizable().scaledToFill().frame(width: 156, height: 100).clipped().blur(radius: input.locked ? 8 : 0) }
-                                LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
-                                VStack(alignment: .leading, spacing: 2) { Text("0\(i + 1)").font(LF.mono(9)).foregroundStyle(HV.lime); Text(m.tag).font(LF.inter(800, 15)).foregroundStyle(.white) }.padding(12)
-                            }.frame(width: 156, height: 100).background(HVL.card).clipShape(RoundedRectangle(cornerRadius: 20))
+                                LinearGradient(colors: [Color(hex: "3A2E3A"), Color(hex: "14100F")], startPoint: .top, endPoint: .bottom)
+                                if let img = m.photo { Image(uiImage: img).resizable().scaledToFill().frame(width: 142, height: 188).clipped().blur(radius: input.locked ? 10 : 0) }
+                                LinearGradient(colors: [.black.opacity(0.1), .clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                                Text(String(format: "%02d", i + 1)).font(LF.serif(40, italic: true)).foregroundStyle(.white.opacity(0.95)).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(.leading, 12).padding(.top, 6)
+                                Text(m.tag).font(LF.inter(800, 18)).foregroundStyle(.white).padding(14)
+                                if input.locked { Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.white).frame(width: 30, height: 30).background(Color.black.opacity(0.6), in: Circle()).frame(maxWidth: .infinity, maxHeight: .infinity) }
+                            }
+                            .frame(width: 142, height: 188).clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
                         }.buttonStyle(HVPress(scale: 0.97))
                     }
-                }.padding(.horizontal, 18)
-            }
+                }.padding(.horizontal, 14)
+            }.padding(.top, 14)
         }
     }
 }
 
-/// Albums(7日):日ごとに 3枚 + 「+N」
+/// Albums(7日):日ごとに 3枚 + 「+N」(4列)
 struct HVAlbums: View {
     let data: HomeV64LowerData
     let actions: HomeV64Actions
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HVLabel(text: "ALBUMS", trailing: "7 DAYS · RECAP ›")
+        VStack(alignment: .leading, spacing: 0) {
+            HVAnchor(id: "sec-albums")
+            Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
+            HVLabel(text: "ALBUMS", trailing: "7 DAYS · RECAP ›").padding(.top, 20)
             ForEach(Array(data.albums.enumerated()), id: \.element.id) { k, a in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .firstTextBaseline) {
@@ -250,7 +294,7 @@ struct HVAlbums: View {
                         Spacer()
                         Text(a.left).font(LF.mono(9.5)).tracking(1.6).foregroundStyle(HVL.label)
                     }.padding(.horizontal, 18)
-                    HStack(spacing: 10) {
+                    HStack(spacing: 9) {
                         ForEach(0..<3, id: \.self) { j in
                             ZStack {
                                 RoundedRectangle(cornerRadius: 18).fill(Color.white.opacity(0.02))
@@ -264,34 +308,66 @@ struct HVAlbums: View {
                         }.frame(maxWidth: .infinity).frame(height: 112).background(HVL.card).clipShape(RoundedRectangle(cornerRadius: 18))
                     }.padding(.horizontal, 14)
                 }
+                .padding(.top, 18)
                 .opacity(1 - Double(k) * 0.07)
             }
         }
     }
 }
 
-/// On this day:1年 のこした 1枚
+/// On this day:1年 のこした 1枚(ポラロイド + 日付 + のこり)
 struct HVOnThisDay: View {
     let data: HomeV64LowerData
     var body: some View {
         if let o = data.onThisDay {
-            VStack(alignment: .leading, spacing: 14) {
-                HVLabel(text: "ON THIS DAY")
-                HStack(spacing: 18) {
-                    ZStack(alignment: .bottomLeading) {
+            VStack(alignment: .leading, spacing: 0) {
+                HVAnchor(id: "sec-onthisday")
+                Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
+                HVLabel(text: "ON THIS DAY", trailing: "1 MONTH AGO").padding(.top, 20)
+                HStack(alignment: .top, spacing: 18) {
+                    ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 4).fill(Color(hex: "F4F1EA"))
-                        ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = o.photo { Image(uiImage: img).resizable().scaledToFill() } }.frame(width: 140, height: 118).clipped().offset(x: 7, y: 7).frame(maxHeight: .infinity, alignment: .top)
-                        Text(o.date).font(LF.mono(9)).foregroundStyle(Color(hex: "FF9A3C")).padding(8)
-                    }.frame(width: 154, height: 160).rotationEffect(.degrees(-4)).shadow(color: .black.opacity(0.6), radius: 14, y: 10)
-                    VStack(alignment: .leading, spacing: 10) {
+                        ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = o.photo { Image(uiImage: img).resizable().scaledToFill() } }
+                            .frame(width: 130, height: 150).clipped().offset(x: 9, y: 9)
+                        Text(o.date).font(LF.mono(9)).foregroundStyle(Color(hex: "FF9A3C")).offset(x: 78, y: 134)
+                        Image(systemName: "sparkle").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: "FFD60A")).offset(x: 10, y: 166)
+                    }.frame(width: 148, height: 196).rotationEffect(.degrees(-4)).shadow(color: .black.opacity(0.6), radius: 14, y: 10)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Oct 17").font(LF.serif(44)).tracking(-0.9).foregroundStyle(.white).padding(.top, 20)
+                        Text("1 month ago").font(LF.serif(19, italic: true)).foregroundStyle(HVL.label)
+                        ZStack(alignment: .leading) { Capsule().fill(Color.white.opacity(0.08)).frame(height: 3); Capsule().fill(Color(hex: "24A03C")).frame(width: 150, height: 3) }.padding(.top, 14)
                         Text("\(o.daysLeft) DAYS LEFT").font(LF.mono(10)).tracking(2).foregroundStyle(HVL.label)
-                        HStack(spacing: 5) { Capsule().fill(.white).frame(width: 22, height: 6); Circle().fill(.white.opacity(0.3)).frame(width: 6, height: 6); Circle().fill(.white.opacity(0.3)).frame(width: 6, height: 6) }
+                        HStack(spacing: 5) { Capsule().fill(.white).frame(width: 14, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5) }
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right").foregroundStyle(.white).frame(width: 38, height: 38).background(Color.white.opacity(0.08), in: Circle())
-                }.padding(.horizontal, 18)
+                    Spacer(minLength: 0)
+                }.padding(.horizontal, 18).padding(.top, 20)
             }
         }
+    }
+}
+
+/// いつもの 空っぽの かお(Friends カードの まんなか)
+struct HVMascot: View {
+    var body: some View {
+        ZStack {
+            // 点線の 「?」の かげ
+            ForEach([-1, 1], id: \.self) { sgn in
+                UnevenRoundedRectangle(topLeadingRadius: 40, bottomLeadingRadius: 2, bottomTrailingRadius: 2, topTrailingRadius: 40)
+                    .stroke(Color.white.opacity(0.14), style: StrokeStyle(lineWidth: 2.5, dash: [10, 8])).frame(width: 60, height: 78)
+                    .overlay(Text("?").font(LF.serif(30, italic: true)).foregroundStyle(.white.opacity(0.2)))
+                    .offset(x: CGFloat(sgn) * 88, y: 14)
+            }
+            // みどりの 子
+            ZStack {
+                UnevenRoundedRectangle(topLeadingRadius: 38, bottomLeadingRadius: 2, bottomTrailingRadius: 2, topTrailingRadius: 38).fill(LinearGradient(colors: [Color(hex: "5ED67A"), Color(hex: "5ED67A"), Color(hex: "3FB85F")], startPoint: .top, endPoint: .bottom)).frame(width: 64, height: 90)
+                HStack(spacing: 18) { Circle().fill(HV.ink).frame(width: 7, height: 7); Circle().fill(HV.ink).frame(width: 7, height: 7) }.offset(y: -10)
+                Circle().fill(Color(hex: "F59BB8").opacity(0.8)).frame(width: 10, height: 7).offset(x: -22, y: 2)
+                Circle().fill(Color(hex: "F59BB8").opacity(0.8)).frame(width: 10, height: 7).offset(x: 22, y: 2)
+                Circle().trim(from: 0.1, to: 0.4).stroke(HV.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round)).frame(width: 22, height: 22).rotationEffect(.degrees(30)).offset(y: 4)
+            }.offset(y: 10)
+            Text("hi!").font(LF.hand(24)).foregroundStyle(HV.lime).rotationEffect(.degrees(-8)).offset(x: -62, y: -62)
+            RoundedRectangle(cornerRadius: 3).fill(Color(hex: "9ED8FF")).frame(width: 14, height: 22).offset(x: 40, y: -42)
+        }.frame(maxWidth: .infinity).frame(height: 120)
     }
 }
 
@@ -302,8 +378,9 @@ struct HVFriendsCard: View {
     var body: some View {
         let took = input.friends.filter { $0.shots > 0 }.count
         VStack(alignment: .leading, spacing: 14) {
+            HVAnchor(id: "sec-friends")
             HStack {
-                (Text("F").font(LF.serif(46, italic: true)).foregroundColor(HV.lime) + Text("riends").font(LF.serif(46)).foregroundColor(.white))
+                (Text("F").font(LF.serif(40, italic: true)).foregroundColor(HV.lime) + Text("riends").font(LF.serif(40)).foregroundColor(.white))
                 Spacer()
                 if took > 0 {
                     HStack(spacing: 6) { Circle().fill(Color(hex: "3BD35A")).frame(width: 9, height: 9); Text("\(took) shot today").font(LF.mono(12)).foregroundStyle(Color(hex: "7EE08F")) }
@@ -315,39 +392,62 @@ struct HVFriendsCard: View {
                 Button { Haptics.play(.sel); actions.openRequests() } label: { HStack(spacing: 10) {
                     HStack(spacing: -10) { ForEach(Array(input.requestFaces.prefix(3).enumerated()), id: \.offset) { i, f in
                         Circle().fill(f.color).frame(width: 30, height: 30).overlay(Circle().strokeBorder(.black, lineWidth: 2)) } }
-                    Text("\(input.requestFaces.first?.initial ?? "") ほか から 申請").font(LF.inter(800, 15)).foregroundStyle(HV.ink)
+                    Text("\(input.requestFaces.first?.initial ?? "") ほか から 申請").font(LF.inter(800, 16)).foregroundStyle(HV.ink)
                     Spacer()
                     Text("承認 ›").font(LF.mono(11)).foregroundStyle(HV.ink)
                 }.padding(.horizontal, 14).frame(height: 46).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.98))
             }
             if input.friends.isEmpty {
-                HStack { Text("No one yet").font(LF.inter(800, 16)).foregroundStyle(.white); Spacer(); Text("0/12").font(LF.serif(22, italic: true)).foregroundStyle(.white) }
-                    .padding(16).background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 20))
+                HVMascot()
+                VStack(spacing: 6) {
+                    Text("まだ ひとり。").font(LGFont.mincho(26)).foregroundStyle(.white)
+                    Text("さいしょの 友だちを よぼう ・ 人数の 上限は ありません").font(LF.inter(500, 12.5)).foregroundStyle(HVL.label).multilineTextAlignment(.center)
+                }.frame(maxWidth: .infinity)
+                HStack(spacing: 10) {
+                    emptyButton("iphone.radiowaves.left.and.right", "Shake", fill: .white) { actions.openFriends() }
+                    emptyButton("qrcode", "QR ・ ID", fill: HV.lime) { actions.addFriends() }
+                    emptyButton("link", "Link", fill: .white) { actions.openFriends() }
+                }
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 14) {
                         ForEach(Array(input.friends.enumerated()), id: \.offset) { i, f in
-                            VStack(alignment: .leading, spacing: 4) {
-                                ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = f.image { Image(uiImage: img).resizable().scaledToFill() } }.frame(width: 96, height: 104).clipped()
-                                Text(f.name).font(LF.serif(20, italic: false)).foregroundStyle(HV.ink)
-                                HStack(spacing: 3) { ForEach(0..<3, id: \.self) { s in Capsule().fill(s < f.shots ? Color(hex: "3BD35A") : Color.black.opacity(0.12)).frame(width: 13, height: 5) } }
-                            }.padding(8).frame(width: 112).background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 6)).rotationEffect(.degrees(i % 2 == 0 ? -2 : 1.5))
+                            VStack(alignment: .leading, spacing: 3) {
+                                ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = f.image { Image(uiImage: img).resizable().scaledToFill() } }.frame(width: 92, height: 98).clipped()
+                                Text(f.name).font(LGFont.mincho(21)).foregroundStyle(HV.ink).padding(.top, 2)
+                                if f.shots > 0 {
+                                    HStack(spacing: 3) { ForEach(0..<3, id: \.self) { s in Capsule().fill(s < f.shots ? Color(hex: "3BD35A") : Color.black.opacity(0.12)).frame(width: 13, height: 5) } }
+                                } else {
+                                    Text("NOT YET").font(LF.mono(8)).tracking(1.2).foregroundStyle(Color(hex: "8E8E93"))
+                                }
+                            }
+                            .padding(.horizontal, 8).padding(.top, 8).padding(.bottom, 10).frame(width: 108, alignment: .leading)
+                            .background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 5))
+                            .overlay(alignment: .top) { Rectangle().fill(f.shots > 0 ? Color(hex: "C8F25A").opacity(0.85) : Color(hex: "8E8E93").opacity(0.7)).frame(width: 44, height: 15).offset(y: -9) }
+                            .rotationEffect(.degrees(i % 2 == 0 ? -2 : 1.5)).padding(.top, 10)
                         }
                     }.padding(.vertical, 6)
                 }
-            }
-            HStack(spacing: 8) {
-                Button { Haptics.play(.sel); actions.addFriends() } label: {
-                    HStack(spacing: 8) { Image(systemName: "plus").font(.system(size: 16, weight: .bold)); Text("Add").font(LF.inter(800, 17)) }
-                        .foregroundStyle(.white).frame(width: 112, height: 54).background(Color.white.opacity(0.08), in: Capsule())
-                }.buttonStyle(HVPress(scale: 0.97))
-                HVCTA(title: "Open friends", width: 200) { actions.openFriends() }
+                HStack(spacing: 8) {
+                    Button { Haptics.play(.sel); actions.addFriends() } label: {
+                        HStack(spacing: 8) { Image(systemName: "plus").font(.system(size: 16, weight: .bold)); Text("Add").font(LF.inter(800, 17)) }
+                            .foregroundStyle(.white).frame(width: 112, height: 54).background(Color.white.opacity(0.08), in: Capsule())
+                    }.buttonStyle(HVPress(scale: 0.97))
+                    HVCTA(title: "Open friends", width: 200) { actions.openFriends() }
+                }
             }
         }
         .padding(18)
         .background(Color.white.opacity(0.02), in: RoundedRectangle(cornerRadius: 30))
         .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(.white.opacity(0.1), lineWidth: 1))
         .padding(.horizontal, 14)
+    }
+
+    private func emptyButton(_ icon: String, _ title: String, fill: Color, action: @escaping () -> Void) -> some View {
+        Button { Haptics.play(.sel); action() } label: {
+            VStack(spacing: 6) { Image(systemName: icon).font(.system(size: 20, weight: .semibold)); Text(title).font(LF.inter(800, 15)) }
+                .foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 64).background(fill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        }.buttonStyle(HVPress(scale: 0.96))
     }
 }
 
@@ -368,7 +468,7 @@ struct HVLowerSections: View {
                 HVOnThisDay(data: data)
             }
             HVFriendsCard(input: input, actions: actions)
-            Spacer().frame(height: 160)
+            Spacer().frame(height: 300)
         }
         .background(HVL.bg)
     }

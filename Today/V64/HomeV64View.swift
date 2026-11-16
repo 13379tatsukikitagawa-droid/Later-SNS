@@ -36,6 +36,8 @@ struct HomeV64Input {
     var mondo = HomeV64MondoInfo()
     var lower = HomeV64LowerData()
     var debugScroll: CGFloat = 0
+    /// DEBUG:セクションの 頭を 画面の このへんに あわせる(例 \"sec-mondo:157\")
+    var debugSection: String? = nil
     var now = Date()
     var showHint = false
     var pressedFocus = false
@@ -100,7 +102,11 @@ struct HomeV64View: View {
                     }
                     .onChange(of: wantsToday) { _, _ in withAnimation(.easeInOut(duration: 0.6)) { proxy.scrollTo("today", anchor: .top) } }
                     .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, new in scrollY = new }
-                    .onAppear { if input.debugScroll > 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo("dbg", anchor: .top) } } }
+                    .onAppear {
+                        if let sec = input.debugSection, let y = Double(sec.split(separator: ":").last ?? "150") {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo(String(sec.split(separator: ":").first ?? ""), anchor: UnitPoint(x: 0.5, y: y / Double(f.h))) }
+                        } else if input.debugScroll > 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo("dbg", anchor: .top) } }
+                    }
                 }
                 // 上の ブロック(ページの 5まい)は 上へ ながれて うすく なる
                 Group {
