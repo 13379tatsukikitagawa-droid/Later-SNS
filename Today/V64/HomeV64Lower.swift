@@ -312,13 +312,13 @@ struct HVFriendsCard: View {
                 Image(systemName: "chevron.right").foregroundStyle(.white).frame(width: 38, height: 38).background(Color.white.opacity(0.08), in: Circle())
             }
             if input.requestCount > 0 {
-                HStack(spacing: 10) {
+                Button { Haptics.play(.sel); actions.openRequests() } label: { HStack(spacing: 10) {
                     HStack(spacing: -10) { ForEach(Array(input.requestFaces.prefix(3).enumerated()), id: \.offset) { i, f in
                         Circle().fill(f.color).frame(width: 30, height: 30).overlay(Circle().strokeBorder(.black, lineWidth: 2)) } }
                     Text("\(input.requestFaces.first?.initial ?? "") ほか から 申請").font(LF.inter(800, 15)).foregroundStyle(HV.ink)
                     Spacer()
                     Text("承認 ›").font(LF.mono(11)).foregroundStyle(HV.ink)
-                }.padding(.horizontal, 14).frame(height: 46).background(HV.lime, in: Capsule())
+                }.padding(.horizontal, 14).frame(height: 46).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.98))
             }
             if input.friends.isEmpty {
                 HStack { Text("No one yet").font(LF.inter(800, 16)).foregroundStyle(.white); Spacer(); Text("0/12").font(LF.serif(22, italic: true)).foregroundStyle(.white) }

@@ -64,6 +64,8 @@ struct HomeV64Actions {
     var addFriends: () -> Void = {}
     var scrollToToday: () -> Void = {}
     var scanQR: () -> Void = {}
+    var openRequests: () -> Void = {}
+    var openChat: (_ friendID: String, _ name: String) -> Void = { _, _ in }
 }
 
 struct HomeV64View: View {

@@ -134,7 +134,7 @@ struct HVFriendsPage: View {
             HVPageHeader(page: .friends, number: 1, status: shotFriends > 0 ? "● \(shotFriends) shot today" : nil, cardW: cardW)
             HVPageTitle(text: "Friends").offset(x: 22, y: 72)
             if input.requestCount > 0 {
-                Button { Haptics.play(.sel); actions.openFriends() } label: {
+                Button { Haptics.play(.sel); actions.openRequests() } label: {
                     HStack(spacing: 0) {
                         HStack(spacing: -8) {
                             ForEach(Array(input.requestFaces.prefix(3).enumerated()), id: \.offset) { i, f in
@@ -166,7 +166,7 @@ struct HVFriendsPage: View {
                     }.buttonStyle(HVPress(scale: 0.94)).offset(x: x, y: rowY)
                 } else if col - 1 < input.friends.count {
                     let fr = input.friends[col - 1]
-                    Button { Haptics.play(.sel); actions.openFriends() } label: {
+                    Button { Haptics.play(.sel); actions.openChat(fr.id, fr.name) } label: {
                         VStack(spacing: 5) {
                             ZStack {
                                 Circle().stroke(Color(hex: "2A2A2C"), lineWidth: 3)

@@ -703,7 +703,7 @@ struct OnboardingV64View: View {
         guard requestedInvite, let rn = invitedRecord else { return }
         let myName = name
         Task { @MainActor in
-            if case .success = await FriendCloud.connect(to: rn, myName: myName, myCount: 0, theirCount: 0) {
+            if await FriendRequests.send(to: rn, toName: invitedBy ?? "", myName: myName) {
                 UserDefaults.standard.removeObject(forKey: "pendingFriendRecordName")
             }
         }

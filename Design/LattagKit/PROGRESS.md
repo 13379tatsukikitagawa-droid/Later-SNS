@@ -9,7 +9,7 @@
 | P04 | Home の 下 | L01〜L11 | ◐ | 2026-11-17。Today ・ Active ・ Yesterday ・ Mondo ・ Albums ・ On this day ・ Friends カードを 作成。L01 だけ 位置あわせ 済(7.4)。L02〜L10 の 位置あわせと L11(現像を ひらく = 既存の ビューア)は これから |
 | P05 | 撮る(タグ ・ 撮影 ・ 現像) | C01〜C11 | ◐ | 2026-11-17。C01(タグ画面)は 既存の 画面が ほぼ 見本どおり だったので 題字を Later Mincho 29pt に 直した(10.2)。C02〜C11(撮影 ・ 撮った あと ・ 現像 ・ レア ・ チェキ)は シミュレータに カメラが 無く 見くらべ 不能 → 既存の 実装の まま(未計測)|
 | P06 | Lattag yesterday | Y01〜Y06 | ◐ | 2026-11-17。白い ページ + 大きな カード + 下の ガラスタブ(Friends が 先 / Mondo)を `YesterdayV64View` で 作成。Home の yesterday ・ 四すみから ひらく。Y03(Mondo タブ)は 地球の 文字 ・ 都市の 時計の 作りこみが 未。Y04〜Y06 は 未計測 |
-| P07 | Friends ・ Profile ・ ME | F01〜F10 | ☐ | |
+| P07 | Friends ・ Profile ・ ME | F01〜F10 | ◐ | 2026-11-17。**申請 → 承認**(`FriendRequests`:ConnectionRequest / ConnectionResponse)と **1対1 チャット**(`DirectMessages`:DirectMessage)を 実装し、Home の Friends ページ / 下の Friends カードの「Requests」と 友だちの 丸から ひらく。純粋な 決まりは テスト 済(463件)。CloudKit との 実際の やりとりは 未確認(本番スキーマに 3つの レコードタイプが 入って いる 必要)。連絡先から さがす ・ Friend 画面 / Profile / ME の 見た目の 作りなおしは 未 |
 | P08 | Trip | T01〜T09 | ☐ | |
 | P09 | データ ・ 仕上げ ・ 全画面の 確認 | 全76 | ☐ | |
 

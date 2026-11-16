@@ -6,15 +6,27 @@ struct HomeV64Host: View {
     let src: HomeViewSwitch
     @State private var sessionStart = Date()
     @State private var showYesterday = false
+    @State private var showRequests = false
+    @State private var chatWith: (id: String, name: String)?
+    @State private var incoming: [FriendRequests.Request] = []
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { ctx in
             HomeV64View(input: makeInput(now: ctx.date), actions: makeActions())
         }
         .accessibilityElement(children: .contain)
+        .task { await refreshRequests() }
+        .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
+        .sheet(isPresented: Binding(get: { chatWith != nil }, set: { if !$0 { chatWith = nil } })) { if let c = chatWith { DirectMessageView(friendID: c.id, friendName: c.name) } }
         .fullScreenCover(isPresented: $showYesterday) {
             YesterdayV64View(input: makeYesterdayInput(now: Date()), actions: makeYesterdayActions())
         }
+    }
+
+    /// 申請を とりにいく(承認された 返事が あれば こちら側の つながりも つくる)
+    private func refreshRequests() async {
+        await FriendRequests.syncAccepted(myName: src.avatarName)
+        incoming = await FriendRequests.incoming()
     }
 
     // MARK: Lattag yesterday(P06)
@@ -61,6 +73,8 @@ struct HomeV64Host: View {
         let L = src.layerData
         let others = L.friends.filter { !$0.isMe }
         input.friendCount = others.count
+        input.requestCount = incoming.count
+        input.requestFaces = incoming.prefix(3).map { r in HomeV64Face(id: r.id, initial: String((r.fromName.isEmpty ? "ね" : r.fromName).prefix(1)), color: Self.color(for: UUID(uuidString: r.fromUserID.padding(toLength: 36, withPad: "0", startingAt: 0)) ?? UUID())) }
         input.friends = others.prefix(7).map { f in
             HomeV64Friend(id: f.id, name: f.name, color: Self.color(for: f.seed), image: image(f.avatarData) ?? image(f.mosaicTiny), shots: f.hasShot ? 3 : 0)
         }
@@ -105,6 +119,8 @@ struct HomeV64Host: View {
         a.openYesterday = { showYesterday = true }
         a.openFriends = src.layerActions.openFriends
         a.addFriends = src.layerActions.openFriends
+        a.openRequests = { showRequests = true }
+        a.openChat = { id, name in chatWith = (id, name) }
         a.openProfile = src.onOpenProfile
         a.openDevelop = src.onDevelopTap
         a.openTrip = src.onCreateGroup
