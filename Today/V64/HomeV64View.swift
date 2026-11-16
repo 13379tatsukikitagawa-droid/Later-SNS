@@ -76,6 +76,8 @@ struct HomeV64View: View {
     @State private var page = 0
     @State private var pageSeeded = false
     @State private var showLive = false
+    @State private var wantsToday = 0
+    @State private var entered = false
 
     @State private var scrollY: CGFloat = 0
 
@@ -96,13 +98,15 @@ struct HomeV64View: View {
                             }
                         }
                     }
+                    .onChange(of: wantsToday) { _, _ in withAnimation(.easeInOut(duration: 0.6)) { proxy.scrollTo("today", anchor: .top) } }
                     .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, new in scrollY = new }
                     .onAppear { if input.debugScroll > 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo("dbg", anchor: .top) } } }
                 }
                 // 上の ブロック(ページの 5まい)は 上へ ながれて うすく なる
                 Group {
                     Group { card(f) }
-                        .offset(y: -scrollY).opacity(1 - Double(min(1, scrollY / 420)))
+                        .offset(y: -scrollY).opacity((1 - Double(min(1, scrollY / 420))) * (entered || reduceMotion ? 1 : 0))
+                        .scaleEffect(entered || reduceMotion ? 1 : 1.06)
                         .allowsHitTesting(scrollY < 120)
                     header(f, dark: dark)
                 }
@@ -115,7 +119,10 @@ struct HomeV64View: View {
             .environment(\.hvDark, dark)
         }
         .ignoresSafeArea()
-        .onAppear { if !pageSeeded { page = input.page; pageSeeded = true; if input.openLiveAtStart { showLive = true } } }
+        .onAppear {
+            if !pageSeeded { page = input.page; pageSeeded = true; if input.openLiveAtStart { showLive = true } }
+            if !entered { withAnimation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.9)) { entered = true }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.64) { Haptics.play(.tick) } }
+        }
     }
 
     // MARK: カード(5ページの 横スライド + 目次)
@@ -149,6 +156,8 @@ struct HomeV64View: View {
     }
 
     /// ページ 0:カメラ(カード内の 座標 = 絶対 − (10, 178))
+    private func pop(_ i: Int) -> some ViewModifier { HVCornerPop(entered: entered, index: i) }
+
     private func cameraPage(_ f: HV.Frame, cardW: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             HVCardBackdrop(images: input.backdrop, focus: pressing || input.pressedFocus, done: input.done, night: input.isNight)
@@ -174,16 +183,16 @@ struct HomeV64View: View {
                 .position(x: cardW / 2, y: 36)
 
             HVCorner(kind: .yesterday, label: "YESTERDAY", locked: input.locked, badge: false) { goPage(4, delay: 0.12) }
-                .position(x: 52, y: 108)
+                .modifier(pop(0)).position(x: 52, y: 108)
             HVCorner(kind: .trip, label: "TRIP", locked: false, badge: false) { goPage(2, delay: 0.12) }
-                .position(x: cardW - 52, y: 108)
+                .modifier(pop(1)).position(x: cardW - 52, y: 108)
             HVCorner(kind: .mondo, label: "MONDO", locked: input.locked, badge: false) { goPage(3, delay: 0.12) }
-                .position(x: 52, y: 382)
+                .modifier(pop(2)).position(x: 52, y: 382)
             HVCorner(kind: .friends, label: "FRIENDS", locked: false, badge: input.requestCount > 0) { goPage(1, delay: 0.12) }
-                .position(x: cardW - 52, y: 382)
+                .modifier(pop(3)).position(x: cardW - 52, y: 382)
 
             HVPill(input: input) {
-                if input.shotsUsed == 0 { Haptics.play(.sel); actions.scrollToToday() } else { Haptics.play(.pop); actions.openDevelop() }
+                if input.shotsUsed == 0 { Haptics.play(.sel); actions.scrollToToday(); wantsToday += 1 } else { Haptics.play(.pop); actions.openDevelop() }
             }
             .position(x: cardW / 2, y: 382)
         }
@@ -770,4 +779,18 @@ struct HVScrollKey: PreferenceKey {
 private struct HVDarkKey: EnvironmentKey { static let defaultValue: Double = 0 }
 extension EnvironmentValues {
     var hvDark: Double { get { self[HVDarkKey.self] } set { self[HVDarkKey.self] = newValue } }
+}
+
+/// 四すみが レンズの 中心から ポンと とび出す(0.76秒・0.18秒後から 0.09秒ずつ)
+struct HVCornerPop: ViewModifier {
+    let entered: Bool
+    let index: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(entered || reduceMotion ? 1 : 0.2)
+            .rotationEffect(.degrees(entered || reduceMotion ? 0 : -160))
+            .opacity(entered || reduceMotion ? 1 : 0)
+            .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.76).delay(0.18 + 0.09 * Double(index)), value: entered)
+    }
 }

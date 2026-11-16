@@ -359,7 +359,7 @@ struct HVLowerSections: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 34) {
-            HVTodayPanel(input: input, data: data) { input.shotsUsed == 0 ? actions.shoot() : actions.openDevelop() }
+            HVTodayPanel(input: input, data: data) { input.shotsUsed == 0 ? actions.shoot() : actions.openDevelop() }.id("today")
             HVActiveRow(data: data, input: input, actions: actions)
             HVYesterdayBlock(input: input, data: data, actions: actions)
             if !input.isFirstDay {
