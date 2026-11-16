@@ -28,7 +28,7 @@
 | O10 通知の 許可 | `OnboardingFlowView`(`NotificationCardSample` は 内部 使用) | ○ | |
 | O11 できた | `OnboardingFlowView` / `WidgetSetupFlow`(別) | △ | |
 
-### P02/P03 Home 上・横スライド(H01〜H18)
+### P02/P03 Home 上・横スライド(H01〜H18)— **P02/P03 で 新しい Home を 作成 済(2026-11-17)**:`Today/V64/`(`HomeViewSwitch` で 切りかえ。`HomeView` / `ChicHomeView` / `HomeV22` は V64 の あいだ 使われない)
 
 | ID | いまの View | 判定 | メモ |
 |---|---|---|---|
@@ -43,7 +43,7 @@
 | H14/H15 Mondo ページ | `HomeV5Mondo` / `MondoViews` / `MondoModel` | △ | 投稿が 空 → 見本データで 確認 |
 | H16〜H18 Yesterday ページ | `HomeV5Group`(Yesterday) / `YesterdayGroupHero` / `EmptyYesterdayView` | △ | |
 
-### P04 Home 下(L01〜L11)
+### P04 Home 下(L01〜L11)— **`Today/V64/HomeV64Lower.swift` で 作成(L01 のみ 位置あわせ 済)**
 
 | ID | いまの View | 判定 |
 |---|---|---|
@@ -68,7 +68,7 @@
 | C08/C09 翌朝の 現像 | `DevelopSheet` `HomeDarkroom`(v30 の 暗室) | ○ |
 | C10/C11 レア / チェキ | `ChekiPhotoFrame`(`ChekiLightLeak` は 未使用) | △ |
 
-### P06 Lattag yesterday(Y01〜Y06)
+### P06 Lattag yesterday(Y01〜Y06)— **`Today/V64/YesterdayV64View.swift` で 作成**(`HomeV5Container` は V64 の あいだ 出ない)
 
 | ID | いまの View | 判定 |
 |---|---|---|
