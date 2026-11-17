@@ -84,6 +84,7 @@ struct HomeV64View: View {
     @State private var scrollY: CGFloat = 0
     @State private var dragVal: CGFloat = 0
     @State private var compact = false
+    @State private var afFlash = false
     @State private var lastCompactTick = Date.distantPast
 
     var body: some View {
@@ -141,7 +142,11 @@ struct HomeV64View: View {
         .ignoresSafeArea()
         .onAppear {
             if !pageSeeded { page = input.page; pageSeeded = true; if input.openLiveAtStart { showLive = true } }
-            if !entered { withAnimation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.9)) { entered = true }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.64) { Haptics.play(.tick) } }
+            if !entered {
+                withAnimation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.9)) { entered = true }
+                afFlash = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.35) { afFlash = false }
+            }
         }
     }
 
@@ -183,6 +188,8 @@ struct HomeV64View: View {
             HVStar().offset(x: 14, y: 12)
             HVSquiggle().offset(x: cardW - 60.3, y: 26.4)
 
+            HV68Finder(cardW: cardW, pressing: pressing || input.pressedFocus, afOn: pressing || input.pressedFocus || afFlash)
+
             HVLens(input: input, pressing: pressing, onPress: { p in
                 pressing = p
                 if p { Haptics.play(.click) }
@@ -195,14 +202,14 @@ struct HomeV64View: View {
             HVChip(input: input, onTap: { Haptics.play(.sel); goPage(1) }, onAdd: { Haptics.play(.sel); actions.addFriends() })
                 .position(x: cardW / 2, y: 36)
 
-            HVCorner(kind: .yesterday, label: "YESTERDAY", locked: input.locked, badge: false) { goPage(4, delay: 0.12) }
-                .modifier(pop(0)).position(x: 52, y: 108)
-            HVCorner(kind: .trip, label: "TRIP", locked: false, badge: false) { goPage(2, delay: 0.12) }
-                .modifier(pop(1)).position(x: cardW - 52, y: 108)
-            HVCorner(kind: .mondo, label: "MONDO", locked: input.locked, badge: false) { goPage(3, delay: 0.12) }
-                .modifier(pop(2)).position(x: 52, y: 382)
-            HVCorner(kind: .friends, label: "FRIENDS", locked: false, badge: input.requestCount > 0) { goPage(1, delay: 0.12) }
-                .modifier(pop(3)).position(x: cardW - 52, y: 382)
+            HV68Corner(spot: .tl, kind: .yesterday, label: "YESTERDAY", locked: input.locked, badge: false, entered: entered, index: 0, fromLens: CGSize(width: 135, height: 141)) { goPage(4, delay: 0.12) }
+                .position(x: cardW / 2 - 135, y: 113)
+            HV68Corner(spot: .tr, kind: .trip, label: "TRIP", locked: false, badge: false, entered: entered, index: 1, fromLens: CGSize(width: -135, height: 141)) { goPage(2, delay: 0.12) }
+                .position(x: cardW / 2 + 135, y: 113)
+            HV68Corner(spot: .bl, kind: .mondo, label: "MONDO", locked: input.locked, badge: false, entered: entered, index: 2, fromLens: CGSize(width: 135, height: -133)) { goPage(3, delay: 0.12) }
+                .position(x: cardW / 2 - 135, y: 387)
+            HV68Corner(spot: .br, kind: .friends, label: "FRIENDS", locked: false, badge: input.requestCount > 0, entered: entered, index: 3, fromLens: CGSize(width: -135, height: -133)) { goPage(1, delay: 0.12) }
+                .position(x: cardW / 2 + 135, y: 387)
 
             HVPill(input: input) {
                 if input.shotsUsed == 0 { Haptics.play(.sel); actions.scrollToToday(); wantsToday += 1 } else { Haptics.play(.pop); actions.openDevelop() }

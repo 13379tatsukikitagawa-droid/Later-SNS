@@ -52,6 +52,7 @@
 		9A26EB4438AE4FDBAF5C0639 /* V64/ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C21640B170159AAEF45324 /* V64/ImageCache.swift */; };
 		CC340D3F1D14091F6B641687 /* V64/HomeV68Layers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4530102B2BCEFCF4B1CC5136 /* V64/HomeV68Layers.swift */; };
 		F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */; };
+		6BD05EF2D823E8046CD5AD4F /* V64/HomeV68Corners.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDD4ADD88B077E36B83E020 /* V64/HomeV68Corners.swift */; };
 		5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7259E737667BD9D41829457 /* HomeMoon.swift */; };
 		605EF09EAACE41EDB4BC64F8 /* ImageCacheLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0548D25953234EAF947739A5 /* ImageCacheLimits.swift */; };
 		60C5A0CFDCC62D982F0F1FCF /* GroupDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BA4D4C5BB926C8BB1A4A8A /* GroupDetailView.swift */; };
@@ -456,6 +457,7 @@
 		B6C21640B170159AAEF45324 /* V64/ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ImageCache.swift; sourceTree = "<group>"; };
 		4530102B2BCEFCF4B1CC5136 /* V64/HomeV68Layers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV68Layers.swift; sourceTree = "<group>"; };
 		8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV68Header.swift; sourceTree = "<group>"; };
+		9FDD4ADD88B077E36B83E020 /* V64/HomeV68Corners.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV68Corners.swift; sourceTree = "<group>"; };
 		C7259E737667BD9D41829457 /* HomeMoon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMoon.swift; sourceTree = "<group>"; };
 		C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilmEmulation.swift; sourceTree = "<group>"; };
 		CF0F7F40C595276C07B370F9 /* HoldGauge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HoldGauge.swift; sourceTree = "<group>"; };
@@ -849,6 +851,7 @@
 				C41C00000000000000000004 /* ChicHomeView.swift */,
 				C7259E737667BD9D41829457 /* HomeMoon.swift */,
 				8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */,
+				9FDD4ADD88B077E36B83E020 /* V64/HomeV68Corners.swift */,
 				4530102B2BCEFCF4B1CC5136 /* V64/HomeV68Layers.swift */,
 				B6C21640B170159AAEF45324 /* V64/ImageCache.swift */,
 				5151B98D9817974A8A5B4D4B /* V64/DevelopV64View.swift */,
@@ -1358,6 +1361,7 @@
 				C41C00000000000000000003 /* ChicHomeView.swift in Sources */,
 				5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */,
 				F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */,
+				6BD05EF2D823E8046CD5AD4F /* V64/HomeV68Corners.swift in Sources */,
 				CC340D3F1D14091F6B641687 /* V64/HomeV68Layers.swift in Sources */,
 				9A26EB4438AE4FDBAF5C0639 /* V64/ImageCache.swift in Sources */,
 				EF1ACD90ED1193CE169C4851 /* V64/DevelopV64View.swift in Sources */,
