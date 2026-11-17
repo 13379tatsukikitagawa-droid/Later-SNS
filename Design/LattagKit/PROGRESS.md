@@ -82,3 +82,9 @@
 - 「ID で さがす」は 今ある `UserDirectoryService.search` + `FriendRequests.send` を 使う 小さな シート。
 - 承認 = `FriendRequests.respond`、つつく = `KnockStore`、チャット = `DirectMessageView`、ブロック / 通報 = `ModerationService` / `ReportSheet`(行を 押す)。**ブロックの しくみは すでに ある**(`ModerationService.blockUser`)→ M5 の Shake 候補から ブロック済みの 人も 外す。
 - 見本との ちがい(データが 無い):申請の 人の 写真(申請の レコードに 写真が 無い → 名前の 1文字)・「17:05 に 撮った」の 時刻(いまは「今日 撮った」)。
+
+## 2026-11-17 M4(P12-C:Shake モードの 画面と 動き)
+
+- `ShakeV68View`(状態 idle / seek / found / wait / done / none を うけとって 描く だけ)。輪 4本 + 黄緑の ひろがる 輪 + レーダー ・ 丸の 息 ・ ふるえ ・ 相手の 丸が 落ちて 重なる ・ 白い 光 + 波紋 ・ 黄緑の 線で 囲む。バイブは 状態が かわる とき(sel / buzz + tick×6 / success / click / success→heart / warn)。Reduce Motion ・ 見えない とき ・ 低電力で 止める。DEBUG:`-debugRoute shake -debugShake <状態>`。
+- 点数:K01 8.1 / K02 9.4 / K03 6.5 / K04 10.9 / K05 5.1(K06 は Friends の 新しい 行 = F 系)。
+- 26 の「2つの 丸が 近づくと ガラスが くっつく」は まだ(M6 で 検討)。実機の ふった 判定 ・ 通信は M5。

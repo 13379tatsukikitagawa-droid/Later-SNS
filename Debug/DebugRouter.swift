@@ -21,6 +21,7 @@ enum DebugRouter {
         case "yesterday": show(YesterdayV64Preview())
         case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
         case "friends": showRaw(FriendsV68Preview())
+        case "shake": showRaw(ShakeV68Preview())
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
         }
@@ -215,5 +216,15 @@ struct FriendsV68Preview: View {
         return FriendsV68View(myName: "you", friends: friends, groups: [], onClose: {}, injectedRequests: reqs)
     }
     var body: some View { screen }
+}
+
+/// DEBUG:Shake モード(`-debugRoute shake -debugShake idle|seek|found|wait|done|none`)
+struct ShakeV68Preview: View {
+    @State private var phase = ShakeV68Phase(rawValue: UserDefaults.standard.string(forKey: "debugShake") ?? "idle") ?? .idle
+    var body: some View {
+        ShakeV68View(phase: phase, me: SampleData.photo("f"), myName: "you",
+                     peer: ShakeV68Peer(name: "ひなた", handle: "hinata_6814", photo: SampleData.photo("e"), tags: ["帰り道", "朝型"]),
+                     onClose: {}, onConnect: { phase = .wait }, onNotThem: { phase = .idle })
+    }
 }
 #endif
