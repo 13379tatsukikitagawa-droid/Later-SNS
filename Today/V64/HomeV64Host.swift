@@ -142,6 +142,10 @@ struct HomeV64Host: View {
         }
         // 下の 区画
         var low = HomeV64LowerData()
+        low.trips = src.groups.filter { !$0.isPersonalSpace }.sorted { $0.creationDate > $1.creationDate }.map { g in
+            let n = (Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: g.creationDate), to: Calendar.current.startOfDay(for: now)).day ?? 0) + 1
+            return (id: g.id as UUID?, name: g.name, sub: "DAY \(n) ・ \(g.members.count)人", cover: g.iconImageData.flatMap { UIImage(data: $0) })
+        }
         low.today = .init(thumbs: [], times: src.todayShots.map { df.string(from: $0.takenAt) })
         if let first = L.yesterday.first {
             low.hero = .init(photo: image(first.imageData) ?? image(first.mosaicTiny), tag: first.tag.map { "#\($0)" } ?? "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: Self.dateLabel(first.captureDate, now: now), moments: L.yesterday.count, people: Set(L.yesterday.map(\.authorName)).count, daysLeft: 6)

@@ -14,7 +14,7 @@ struct HomeV64LowerData {
     var mondo: [(tag: String, photo: UIImage?)] = []
     var albums: [Album] = []
     var onThisDay: (photo: UIImage?, daysLeft: Int, date: String)?
-    var trips: [(name: String, sub: String)] = []
+    var trips: [(id: UUID?, name: String, sub: String, cover: UIImage?)] = []
     var weekday = "SUN"
 }
 
@@ -98,12 +98,16 @@ struct HVActiveRow: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Array(data.trips.enumerated()), id: \.offset) { _, t in
-                        Button { Haptics.play(.pop); actions.openTrip() } label: {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Spacer()
-                                Text(t.name).font(LF.serif(24)).foregroundStyle(.white)
-                                Text(t.sub).font(LF.inter(600, 11)).foregroundStyle(HVL.label)
-                            }.padding(16).frame(width: 170, height: 248, alignment: .leading).background(HVL.card, in: RoundedRectangle(cornerRadius: 24))
+                        Button { Haptics.play(.pop); if let id = t.id { actions.openTripHome(id) } else { actions.openTrip() } } label: {
+                            ZStack(alignment: .bottomLeading) {
+                                HVL.card
+                                if let c = t.cover { Image(uiImage: c).resizable().scaledToFill().frame(width: 170, height: 248).clipped() }
+                                LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(t.name).font(LF.serif(24)).foregroundStyle(.white).lineLimit(1)
+                                    Text(t.sub).font(LF.inter(600, 11)).foregroundStyle(.white.opacity(0.7))
+                                }.padding(16)
+                            }.frame(width: 170, height: 248).clipShape(RoundedRectangle(cornerRadius: 24))
                                 .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                         }.buttonStyle(HVPress(scale: 0.97))
                     }
