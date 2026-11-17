@@ -86,7 +86,9 @@ struct FriendsV68View: View {
         }
         .sheet(isPresented: $showsMyQR) { MyQRSheet(name: myName, link: FriendRules.link(recordName: myRecordName).absoluteString) }
         .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: myName, friendCount: list.count) { show($0) } }
-        .sheet(isPresented: $showsID) { FriendIDSearchSheet(myName: myName, seed: idSeed) { show($0) } }
+        .sheet(isPresented: $showsID) {
+            FriendIDSearchSheet(myName: myName, seed: idSeed, onQR: { showsMyQR = true }, onLink: { shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }, onScan: { showsScan = true }) { show($0) }
+        }
         .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
             ShareSheet(activityItems: shareItems ?? []) { done in shareItems = nil; if done { Haptics.play(.success) } }.presentationDetents([.medium, .large])
         }
@@ -488,6 +490,10 @@ private struct ScanFrame: View {
 struct FriendIDSearchSheet: View {
     let myName: String
     var seed: String
+    var username: String = ""
+    var onQR: () -> Void = {}
+    var onLink: () -> Void = {}
+    var onScan: () -> Void = {}
     var onToast: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
@@ -498,12 +504,23 @@ struct FriendIDSearchSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("ID で さがす").font(LF.serif(30)).foregroundStyle(.white).padding(.top, 24)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Add friends").font(LF.inter(900, 28)).tracking(-1).foregroundStyle(Color(hex: "0B0C0D"))
+                Spacer()
+                if !username.isEmpty { Text("@\(username)").font(LF.mono(12)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.5)) }
+            }.padding(.top, 26)
             HStack(spacing: 8) {
-                Text("@").font(LF.inter(700, 17)).foregroundStyle(.white.opacity(0.5))
-                TextField("", text: $text, prompt: Text("ID").foregroundColor(.white.opacity(0.4))).font(LF.inter(600, 17)).foregroundStyle(.white)
+                Text("@").font(LF.inter(900, 17)).foregroundStyle(Color(hex: "24A03C"))
+                TextField("", text: $text, prompt: Text("ID を そのまま 入力").foregroundColor(Color(hex: "0B0C0D").opacity(0.4))).font(LF.mono(16)).foregroundStyle(Color(hex: "0B0C0D"))
                     .textInputAutocapitalization(.never).autocorrectionDisabled().focused($focused).submitLabel(.search).onSubmit { run() }
-            }.padding(.horizontal, 16).frame(height: 48).background(.white.opacity(0.10), in: Capsule())
+                Button { run() } label: { Image(systemName: "magnifyingglass").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).frame(width: 42, height: 42).background(Color(hex: "0B0C0D"), in: Circle()) }.buttonStyle(.plain)
+            }.padding(.leading, 16).padding(.trailing, 5).frame(height: 52).background(Color(hex: "F0EEE8"), in: Capsule()).overlay(Capsule().strokeBorder(Color(hex: "0B0C0D"), lineWidth: 2))
+            Text("知らない人には 見つからない ように、ID が ぴったり 合った ときだけ 出ます").font(LF.inter(500, 13)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.45)).lineSpacing(3)
+            HStack(spacing: 8) {
+                addTile("qrcode", "QR", green: true) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { onQR() } }
+                addTile("link", "Link", green: false) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { onLink() } }
+                addTile("viewfinder", "Scan", green: false) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { onScan() } }
+            }
             if searching { ProgressView().tint(.white).frame(maxWidth: .infinity) }
             ForEach(results) { p in
                 HStack(spacing: 12) {
@@ -520,10 +537,19 @@ struct FriendIDSearchSheet: View {
             }
             if !searching && results.isEmpty && !text.isEmpty { Text("見つかりませんでした。ID を たしかめて ください。").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6)) }
             Spacer()
+            Text("申請して、承認されたら つながる ・ 数は 出ません").font(LF.inter(500, 13)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.45)).frame(maxWidth: .infinity).padding(.bottom, 14)
         }
-        .padding(.horizontal, 20).background(Color(hex: "111214").ignoresSafeArea()).environment(\.colorScheme, .dark)
+        .padding(.horizontal, 22).background(Color.white.ignoresSafeArea()).environment(\.colorScheme, .light)
         .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
         .onAppear { text = seed.hasPrefix("@") ? String(seed.dropFirst()) : seed; focused = true; if !text.isEmpty { run() } }
+    }
+
+    private func addTile(_ icon: String, _ title: String, green: Bool, _ action: @escaping () -> Void) -> some View {
+        Button { Haptics.play(.tick); action() } label: {
+            VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 22, weight: .semibold)); Text(title).font(LF.serif(20)) }
+                .foregroundStyle(green ? .white : Color(hex: "0B0C0D")).frame(maxWidth: .infinity).frame(height: 74)
+                .background(green ? Color(hex: "24A03C") : Color(hex: "F0EEE8"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        }.buttonStyle(HVPress(scale: 0.96))
     }
 
     private func run() {
