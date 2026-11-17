@@ -38,11 +38,11 @@ Y="-debugBackdrop 1 -debugMock 1"
 r Y01_yesterday_locked yesterday $Y -debugShots 0
 r Y02_yesterday_open yesterday $Y
 r Y03_yesterday_mondo_tab yesterday $Y -debugTab 1 -debugMondo open
-r Y04_yesterday_friends_tab yesterday $Y -debugScrollY 560
-r Y05_yesterday_scroll yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 1300
+r Y04_yesterday_friends_tab yesterday $Y -debugScrollY 1207
+r Y05_yesterday_scroll yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 1050
 r Y08_mondo_empty yesterday $Y -debugTab 1 -debugMondo empty
 r Y10_mondo_globe yesterday $Y -debugTab 1 -debugMondo stage
-r Y12_mondo_ranking yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 400
+r Y12_mondo_ranking yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 458
 r Y14_notifications yesterday $Y -debugNotices 1
 r Y15_my_yesterday yesterday $Y -debugMine 1
 r Y06_photo_viewer yesterday -debugShots 2 -debugViewing m

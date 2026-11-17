@@ -94,17 +94,24 @@ struct YesterdayV64View: View {
 
     private var compact: Bool { scrollY > 24 }
 
+    private func scrollNow(_ v: CGFloat, forTab t: Int) {
+        guard t == tab else { return }
+        let was = compact
+        scrollY = v
+        if (v > 24) != was, Date().timeIntervalSince(lastTick) > 0.3 { lastTick = Date(); Haptics.play(.tick) }
+    }
+
     var body: some View {
         GeometryReader { g in
             ZStack(alignment: .top) {
                 Color.black
                 TabView(selection: $tab) {
-                    Tab("Friends", systemImage: "person.2", value: 0) { friendsTab(w: g.size.width).ignoresSafeArea(edges: .top) }
-                    Tab("Mondo", systemImage: "globe", value: 1) { YesterdayMondoView(input: input, actions: actions, active: tab == 1, locked: input.locked).ignoresSafeArea(edges: .top) }
+                    Tab("Friends", systemImage: "person.2", value: 0) { friendsTab(w: g.size.width).symbolVariant(.none).ignoresSafeArea(edges: .top) }
+                    Tab("Mondo", systemImage: "globe", value: 1) { YesterdayMondoView(input: input, actions: actions, active: tab == 1, locked: input.locked, onScroll: { v in scrollNow(v, forTab: 1) }).ignoresSafeArea(edges: .top) }
                 }
                 .tint(HV.lime)
                 .preferredColorScheme(.dark)
-                .onChange(of: tab) { _, _ in Haptics.play(.sel) }
+                .onChange(of: tab) { _, _ in Haptics.play(.sel); scrollY = 0 }
 
                 header(w: g.size.width)
                 if notices { noticePanel(w: g.size.width).zIndex(5) }
@@ -182,10 +189,7 @@ struct YesterdayV64View: View {
                 Color.clear.frame(height: 150)
             }
         }
-        .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, v in
-            scrollY = v
-            if (v > 24) != compact, Date().timeIntervalSince(lastTick) > 0.3 { lastTick = Date(); Haptics.play(.tick) }
-        }
+        .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, v in scrollNow(v, forTab: 0) }
         .scrollPosition($pos)
         .onAppear { if let y = input.debugScrollY, tab == 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { pos.scrollTo(y: y) } } }
         .background(Color.black)

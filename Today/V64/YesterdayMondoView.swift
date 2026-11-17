@@ -26,6 +26,7 @@ struct YesterdayMondoView: View {
     var actions: YesterdayV64Actions
     var active: Bool
     var locked: Bool
+    var onScroll: (CGFloat) -> Void = { _ in }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -54,6 +55,7 @@ struct YesterdayMondoView: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
             .scrollPosition($pos)
+            .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, v in onScroll(v) }
         }
         .background(Color.black)
         .onAppear {
@@ -177,7 +179,7 @@ struct YesterdayMondoView: View {
             }.padding(.horizontal, 16).padding(.top, 44)
             ranking.padding(.horizontal, 16).padding(.top, 12)
             // Mondo って?
-            HStack { Text("Mondo って?").font(LF.inter(900, 22)).foregroundStyle(.white); Spacer(); Text("SWIPE →").font(LF.mono(10.5)).tracking(1.5).foregroundStyle(.white.opacity(0.4)) }.padding(.horizontal, 16).padding(.top, 44)
+            HStack { Text("Mondo って?").font(LF.inter(900, 18)).foregroundStyle(.white); Spacer(); Text("SWIPE →").font(LF.mono(10.5)).tracking(1.5).foregroundStyle(.white.opacity(0.4)) }.padding(.horizontal, 16).padding(.top, 44)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) { ForEach(0..<4, id: \.self) { i in explainer(i) } }.padding(.horizontal, 0)
             }.padding(.top, 12)
@@ -210,7 +212,7 @@ struct YesterdayMondoView: View {
             if m.tags.count > 3 {
                 VStack(spacing: 0) {
                     ForEach(Array(m.tags.enumerated()).filter { $0.offset >= 3 && $0.offset < 8 }, id: \.element.id) { i, t in
-                        rankRow(t, i + 1, maxCount: Double(m.tags[0].count))
+                        rankRow(t, i, maxCount: Double(m.tags[0].count))
                         if i < min(7, m.tags.count - 1) { Rectangle().fill(.white.opacity(0.06)).frame(height: 1).padding(.leading, 14) }
                     }
                 }.background(Color(hex: "0E0F10"), in: RoundedRectangle(cornerRadius: 22, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
@@ -283,9 +285,9 @@ struct YesterdayMondoView: View {
     private func explainer(_ i: Int) -> some View {
         let items: [(String, String)] = [("撮った 1枚が 世界へ", "公開を えらんだ 写真だけ"), ("次の 朝 9:00 に ひらく", "どの 国も 同じ 9:00"), ("TODAY'S ONE", "いちばん 見られた 1枚が 表紙に"), ("# で 世界の 気分が わかる", "きのう 多かった タグの ランキング")]
         return VStack(alignment: .leading, spacing: 0) {
-            ExplainerFigure(index: i).frame(height: 118)
-            Text(items[i].0).font(LF.inter(900, 18)).foregroundStyle(.white).padding(.top, 22)
-            Text(items[i].1).font(LF.inter(500, 14)).foregroundStyle(.white.opacity(0.5)).padding(.top, 6)
+            ExplainerFigure(index: i).frame(height: 100)
+            Text(items[i].0).font(LF.inter(900, 15)).foregroundStyle(.white).padding(.top, 14)
+            Text(items[i].1).font(LF.inter(500, 12.5)).foregroundStyle(.white.opacity(0.5)).padding(.top, 4)
         }.padding(14).frame(width: 236, alignment: .leading).background(Color(hex: "0E0F10"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1)).padding(.leading, i == 0 ? 0 : 0)
     }

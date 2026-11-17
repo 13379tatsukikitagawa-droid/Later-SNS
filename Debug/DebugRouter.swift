@@ -180,8 +180,8 @@ struct YesterdayV64Preview: View {
         y.posts = [
             .init(id: "rena", name: "れな", avatar: ph("d"), place: "鎌倉市", when: "きのう 17:00", photos: [.init(id: "r1", image: ph("a"), time: "17:00", tag: "夕焼け"), .init(id: "r2", image: ph("b"), time: "13:10", tag: "おやつ"), .init(id: "r3", image: ph("c"), time: "09:30", tag: "電車")], caption: nil, reactors: rx),
             .init(id: "aya", name: "あや", avatar: ph("a"), place: "横浜市", when: "きのう 18:05", photos: [.init(id: "a1", image: ph("e"), time: "18:05", tag: "おやつ"), .init(id: "a2", image: ph("f"), time: "12:40", tag: "教室"), .init(id: "a3", image: ph("a"), time: "17:30", tag: "夕焼け")], caption: "この 自販機 すき", reactors: [ph("d"), ph("a"), ph("e")]),
-            .init(id: "sora", name: "そら", avatar: ph("c"), place: "藤沢市", when: "きのう 09:12", photos: [.init(id: "s1", image: ph("c"), time: "09:12", tag: "電車"), .init(id: "s2", image: ph("d"), time: "16:00", tag: "帰り道")], caption: nil, reactors: [ph("a")]),
             .init(id: "hina", name: "ひなた", avatar: ph("b"), photos: [.init(id: "h1", image: ph("f"), time: "", tag: nil)], caption: nil, published: false),
+            .init(id: "sora", name: "そら", avatar: ph("c"), place: "藤沢市", when: "きのう 09:12", photos: [.init(id: "s1", image: ph("c"), time: "09:12", tag: "電車"), .init(id: "s2", image: ph("d"), time: "16:00", tag: "帰り道")], caption: nil, reactors: [ph("a")]),
             .init(id: "yui", name: "ゆい", avatar: ph("e"), photos: [.init(id: "y1", image: ph("a"), time: "", tag: nil)], caption: nil, published: false),
         ]
         y.cells = [.init(id: "a1", photo: ph("a"), name: "あや", time: "17:05", tag: "夕焼け"), .init(id: "m", photo: ph("a"), name: "鎌倉市", time: nil, tag: "夕焼け")]
@@ -198,9 +198,9 @@ struct YesterdayV64Preview: View {
         m.hasPosts = mode != "empty"; m.startOpened = mode == "open"; m.filterTag = d.string(forKey: "debugFilter")
         m.dayLabel = "11/16"
         m.cities = [.init(id: "tk", name: "TOKYO", lat: 35.7, lon: 139.7, photo: ph("a")), .init(id: "bk", name: "BANGKOK", lat: 13.7, lon: 100.5, photo: ph("e")), .init(id: "sl", name: "SEOUL", lat: 37.5, lon: 127, photo: ph("d")), .init(id: "sy", name: "SYDNEY", lat: -33.9, lon: 151.2, photo: ph("f")), .init(id: "pa", name: "PARIS", lat: 48.9, lon: 2.3, photo: ph("c")), .init(id: "ny", name: "NEW YORK", lat: 40.7, lon: -74, photo: ph("b"))]
-        m.tags = [.init(id: "t1", name: "夕焼け", count: 1203, cities: 92, photos: [ph("a"), ph("c")], delta: 2), .init(id: "t2", name: "帰り道", count: 842, cities: 64, photos: [ph("d")], delta: -1), .init(id: "t3", name: "おやつ", count: 611, cities: 48, photos: [ph("b")], delta: nil),
-                  .init(id: "t4", name: "教室", count: 301, cities: 20, photos: [ph("f"), ph("d")], delta: 1), .init(id: "t5", name: "電車", count: 257, cities: 18, photos: [ph("b"), ph("a")], delta: nil), .init(id: "t6", name: "自販機", count: 198, cities: 12, photos: [ph("c"), ph("e")], delta: 4),
-                  .init(id: "t7", name: "朝", count: 150, cities: 10, photos: [ph("f")], delta: nil), .init(id: "t8", name: "雨", count: 120, cities: 9, photos: [ph("c")], delta: -2)]
+        m.tags = [.init(id: "t1", name: "夕焼け", count: 1203, cities: 92, photos: [ph("a"), ph("c")], delta: 2), .init(id: "t2", name: "帰り道", count: 864, cities: 64, photos: [ph("b")], delta: nil), .init(id: "t3", name: "放課後", count: 712, cities: 48, photos: [ph("d")], delta: -1),
+                  .init(id: "t4", name: "おやつ", count: 540, cities: 30, photos: [ph("e"), ph("a")], delta: 3), .init(id: "t5", name: "雨の日", count: 388, cities: 18, photos: [ph("c"), ph("b")], delta: -2), .init(id: "t6", name: "教室", count: 301, cities: 12, photos: [ph("f"), ph("d")], delta: 1),
+                  .init(id: "t7", name: "電車", count: 257, cities: 10, photos: [ph("b"), ph("a")], delta: nil), .init(id: "t8", name: "自販機", count: 198, cities: 9, photos: [ph("c"), ph("e")], delta: 4)]
         m.todaysOne = .init(id: "one", photo: ph("a"), city: "鎌倉市", time: "17:42", tag: "夕焼け")
         m.world = [.init(id: "w1", photo: ph("a"), city: "TOKYO", time: "17:42", tag: "夕焼け"), .init(id: "w2", photo: ph("d"), city: "SEOUL", time: "18:10", tag: "帰り道"), .init(id: "w3", photo: ph("b"), city: "PARIS", time: "10:05", tag: "おやつ"), .init(id: "w4", photo: ph("c"), city: "BANGKOK", time: "15:20", tag: "電車")]
         y.mondo = m
