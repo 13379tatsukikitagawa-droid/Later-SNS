@@ -278,14 +278,20 @@ struct HVCardBackdrop: View {
         ZStack {
             HV.cardBase
             if let img = images.first {
-                // カードより 16% 大きく(ふちが 見えない ように)。押している 間は ぼかし 15 → 5・明るさ 0.66 → 0.76
-                Image(uiImage: img).resizable().scaledToFill()
-                    .frame(width: 520, height: 712)
-                    .blur(radius: focus ? 5 : (done ? 9 : 15))
-                    .saturation(1.35)
-                    // 明るさ 0.66(押している 間 0.76・撮りおわり 0.62)= 黒を 重ねて 掛け算に
-                    .overlay(Color.black.opacity(focus ? 0.24 : (done ? 0.38 : 0.34)))
-                    .animation(.timingCurve(0.3, 0.7, 0.3, 1, duration: 0.55), value: focus)
+                // カードより 16% 大きく。ぼかしは 1回だけ 計算して 保存した 小さな 画像を ひきのばす(強 15 / 弱 5 を クロスフェード)
+                let key = "bd\(ObjectIdentifier(img).hashValue)"
+                let strong = V64Images.blurred(key: key, source: img, maxPixel: 96, radius: done ? 9 : 15)
+                let weak = V64Images.blurred(key: key + "w", source: img, maxPixel: 200, radius: 5)
+                ZStack {
+                    Image(uiImage: strong).resizable().scaledToFill().opacity(focus ? 0 : 1)
+                    Image(uiImage: weak).resizable().scaledToFill().opacity(focus ? 1 : 0)
+                }
+                .frame(width: 520, height: 712).clipped()
+                .saturation(1.35)
+                // 明るさ 0.66(押している 間 0.76・撮りおわり 0.62)= 黒を 重ねて 掛け算に
+                .overlay(Color.black.opacity(focus ? 0.24 : (done ? 0.38 : 0.34)))
+                .animation(.timingCurve(0.3, 0.7, 0.3, 1, duration: 0.55), value: focus)
+                .drawingGroup()
             }
             // 光の もれ(右上)
             RadialGradient(colors: [Color(hex: "FFB070").opacity(0.5), Color(hex: "FFB070").opacity(0)], center: .center, startRadius: 0, endRadius: 170)
@@ -298,21 +304,27 @@ struct HVCardBackdrop: View {
     }
 }
 
-/// フィルムの 粒子(0.9秒で 4コマ だけ ずらす)
+/// フィルムの 粒子(0.9秒で 4コマ だけ ずらす)。粒の 画像は 1回 だけ 作って 使いまわす
 struct HVGrain: View {
+    private static let tile: UIImage = {
+        let size = CGSize(width: 160, height: 160)
+        return UIGraphicsImageRenderer(size: size).image { ctx in
+            var seed: UInt64 = 0x9E3779B97F4A7C15
+            func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double((seed >> 33) & 0xFFFF) / 65535 }
+            for _ in 0..<700 {
+                UIColor.white.withAlphaComponent(rnd() * 0.9).setFill()
+                ctx.cgContext.fill(CGRect(x: rnd() * 160, y: rnd() * 160, width: 1.4, height: 1.4))
+            }
+        }
+    }()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.225)) { ctx in
-            let k = Int(ctx.date.timeIntervalSinceReferenceDate / 0.225) % 4
-            Canvas { c, size in
-                var seed = UInt64(k + 1) &* 0x9E3779B97F4A7C15
-                func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double((seed >> 33) & 0xFFFF) / 65535 }
-                for _ in 0..<2200 {
-                    let x = rnd() * size.width, y = rnd() * size.height, a = rnd()
-                    c.fill(Path(CGRect(x: x, y: y, width: 1.4, height: 1.4)), with: .color(Color.white.opacity(a * 0.9)))
-                }
-            }
-            .drawingGroup()
+            let k = reduceMotion || scenePhase != .active ? 0 : Int(ctx.date.timeIntervalSinceReferenceDate / 0.225) % 4
+            Image(uiImage: Self.tile).resizable(resizingMode: .tile)
+                .offset(x: CGFloat(k % 2) * 53, y: CGFloat(k / 2) * 71)
+                .frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
         }
         .allowsHitTesting(false)
     }
@@ -334,8 +346,8 @@ struct HVLens: View {
                 .overlay {
                     if let img = input.backdrop.first {
                         // うしろを ぼかして 彩度 1.6・明るさ 1.14(モックの backdrop-filter)
-                        Image(uiImage: img).resizable().scaledToFill().frame(width: 520, height: 712)
-                            .blur(radius: 20).saturation(2.0).brightness(0.10).clipShape(Circle().inset(by: 0)).frame(width: D, height: D).clipped().clipShape(Circle())
+                        Image(uiImage: V64Images.blurred(key: "ln\(ObjectIdentifier(img).hashValue)", source: img, maxPixel: 96, radius: 20)).resizable().scaledToFill().frame(width: 520, height: 712)
+                            .saturation(2.0).brightness(0.10).frame(width: D, height: D).clipped().clipShape(Circle())
                     }
                 }
                 .overlay(Circle().fill(Color.white.opacity(0.08)).blendMode(.plusLighter))

@@ -62,23 +62,47 @@ final class LGLightDirection: ObservableObject {
 }
 
 /// ふちの 光(角度の グラデーション)。iOS 26 より 前の 端末で 使う。
+/// 角度の グラデーションの 絵は 1回 だけ 作って 使いまわし、傾きでは 絵を 回転させる だけ(毎回 描きなおさない)。
 struct LGGlassEdge: View {
     var radius: CGFloat
     var width: CGFloat = 1.2
     @ObservedObject private var light = LGLightDirection.shared
 
+    /// 白 95% → 22% 地点 18% → 45% 地点 8% → 52% 地点 55% → 72% 地点 12% → 白 95%(PROMPT_v65 §6)
+    private static let conic: UIImage = {
+        let n = 256
+        return UIGraphicsImageRenderer(size: CGSize(width: n, height: n)).image { ctx in
+            let stops: [(Double, CGFloat)] = [(0, 0.95), (0.22, 0.18), (0.45, 0.08), (0.52, 0.55), (0.72, 0.12), (1, 0.95)]
+            func alpha(_ t: Double) -> CGFloat {
+                for i in 1..<stops.count where t <= stops[i].0 {
+                    let a = stops[i - 1], b = stops[i], k = CGFloat((t - a.0) / (b.0 - a.0))
+                    return a.1 + (b.1 - a.1) * k
+                }
+                return stops.last!.1
+            }
+            let c = CGPoint(x: Double(n) / 2, y: Double(n) / 2)
+            let steps = 360
+            for i in 0..<steps {
+                let t = Double(i) / Double(steps)
+                let a0 = t * 2 * .pi - .pi / 2, a1 = (t + 1.0 / Double(steps) * 1.2) * 2 * .pi - .pi / 2
+                let path = UIBezierPath()
+                path.move(to: c)
+                path.addArc(withCenter: c, radius: CGFloat(n), startAngle: CGFloat(a0), endAngle: CGFloat(a1), clockwise: true)
+                path.close()
+                UIColor.white.withAlphaComponent(alpha(t)).setFill()
+                path.fill()
+            }
+        }
+    }()
+
     var body: some View {
-        RoundedRectangle(cornerRadius: radius, style: .continuous)
-            .strokeBorder(
-                AngularGradient(stops: [
-                    .init(color: .white.opacity(0.95), location: 0),
-                    .init(color: .white.opacity(0.18), location: 0.22),
-                    .init(color: .white.opacity(0.08), location: 0.45),
-                    .init(color: .white.opacity(0.55), location: 0.52),
-                    .init(color: .white.opacity(0.12), location: 0.72),
-                    .init(color: .white.opacity(0.95), location: 1),
-                ], center: .center, angle: .degrees(light.angle)),
-                lineWidth: width)
+        // 角度 0 = 真上。モックの `from <angle>deg` と 同じ 向きで 回す
+        Color.clear
+            .overlay {
+                Image(uiImage: Self.conic).resizable().frame(width: 600, height: 600)
+                    .rotationEffect(.degrees(light.angle))
+            }
+            .mask(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Color.white, lineWidth: width))
             .allowsHitTesting(false)
             .onAppear { light.start() }
             .onDisappear { light.stop() }

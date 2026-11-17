@@ -49,8 +49,8 @@ struct HVPageBackdrop: View {
         ZStack {
             Color(hex: "0E0E0F")
             if let photo {
-                Image(uiImage: photo).resizable().scaledToFill().frame(width: 510, height: 700)
-                    .blur(radius: 16).saturation(1.3).overlay(Color.black.opacity(0.6))
+                Image(uiImage: V64Images.blurred(key: "pb\(ObjectIdentifier(photo).hashValue)", source: photo, maxPixel: 96, radius: 16)).resizable().scaledToFill().frame(width: 510, height: 700)
+                    .saturation(1.3).overlay(Color.black.opacity(0.6))
             }
             LinearGradient(stops: [.init(color: .black.opacity(0.25), location: 0), .init(color: .clear, location: 0.30), .init(color: .clear, location: 0.60), .init(color: .black.opacity(0.5), location: 1)], startPoint: .top, endPoint: .bottom)
             HVGrain().opacity(0.16).blendMode(.overlay)
@@ -440,7 +440,8 @@ struct HVPager: View {
     var body: some View {
         let pos = CGFloat(page) - drag / width            // いまの 位置(ページ数)
         ZStack {
-            ForEach(pages.indices, id: \.self) { i in
+            // 近くの ページ(いまの ±1)だけ 作る。遠い ページの 動き(地球・粒子)は 止まる
+            ForEach(pages.indices.filter { abs($0 - page) <= 1 }, id: \.self) { i in
                 let d = CGFloat(i) - pos
                 let a = min(1, abs(d))
                 pages[i]
