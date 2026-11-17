@@ -77,6 +77,8 @@ struct TodayView: View {
     @State private var sheetGroup: LaterGroup?
     /// v23:グループの 部屋(チャット)
     @State private var chatGroup: LaterGroup?
+    /// v83:Trip の ホーム(チャットは サブ)
+    @State private var tripHome: LaterGroup?
     /// v28:暗室の ビューアで「reply」を 押した 写真(部屋で その 写真への 返信に)
     @State private var chatReply: LaterPhoto?
     /// いま入ったグループ(Home の列に「ぽんと入る」)
@@ -776,6 +778,20 @@ struct TodayView: View {
                     .zIndex(100)
             }
 
+            if let group = tripHome {
+                TripHomeV83View(
+                    data: tripHomeData(group),
+                    onClose: { withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) { tripHome = nil } },
+                    onShoot: { tripHome = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { CaptureRequestStore.shared.pendingRequestID = UUID() } },
+                    onChat: { withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) { chatGroup = group } },
+                    onQR: { sheetGroup = group },
+                    onMore: { settingsGroup = group },
+                    onInvite: { sheetGroup = group }
+                )
+                .transition(.move(edge: .trailing))
+                .zIndex(8)
+            }
+
             if let group = chatGroup {
                 GroupChatRoomView(
                     group: group,
@@ -1104,6 +1120,19 @@ struct TodayView: View {
             .environment(\.palette, palette)
         }
         .fullScreenCover(isPresented: $showingNewGroup) {
+            if UIFlag.v64 {
+                TripNewV83View(
+                    friends: layerData(sharedGroups: sharedGroups).friends.filter { !$0.isMe }.map {
+                        GroupCreateFriend(id: $0.id, name: $0.name, avatarData: $0.avatarData, seed: $0.seed)
+                    },
+                    photos: tripCoverCandidates(),
+                    myAvatar: currentUser?.profileImageData.flatMap { UIImage(data: $0) },
+                    onCreated: { name in
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { presentToast("「\(name)」を つくりました") }
+                    },
+                    onClose: { showingNewGroup = false }
+                )
+            } else {
             NewGroupFlowView(
                 initialName: newGroupPrefill,
                 friends: layerData(sharedGroups: sharedGroups).friends.filter { !$0.isMe }.map {
@@ -1113,6 +1142,7 @@ struct TodayView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { presentToast("「\(name)」を つくりました") }
                 }
             ) { showingNewGroup = false }
+            }
         }
         // ウィジェット:撮影・昨日をひらく・日付が変わる(状態が変わる)たびに、値を書いて更新
         .onAppear { syncWidget() }
@@ -2358,10 +2388,43 @@ struct TodayView: View {
         screen != .home || showingNewGroup || sheetGroup != nil || showingDevelopSheet || showingAddGroupSheet || chatGroup != nil
     }
 
+    /// v83:Trip を つくる とき 表紙に えらべる 写真(自分の 最近の 写真)
+    private func tripCoverCandidates() -> [UIImage?] {
+        let mine = (currentUser?.photos ?? []).sorted { $0.captureDate > $1.captureDate }.prefix(6)
+        return mine.map { V64Images.image(key: "tc\($0.id)", data: $0.imageData, maxPixel: 360) }
+    }
+
+    /// v83:Trip の ホームの 中身(今ある グループの データから)
+    private func tripHomeData(_ group: LaterGroup) -> TripHomeData {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: group.creationDate)
+        let today = cal.startOfDay(for: Date())
+        let dayNo = max(1, (cal.dateComponents([.day], from: start, to: today).day ?? 0) + 1)
+        let df = DateFormatter(); df.locale = Locale(identifier: "ja_JP"); df.dateFormat = "MM/dd(E)"
+        let sd = DateFormatter(); sd.dateFormat = "MM/dd"
+        let members = group.members.map { m in TripHomeData.Member(id: m.id.uuidString, name: m.name, avatar: m.profileImageData.flatMap { UIImage(data: $0) }) }
+        let todays = group.photos.filter { cal.isDate($0.captureDate, inSameDayAs: Date()) }
+        var data = TripHomeData(name: group.name, sub: "\(sd.string(from: group.creationDate)) から ・ \(members.count)人", dayNumber: dayNo, dayTotal: nil,
+                                cover: group.iconImageData.flatMap { UIImage(data: $0) }, members: members, shotsToday: min(23, todays.count),
+                                shooters: Array(Set(todays.compactMap { $0.owner?.id.uuidString })).compactMap { id in members.first { $0.id == id } })
+        for i in 0..<min(dayNo, 7) {
+            guard let d = cal.date(byAdding: .day, value: i, to: start) else { continue }
+            let ps = group.photos.filter { cal.isDate($0.captureDate, inSameDayAs: d) }.sorted { $0.captureDate < $1.captureDate }
+            let isToday = cal.isDate(d, inSameDayAs: Date())
+            data.days.append(.init(id: "d\(i)", label: "DAY \(i + 1) ・ \(df.string(from: d))", opened: ps.count, photos: ps.prefix(8).map { V64Images.image(key: "th\($0.id)", data: $0.imageData, maxPixel: 240) }, isToday: isToday))
+        }
+        data.days.reverse()
+        data.members = members
+        return data
+    }
+
     /// v23:グループの 行を タップ → 部屋が 右から 入る
     private func openChat(_ id: UUID) {
         guard let group = sharedGroups.first(where: { $0.id == id }) else { return }
-        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.88)) { chatGroup = group }
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.88)) {
+            // v83:Trip を ひらく = いつも ホーム。チャットは ホームの 右下から
+            if UIFlag.v64 && !group.isPersonalSpace { tripHome = group } else { chatGroup = group }
+        }
     }
 
     /// 追加シートで選んだ:ごく軽く1回(えらぶ)→ シートを閉じてから、いつもの画面へ

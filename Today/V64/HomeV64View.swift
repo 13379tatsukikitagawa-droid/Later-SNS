@@ -60,6 +60,7 @@ struct HomeV64Actions {
     var openYesterday: () -> Void = {}
     var openFriends: () -> Void = {}
     var openTrip: () -> Void = {}
+    var openTripHome: (_ id: UUID) -> Void = { _ in }
     var openMondo: () -> Void = {}
     var openProfile: () -> Void = {}
     var openDevelop: () -> Void = {}

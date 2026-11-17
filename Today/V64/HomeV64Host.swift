@@ -125,6 +125,15 @@ struct HomeV64Host: View {
         let mosaics = others.filter(\.hasShot).compactMap { image($0.mosaicTiny, "mt\($0.id)", max: 160) }
         let myYesterday = L.yesterday.compactMap { image($0.imageData, "yd\($0.id)", max: 640) }
         input.backdrop = mosaics.isEmpty ? Array(myYesterday.prefix(3)) : Array(mosaics.prefix(3))
+        // Trip(今ある グループの うち いちばん 新しい 1つ)
+        if let g = src.groups.filter({ !$0.isPersonalSpace }).sorted(by: { $0.creationDate > $1.creationDate }).first {
+            let cal = Calendar.current
+            let mem = g.members.map { m in HomeV64Face(id: m.id.uuidString, initial: String(m.name.prefix(1)), color: Self.color(for: m.id), image: m.profileImageData.flatMap { UIImage(data: $0) }) }
+            var frames = [Int?](repeating: nil, count: 23)
+            let todays = g.photos.filter { cal.isDate($0.captureDate, inSameDayAs: now) }
+            for (i, p) in todays.prefix(23).enumerated() { frames[i] = g.members.firstIndex { $0.id == p.owner?.id } ?? 0 }
+            input.trip = HomeV64TripInfo(id: g.id, name: g.name, members: mem, frames: frames, cover: g.iconImageData.flatMap { UIImage(data: $0) })
+        }
         input.isFirstDay = L.yesterday.isEmpty
         input.yesterdayPhoto = myYesterday.first
         let df = DateFormatter(); df.dateFormat = "HH:mm"
@@ -172,6 +181,7 @@ struct HomeV64Host: View {
         a.openProfile = src.onOpenProfile
         a.openDevelop = { showDevelop = true }
         a.openTrip = src.onCreateGroup
+        a.openTripHome = { id in src.onOpenChat(id) }
         a.openMondo = src.v17Actions.openMondo
         return a
     }

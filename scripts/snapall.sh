@@ -46,6 +46,14 @@ r Y12_mondo_ranking yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 458
 r Y14_notifications yesterday $Y -debugNotices 1
 r Y15_my_yesterday yesterday $Y -debugMine 1
 r Y06_photo_viewer yesterday -debugShots 2 -debugViewing m
+T="-debugBackdrop 1 -debugMock 1"
+r T01_new_trip trip $T -debugStep 0
+r T02_new_trip_filled trip $T -debugStep 1 -debugTripName "京都 2泊3日"
+r T10_new_trip_who trip $T -debugStep 2 -debugTripName "京都 2泊3日"
+r T11_new_trip_cover trip $T -debugStep 3 -debugTripName "京都 2泊3日"
+r T03_trip_pass_new trip $T -debugStep 3 -debugTripName "京都 2泊3日" -debugPass 1
+r T12_trip_home triphome $T
+r T13_trip_home_days triphome $T -debugScrollY 445
 r C01_tag tag
 r F01_friend_empty friends -debugRequests 1
 r F02_friend_list friends -debugRequests 1 -debugFriends 3

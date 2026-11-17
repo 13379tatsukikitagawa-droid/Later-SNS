@@ -1,5 +1,6 @@
 #if DEBUG
 import SwiftUI
+import SwiftData
 import UIKit
 
 /// DEBUG だけ:`lattag://debug/<名前>?t=<秒>` で 画面を 直接 出す(シミュレータで スクショを 撮って 見本と 比べる ため)。
@@ -21,6 +22,8 @@ enum DebugRouter {
         case "yesterday": show(YesterdayV64Preview())
         case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
         case "friends": showRaw(FriendsV68Preview())
+        case "trip": showRaw(TripV83Preview())
+        case "triphome": showRaw(TripHomeV83Preview())
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
         }
@@ -205,6 +208,41 @@ struct YesterdayV64Preview: View {
         m.world = [.init(id: "w1", photo: ph("a"), city: "TOKYO", time: "17:42", tag: "夕焼け"), .init(id: "w2", photo: ph("d"), city: "SEOUL", time: "18:10", tag: "帰り道"), .init(id: "w3", photo: ph("b"), city: "PARIS", time: "10:05", tag: "おやつ"), .init(id: "w4", photo: ph("c"), city: "BANGKOK", time: "15:20", tag: "電車")]
         y.mondo = m
         return YesterdayV64View(input: y)
+    }
+}
+
+/// DEBUG:Trip を つくる(`-debugStep 0〜3 -debugPass 1 -debugTripName "京都 2泊3日"`)
+struct TripV83Preview: View {
+    var body: some View {
+        let d = UserDefaults.standard
+        let ph = { (k: String) in SampleData.photo(k) }
+        let cal = Calendar.current
+        let y = cal.component(.year, from: Date())
+        var draft = TripDraft()
+        draft.name = d.string(forKey: "debugTripName") ?? ""
+        draft.start = cal.date(from: DateComponents(year: y, month: 11, day: 17)) ?? Date()
+        draft.end = cal.date(from: DateComponents(year: y, month: 11, day: 19)) ?? Date()
+        draft.invited = ["a", "b"]
+        let step = d.integer(forKey: "debugStep")
+        draft.coverIndex = step == 3 && !d.bool(forKey: "debugPass") ? 3 : 0
+        let friends = [("a", "れな"), ("b", "あや"), ("c", "そら"), ("d", "ひなた")].map { GroupCreateFriend(id: $0.0, name: $0.1, avatarData: nil, seed: UUID()) }
+        return TripNewV83View(friends: friends, photos: ["a", "b", "c", "d", "e", "f"].map { ph($0) }, myAvatar: ph("f"), startStep: step, startDraft: draft, onClose: {}, previewPass: d.bool(forKey: "debugPass"), todayOverride: draft.start)
+            .modelContainer(for: [UserProfile.self, LaterGroup.self], inMemory: true)
+    }
+}
+
+/// DEBUG:Trip の ホーム(`-debugScrollY 400`)
+struct TripHomeV83Preview: View {
+    var body: some View {
+        let d = UserDefaults.standard
+        let ph = { (k: String) in SampleData.photo(k) }
+        let ms: [TripHomeData.Member] = [.init(id: "me", name: "you", avatar: ph("f")), .init(id: "a", name: "れな", avatar: nil), .init(id: "b", name: "あや", avatar: nil), .init(id: "c", name: "そら", avatar: nil)]
+        var data = TripHomeData(name: "Kyoto", sub: "京都 2泊3日 ・ 11/16 — 11/18", dayNumber: 2, dayTotal: 3, cover: ph("b"), members: ms, shotsToday: 7, shooters: Array(ms.prefix(3)))
+        let all = ["b", "c", "d", "e", "f", "a", "b", "c"].map { ph($0) }
+        data.days = [.init(id: "d1", label: "DAY 1 ・ 11/16(月)", opened: 23, photos: all), .init(id: "d2", label: "DAY 2 ・ 11/17(火)", opened: 7, photos: all, isToday: true), .init(id: "d3", label: "DAY 3 ・ 11/18(水)", opened: 0, photos: Array(repeating: nil, count: 4), isFuture: true)]
+        data.chatLine = ("れな", "あと そらだけ。はよ 撮って")
+        data.unread = 2
+        return TripHomeV83View(data: data, debugScrollY: d.object(forKey: "debugScrollY") == nil ? nil : CGFloat(d.double(forKey: "debugScrollY")))
     }
 }
 

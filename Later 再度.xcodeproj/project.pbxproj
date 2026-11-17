@@ -57,6 +57,9 @@
 		7079D02E14B599194BE12FD5 /* V64/FriendsV68View.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F6F1F8AC2975F587045A3B /* V64/FriendsV68View.swift */; };
 		80F33C8F2640B7FC245DFDA6 /* V64/OpeningV72View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5B5FBF72EB9A3061E80E58 /* V64/OpeningV72View.swift */; };
 		B4507C32DBC1B2B23B22AE59 /* V64/HomeV72Hash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD03061F1111CC99997691B /* V64/HomeV72Hash.swift */; };
+		E92CAD42AD3606DBA7D25004 /* V64/YesterdayMondoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B7A294C6B1D08D337C329D /* V64/YesterdayMondoView.swift */; };
+		F8E0DFF51C9B372080711A94 /* V64/TripNewV83View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */; };
+		F82C8F8187D6C0E8E13DF4F5 /* V64/TripHomeV83View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49028997E3DBDE8B3B4B28F8 /* V64/TripHomeV83View.swift */; };
 		5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7259E737667BD9D41829457 /* HomeMoon.swift */; };
 		605EF09EAACE41EDB4BC64F8 /* ImageCacheLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0548D25953234EAF947739A5 /* ImageCacheLimits.swift */; };
 		60C5A0CFDCC62D982F0F1FCF /* GroupDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BA4D4C5BB926C8BB1A4A8A /* GroupDetailView.swift */; };
@@ -466,6 +469,9 @@
 		A4F6F1F8AC2975F587045A3B /* V64/FriendsV68View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FriendsV68View.swift; sourceTree = "<group>"; };
 		0C5B5FBF72EB9A3061E80E58 /* V64/OpeningV72View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/OpeningV72View.swift; sourceTree = "<group>"; };
 		6AD03061F1111CC99997691B /* V64/HomeV72Hash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV72Hash.swift; sourceTree = "<group>"; };
+		09B7A294C6B1D08D337C329D /* V64/YesterdayMondoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/YesterdayMondoView.swift; sourceTree = "<group>"; };
+		7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripNewV83View.swift; sourceTree = "<group>"; };
+		49028997E3DBDE8B3B4B28F8 /* V64/TripHomeV83View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripHomeV83View.swift; sourceTree = "<group>"; };
 		C7259E737667BD9D41829457 /* HomeMoon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMoon.swift; sourceTree = "<group>"; };
 		C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilmEmulation.swift; sourceTree = "<group>"; };
 		CF0F7F40C595276C07B370F9 /* HoldGauge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HoldGauge.swift; sourceTree = "<group>"; };
@@ -858,6 +864,9 @@
 				C41C00000000000000000002 /* ChicTheme.swift */,
 				C41C00000000000000000004 /* ChicHomeView.swift */,
 				C7259E737667BD9D41829457 /* HomeMoon.swift */,
+				49028997E3DBDE8B3B4B28F8 /* V64/TripHomeV83View.swift */,
+				7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */,
+				09B7A294C6B1D08D337C329D /* V64/YesterdayMondoView.swift */,
 				6AD03061F1111CC99997691B /* V64/HomeV72Hash.swift */,
 				0C5B5FBF72EB9A3061E80E58 /* V64/OpeningV72View.swift */,
 				A4F6F1F8AC2975F587045A3B /* V64/FriendsV68View.swift */,
@@ -1372,6 +1381,9 @@
 				C41C00000000000000000001 /* ChicTheme.swift in Sources */,
 				C41C00000000000000000003 /* ChicHomeView.swift in Sources */,
 				5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */,
+				F82C8F8187D6C0E8E13DF4F5 /* V64/TripHomeV83View.swift in Sources */,
+				F8E0DFF51C9B372080711A94 /* V64/TripNewV83View.swift in Sources */,
+				E92CAD42AD3606DBA7D25004 /* V64/YesterdayMondoView.swift in Sources */,
 				B4507C32DBC1B2B23B22AE59 /* V64/HomeV72Hash.swift in Sources */,
 				80F33C8F2640B7FC245DFDA6 /* V64/OpeningV72View.swift in Sources */,
 				7079D02E14B599194BE12FD5 /* V64/FriendsV68View.swift in Sources */,

@@ -33,6 +33,7 @@ struct HomeV64Thumb: Identifiable {
 }
 
 struct HomeV64TripInfo {
+    var id: UUID? = nil
     var name: String
     var members: [HomeV64Face]
     /// 23こま:撮った 人の 番号(撮って いない = nil)
@@ -275,8 +276,8 @@ struct HVTripPage: View {
         Text("あした 9:00 に みんなで ひらく").font(LF.inter(500, 13)).foregroundStyle(Color(hex: "8C8C93")).fixedSize().offset(x: 22, y: 270)
         HStack(spacing: 8) {
             HVCTA(title: "Shoot", width: 190, bg: Color(hex: "F4F1EA")) { actions.shoot() }
-            Button { Haptics.play(.sel); actions.openTrip() } label: {
-                Text("Chat").font(LF.inter(800, 15)).foregroundStyle(.white).frame(width: 132, height: 56).background(Color.white.opacity(0.10), in: Capsule())
+            Button { Haptics.play(.sel); if let id = trip.id { actions.openTripHome(id) } else { actions.openTrip() } } label: {
+                Text("Open").font(LF.inter(800, 15)).foregroundStyle(.white).frame(width: 132, height: 56).background(Color.white.opacity(0.10), in: Capsule())
             }.buttonStyle(HVPress(scale: 0.97))
         }.offset(x: 18, y: 386)
     }
