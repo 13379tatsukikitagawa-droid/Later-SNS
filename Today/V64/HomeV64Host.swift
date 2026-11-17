@@ -30,6 +30,7 @@ struct HomeV64Host: View {
     /// 申請を とりにいく(承認された 返事が あれば こちら側の つながりも つくる)
     private func refreshRequests() async {
         await FriendRequests.syncAccepted(myName: src.avatarName)
+        await FriendRequests.settleCrossed(myName: src.avatarName)
         incoming = await FriendRequests.incoming()
     }
 

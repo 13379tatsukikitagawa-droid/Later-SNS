@@ -22,8 +22,8 @@ struct FriendsV68View: View {
     @FocusState private var searching: Bool
     @State private var incoming: [FriendRequests.Request] = []
     @State private var hidden: Set<String> = []
-    @State private var shake = ShakeConnect()
     @State private var showsShake = false
+    @State private var blockedIDs: Set<String> = []
     @State private var showsScan = false
     @State private var showsID = false
     @State private var idSeed = ""
@@ -76,6 +76,7 @@ struct FriendsV68View: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: toast)
+        .task { blockedIDs = Set(((try? modelContext.fetch(FetchDescriptor<BlockedUser>())) ?? []).map(\.blockedCloudKitUserRecordName)) }
         .task { if let inj = injectedRequests { incoming = inj } else { incoming = await FriendRequests.incoming() } }
         .onAppear {
             guard !appeared else { return }
@@ -83,8 +84,14 @@ struct FriendsV68View: View {
             withAnimation(.easeOut(duration: 0.4)) { appeared = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { Haptics.play(.tick) }
         }
-        .sheet(isPresented: $showsShake, onDismiss: { shake.stop() }) {
-            ShakeConnectSheet(shake: shake, isFull: false, myName: myName, friendCount: list.count) { show($0) }.environment(\.palette, .night)
+        .fullScreenCover(isPresented: $showsShake) {
+            ShakeV68Host(myName: myName, myRecordName: myRecordName, myAvatarData: myAvatarData,
+                         friendIDs: Set(list.map(\.id)), blockedIDs: blockedIDs,
+                         onClose: { showsShake = false },
+                         onQR: { showsShake = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsScan = true } },
+                         onID: { showsShake = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { idSeed = ""; showsID = true } },
+                         onToast: { show($0) },
+                         onConnected: { Task { incoming = await FriendRequests.incoming() } })
         }
         .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: myName, friendCount: list.count) { show($0) } }
         .sheet(isPresented: $showsID) { FriendIDSearchSheet(myName: myName, seed: idSeed) { show($0) } }
@@ -183,7 +190,7 @@ struct FriendsV68View: View {
     // MARK: ふる カード(Shake の 入口)
 
     private var shakeCard: some View {
-        Button { Haptics.play(.click); shake.start(name: myName, recordName: myRecordName); showsShake = true } label: {
+        Button { Haptics.play(.click); showsShake = true } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 30, style: .continuous)
                     .fill(LinearGradient(colors: [Color(hex: "17351F"), Color(hex: "0E1A11"), Color(hex: "0B0B0C")], startPoint: .topLeading, endPoint: .bottomTrailing))

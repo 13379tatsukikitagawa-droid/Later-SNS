@@ -103,6 +103,34 @@ enum FriendRequests {
         }
     }
 
+
+    // MARK: Shake 用(重なった 申請の 自動 成立 ・ 断った 相手)
+
+    /// 自分が 申請を 断った 相手(Shake の 候補に 出さない)
+    @MainActor static func declinedByMe() async -> Set<String> {
+        guard let database, let me else { return [] }
+        let res = await responses(database, field: "responderID", equals: me)
+        return Set(res.filter { $0.decision == "declined" }.map(\.requesterID))
+    }
+
+    /// 重なった 申請(自分 → 相手 と 相手 → 自分 が 両方)は、承認ボタン なしで 成立させる。
+    /// 断った / 取り消した / ブロックは 除く。成立した 相手の ID を 返す。
+    @MainActor @discardableResult static func settleCrossed(myName: String, blocked: Set<String> = []) async -> [String] {
+        guard let database, let me else { return [] }
+        async let mineReq = requests(database, field: "fromUserID", equals: me)
+        async let theirReq = requests(database, field: "toUserID", equals: me)
+        let (mine, theirs) = await (mineReq, theirReq)
+        let declined = await declinedByMe()
+        let excluded = blocked.union(declined).union(ShakeExclusions.cancelled)
+        let ids = ShakeV68Rules.crossed(outgoing: Set(mine.map(\.toUserID)), incomingFrom: theirs.map(\.fromUserID), excluded: excluded)
+        var done: [String] = []
+        for id in ids {
+            guard let r = theirs.first(where: { $0.fromUserID == id }) else { continue }
+            if await respond(to: r, accept: true, myName: myName) { done.append(id) }
+        }
+        return done
+    }
+
     // MARK: 読みとり
 
     @MainActor private static func requests(_ db: CKDatabase, field: String, equals value: String) async -> [Request] {

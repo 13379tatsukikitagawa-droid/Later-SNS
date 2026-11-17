@@ -24,6 +24,8 @@ struct ShakeV68View: View {
     var onNotThem: () -> Void = {}
     var onQR: () -> Void = {}
     var onID: () -> Void = {}
+    /// ローカルネットワークを ことわられた とき「QR で つながる」を 目立たせる
+    var emphasizeQR = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -221,17 +223,17 @@ struct ShakeV68View: View {
             Spacer()
             Text("ふった 人 どうし だけに 見えます").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.5)).padding(.bottom, 26)
             HStack(spacing: 8) {
-                glassButton("qrcode", "QR で つながる") { onQR() }
+                glassButton("qrcode", "QR で つながる", lime: emphasizeQR) { onQR() }
                 glassButton("at", "ID で さがす") { onID() }
             }.padding(.horizontal, 24).padding(.bottom, 44)
         }.frame(width: w, height: h)
     }
 
-    private func glassButton(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
+    private func glassButton(_ icon: String, _ title: String, lime: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button { Haptics.play(.click); action() } label: {
             HStack(spacing: 10) { Image(systemName: icon).font(.system(size: 17, weight: .semibold)); Text(title).font(LF.inter(700, 16)) }
-                .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 50)
-                .background(.white.opacity(0.12), in: Capsule()).background(.ultraThinMaterial, in: Capsule())
+                .foregroundStyle(lime ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 50)
+                .background(lime ? AnyShapeStyle(HV.lime) : AnyShapeStyle(Color.white.opacity(0.12)), in: Capsule()).background(.ultraThinMaterial, in: Capsule())
                 .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1))
         }.buttonStyle(HVPress(scale: 0.96))
     }
@@ -294,5 +296,43 @@ private struct PhoneMark: View {
                 Capsule().fill(.white.opacity(0.85)).frame(width: 3, height: 16)
             }.rotationEffect(.degrees(wob))
         }
+    }
+}
+
+
+/// 本物の Shake:`ShakeSession`(センサー + 通信)と 画面を つなぐ。とじる / 消えた ときは 必ず `stop()`。
+struct ShakeV68Host: View {
+    let myName: String
+    let myRecordName: String
+    var myAvatarData: Data?
+    let friendIDs: Set<String>
+    let blockedIDs: Set<String>
+    var onClose: () -> Void
+    var onQR: () -> Void = {}
+    var onID: () -> Void = {}
+    var onToast: (String) -> Void = { _ in }
+    var onConnected: () -> Void = {}
+    @State private var session = ShakeSession()
+
+    var body: some View {
+        ShakeV68View(phase: session.phase,
+                     me: myAvatarData.flatMap { V64Images.image(key: "shk-me", data: $0, maxPixel: 320) },
+                     myName: myName, peer: session.peer,
+                     onClose: { session.stop(); onClose() },
+                     onConnect: { session.connect() }, onNotThem: { session.notThem() },
+                     onQR: { session.stop(); onQR() }, onID: { session.stop(); onID() },
+                     emphasizeQR: session.permissionProblem)
+            .onAppear {
+                session.onToast = onToast
+                session.onConnected = onConnected
+                session.start(myName: myName, myRecordName: myRecordName, myThumb: thumb(), friends: friendIDs, blocked: blockedIDs)
+            }
+            .onDisappear { session.stop() }
+    }
+
+    /// 相手に 送る 小さな 写真(96px ・ 数KB)。送るのは ふって 見つけた あとの 暗号化した 通信だけ
+    private func thumb() -> Data? {
+        guard let d = myAvatarData, let img = V64Images.image(key: "shk-th", data: d, maxPixel: 96) else { return nil }
+        return img.jpegData(compressionQuality: 0.5)
     }
 }
