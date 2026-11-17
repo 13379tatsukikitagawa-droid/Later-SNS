@@ -18,6 +18,7 @@ enum FriendRequests {
         let toUserID: String
         let fromName: String
         let createdAt: Date
+        var fromUsername: String = ""
     }
 
     struct Response: Equatable {
@@ -109,7 +110,7 @@ enum FriendRequests {
         guard let (results, _) = try? await db.records(matching: q, resultsLimit: 50) else { return [] }
         return results.compactMap { try? $0.1.get() }.compactMap { r in
             guard let from = r["fromUserID"] as? String, let to = r["toUserID"] as? String else { return nil }
-            return Request(id: r.recordID.recordName, fromUserID: from, toUserID: to, fromName: r["fromUserName"] as? String ?? "", createdAt: r["createdAt"] as? Date ?? .distantPast)
+            return Request(id: r.recordID.recordName, fromUserID: from, toUserID: to, fromName: r["fromUserName"] as? String ?? "", createdAt: r["createdAt"] as? Date ?? .distantPast, fromUsername: r["fromUsername"] as? String ?? "")
         }
     }
 

@@ -106,7 +106,11 @@ struct HomeV64Preview: View {
         }
         input.page = d.integer(forKey: "debugPage")
         let names = ["あや", "れな", "そら"], cols = [Color(hex: "61DD7A"), Color(hex: "7FB0FF"), Color(hex: "6FCB8C")]
-        input.friends = (0..<min(3, friends)).map { HomeV64Friend(id: "fr\($0)", name: names[$0], color: cols[$0], image: SampleData.photo(["d", "d", "f"][$0]), shots: [3, 2, 0][$0]) }
+        input.friends = (0..<min(3, friends)).map { HomeV64Friend(id: "fr\($0)", name: names[$0], color: cols[$0], image: SampleData.photo(["b", "b", "f"][$0]), shots: [3, 2, 0][$0], time: ["17:05", "12:40", nil][$0]) }
+        if input.requestCount > 0 {
+            let rn = friends > 0 ? [("ひなた", "@hinata_3304", "1h", "a"), ("りこ", "@riko_6982", "2h", "c"), ("さき", "@saki_6611", "5h", "b")] : [("りこ", "@riko_6982", "2h", "c"), ("さき", "@saki_6611", "5h", "b")]
+            input.requests = rn.enumerated().map { i, r in HomeV64Request(id: "rq\(i)", name: r.0, handle: r.1, ago: r.2, color: Color(hex: "7FB0FF"), image: SampleData.photo(r.3)) }
+        }
         input.requestFaces = SampleData.faces(count: input.requestCount > 0 ? 3 : 0)
         input.yesterdayThumbs = true ? [HomeV64Thumb(id: "t0", image: SampleData.photo("a"), time: "18:42"), HomeV64Thumb(id: "t1", image: SampleData.photo("b"), time: "16:05"), HomeV64Thumb(id: "t2", image: SampleData.photo("c"), time: "21:13")] : []
         input.tripSamples = ["f", "c", "e"].compactMap { SampleData.photo($0) }

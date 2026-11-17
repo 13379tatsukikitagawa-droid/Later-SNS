@@ -10,6 +10,18 @@ struct HomeV64Friend: Identifiable {
     var image: UIImage? = nil
     /// 今日 撮った 枚数(0〜3)
     var shots: Int = 0
+    /// 最後に 撮った 時刻("17:05")。わからない ときは nil
+    var time: String? = nil
+}
+
+/// 友だちに なりたい 人(申請)
+struct HomeV64Request: Identifiable {
+    let id: String
+    var name: String
+    var handle: String
+    var ago: String
+    var color: Color
+    var image: UIImage? = nil
 }
 
 struct HomeV64Thumb: Identifiable {

@@ -69,3 +69,9 @@
 - M1a 背景 + ヘッダー(HUD ・ アバターの 輪 ・ まとまる 動き)/ M1b 四すみ 78pt + かぎ(ボタンの overlay)+ ファインダー / M1c 本物の レンズ + しぼり羽根 + シール。
 - 点数(新しい 見本 ・ `-debugMock 1`):H01 9.4 / H03 11.9 / H04 10.4 / H06 8.1 / H10 6.9 / H11 6.1 / H12 5.9 / H13 6.8 / H14 7.7 / H15 7.9 / H16 9.5 / H17 9.4 / H18 8.9(土台は 26〜46)。
 - のこり(M2 以降):H02 17.4 / H08 13.0 ・ L01〜L09 は うしろが 変わった ぶん 11〜24(M2 の Friends カード = P14 と 下の 区画の 位置あわせで 直す)・ Y01〜Y05。
+
+## 2026-11-17 M2(P14:Home 下の Friends カード)完了
+
+- 友だち あり(ストーリーの 丸 + 申請の 1行)/ だれも いない(横に すべる カード:申請して きた 人 + リンク / QR / ID)。キャラクター ・ Shake ・ 3ボタン ・ チェキの 列は なくした。申請の 承認は `FriendRequests.respond`、つつくは `layerActions.knock`。
+- 点数(`-debugMock 1`):L01_today 7.4 | L02_active 7.1 | L03_yesterday 9.3 | L04_yesterday_open 8.9 | L05_mondo_row 7.0 | L06_albums 10.4 | L07_onthisday 10.0 | L08_friends_card_empty 9.9 | L09_friends_card 9.7 | L12_friends_card_noreq 11.1 | L10_firstday_yesterday 6.4 | L11_develop_view 12.5 | 
+- 注意:並行して 2本 測定を 回すと 結果が くずれる(シミュレータが 1台)。`snapall.sh` は 1本ずつ。

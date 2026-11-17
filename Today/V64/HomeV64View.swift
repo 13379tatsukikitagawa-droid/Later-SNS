@@ -30,6 +30,7 @@ struct HomeV64Input {
     var yesterdayPhoto: UIImage?
     var friends: [HomeV64Friend] = []
     var requestFaces: [HomeV64Face] = []
+    var requests: [HomeV64Request] = []
     var yesterdayThumbs: [HomeV64Thumb] = []
     var trip: HomeV64TripInfo? = nil
     var tripSamples: [UIImage] = []
@@ -68,6 +69,12 @@ struct HomeV64Actions {
     var scanQR: () -> Void = {}
     var openRequests: () -> Void = {}
     var openChat: (_ friendID: String, _ name: String) -> Void = { _, _ in }
+    var approve: (_ requestID: String) -> Void = { _ in }
+    var dismissRequest: (_ requestID: String) -> Void = { _ in }
+    var poke: (_ friendID: String) -> Void = { _ in }
+    var shareLink: () -> Void = {}
+    var showQR: () -> Void = {}
+    var searchByID: () -> Void = {}
 }
 
 struct HomeV64View: View {
@@ -98,7 +105,7 @@ struct HomeV64View: View {
                 HV68Backdrop(input: input, pos: pagePos, focus: pressing || input.pressedFocus, entered: entered || reduceMotion, width: f.w)
                     .offset(y: -scrollY * 0.68)
                     .opacity(1 - Double(min(1, max(0, (scrollY - 420) / 380))))
-                HV68Dusk(width: f.w).offset(y: 692 + 2 * f.mid - scrollY)
+                HV68Dusk(width: f.w).offset(y: 692 + 2 * f.mid)
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         ZStack(alignment: .topLeading) {
@@ -764,7 +771,6 @@ struct HVMoon: View {
                                                      .init(color: Color(red: 11 / 255, green: 30 / 255, blue: 16 / 255).opacity(pressing ? 0.76 : 0.82), location: 0.6),
                                                      .init(color: Color(red: 11 / 255, green: 30 / 255, blue: 16 / 255).opacity(0.82), location: 1)],
                                               center: UnitPoint(x: 0.5, y: 0), startRadius: 0, endRadius: d * 0.9))
-                    .background(Circle().fill(.ultraThinMaterial))
                     .shadow(color: .black.opacity(0.45), radius: 23, y: -20)
                 Circle().strokeBorder(Color(red: 160 / 255, green: 240 / 255, blue: 170 / 255).opacity(0.3), lineWidth: 1)
                 HVRim(radius: d / 2, width: 1.2).opacity(0.6)

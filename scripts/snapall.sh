@@ -21,15 +21,16 @@ r H15_page_mondo_open home $H -debugPage 3 -debugShots 1 -debugPhoto d
 r H16_page_yesterday home $H -debugPage 4 -debugPhoto d
 r H17_page_yesterday_open home $H -debugPage 4 -debugShots 1 -debugOpened 1 -debugPhoto d
 r H18_page_yesterday_firstday home $H -debugPage 4 -debugFirstDay 1 -debugPhoto d
-r L01_today home $H -debugSection sec-active:176
-r L02_active home $H -debugSection sec-active:188
-r L03_yesterday home $H -debugSection sec-yesterday:96
-r L04_yesterday_open home $H -debugSection sec-yesterday:96 -debugShots 1 -debugOpened 1
-r L05_mondo_row home $H -debugSection sec-mondo:156 -debugShots 1 -debugOpened 1
-r L06_albums home $H -debugSection sec-albums:138
+r L01_today home $H -debugSection sec-active:146
+r L02_active home $H -debugSection sec-active:158
+r L03_yesterday home $H -debugSection sec-yesterday:80
+r L04_yesterday_open home $H -debugSection sec-yesterday:80 -debugShots 1 -debugOpened 1
+r L05_mondo_row home $H -debugSection sec-mondo:126 -debugShots 1 -debugOpened 1
+r L06_albums home $H -debugSection sec-albums:108
 r L07_onthisday home $H -debugSection sec-onthisday:109
-r L08_friends_card_empty home $H -debugSection sec-friends:136
-r L09_friends_card home $H -debugSection sec-friends:190 -debugFriends 3
+r L08_friends_card_empty home $H -debugSection sec-friends:189
+r L09_friends_card home $H -debugSection sec-friends:292 -debugFriends 3
+r L12_friends_card_noreq home -debugBackdrop 1 -debugMock 1 -debugSection sec-friends:189
 r L10_firstday_yesterday home $H -debugSection sec-yesterday:200 -debugFirstDay 1
 r L11_develop_view develop
 r Y01_yesterday_locked yesterday -debugShots 0 -debugRequests 1

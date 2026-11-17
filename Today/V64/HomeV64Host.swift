@@ -80,6 +80,11 @@ struct HomeV64Host: View {
         input.friendCount = others.count
         input.requestCount = incoming.count
         input.requestFaces = incoming.prefix(3).map { r in HomeV64Face(id: r.id, initial: String((r.fromName.isEmpty ? "ね" : r.fromName).prefix(1)), color: Self.color(for: UUID(uuidString: r.fromUserID.padding(toLength: 36, withPad: "0", startingAt: 0)) ?? UUID())) }
+        input.requests = incoming.map { r in
+            let secs = max(0, Int(now.timeIntervalSince(r.createdAt)))
+            let ago = secs >= 86400 ? "\(secs / 86400)d" : (secs >= 3600 ? "\(secs / 3600)h" : "\(max(1, secs / 60))m")
+            return HomeV64Request(id: r.id, name: r.fromName.isEmpty ? "ともだち" : r.fromName, handle: r.fromUsername.isEmpty ? "" : "@\(r.fromUsername)", ago: ago, color: Self.color(for: UUID(uuidString: r.fromUserID.padding(toLength: 36, withPad: "0", startingAt: 0)) ?? UUID()))
+        }
         input.friends = others.prefix(7).map { f in
             HomeV64Friend(id: f.id, name: f.name, color: Self.color(for: f.seed), image: image(f.avatarData, "av\(f.id)", max: 160) ?? image(f.mosaicTiny, "mt\(f.id)", max: 160), shots: f.hasShot ? 3 : 0)
         }
@@ -126,6 +131,14 @@ struct HomeV64Host: View {
         a.addFriends = src.layerActions.openFriends
         a.openRequests = { showRequests = true }
         a.openChat = { id, name in chatWith = (id, name) }
+        a.approve = { id in
+            guard let r = incoming.first(where: { $0.id == id }) else { return }
+            Task { _ = await FriendRequests.respond(to: r, accept: true, myName: src.avatarName); await refreshRequests() }
+        }
+        a.poke = { id in if let f = src.layerData.friends.first(where: { $0.id == id }) { src.layerActions.knock(f) } }
+        a.shareLink = src.layerActions.openFriends
+        a.showQR = src.layerActions.openFriends
+        a.searchByID = src.layerActions.openFriends
         a.openProfile = src.onOpenProfile
         a.openDevelop = { showDevelop = true }
         a.openTrip = src.onCreateGroup

@@ -336,111 +336,6 @@ struct HVOnThisDay: View {
     }
 }
 
-/// いつもの 空っぽの かお(Friends カードの まんなか)
-struct HVMascot: View {
-    var body: some View {
-        ZStack {
-            // 点線の 「?」の かげ
-            ForEach([-1, 1], id: \.self) { sgn in
-                UnevenRoundedRectangle(topLeadingRadius: 40, bottomLeadingRadius: 2, bottomTrailingRadius: 2, topTrailingRadius: 40)
-                    .stroke(Color.white.opacity(0.14), style: StrokeStyle(lineWidth: 2.5, dash: [10, 8])).frame(width: 60, height: 78)
-                    .overlay(Text("?").font(LF.serif(30, italic: true)).foregroundStyle(.white.opacity(0.2)))
-                    .offset(x: CGFloat(sgn) * 88, y: 14)
-            }
-            // みどりの 子
-            ZStack {
-                UnevenRoundedRectangle(topLeadingRadius: 38, bottomLeadingRadius: 2, bottomTrailingRadius: 2, topTrailingRadius: 38).fill(LinearGradient(colors: [Color(hex: "5ED67A"), Color(hex: "5ED67A"), Color(hex: "3FB85F")], startPoint: .top, endPoint: .bottom)).frame(width: 64, height: 90)
-                HStack(spacing: 18) { Circle().fill(HV.ink).frame(width: 7, height: 7); Circle().fill(HV.ink).frame(width: 7, height: 7) }.offset(y: -10)
-                Circle().fill(Color(hex: "F59BB8").opacity(0.8)).frame(width: 10, height: 7).offset(x: -22, y: 2)
-                Circle().fill(Color(hex: "F59BB8").opacity(0.8)).frame(width: 10, height: 7).offset(x: 22, y: 2)
-                Circle().trim(from: 0.1, to: 0.4).stroke(HV.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round)).frame(width: 22, height: 22).rotationEffect(.degrees(30)).offset(y: 4)
-            }.offset(y: 10)
-            Text("hi!").font(LF.hand(24)).foregroundStyle(HV.lime).rotationEffect(.degrees(-8)).offset(x: -62, y: -62)
-            RoundedRectangle(cornerRadius: 3).fill(Color(hex: "9ED8FF")).frame(width: 14, height: 22).offset(x: 40, y: -42)
-        }.scaleEffect(1.2).frame(maxWidth: .infinity).frame(height: 158)
-    }
-}
-
-/// Friends カード(下)
-struct HVFriendsCard: View {
-    var body: some View { VStack(spacing: 0) { HVAnchor(id: "sec-friends"); content } }
-    let input: HomeV64Input
-    let actions: HomeV64Actions
-    @ViewBuilder private var content: some View {
-        let took = input.friends.filter { $0.shots > 0 }.count
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                (Text("F").font(LF.serif(40, italic: true)).foregroundColor(HV.lime) + Text("riends").font(LF.serif(40)).foregroundColor(.white))
-                Spacer()
-                if took > 0 {
-                    HStack(spacing: 6) { Circle().fill(Color(hex: "3BD35A")).frame(width: 9, height: 9); Text("\(took) shot today").font(LF.mono(12)).foregroundStyle(Color(hex: "7EE08F")) }
-                        .padding(.horizontal, 12).frame(height: 36).background(Color(hex: "7EE08F").opacity(0.14), in: Capsule())
-                }
-                Image(systemName: "chevron.right").foregroundStyle(.white).frame(width: 38, height: 38).background(Color.white.opacity(0.08), in: Circle())
-            }
-            if input.requestCount > 0 {
-                Button { Haptics.play(.sel); actions.openRequests() } label: { HStack(spacing: 10) {
-                    HStack(spacing: -10) { ForEach(Array(input.requestFaces.prefix(3).enumerated()), id: \.offset) { i, f in
-                        Circle().fill(f.color).frame(width: 30, height: 30).overlay(Circle().strokeBorder(.black, lineWidth: 2)) } }
-                    Text("\(input.requestFaces.first?.initial ?? "") ほか から 申請").font(LF.inter(800, 16)).foregroundStyle(HV.ink)
-                    Spacer()
-                    Text("承認 ›").font(LF.mono(11)).foregroundStyle(HV.ink)
-                }.padding(.horizontal, 14).frame(height: 46).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.98))
-            }
-            if input.friends.isEmpty {
-                HVMascot()
-                VStack(spacing: 6) {
-                    Text("まだ ひとり。").font(LGFont.mincho(24)).foregroundStyle(.white).frame(height: 29)
-                    Text("さいしょの 友だちを よぼう ・ 人数の 上限は ありません").font(LF.inter(500, 12.5)).foregroundStyle(HVL.label).multilineTextAlignment(.center)
-                }.frame(maxWidth: .infinity)
-                HStack(spacing: 10) {
-                    emptyButton("iphone.radiowaves.left.and.right", "Shake", fill: .white) { actions.openFriends() }
-                    emptyButton("qrcode", "QR ・ ID", fill: HV.lime) { actions.addFriends() }
-                    emptyButton("link", "Link", fill: .white) { actions.openFriends() }
-                }
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 14) {
-                        ForEach(Array(input.friends.enumerated()), id: \.offset) { i, f in
-                            VStack(alignment: .leading, spacing: 3) {
-                                ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = f.image { Image(uiImage: img).resizable().scaledToFill() } }.frame(width: 92, height: 98).clipped()
-                                Text(f.name).font(LGFont.mincho(21)).foregroundStyle(HV.ink).padding(.top, 2)
-                                if f.shots > 0 {
-                                    HStack(spacing: 3) { ForEach(0..<3, id: \.self) { s in Capsule().fill(s < f.shots ? Color(hex: "3BD35A") : Color.black.opacity(0.12)).frame(width: 13, height: 5) } }
-                                } else {
-                                    Text("NOT YET").font(LF.mono(8)).tracking(1.2).foregroundStyle(Color(hex: "8E8E93"))
-                                }
-                            }
-                            .padding(.horizontal, 8).padding(.top, 8).padding(.bottom, 10).frame(width: 108, alignment: .leading)
-                            .background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 5))
-                            .overlay(alignment: .top) { Rectangle().fill(f.shots > 0 ? Color(hex: "C8F25A").opacity(0.85) : Color(hex: "8E8E93").opacity(0.7)).frame(width: 44, height: 15).offset(y: -9) }
-                            .rotationEffect(.degrees(i % 2 == 0 ? -2 : 1.5)).padding(.top, 10)
-                        }
-                    }.padding(.vertical, 6)
-                }
-                HStack(spacing: 8) {
-                    Button { Haptics.play(.sel); actions.addFriends() } label: {
-                        HStack(spacing: 8) { Image(systemName: "plus").font(.system(size: 16, weight: .bold)); Text("Add").font(LF.inter(800, 17)) }
-                            .foregroundStyle(.white).frame(width: 112, height: 54).background(Color.white.opacity(0.08), in: Capsule())
-                    }.buttonStyle(HVPress(scale: 0.97))
-                    HVCTA(title: "Open friends", width: 200) { actions.openFriends() }
-                }
-            }
-        }
-        .padding(18)
-        .background(Color.white.opacity(0.02), in: RoundedRectangle(cornerRadius: 30))
-        .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(.white.opacity(0.1), lineWidth: 1))
-        .padding(.horizontal, 14)
-    }
-
-    private func emptyButton(_ icon: String, _ title: String, fill: Color, action: @escaping () -> Void) -> some View {
-        Button { Haptics.play(.sel); action() } label: {
-            VStack(spacing: 6) { Image(systemName: icon).font(.system(size: 20, weight: .semibold)); Text(title).font(LF.inter(800, 15)) }
-                .foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 64).background(fill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        }.buttonStyle(HVPress(scale: 0.96))
-    }
-}
-
 /// 下の ぜんぶを たばねる
 struct HVLowerSections: View {
     let input: HomeV64Input
@@ -458,7 +353,7 @@ struct HVLowerSections: View {
                 HVOnThisDay(data: data)
             }
             HVFriendsCard(input: input, actions: actions)
-            Spacer().frame(height: 300)
+            Spacer().frame(height: 404)
         }
         .background(alignment: .top) { VStack(spacing: 0) { Color.clear.frame(height: 90); HVL.bg } }
     }
