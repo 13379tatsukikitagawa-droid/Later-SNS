@@ -215,7 +215,7 @@ struct HVTripPage: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            HVPageBackdrop(photo: input.trip?.cover ?? input.backdrop.first)
+            HVPageBackdrop(photo: input.trip?.cover ?? input.tripSamples[safe: 1] ?? input.backdrop.first)
             if let trip = input.trip {
                 tripActive(trip)
             } else {
@@ -224,13 +224,13 @@ struct HVTripPage: View {
                 ZStack {
                     stackedPhoto(imgs[safe: 0]).frame(width: 118, height: 150).overlay(Color.black.opacity(0.25)).rotationEffect(.degrees(-8)).offset(x: -46, y: 10)
                     stackedPhoto(imgs[safe: 2]).frame(width: 118, height: 150).overlay(Color.black.opacity(0.25)).rotationEffect(.degrees(8)).offset(x: 46, y: 10)
-                    stackedPhoto(imgs[safe: 1]).frame(width: 118, height: 150)
+                    stackedPhoto(imgs[safe: 1]).frame(width: 118, height: 150).offset(y: -2)
                 }
                 .frame(width: cardW, height: 200).offset(y: 25)
                 Text("02 / 04 ・ TRIP").font(LF.mono(9)).tracking(1.8).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 24, y: 252)
                 Text("Take a trip,").font(LF.serif(40)).foregroundStyle(.white).frame(height: 40, alignment: .leading).fixedSize().offset(x: 24, y: 273)
-                Text("together.").font(LF.serif(40, italic: true)).foregroundStyle(HV.lime).frame(height: 40, alignment: .leading).fixedSize().offset(x: 24, y: 307)
-                Text("旅行 ・ 合宿 ・ イベント。1日 23枚を、みんなで。").font(LF.inter(500, 12.5)).foregroundStyle(Color(hex: "8C8C93")).fixedSize().offset(x: 24, y: 361)
+                Text("together.").font(LF.serif(40, italic: true)).foregroundStyle(HV.lime).frame(height: 40, alignment: .leading).fixedSize().offset(x: 24, y: 313)
+                Text("旅行 ・ 合宿 ・ イベント。1日 23枚を、みんなで。").font(LF.inter(500, 12.5)).foregroundStyle(Color(hex: "8C8C93")).fixedSize().offset(x: 24, y: 366)
                 HStack(spacing: 8) {
                     Button { Haptics.play(.click); actions.openTrip() } label: {
                         HStack { Text("New trip").font(LF.inter(800, 17)).foregroundStyle(HV.ink); Spacer()
@@ -511,66 +511,51 @@ struct HVLivePanel: View {
         let toOpen = max(0, 86400 + 9 * 3600 - secOfDay)
         let frac = min(1, Double(secOfDay) / Double(33 * 3600))
         let hh = toLights / 3600, mm = (toLights % 3600) / 60, ss = toLights % 60
+        let W: CGFloat = 330   // 中身の はば(366 - 余白 18 × 2)
         return ZStack(alignment: .top) {
-            Rectangle().fill(.ultraThinMaterial).overlay(Color.black.opacity(0.25)).ignoresSafeArea().onTapGesture(perform: onClose)
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    HStack(spacing: 6) {
-                        Circle().fill(Color(hex: "3BD35A")).frame(width: 7, height: 7)
-                        Text("LIVE").font(LF.mono(11)).tracking(2.2).foregroundStyle(Color(hex: "4CD964"))
-                    }
-                    .padding(.horizontal, 10).frame(height: 22).background(Color(hex: "0F2A16"), in: Capsule())
-                    Text(String(format: "%02d:%02d:%02d", c.hour ?? 0, c.minute ?? 0, c.second ?? 0)).font(LF.mono(12)).foregroundStyle(Color(hex: "5A5A5F")).padding(.leading, 6)
-                    Spacer()
-                    Button(action: onClose) {
-                        Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.7))
-                            .frame(width: 30, height: 30).background(Color(hex: "1C1C1E"), in: Circle())
-                    }.buttonStyle(.plain)
-                }
-                Text("消灯まで").font(LF.inter(600, 13)).foregroundStyle(Color(hex: "8E8E93")).padding(.top, 12)
+            Color.black.opacity(0.18).ignoresSafeArea().onTapGesture(perform: onClose)
+            ZStack(alignment: .topLeading) {
+                HStack(spacing: 6) { Circle().fill(Color(hex: "3BD35A")).frame(width: 7, height: 7); Text("LIVE").font(LF.mono(11)).tracking(2.2).foregroundStyle(Color(hex: "4CD964")) }
+                    .padding(.horizontal, 10).frame(height: 22).background(Color(hex: "0F2A16"), in: Capsule()).offset(x: 18, y: 19)
+                Text(String(format: "%02d:%02d:%02d", c.hour ?? 0, c.minute ?? 0, c.second ?? 0)).font(LF.mono(12)).foregroundStyle(Color(hex: "5A5A5F")).offset(x: 104, y: 22)
+                Button(action: onClose) { Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.7)).frame(width: 30, height: 30).background(Color(hex: "1C1C1E"), in: Circle()) }.buttonStyle(.plain).offset(x: 318, y: 15)
+                Text("消灯まで").font(LF.inter(600, 13)).foregroundStyle(Color(hex: "8E8E93")).offset(x: 18, y: 56)
                 HStack(alignment: .lastTextBaseline, spacing: 0) {
-                    Text(String(format: "%02d", hh)).font(LF.inter(900, 64)).tracking(-2.5).foregroundStyle(.white)
-                    VStack(spacing: 14) { Circle().fill(Color(hex: "5A5A5F")).frame(width: 9, height: 9); Circle().fill(Color(hex: "5A5A5F")).frame(width: 9, height: 9) }.padding(.horizontal, 6).offset(y: -12)
-                    Text(String(format: "%02d", mm)).font(LF.inter(900, 64)).tracking(-2.5).foregroundStyle(.white)
-                    Text(String(format: "%02d", ss)).font(LF.inter(900, 26)).foregroundStyle(Color(hex: "3BD35A")).padding(.leading, 6).contentTransition(.numericText())
-                }
-                .frame(height: 58, alignment: .bottom)
+                    Text(String(format: "%02d", hh)).font(LF.inter(900, 62)).tracking(-3)
+                    VStack(spacing: 12) { Circle().frame(width: 8, height: 8); Circle().frame(width: 8, height: 8) }.foregroundStyle(Color(hex: "5A5A5F")).padding(.horizontal, 4).offset(y: -10)
+                    Text(String(format: "%02d", mm)).font(LF.inter(900, 62)).tracking(-3)
+                    Text(String(format: "%02d", ss)).font(LF.inter(900, 24)).foregroundStyle(Color(hex: "3BD35A")).padding(.leading, 6)
+                }.foregroundStyle(.white).offset(x: 18, y: 78)
                 HStack(spacing: 8) {
                     Text("ひらくまで").font(LF.inter(600, 13)).foregroundStyle(Color(hex: "8E8E93"))
-                    Text("\(toOpen / 3600)h \(String(format: "%02d", (toOpen % 3600) / 60))m").font(LF.inter(700, 15)).foregroundStyle(.white.opacity(0.9))
-                }.padding(.top, 8)
-                // 24時間の 線(0:00 〜 あしたの 9:00)
-                GeometryReader { g in
-                    let w = g.size.width
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.06)).frame(height: 8)
-                        Capsule().fill(LinearGradient(colors: [Color(hex: "1F8A3A"), Color(hex: "3BD35A")], startPoint: .leading, endPoint: .trailing)).frame(width: w * frac, height: 8).shadow(color: Color(hex: "3BD35A").opacity(0.5), radius: 8)
-                        Rectangle().fill(Color(hex: "5A5A5F")).frame(width: 2, height: 14).offset(x: w * 9 / 33)
-                        Rectangle().fill(Color(hex: "E0242C")).frame(width: 2, height: 14).offset(x: w * 24 / 33)
-                        Circle().fill(.white).frame(width: 20, height: 20).shadow(color: .white.opacity(0.6), radius: 8).offset(x: w * frac - 10)
-                    }.frame(height: 20)
-                }.frame(height: 20).padding(.top, 8)
+                    Text("\(toOpen / 3600)h \(String(format: "%02d", (toOpen % 3600) / 60))m").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.9))
+                }.offset(x: 18, y: 154)
                 ZStack(alignment: .leading) {
-                    Text("0:00").font(LF.mono(10)).foregroundStyle(Color(hex: "5A5A5F"))
-                    Text("9:00").font(LF.mono(10)).foregroundStyle(Color(hex: "5A5A5F")).offset(x: 330 * 9 / 33 - 12)
-                    Text("24:00").font(LF.mono(10)).foregroundStyle(Color(hex: "E0242C")).offset(x: 330 * 24 / 33 - 15)
-                    Text("9:00 OPEN").font(LF.mono(10)).foregroundStyle(Color(hex: "7EE08F")).frame(width: 330, alignment: .trailing)
-                }.padding(.top, 4)
-                HStack(spacing: 6) {
-                    ForEach(0..<3, id: \.self) { i in
-                        RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12), lineWidth: 1).frame(width: 40, height: 52)
-                            .overlay(Image(systemName: i < input.shotsUsed ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(i < input.shotsUsed ? Color(hex: "3BD35A") : Color(hex: "5A5A5F")))
-                    }
-                    Spacer(minLength: 6)
-                    Button { Haptics.play(.click); onClose(); onShoot() } label: {
-                        HStack(spacing: 12) {
-                            HVCameraGlyph(width: 26, line: 2, color: HV.ink, showsFlash: false)
-                            VStack(alignment: .leading, spacing: 2) { Text("shoot").font(LF.inter(800, 19)).foregroundStyle(HV.ink); Text("\(input.remaining) LEFT").font(LF.mono(9)).tracking(1.6).foregroundStyle(Color(hex: "8E8E93")) }
-                        }.frame(width: 186, height: 54).background(Color.white, in: Capsule())
-                    }.buttonStyle(HVPress(scale: 0.97))
-                }.padding(.top, 16)
+                    Capsule().fill(Color.white.opacity(0.06)).frame(width: W, height: 8)
+                    Capsule().fill(LinearGradient(colors: [Color(hex: "1F8A3A"), Color(hex: "3BD35A")], startPoint: .leading, endPoint: .trailing)).frame(width: W * frac, height: 8).shadow(color: Color(hex: "3BD35A").opacity(0.5), radius: 8)
+                    Rectangle().fill(Color(hex: "5A5A5F")).frame(width: 2, height: 14).offset(x: W * 9 / 33)
+                    Rectangle().fill(Color(hex: "E0242C")).frame(width: 2, height: 14).offset(x: W * 24 / 33)
+                    Circle().fill(.white).frame(width: 18, height: 18).shadow(color: .white.opacity(0.6), radius: 6).offset(x: W * frac - 9)
+                }.frame(width: W, height: 20).offset(x: 18, y: 184)
+                Group {
+                    Text("0:00").foregroundStyle(Color(hex: "5A5A5F")).offset(x: 0)
+                    Text("9:00").foregroundStyle(Color(hex: "5A5A5F")).offset(x: W * 9 / 33 - 12)
+                    Text("24:00").foregroundStyle(Color(hex: "E0242C")).offset(x: W * 24 / 33 - 14)
+                    Text("9:00 OPEN").foregroundStyle(Color(hex: "7EE08F")).frame(width: W, alignment: .trailing)
+                }.font(LF.mono(10)).frame(width: W, alignment: .leading).offset(x: 18, y: 208)
+                ForEach(0..<3, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12), lineWidth: 1).frame(width: 40, height: 52)
+                        .overlay(Image(systemName: i < input.shotsUsed ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(i < input.shotsUsed ? Color(hex: "3BD35A") : Color(hex: "5A5A5F")))
+                        .offset(x: 18 + CGFloat(i) * 46, y: 243)
+                }
+                Button { Haptics.play(.click); onClose(); onShoot() } label: {
+                    HStack(spacing: 12) {
+                        HVCameraGlyph(width: 26, line: 2, color: HV.ink, showsFlash: false)
+                        VStack(alignment: .leading, spacing: 2) { Text("shoot").font(LF.inter(800, 19)).foregroundStyle(HV.ink); Text("\(input.remaining) LEFT").font(LF.mono(9)).tracking(1.6).foregroundStyle(Color(hex: "8E8E93")) }
+                    }.frame(width: 186, height: 54).background(Color.white, in: Capsule())
+                }.buttonStyle(HVPress(scale: 0.97)).offset(x: 162, y: 242)
             }
-            .padding(18).frame(width: 366)
+            .frame(width: 366, height: 302, alignment: .topLeading)
             .background(Color(hex: "050505"), in: RoundedRectangle(cornerRadius: 40, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
             .padding(.top, 98)

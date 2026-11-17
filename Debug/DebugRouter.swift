@@ -104,7 +104,7 @@ struct HomeV64Preview: View {
         input.friends = (0..<min(3, friends)).map { HomeV64Friend(id: "fr\($0)", name: names[$0], color: cols[$0], image: SampleData.photo(["d", "d", "f"][$0]), shots: [3, 2, 0][$0]) }
         input.requestFaces = SampleData.faces(count: input.requestCount > 0 ? 3 : 0)
         input.yesterdayThumbs = true ? [HomeV64Thumb(id: "t0", image: SampleData.photo("a"), time: "18:42"), HomeV64Thumb(id: "t1", image: SampleData.photo("b"), time: "16:05"), HomeV64Thumb(id: "t2", image: SampleData.photo("c"), time: "21:13")] : []
-        input.tripSamples = ["f", "b", "d"].compactMap { SampleData.photo($0) }
+        input.tripSamples = ["f", "c", "e"].compactMap { SampleData.photo($0) }
         input.debugScroll = CGFloat(d.integer(forKey: "debugScroll"))
         input.debugSection = d.string(forKey: "debugSection")
         var low = HomeV64LowerData()
