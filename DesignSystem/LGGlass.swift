@@ -116,7 +116,7 @@ struct LGGlassModifier: ViewModifier {
     var edge: CGFloat
 
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, *), LGGlassMode.native {
             let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
             if interactive { content.glassEffect(.regular.interactive(), in: shape) }
             else { content.glassEffect(.regular, in: shape) }
@@ -132,5 +132,43 @@ struct LGGlassModifier: ViewModifier {
 extension View {
     func lgGlass(radius: CGFloat = 18, interactive: Bool = false, edge: CGFloat = 1.2) -> some View {
         modifier(LGGlassModifier(radius: radius, interactive: interactive, edge: edge))
+    }
+}
+
+// MARK: - iOS の 版の 分かれ目(ここだけに まとめる。画面ごとには 書かない)
+
+enum LGGlassMode {
+    /// iOS 26 の 本物の Liquid Glass を 使うか。DEBUG は `-debugLegacyGlass 1` で iOS 26 でも 代わりの 見た目を 出せる
+    static var native: Bool {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "debugLegacyGlass") { return false }
+        #endif
+        if #available(iOS 26.0, *) { return true }
+        return false
+    }
+}
+
+extension View {
+    /// スクロールの ふちを やわらかく(iOS 26 だけ。それ より 前は なにも しない)
+    @ViewBuilder func lgScrollEdgeSoft() -> some View {
+        if #available(iOS 26.0, *) { self.scrollEdgeEffectStyle(.soft, for: .top) } else { self }
+    }
+
+    /// 下へ スクロールで タブバーが ちぢむ(iOS 26 だけ)
+    @ViewBuilder func lgTabBarMinimize() -> some View {
+        if #available(iOS 26.0, *) { self.tabBarMinimizeBehavior(.onScrollDown) } else { self }
+    }
+}
+
+/// ガラスを まとめる 入れもの。iOS 26 = `GlassEffectContainer`(近づくと くっつく)、それ より 前 = ただの まとまり。
+struct LGGlassGroup<Content: View>: View {
+    var spacing: CGFloat = 20
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        if #available(iOS 26.0, *), LGGlassMode.native {
+            GlassEffectContainer(spacing: spacing) { content() }
+        } else {
+            content()
+        }
     }
 }

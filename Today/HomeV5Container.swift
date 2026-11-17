@@ -310,7 +310,7 @@ struct HomeV5Container: View {
                 .badge(groupBadge)
             }
         }
-        .tabBarMinimizeBehavior(.onScrollDown)
+        .lgTabBarMinimize()
         .toolbarVisibility(calendarPath.isEmpty ? .visible : .hidden, for: .tabBar)
     }
 

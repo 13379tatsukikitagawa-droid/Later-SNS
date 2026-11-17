@@ -68,7 +68,7 @@ struct FriendScreenV48: View {
                     .padding(.top, 10)
                 }
                 .scrollIndicators(.hidden)
-                .scrollEdgeEffectStyle(.soft, for: .top)
+                .lgScrollEdgeSoft()
             }
         }
         .environment(\.colorScheme, .dark)

@@ -396,7 +396,7 @@ struct HomeV5GroupPage: View {
             .id("v5top")
         }
         .scrollIndicators(.hidden)
-        .scrollEdgeEffectStyle(.soft, for: .top)
+        .lgScrollEdgeSoft()
         .animation(.easeInOut(duration: 1.4), value: locked)
         .onChange(of: scrollToTopToken) { _, _ in
             withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5top", anchor: .top) }
