@@ -37,5 +37,5 @@ r Y02_yesterday_open yesterday -debugShots 2 -debugRequests 1
 r Y03_yesterday_mondo_tab yesterday -debugShots 2 -debugTab 1
 r Y04_yesterday_friends_tab yesterday -debugShots 2 -debugRequests 1 -debugShotFriends 2
 r Y05_yesterday_scroll yesterday -debugShots 2 -debugScrollMe 1
-r Y06_photo_viewer yesterday -debugShots 2 -debugViewing a
+r Y06_photo_viewer yesterday -debugShots 2 -debugViewing m
 r C01_tag tag

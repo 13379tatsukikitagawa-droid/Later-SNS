@@ -20,7 +20,7 @@ enum DebugRouter {
         case "home": show(HomeV64Preview())
         case "yesterday": show(YesterdayV64Preview())
         case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
-        case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black))
+        case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
         }
         return true
@@ -47,6 +47,8 @@ enum DebugRouter {
     }
 
     static func showRaw<V: View>(_ view: V) {
+        UITextField.appearance().keyboardAppearance = .dark
+        UITextView.appearance().keyboardAppearance = .dark
         hide()
         guard let window = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).flatMap(\.windows).first(where: \.isKeyWindow) else { return }
         let vc = UIHostingController(rootView: view)
@@ -160,6 +162,7 @@ struct YesterdayV64Preview: View {
         y.requestFaces = SampleData.faces(count: y.requestCount > 0 ? 3 : 0)
         y.cells = [.init(id: "a", photo: SampleData.photo("a"), name: "あや", time: "17:05", tag: nil), .init(id: "b", photo: SampleData.photo("d"), name: "れな", time: "12:40", tag: nil), .init(id: "c", photo: SampleData.photo("b"), name: "そら", time: "09:12", tag: nil), .init(id: "d", photo: SampleData.photo("e"), name: "you", time: "16:05", tag: nil)]
         y.mondoPhoto = SampleData.photo("a")
+        y.viewerOnly = [.init(id: "m", photo: SampleData.photo("a"), name: "鎌倉市", time: nil, tag: "夕焼け")]
         y.now = Calendar.current.date(bySettingHour: 12, minute: 3, second: 0, of: Date()) ?? Date()
         return YesterdayV64View(input: y)
     }

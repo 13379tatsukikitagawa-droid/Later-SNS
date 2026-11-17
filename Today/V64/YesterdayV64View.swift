@@ -7,6 +7,7 @@ struct YesterdayV64Input {
     struct Cell: Identifiable { let id: String; var photo: UIImage?; var name: String; var time: String?; var tag: String? }
     var shotsUsed = 0
     var cells: [Cell] = []
+    var viewerOnly: [Cell] = []
     var requestFaces: [HomeV64Face] = []
     var requestCount = 0
     var friendCount = 0
@@ -68,24 +69,26 @@ struct YesterdayV64View: View {
         }
         .ignoresSafeArea()
         .overlay { if let v = viewing { photoViewer(v).transition(.opacity) } }
-        .onAppear { if !seeded { tab = input.startTab; seeded = true; if let id = input.startViewing { viewing = input.cells.first { $0.id == id } } } }
+        .onAppear { if !seeded { tab = input.startTab; seeded = true; if let id = input.startViewing { viewing = (input.cells + input.viewerOnly).first { $0.id == id } } } }
     }
 
     // MARK: ヘッダー(白)
 
     private var header: some View {
         ZStack(alignment: .topLeading) {
-            LinearGradient(stops: [.init(color: .white, location: 0.78), .init(color: .white.opacity(0), location: 1)], startPoint: .top, endPoint: .bottom).frame(height: 150)
-            Text(Brand.name).font(LF.inter(900, 40)).tracking(-2.6).foregroundStyle(HV.ink).offset(x: 20, y: 56)
-            Button { Haptics.play(.sel); actions.close() } label: { Text("today").font(LF.serif(18, italic: true)).foregroundStyle(HV.gray).frame(height: 44) }.buttonStyle(.plain).offset(x: 150, y: 70)
-            Text("|").font(LF.inter(300, 18)).foregroundStyle(HV.gray.opacity(0.5)).offset(x: 196, y: 82)
-            Text("yesterday").font(LF.serif(18, italic: true)).foregroundStyle(HV.ink).offset(x: 204, y: 82)
+            LinearGradient(stops: [.init(color: .white, location: 0.78), .init(color: .white.opacity(0), location: 1)], startPoint: .top, endPoint: .bottom).frame(height: 170)
+            Text(Brand.name).font(LF.inter(900, 44)).tracking(-2.86).foregroundStyle(HV.ink).frame(height: 44, alignment: .leading).offset(x: 18, y: 58)
+            HStack(spacing: 0) {
+                Button { Haptics.play(.sel); actions.close() } label: { Text("today").font(LF.serif(19, italic: true)).foregroundStyle(HV.gray).frame(height: 44) }.buttonStyle(.plain)
+                Text("/").font(LF.inter(300, 19)).foregroundStyle(HV.gray.opacity(0.5)).padding(.horizontal, 6)
+                Text("yesterday").font(LF.serif(19, italic: true)).foregroundStyle(HV.ink)
+            }.offset(x: 150, y: 67)
             Button { Haptics.play(.sel); actions.openProfile() } label: {
                 ZStack {
-                    if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() } else { HVDefaultAvatar() }
-                }.frame(width: 56, height: 56).clipShape(Circle()).overlay(Circle().strokeBorder(HV.ink, lineWidth: 3)).overlay(alignment: .topTrailing) { Circle().fill(Color(hex: "24A03C")).frame(width: 13, height: 13).overlay(Circle().strokeBorder(.white, lineWidth: 2)) }
-            }.buttonStyle(.plain).offset(x: 320, y: 48)
-            livePill.offset(x: 18, y: 112)
+                    if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() } else { Circle().fill(RadialGradient(colors: [Color(hex: "B1EFBE"), Color(hex: "67DE7F"), Color(hex: "8E88B0")], center: UnitPoint(x: 0.4, y: 0.3), startRadius: 0, endRadius: 40)) }
+                }.frame(width: 52, height: 52).clipShape(Circle()).overlay(Circle().strokeBorder(HV.ink, lineWidth: 3)).overlay(alignment: .topTrailing) { Circle().fill(Color(hex: "24A03C")).frame(width: 13, height: 13).overlay(Circle().strokeBorder(.white, lineWidth: 2)) }
+            }.buttonStyle(.plain).offset(x: 320, y: 50)
+            livePill.offset(x: 18, y: 114)
         }
     }
 
@@ -102,41 +105,37 @@ struct YesterdayV64View: View {
             Text("\(max(0, 3 - input.shotsUsed))").font(LF.inter(700, 12.5)).foregroundStyle(HV.ink)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 8).frame(width: 256, height: 38)
+        .padding(.horizontal, 8).frame(width: 255, height: 36)
         .background(.white, in: Capsule()).shadow(color: .black.opacity(0.12), radius: 12, y: 8)
     }
 
     // MARK: Friends タブ
 
+    private var stat1: some View { VStack(spacing: 4) { Text("6d").font(LF.serif(31, italic: true)).frame(height: 31); Text("Left").font(LF.inter(500, 13)).opacity(0.8) }.foregroundStyle(.white) }
+
     private func friendsTab(w: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            ZStack(alignment: .bottom) {
-                collage(width: w - 28)
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack(alignment: .topLeading) {
+                collage(width: w - 36)
                 LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                VStack(spacing: 10) {
-                    Text("FRIENDS · \(input.dateLabel)").font(LF.mono(10)).tracking(3).foregroundStyle(.white.opacity(0.8)).padding(.top, 50)
-                    Spacer()
-                    Text("Yesterday,\nfriends.").font(LF.serif(56)).tracking(-1.1).lineSpacing(-20).multilineTextAlignment(.center).foregroundStyle(.white)
-                    HStack {
-                        VStack(spacing: 2) { Text("6d").font(LF.serif(34, italic: true)); Text("Left").font(LF.inter(600, 14)).opacity(0.8) }
-                        Spacer()
-                        VStack(spacing: 6) { if input.shotFriends > 0 { Circle().fill(Color(hex: "3BD35A")).frame(width: 16, height: 16); Text("\(input.shotFriends) shot today").font(LF.inter(600, 14)).opacity(0.85) } else { Rectangle().fill(Color(hex: "3BD35A")).frame(width: 44, height: 2); Text("まだ").font(LF.inter(600, 14)).opacity(0.8) } }
-                        Spacer()
-                        VStack(spacing: 2) { Image(systemName: "chevron.right").font(.system(size: 16, weight: .bold)); Text("Friends").font(LF.inter(600, 14)).opacity(0.8) }
-                    }.foregroundStyle(.white).padding(.horizontal, 36).padding(.top, 18)
-                    HStack(spacing: 10) {
-                        Button { Haptics.play(.click); actions.addFriends() } label: {
-                            HStack(spacing: 8) { Image(systemName: "plus").font(.system(size: 16, weight: .bold)); Text("Add friends").font(LF.inter(800, 18)) }
-                                .foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(.white, in: Capsule())
-                        }.buttonStyle(HVPress(scale: 0.97))
-                        Button { Haptics.play(.sel); actions.scanQR() } label: {
-                            Image(systemName: "qrcode").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white).frame(width: 56, height: 56).background(Color.white.opacity(0.14), in: Circle())
-                        }.buttonStyle(HVPress(scale: 0.94))
-                    }.padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 12)
-                }
+                Text("FRIENDS · \(input.dateLabel)").font(LF.mono(10)).tracking(3).foregroundStyle(.white.opacity(0.8)).frame(width: w - 36).offset(y: 22)
+                VStack(spacing: -4) { Text("Yesterday,").lineLimit(1).fixedSize(); Text("friends.").lineLimit(1).fixedSize() }.font(LF.serif(46)).tracking(-0.9).foregroundStyle(.white).frame(width: 322, height: 90).offset(x: 16, y: 168)
+                stat1.frame(width: 100).offset(x: 11, y: 310)
+                VStack(spacing: 4) {
+                    if input.shotFriends > 0 { Circle().fill(Color(hex: "3BD35A")).frame(width: 16, height: 16).frame(height: 31); Text("\(input.shotFriends) shot today").font(LF.inter(500, 13)).opacity(0.85) }
+                    else { Text("—").font(LF.inter(400, 22)).frame(height: 31); Text("まだ").font(LF.inter(500, 13)).opacity(0.8) }
+                }.foregroundStyle(.white).frame(width: 130).offset(x: 111, y: 310)
+                VStack(spacing: 4) { Image(systemName: "chevron.right").font(.system(size: 16, weight: .bold)).frame(height: 31); Text("Friends").font(LF.inter(500, 13)).opacity(0.8) }.foregroundStyle(.white).frame(width: 100).offset(x: 235, y: 310)
+                Button { Haptics.play(.click); actions.addFriends() } label: {
+                    HStack(spacing: 8) { Image(systemName: "plus").font(.system(size: 16, weight: .bold)); Text("Add friends").font(LF.inter(800, 16)) }
+                        .foregroundStyle(HV.ink).frame(width: 262, height: 56).background(.white, in: Capsule())
+                }.buttonStyle(HVPress(scale: 0.97)).offset(x: 14, y: 400)
+                Button { Haptics.play(.sel); actions.scanQR() } label: {
+                    Image(systemName: "qrcode").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white).frame(width: 56, height: 56).background(Color.white.opacity(0.14), in: Circle())
+                }.buttonStyle(HVPress(scale: 0.94)).offset(x: 284, y: 400)
             }
-            .frame(width: w - 28, height: 470).clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-            .padding(.horizontal, 14)
+            .frame(width: w - 36, height: 470).clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .padding(.horizontal, 18)
             if input.requestCount > 0 {
                 Button { Haptics.play(.sel); actions.openRequests() } label: {
                     HStack(spacing: 12) {
@@ -193,49 +192,45 @@ struct YesterdayV64View: View {
     // MARK: Mondo タブ
 
     private func mondoTab(w: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 8) { Circle().fill(Color(hex: "3BD35A")).frame(width: 9, height: 9); Text("MONDO · \(input.dateLabel)").font(LF.mono(11)).tracking(3).foregroundStyle(HV.gray) }.padding(.horizontal, 20)
-            VStack(alignment: .leading, spacing: -8) {
-                HStack(spacing: 0) {
-                    Text("The w").font(LF.serif(58)).tracking(-1.4)
-                    ZStack {
-                        Circle().fill(Color(hex: "24A03C")).frame(width: 40, height: 40)
-                        Circle().stroke(HV.ink, lineWidth: 3).frame(width: 40, height: 40)
-                        Ellipse().stroke(HV.ink.opacity(0.85), lineWidth: 2).frame(width: 18, height: 40)
-                        Rectangle().fill(HV.ink.opacity(0.85)).frame(width: 40, height: 2)
-                        Circle().fill(Color(hex: "FFD60A")).frame(width: 9, height: 9).overlay(Circle().stroke(HV.ink, lineWidth: 1.5)).offset(x: 9, y: -14)
-                    }.padding(.horizontal, 2).offset(y: 6)
-                    Text("rld,").font(LF.serif(58)).tracking(-1.4)
-                }.foregroundStyle(HV.ink).frame(height: 62, alignment: .leading)
-                Text("yesterday.").font(LF.serif(58, italic: true)).tracking(-1.4).frame(height: 62, alignment: .leading)
-                    .foregroundStyle(LinearGradient(colors: [Color(hex: "24A03C"), Color(hex: "7EE08F")], startPoint: .leading, endPoint: .trailing))
-                    .overlay(alignment: .bottomLeading) { Capsule().fill(Color(hex: "C8F25A")).frame(width: 200, height: 5).offset(y: 4) }
-            }.padding(.horizontal, 20)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 28) {
+        ZStack(alignment: .topLeading) {
+            HStack(spacing: 8) { Circle().fill(Color(hex: "3BD35A")).frame(width: 9, height: 9); Text("MONDO · \(input.dateLabel)").font(LF.mono(10)).tracking(2.4).foregroundStyle(HV.gray) }.offset(x: 20, y: 5)
+            HStack(spacing: 0) {
+                Text("The w").font(LF.serif(58)).tracking(-1.2)
+                ZStack {
+                    Circle().fill(Color(hex: "24A03C")).frame(width: 34, height: 34)
+                    Circle().stroke(HV.ink, lineWidth: 2.6).frame(width: 34, height: 34)
+                    Ellipse().stroke(HV.ink.opacity(0.85), lineWidth: 1.8).frame(width: 15, height: 34)
+                    Rectangle().fill(HV.ink.opacity(0.85)).frame(width: 34, height: 1.8)
+                    Circle().fill(Color(hex: "FFD60A")).frame(width: 8, height: 8).overlay(Circle().stroke(HV.ink, lineWidth: 1.4)).offset(x: 8, y: -12)
+                }.padding(.horizontal, 2).offset(y: 5)
+                Text("rld,").font(LF.serif(58)).tracking(-1.2)
+            }.foregroundStyle(HV.ink).frame(height: 57, alignment: .leading).offset(x: 20, y: 30)
+            Text("yesterday.").font(LF.serif(64, italic: true)).tracking(-1.2)
+                .foregroundStyle(LinearGradient(colors: [Color(hex: "24A03C"), Color(hex: "7EE08F")], startPoint: .leading, endPoint: .trailing))
+                .overlay(alignment: .bottomLeading) { Capsule().fill(Color(hex: "C8F25A")).frame(width: 226, height: 5).offset(y: 2) }
+                .frame(height: 64, alignment: .leading).offset(x: 20, y: 87)
+            // 都市の 時計(帯)
+            ZStack(alignment: .leading) {
+                Rectangle().fill(.black.opacity(0.08)).frame(height: 1).offset(y: -15)
+                Rectangle().fill(.black.opacity(0.08)).frame(height: 1).offset(y: 15)
+                HStack(spacing: 20) {
                     ForEach(Array(input.cities.enumerated()), id: \.offset) { _, c in
-                        HStack(spacing: 8) { Circle().fill(Color(hex: "3BD35A")).frame(width: 6, height: 6); Text(c.0).font(LF.mono(11)).tracking(2.4).foregroundStyle(HV.gray); Text(c.1).font(LF.mono(12)).foregroundStyle(HV.ink) }
+                        HStack(spacing: 6) { Circle().fill(Color(hex: "3BD35A")).frame(width: 5, height: 5); Text(c.0).font(LF.mono(10)).tracking(2).foregroundStyle(HV.gray); Text(c.1).font(LF.mono(10)).foregroundStyle(HV.ink) }.fixedSize()
                     }
-                }.padding(.horizontal, 20).frame(height: 44)
-            }
-            .overlay(alignment: .top) { Rectangle().fill(.black.opacity(0.08)).frame(height: 1) }
-            .overlay(alignment: .bottom) { Rectangle().fill(.black.opacity(0.08)).frame(height: 1) }
-            ZStack(alignment: .bottom) {
+                }.padding(.leading, 20)
+            }.frame(width: w, height: 30).clipped().offset(y: 173)
+            ZStack(alignment: .top) {
                 Color(hex: "2A2326")
                 if let img = input.mondoPhoto { Image(uiImage: img).resizable().scaledToFill().blur(radius: input.locked ? 20 : 0) }
                 LinearGradient(colors: [.black.opacity(0.1), .clear, .black.opacity(0.7)], startPoint: .top, endPoint: .bottom)
-                VStack {
-                    Text("TODAY'S ONE · 9:00").font(LF.mono(11)).tracking(3).foregroundStyle(Color(hex: "9BE8A8")).padding(.top, 24)
-                    Spacer()
-                    Text(input.mondoCity).font(LF.inter(800, 40)).foregroundStyle(.white).padding(.bottom, 80)
-                }
-                Text(input.mondoTag).font(LF.inter(900, 18)).foregroundStyle(HV.ink).padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(-6))
-                    .padding(.top, 60).padding(.trailing, 20)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                Text("TODAY'S ONE · 9:00").font(LF.mono(10)).tracking(3).foregroundStyle(Color(hex: "9BE8A8")).offset(y: 20)
+                Text(input.mondoCity).font(LGFont.mincho(34)).foregroundStyle(.white).offset(y: 293)
+                Text("picked by the world").font(LF.inter(500, 12)).foregroundStyle(.white.opacity(0.7)).offset(y: 355)
+                Text(input.mondoTag).font(LF.inter(900, 15)).foregroundStyle(HV.ink).frame(width: 80, height: 41).background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 11)).rotationEffect(.degrees(6)).offset(x: 129, y: 47)
             }
-            .frame(width: w - 36, height: 400).clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous)).padding(.horizontal, 18)
+            .frame(width: 354, height: 400).clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous)).offset(x: 18, y: 213)
         }
+        .frame(width: w, height: 640, alignment: .topLeading)
     }
 
     // MARK: 下へ(Y05):ME ・ Friend ・ TRIPS
@@ -288,45 +283,38 @@ struct YesterdayV64View: View {
     // MARK: 写真を ひらいた ところ(Y06)
 
     private func photoViewer(_ c: YesterdayV64Input.Cell) -> some View {
-        ZStack(alignment: .top) {
-            Color(hex: "0A0A0B").ignoresSafeArea()
-            VStack(spacing: 0) {
-                ZStack {
-                    VStack(spacing: 2) {
-                        Text(c.name).font(LF.inter(500, 26)).foregroundStyle(.white)
-                        Text(c.time.map { "yesterday · \($0)" } ?? "today's one · picked by the world").font(LF.inter(500, 13)).foregroundStyle(Color(hex: "8E8E93"))
-                    }
-                    HStack { Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.25)) { viewing = nil } } label: {
-                        Image(systemName: "arrow.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 48, height: 48).background(Color(hex: "161618"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    }.buttonStyle(.plain); Spacer() }.padding(.leading, 14)
-                }.padding(.top, 54)
-                ZStack(alignment: .bottomLeading) {
-                    Color(hex: "2A2326")
-                    if let img = c.photo { Image(uiImage: img).resizable().scaledToFill() }
-                    if let tag = c.tag {
-                        Text(tag.hasPrefix("#") ? tag : "#\(tag)").font(LF.inter(900, 16)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 7)
-                            .background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(-6)).padding(.leading, 16).padding(.bottom, 20)
-                    }
-                }
-                .frame(maxWidth: .infinity).frame(height: 560).clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous)).padding(.horizontal, 14).padding(.top, 12)
-                Spacer()
-                Button { Haptics.play(.pop); actions.openPhoto(c.id) } label: {
-                    Text("reply").font(LF.inter(800, 20)).foregroundStyle(HV.ink).frame(width: 106, height: 56).background(.white, in: Capsule())
-                }.buttonStyle(HVPress(scale: 0.96)).padding(.bottom, 44)
+        ZStack(alignment: .topLeading) {
+            Color(hex: "0A0A0B")
+            VStack(spacing: 2) {
+                Text(c.name).font(LF.serif(26)).foregroundStyle(.white)
+                Text(c.time.map { "yesterday · \($0)" } ?? "today's one · picked by the world").font(LF.inter(500, 12.5)).foregroundStyle(Color(hex: "8E8E93"))
+            }.frame(width: 246).offset(x: 72, y: 55)
+            Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.25)) { viewing = nil } } label: {
+                Image(systemName: "arrow.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 48, height: 48).background(Color(hex: "161618"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }.buttonStyle(.plain).offset(x: 14, y: 54)
+            ZStack { Color(hex: "2A2326"); if let img = c.photo { Image(uiImage: img).resizable().scaledToFill() } }
+                .frame(width: 362, height: 560).clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous)).offset(x: 14, y: 118)
+            if let tag = c.tag {
+                Text(tag.hasPrefix("#") ? tag : "#\(tag)").font(LF.inter(900, 15)).foregroundStyle(HV.ink).frame(width: 81, height: 36)
+                    .background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(-6)).offset(x: 29, y: 628)
             }
+            Button { Haptics.play(.pop); actions.openPhoto(c.id) } label: {
+                Text("reply").font(LF.inter(800, 15)).foregroundStyle(HV.ink).frame(width: 106, height: 56).background(.white, in: Capsule())
+            }.buttonStyle(HVPress(scale: 0.96)).offset(x: 142, y: 732)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(Color(hex: "0A0A0B")).ignoresSafeArea()
     }
 
     // MARK: 下の ガラスの タブ
 
     private var tabBar: some View {
-        HStack(spacing: 0) {
-            tabButton(0, "Friends", "person.2.fill")
+        HStack(spacing: 4) {
             tabButton(1, "Mondo", "globe")
+            tabButton(0, "Friends", "person.2.fill")
         }
-        .padding(6).frame(width: 272, height: 66)
-        .background(.ultraThinMaterial, in: Capsule()).background(Color.white.opacity(0.4), in: Capsule())
-        .overlay(Capsule().strokeBorder(.black.opacity(0.08), lineWidth: 1))
+        .padding(.horizontal, 5).padding(.vertical, 5).frame(width: 274, height: 66)
+        .background(.ultraThinMaterial, in: Capsule()).background(Color(red: 40 / 255, green: 40 / 255, blue: 46 / 255).opacity(0.2), in: Capsule())
+        .overlay(Capsule().strokeBorder(.black.opacity(0.06), lineWidth: 1))
         .shadow(color: .black.opacity(0.2), radius: 20, y: 12)
     }
 

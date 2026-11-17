@@ -261,7 +261,7 @@ struct HVBackground: View {
     }
 
     private func glow(_ c: Color, a: Double, size: CGFloat, x: CGFloat, y: CGFloat) -> some View {
-        RadialGradient(colors: [c.opacity(a), c.opacity(0)], center: .center, startRadius: 0, endRadius: size * 0.34)
+        RadialGradient(colors: [c.opacity(a), c.opacity(0)], center: .center, startRadius: 0, endRadius: size * 0.48)
             .frame(width: size, height: size).offset(x: x, y: y)
     }
 }
@@ -820,7 +820,7 @@ struct HVVeil: ViewModifier {
 /// カードの 下の かげ(モック:0 30px 60px -24px 黒 60% = ひろがり なしで 下だけ)
 struct HVCardShadow: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 40, style: .continuous).fill(Color.black.opacity(0.42))
-            .padding(.horizontal, 24).padding(.vertical, 24).blur(radius: 30).offset(y: 30).allowsHitTesting(false)
+        RoundedRectangle(cornerRadius: 40, style: .continuous).fill(Color.black.opacity(0.5))
+            .padding(.horizontal, 14).padding(.vertical, 22).blur(radius: 26).offset(y: 26).allowsHitTesting(false)
     }
 }

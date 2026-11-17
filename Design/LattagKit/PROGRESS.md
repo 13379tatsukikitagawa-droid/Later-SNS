@@ -90,3 +90,47 @@
 - 古い 昨日の Home(`HomeV5Container`)は V64 の あいだ 出ない。昨日の 画面は P06 で 作る(それまで「yesterday」「Yesterday の 四すみ」は 既存の ビューアへ)。
 - DEBUG:`scripts/snapto.sh <ID> home -- -debugBackdrop 1 -debugShots 2 -debugFriends 3 -debugPage 1 -debugScroll 936 …`(`Debug/DebugRouter.swift` の HomeV64Preview)。見本写真は モックから 取り出して `/tmp/lattag_ph/`(リポジトリの 外)に 置く。
 - 撮る:`CaptureRequestStore.shared.pendingRequestID = UUID()`(通知 / ウィジェットと 同じ 入口)。のこり 0 の ときは「今日は、ここまで」。
+
+## 2026-11-17 再計測(`scripts/snapall.sh`・見本の端末わく(DEBUG のみ)を重ねて比較)
+
+| ID | score |
+|---|---|
+| H01_home | 6.4 |
+| H02_home_hint | 10.0 |
+| H03_home_press | 7.9 |
+| H04_home_1shot | 6.7 |
+| H05_home_2shot | 6.7 |
+| H06_home_3shot | 7.1 |
+| H07_home_friends | 7.6 |
+| H08_home_firstday | 6.7 |
+| H09_home_night | 6.7 |
+| H10_live_panel | 16.9 |
+| H11_page_friends | 10.1 |
+| H12_page_friends_filled | 9.7 |
+| H13_page_trip | 12.5 |
+| H14_page_mondo_locked | 8.0 |
+| H15_page_mondo_open | 8.4 |
+| H16_page_yesterday | 11.5 |
+| H17_page_yesterday_open | 11.2 |
+| H18_page_yesterday_firstday | 8.3 |
+| L01_today | 8.5 |
+| L02_active | 8.4 |
+| L03_yesterday | 8.8 |
+| L04_yesterday_open | 9.5 |
+| L05_mondo_row | 8.1 |
+| L06_albums | 7.1 |
+| L07_onthisday | 11.6 |
+| L08_friends_card_empty | 7.2 |
+| L09_friends_card | 13.0 |
+| L10_firstday_yesterday | 5.4 |
+| L11_develop_view | 11.1 |
+| Y01_yesterday_locked | 9.6 |
+| Y02_yesterday_open | 10.3 |
+| Y03_yesterday_mondo_tab | 6.9 |
+| Y04_yesterday_friends_tab | 10.3 |
+| Y05_yesterday_scroll | 8.4 |
+| Y06_photo_viewer | 1.5 |
+| C01_tag | 26.6 |
+
+- 8 以下:H01 H03〜H06 H08 H09 L01〜L06 L08 L10 Y03 Y05 Y06。H10(ライブパネル)16.9 ・ H13 12.5 ・ L09 13.0 ・ L07 11.6 ・ H16/H17 11 台が 残り。C01 は 見本が HTML 描画の キーボードで 実機の キーボードと 別物 → 26 前後から 下がらない。
+- 作業の道具:`scripts/snapall.sh`(全画面)・`anchor_search.sh`・`grid.py`・`bands.py`。
