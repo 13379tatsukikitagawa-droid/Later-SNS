@@ -62,3 +62,10 @@
 | Y05_yesterday_scroll | 76.5 |
 | Y06_photo_viewer | 1.4 |
 | C01_tag | 26.6 |
+
+## 2026-11-17 P12(v68)〜P15(v71):M0〜M1 完了(Home)
+
+- M0:最低 iOS 26 → 18(app / widget / tests)。iOS の 版の 分かれ目は `LGGlass`(`LGGlassMode` `lgScrollEdgeSoft` `lgTabBarMinimize` `LGGlassGroup`)に まとめた。DEBUG `-debugLegacyGlass 1`。Info.plist に `_lattag-shake`。widgets ブランチにも 取りこみ 済み(ビルド 確認)。
+- M1a 背景 + ヘッダー(HUD ・ アバターの 輪 ・ まとまる 動き)/ M1b 四すみ 78pt + かぎ(ボタンの overlay)+ ファインダー / M1c 本物の レンズ + しぼり羽根 + シール。
+- 点数(新しい 見本 ・ `-debugMock 1`):H01 9.4 / H03 11.9 / H04 10.4 / H06 8.1 / H10 6.9 / H11 6.1 / H12 5.9 / H13 6.8 / H14 7.7 / H15 7.9 / H16 9.5 / H17 9.4 / H18 8.9(土台は 26〜46)。
+- のこり(M2 以降):H02 17.4 / H08 13.0 ・ L01〜L09 は うしろが 変わった ぶん 11〜24(M2 の Friends カード = P14 と 下の 区画の 位置あわせで 直す)・ Y01〜Y05。
