@@ -40,3 +40,6 @@ r Y04_yesterday_friends_tab yesterday -debugShots 2 -debugRequests 1 -debugShotF
 r Y05_yesterday_scroll yesterday -debugShots 2 -debugScrollMe 1
 r Y06_photo_viewer yesterday -debugShots 2 -debugViewing m
 r C01_tag tag
+r F01_friend_empty friends -debugRequests 1
+r F02_friend_list friends -debugRequests 1 -debugFriends 3
+r F03_friend_requests friends -debugRequests 1 -debugFriends 3

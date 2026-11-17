@@ -1077,6 +1077,19 @@ struct TodayView: View {
             .environment(\.colorScheme, palette.isNight ? .dark : .light)
         }
         .fullScreenCover(isPresented: $showingFriendsHub) {
+            if UIFlag.v64 {
+                FriendsV68View(
+                    myName: currentUser?.name ?? "",
+                    myAvatarData: currentUser?.profileImageData,
+                    friends: layerData(sharedGroups: sharedGroups).friends,
+                    groups: sharedGroups,
+                    onClose: { showingFriendsHub = false },
+                    onOpenInviteToGroup: {
+                        showingFriendsHub = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { newGroupPrefill = nil; showingNewGroup = true }
+                    }
+                )
+            } else {
             FriendScreenV48(
                 myName: currentUser?.name ?? "",
                 myColorIndex: currentUser?.avatarColorIndex,
@@ -1091,6 +1104,7 @@ struct TodayView: View {
                 },
                 onEditProfile: onOpenProfile
             )
+            }
         }
         // v48:「とどいた」(ともだち申請)・「グループに えらぶ」は、今の 画面を そのまま 呼ぶ
         .fullScreenCover(isPresented: $showingFriendsHubInbox) {

@@ -75,3 +75,10 @@
 - 友だち あり(ストーリーの 丸 + 申請の 1行)/ だれも いない(横に すべる カード:申請して きた 人 + リンク / QR / ID)。キャラクター ・ Shake ・ 3ボタン ・ チェキの 列は なくした。申請の 承認は `FriendRequests.respond`、つつくは `layerActions.knock`。
 - 点数(`-debugMock 1`):L01_today 7.4 | L02_active 7.1 | L03_yesterday 9.3 | L04_yesterday_open 8.9 | L05_mondo_row 7.0 | L06_albums 10.4 | L07_onthisday 10.0 | L08_friends_card_empty 9.9 | L09_friends_card 9.7 | L12_friends_card_noreq 11.1 | L10_firstday_yesterday 6.4 | L11_develop_view 12.5 | 
 - 注意:並行して 2本 測定を 回すと 結果が くずれる(シミュレータが 1台)。`snapall.sh` は 1本ずつ。
+
+## 2026-11-17 M3(P12-B:Friends 画面)
+
+- `FriendsV68View`(黒い 一覧)に 置きかえ。`TodayView` の 呼び出し 1か所を `UIFlag.v64` で 切りかえ。今日の 一行 ・ さがす ・ ふる カード(いまは 今ある `ShakeConnectSheet` を ひらく。M4/M5 で 新しい Shake に)・ QR / Link / ID ・ Requests ・ Friends 一覧(撮った 人が 上)・ 下の 一行。人数は どこにも 出さない。
+- 「ID で さがす」は 今ある `UserDirectoryService.search` + `FriendRequests.send` を 使う 小さな シート。
+- 承認 = `FriendRequests.respond`、つつく = `KnockStore`、チャット = `DirectMessageView`、ブロック / 通報 = `ModerationService` / `ReportSheet`(行を 押す)。**ブロックの しくみは すでに ある**(`ModerationService.blockUser`)→ M5 の Shake 候補から ブロック済みの 人も 外す。
+- 見本との ちがい(データが 無い):申請の 人の 写真(申請の レコードに 写真が 無い → 名前の 1文字)・「17:05 に 撮った」の 時刻(いまは「今日 撮った」)。

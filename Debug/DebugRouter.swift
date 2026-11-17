@@ -20,6 +20,7 @@ enum DebugRouter {
         case "home": show(HomeV64Preview())
         case "yesterday": show(YesterdayV64Preview())
         case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
+        case "friends": showRaw(FriendsV68Preview())
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
         }
@@ -198,5 +199,21 @@ struct DebugMockChrome: View {
         }
         .ignoresSafeArea().allowsHitTesting(false)
     }
+}
+
+/// DEBUG:Friends 画面(`-debugRoute friends -debugFriends 3 -debugRequests 1`)
+struct FriendsV68Preview: View {
+    private static func data(_ k: String) -> Data? { try? Data(contentsOf: URL(fileURLWithPath: "/tmp/lattag_ph/\(k).jpg")) }
+    private var screen: FriendsV68View {
+        let d = UserDefaults.standard
+        let n = d.integer(forKey: "debugFriends")
+        let names = ["あや", "れな", "そら"], shots = [true, true, false], keys = ["b", "b", "f"]
+        let friends = (0..<min(3, n)).map { HomeFriend(id: "fr\($0)", name: names[$0], avatarData: Self.data(keys[$0]), seed: UUID(), hasShot: shots[$0], city: nil, mosaicTiny: Self.data(keys[$0]), mosaicKey: "m\($0)", tag: nil, knockOff: false, isMe: false, groupIDs: []) }
+        let reqs: [FriendRequests.Request] = d.integer(forKey: "debugRequests") > 0
+            ? [FriendRequests.Request(id: "r0", fromUserID: "u0", toUserID: "me", fromName: "りこ", createdAt: Date().addingTimeInterval(-7200), fromUsername: "riko_6982"),
+               FriendRequests.Request(id: "r1", fromUserID: "u1", toUserID: "me", fromName: "さき", createdAt: Date().addingTimeInterval(-18000), fromUsername: "saki_6611")] : []
+        return FriendsV68View(myName: "you", friends: friends, groups: [], onClose: {}, injectedRequests: reqs)
+    }
+    var body: some View { screen }
 }
 #endif
