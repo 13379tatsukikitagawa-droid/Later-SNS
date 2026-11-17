@@ -1,0 +1,66 @@
+
+/* ================= v68(PROMPT v71)・ レンズの インパクト ・ 表記 ・ かぎの 位置 ================= */
+
+/* 1) 「Friends」の 表記を そろえる(頭の F だけ 斜体 ・ 緑 に しない)*/
+.a67h b::first-letter,.afh b::first-letter,.fscr .ftl em::first-letter,.yfh b::first-letter{font-family:inherit!important;font-style:normal!important;color:inherit!important}
+
+/* 2) まんなか = 本物の カメラの レンズ */
+.orb .lens{transform:scale(.71)}
+.orb .lens.prs{transform:scale(.68)}
+.orb .lens .lnb{background:#050506!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  box-shadow:0 46px 70px -26px rgba(0,0,0,.85),0 0 0 2px rgba(255,255,255,.1),0 0 60px -6px rgba(200,242,90,.16)!important}
+.orb .lens .lnb::after{display:none!important}
+.orb .lens .lgr,.orb .lens .lgh{display:none!important}
+.lz{position:absolute;inset:0;width:312px;height:312px;overflow:visible;pointer-events:none}
+.lz .fr{transform-origin:0 0;transition:transform 1.1s cubic-bezier(.3,1.1,.4,1)}
+.lens.prs .lz .fr{transform:rotate(-14deg)}
+.lz .cg{transform-origin:0 0;animation:lzcg 14s linear infinite}
+@keyframes lzcg{to{transform:rotate(360deg)}}
+.lz text{font:700 9.5px var(--mono);letter-spacing:.24em;fill:rgba(255,255,255,.62)}
+.lz text .g{fill:#C8F25A}
+/* 目盛りと 弧は バレルの 上に */
+.hxs .tk line{stroke:rgba(255,255,255,.28)}
+.hxs .tk line.M{stroke:rgba(255,255,255,.6)}
+.hxs .s{stroke:#C8F25A!important;filter:drop-shadow(0 0 6px rgba(200,242,90,.65))!important}
+.hxs .s.u{stroke:rgba(255,255,255,.16)!important;filter:none!important}
+/* しぼり羽根は 少し 見えて いる(ふだん)→ 押すと しまる */
+.irs{--d:104px}
+.irs.cl{--d:66px}
+.irs.sn{--d:0px}
+.irs .bl rect{fill:url(#ir66g);stroke:rgba(255,255,255,.16)}
+/* まんなかの カメラの 印:ガラスの 奥で 光る */
+.orb .lens .lnin i{opacity:.95;filter:drop-shadow(0 0 10px rgba(0,0,0,.6))}
+.orb .lens .lnin svg.cmg{width:58px;height:46px}
+/* 押す ・ はなす */
+.lens .lzf{position:absolute;inset:40px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 70%);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.lz .cg{animation:none}.lz .fr{transition:none}}
+
+/* 3) 四すみの かぎ:ボタンの 角と 同じ 中心の 角丸(ボタン 角丸 26 + すきま 5 = 31)で、ボタンに 沿わせる */
+.odb .ck{width:30px!important;height:30px!important;border-color:rgba(255,255,255,.92)!important;border-width:0!important;border-radius:0!important}
+.odb[data-i="0"] .ck{left:-5px!important;top:-5px!important;right:auto!important;bottom:auto!important;border-left-width:2.5px!important;border-top-width:2.5px!important;border-top-left-radius:31px!important}
+.odb[data-i="1"] .ck{right:-5px!important;top:-5px!important;left:auto!important;bottom:auto!important;border-right-width:2.5px!important;border-top-width:2.5px!important;border-top-right-radius:31px!important}
+.odb[data-i="2"] .ck{left:-5px!important;bottom:-5px!important;right:auto!important;top:auto!important;border-left-width:2.5px!important;border-bottom-width:2.5px!important;border-bottom-left-radius:31px!important}
+.odb[data-i="3"] .ck{right:-5px!important;bottom:-5px!important;left:auto!important;top:auto!important;border-right-width:2.5px!important;border-bottom-width:2.5px!important;border-bottom-right-radius:31px!important}
+.odb.lk .ck{border-color:rgba(255,255,255,.4)!important}
+
+/* 4) かざりの シール:ボタン ・ かぎと 8pt 以上 はなす(レンズの 中心から の 位置で 置く)*/
+.orb svg.stk.s1{left:24px!important;top:30px!important}
+.orb svg.stk.s2{left:320px!important;top:38px!important;right:auto!important}
+.orb svg.stk.s3{left:250px!important;top:172px!important}
+
+/* ガラスの 反射(コーティングの 色 ・ ハイライト)*/
+.lzr{position:absolute;left:43px;top:43px;width:226px;height:226px;border-radius:50%;overflow:hidden;pointer-events:none;z-index:1}
+.lzr i{position:absolute;border-radius:50%;display:block}
+.lzr .c1{left:22%;top:14%;width:44%;height:30%;background:radial-gradient(closest-side,rgba(140,110,255,.42),rgba(140,110,255,0));filter:blur(2px)}
+.lzr .c2{right:12%;bottom:16%;width:36%;height:26%;background:radial-gradient(closest-side,rgba(200,242,90,.32),rgba(59,211,90,0))}
+.lzr .cg{inset:0;background:conic-gradient(from 0deg,rgba(255,255,255,0) 0 18%,rgba(120,200,255,.14) 24%,rgba(255,255,255,0) 32% 62%,rgba(200,140,255,.14) 70%,rgba(255,255,255,0) 78%);animation:lzcg 16s linear infinite}
+.lzr .hl{left:15%;top:9%;width:52%;height:38%;border-radius:50%;background:radial-gradient(70% 60% at 40% 35%,rgba(255,255,255,.34),rgba(255,255,255,0) 70%);transform:rotate(-24deg)}
+.lzr .dt{right:26%;top:24%;width:12px;height:12px;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0))}
+.lens .lzf{z-index:4}
+.orb .lens .lnin{z-index:3}
+.orb .lens .lnin b{text-shadow:0 2px 18px rgba(0,0,0,.7)!important}
+/* 古い 目盛りは 字の 輪に おきかえ */
+.hxs .tk{display:none}
+.orb{--lzglow:rgba(200,242,90,.0)}
+.orb .lens::before{content:"";position:absolute;inset:-26px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0));z-index:-1;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.lzr .cg{animation:none}}

@@ -4,6 +4,10 @@
 > ルールは リポジトリの `CLAUDE.md`(= `Design/LattagKit/CLAUDE.md`)。**計画モードで 始めて、計画を 見せて から 作る**。
 > キットの 場所:`Design/LattagKit/`(以下 `Kit/` と 書く)。
 
+> **v68 が 最新**:Home の うしろ(フルブリード)・ ヘッダー ・ 月、Friends 画面、Shake は `prompts/reference/PROMPT_v68.md` と `prompts/P12_v68_home_friends_shake.md` が 優先。見本画像 ・ JSON は v68 の ものに 更新済み。
+
+> **v70 が 最新**:Home 下の Friends カード(L08 ・ L09 ・ L12)は `prompts/reference/PROMPT_v70.md` と `prompts/P14_v70_friends_card.md` が 優先。
+
 ## 対象
 
 - 画面:`L01_today` `L02_active` `L03_yesterday` `L04_yesterday_open` `L05_mondo_row` `L06_albums` `L07_onthisday` `L08_friends_card_empty` `L09_friends_card` `L10_firstday_yesterday` `L11_develop_view`
@@ -11,7 +15,7 @@
 
 ## 仕様
 
-`Kit/prompts/reference/PROMPT_v63.md` §12(Home 下の Friends カード ・ PULL を 消す)、`PROMPT_v66.md` §4(はじめての 日:Mondo ・ Albums ・ On this day を 出さない、Yesterday は 空っぽの カード)、`PROMPT_v59.md`(Active に Trip)。古い 詳細は `ALL_PROMPTS_v47-v67.md` を 画面名で 検索。
+`Kit/prompts/reference/PROMPT_v63.md` §12(Home 下の Friends カード ・ PULL を 消す)、`PROMPT_v66.md` §4(はじめての 日:Mondo ・ Albums ・ On this day を 出さない、Yesterday は 空っぽの カード)、`PROMPT_v59.md`(Active に Trip)。古い 詳細は `ALL_PROMPTS_v47-v71.md` を 画面名で 検索。
 
 ## 読む コード
 

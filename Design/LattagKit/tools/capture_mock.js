@@ -1,10 +1,10 @@
 /* Lattag モック → 見本画像(screens/)と 寸法データ(spec/screens/)を 作る
    使い方:  node tools/capture_mock.js [mock の html] [出力フォルダ] [ID の 一部(省略可)]
-   例:      node tools/capture_mock.js mock/lattag_v64.html . H0
+   例:      node tools/capture_mock.js mock/lattag_v68.html . H0
    必要:    npm i -D playwright && npx playwright install chromium */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
-const MOCK = path.resolve(process.argv[2] || 'mock/lattag_v64.html');
+const MOCK = path.resolve(process.argv[2] || 'mock/lattag_v68.html');
 const OUT = path.resolve(process.argv[3] || '.');
 const ONLY = process.argv[4] || '';
 fs.mkdirSync(path.join(OUT, 'screens'), { recursive: true });
@@ -14,7 +14,7 @@ const W = ms => new Promise(r => setTimeout(r, ms));
 const ctl = (p, c) => p.evaluate(c => { const b = [...document.querySelectorAll('#ctl button')].find(b => b.dataset.c === c || b.textContent.trim() === c); b && b.click() }, c);
 const ev = (p, f, a) => p.evaluate(f, a);
 const clean = p => ev(p, () => { const h = document.getElementById('home'); h && h.classList.remove('cm-spot'); try { cmHide() } catch (e) { } });
-const home = async p => { await ctl(p, 'home'); await W(2600); await clean(p) };
+const home = async p => { await ctl(p, 'home'); await W(2600); await clean(p); await W(700) };
 const scrollTo = (p, id, off) => ev(p, ([id, off]) => { const hs = document.getElementById('hs'), a = document.getElementById(id); if (hs && a) hs.scrollTop = hs.scrollTop + a.getBoundingClientRect().top - hs.getBoundingClientRect().top - off }, [id, off]);
 const fr3 = async p => { await ctl(p, 'fr3'); await W(1300); await ev(p, () => { try { __api.closeFriend() } catch (e) { } }); await W(500) };
 
@@ -53,8 +53,9 @@ const S = [
   ['L05_mondo_row', 3, 'Home 下:Mondo の 列', {}, async p => { await home(p); await ev(p, () => __api.setShots(1)); await W(1500); await scrollTo(p, 'amd', 200); await W(1500); await clean(p) }],
   ['L06_albums', 3, 'Home 下:Albums(7日)', {}, async p => { await home(p); await scrollTo(p, 'aal', 180); await W(1500) }],
   ['L07_onthisday', 3, 'Home 下:On this day', {}, async p => { await home(p); await scrollTo(p, 'otd', 200); await W(1500) }],
-  ['L08_friends_card_empty', 3, 'Home 下:Friends カード(だれも いない)', {}, async p => { await home(p); await scrollTo(p, 'afc', 150); await W(1700) }],
+  ['L08_friends_card_empty', 3, 'Home 下:Friends カード(だれも いない ・ 申請 あり)', {}, async p => { await home(p); await scrollTo(p, 'afc', 150); await W(1700) }],
   ['L09_friends_card', 3, 'Home 下:Friends カード(友だち あり)', {}, async p => { await fr3(p); await ctl(p, 'req54'); await W(1200); await ev(p, () => { try { __api.closeFriend() } catch (e) { } }); await home(p); await scrollTo(p, 'afc', 150); await W(1700) }],
+  ['L12_friends_card_noreq', 3, 'Home 下:Friends カード(だれも いない ・ 申請も ない)', {}, async p => { await ev(p, () => __kit.clearReq()); await home(p); await scrollTo(p, 'afc', 150); await W(1700) }],
   ['L10_firstday_yesterday', 3, 'Home 下:はじめての 日の Yesterday', {}, async p => { await home(p); await ctl(p, 'day'); await W(1500); await scrollTo(p, 'anew', 260); await W(1600) }],
   ['L11_develop_view', 3, 'Home:今日の フィルム(現像中)を ひらく', {}, async p => { await home(p); await ev(p, () => __api.setShots(1)); await W(1200); await ev(p, () => __api.openDvx(0)); await W(1800) }],
   // P4 撮る
@@ -77,10 +78,16 @@ const S = [
   ['Y05_yesterday_scroll', 5, 'Lattag yesterday:下へ', {}, async p => { await home(p); await ev(p, () => __api.setShots(1)); await W(800); await ev(p, () => __api.openY()); await W(1500); await ev(p, () => { const b = document.getElementById('ybody'); b && (b.scrollTop = 700) }); await W(1300) }],
   ['Y06_photo_viewer', 5, '写真を ひらいた ところ', {}, async p => { await home(p); await ev(p, () => __api.openAv({ p: 'a', n: '鎌倉市', s: "today's one · picked by the world", t: '#夕焼け' })); await W(1500) }],
   // P6 Friends ・ Profile
-  ['F01_friend_empty', 6, 'Friend 画面(だれも いない)', {}, async p => { await home(p); await ev(p, () => __api.openFriend()); await W(1600) }],
-  ['F02_friend_wall', 6, 'Friend 画面(チェキの 壁)', {}, async p => { await ctl(p, 'fr3'); await W(1800) }],
-  ['F03_friend_requests', 6, 'Friend 画面:申請が とどいた', {}, async p => { await ctl(p, 'fr3'); await W(1300); await ctl(p, 'req54'); await W(1600) }],
-  ['F04_friend_scroll', 6, 'Friend 画面:下へ', {}, async p => { await ctl(p, 'fr3'); await W(1600); await ev(p, () => { const b = document.getElementById('frbody'); const s = b && (b.closest('.fbd') || b.parentElement); [b, s].forEach(e => e && (e.scrollTop = 700)) }); await W(1200) }],
+  ['F01_friend_empty', 6, 'Friends(だれも いない ・ 大きな Shake)', {}, async p => { await home(p); await ev(p, () => __api.openFriend()); await W(1700) }],
+  ['F02_friend_list', 6, 'Friends(一覧:さがす ・ Shake ・ 友だち)', {}, async p => { await ctl(p, 'fr3'); await W(1900) }],
+  ['F03_friend_requests', 6, 'Friends:申請が とどいた', {}, async p => { await ctl(p, 'fr3'); await W(1300); await ctl(p, 'req54'); await W(4200) }],
+  ['F04_friend_scroll', 6, 'Friends:下へ(ヘッダーが ぼける)', {}, async p => { await ctl(p, 'fr3'); await W(1300); await ctl(p, 'req54'); await W(4200); await ev(p, () => { document.getElementById('fbody').scrollTop = 330 }); await W(1000) }],
+  ['K01_shake_idle', 6, 'Shake:ふる まえ', {}, async p => { await fr3(p); await ev(p, () => { __kit.openFriend(); __kit.openShake() }); await W(1600) }],
+  ['K02_shake_seek', 6, 'Shake:さがして いる', {}, async p => { await fr3(p); await ev(p, () => { __kit.openFriend(); __kit.openShake() }); await W(1300); await ev(p, () => __kit.skShake()); await W(800) }],
+  ['K03_shake_found', 6, 'Shake:見つけた(カード)', {}, async p => { await fr3(p); await ev(p, () => { __kit.openFriend(); __kit.openShake() }); await W(1300); await ev(p, () => __kit.skShake()); await W(3000) }],
+  ['K04_shake_wait', 6, 'Shake:相手を まつ', {}, async p => { await fr3(p); await ev(p, () => { __kit.openFriend(); __kit.openShake() }); await W(1300); await ev(p, () => __kit.skShake()); await W(2800); await ev(p, () => __kit.skOk()); await W(200) }],
+  ['K05_shake_done', 6, 'Shake:つながった', {}, async p => { await fr3(p); await ev(p, () => { __kit.openFriend(); __kit.openShake() }); await W(1300); await ev(p, () => __kit.skShake()); await W(2800); await ev(p, () => __kit.skOk()); await W(2150) }],
+  ['K06_friend_new', 6, 'Friends:つながった あと(新しい 行が 光る)', {}, async p => { await fr3(p); await ev(p, () => { __kit.openFriend(); __kit.openShake() }); await W(1300); await ev(p, () => __kit.skShake()); await W(2800); await ev(p, () => __kit.skOk()); await W(3600) }],
   ['F05_friend_card', 6, '友だちの カード(シート)', {}, async p => { await ctl(p, 'fr3'); await W(1600); await ev(p, () => __kit.openFC(0)); await W(1500) }],
   ['F06_add_friends', 6, 'Add friends(ID ・ QR)', {}, async p => { await home(p); await ev(p, () => __kit.openAdd()); await W(1400) }],
   ['F07_dm_chat', 6, '友だちと チャット', {}, async p => { await fr3(p); await home(p); await ev(p, () => __kit.openDM(0)); await W(1600) }],

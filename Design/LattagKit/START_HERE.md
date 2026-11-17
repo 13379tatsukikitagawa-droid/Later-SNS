@@ -11,12 +11,12 @@
 |---|---|
 | `CLAUDE.md` | Claude Code が毎回読むルール。**リポジトリのいちばん上に置く** |
 | `prompts/P00〜P09` | 10段階の作業指示。**1回に 1つずつ**使う |
-| `prompts/reference/` | これまでの詳しい仕様（PROMPT v54〜v67 と、全部をまとめたもの） |
-| `mock/lattag_v64.html` | 最新のモック（Safari で開いて触れる） |
+| `prompts/reference/` | これまでの詳しい仕様（PROMPT v54〜v70 と、全部をまとめたもの） |
+| `mock/lattag_v68.html` | 最新のモック（Safari で開いて触れる） |
 | `mock/src/` | モックの元のコード（読む順番は `LOAD_ORDER.md`） |
-| `screens/` | オープニングから Trip 作成までの見本画像 **76枚**（`INDEX.md` に一覧） |
-| `spec/screens/` | 76画面それぞれの**実測データ**（位置・大きさ・書体・色・角丸・影・ぼかし） |
-| `motion/` | 主な動き 14本のコマ割り画像（`INDEX.md` に一覧） |
+| `screens/` | オープニングから Trip 作成までの見本画像 **83枚**（`INDEX.md` に一覧） |
+| `spec/screens/` | 83画面それぞれの**実測データ**（位置・大きさ・書体・色・角丸・影・ぼかし） |
+| `motion/` | 主な動き 19本のコマ割り画像（`INDEX.md` に一覧） |
 | `spec/` | 色・書体・バイブ・アニメーションの一覧 |
 | `tools/` | 見本と実機を比べる `compare.py`、モックから画像や数値を撮り直す `capture_mock.js` / `capture_motion.js` |
 
@@ -60,8 +60,14 @@ Design/LattagKit/prompts/P00_setup.md を 読んで、その とおりに 進め
 | P07 | `P07_friends.md` | Friends・Profile・ME（10画面） | 2回 |
 | P08 | `P08_trip.md` | Trip をつくるまで（9画面） | 1〜2回 |
 | P09 | `P09_finish.md` | 本物のデータとつなぐ・全76画面をもう一度比べる・仕上げ | 1〜2回 |
+| P12 | `P12_v68_home_friends_shake.md` | **v68 最終ブラッシュアップ**:Home フルブリード ・ Friends(BeReal 型)・ Shake で つながる | 2〜3回 |
+| P13 | `P13_v69_camera_header.md` | **v69**:Home を カメラの ファインダーに(ヘッダーの HUD ・ 四すみ 78pt ・ しぼり羽根)| 1〜2回 |
+| P14 | `P14_v70_friends_card.md` | **v70**:Home 下の Friends カード(Instagram / BeReal 型 ・ キャラクター なし)| 1回 |
+| P15 | `P15_v71_lens.md` | **v71**:まんなかを 本物の カメラの レンズに ・「Friends」の 表記 ・ 四すみの かぎを ボタンに 沿わせる | 1回 |
 
 > 1つの段階が 1回で終わらなかったら、`/clear` のあとに「`Design/LattagKit/prompts/P02_home_top_card.md` の続き。`Design/LattagKit/PROGRESS.md` を見て、のこりをやって」と送る。
+
+> **順番の おすすめ**:P02〜P04(Home)と P07(Friends)が まだ なら、そのまま 進めて 大丈夫です(見本は v68 に 更新済み)。もう 作って ある 画面は、**P12 を 1回 流す** と v68 に そろいます。
 
 ## 5. うまくいかないとき
 

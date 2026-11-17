@@ -4,6 +4,10 @@
 > ルールは リポジトリの `CLAUDE.md`(= `Design/LattagKit/CLAUDE.md`)。**計画モードで 始めて、計画を 見せて から 作る**。
 > キットの 場所:`Design/LattagKit/`(以下 `Kit/` と 書く)。
 
+> **v68 が 最新**:Home の うしろ(フルブリード)・ ヘッダー ・ 月、Friends 画面、Shake は `prompts/reference/PROMPT_v68.md` と `prompts/P12_v68_home_friends_shake.md` が 優先。見本画像 ・ JSON は v68 の ものに 更新済み。
+
+> **v69 も 最新**:Home の ヘッダー ・ 四すみ ・ レンズは `prompts/reference/PROMPT_v69.md` と `prompts/P13_v69_camera_header.md` が 優先。
+
 ## 対象
 
 - 画面:`H11_page_friends` `H12_page_friends_filled` `H13_page_trip` `H14_page_mondo_locked` `H15_page_mondo_open` `H16_page_yesterday` `H17_page_yesterday_open` `H18_page_yesterday_firstday`

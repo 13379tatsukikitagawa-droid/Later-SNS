@@ -3,7 +3,7 @@
    1つの 動きを 決まった 時刻で 撮って、1枚の 画像に 並べる(左上が 0ms)。 */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
-const MOCK = path.resolve(process.argv[2] || 'mock/lattag_v64.html');
+const MOCK = path.resolve(process.argv[2] || 'mock/lattag_v68.html');
 const OUT = path.resolve(process.argv[3] || '.');
 const ONLY = process.argv[4] || '';
 fs.mkdirSync(path.join(OUT, 'motion/_frames'), { recursive: true });
@@ -31,6 +31,11 @@ const M = [
   ['M12_friends_card_in', 'Home 下の Friends カード(チェキが 貼られる)', async p => { await fr3(p); await home(p) }, p => ev(p, () => { const hs = document.getElementById('hs'), a = document.getElementById('afc'); a._in = false; hs.scrollTop = hs.scrollTop + a.getBoundingClientRect().top - hs.getBoundingClientRect().top - 150; hs.dispatchEvent(new Event('scroll')) }), [0, 150, 300, 450, 600, 750, 900, 1100, 1400]],
   ['M13_live_panel', '「消灯まで」を 押した パネル', home, p => ev(p, () => document.getElementById('hst').click()), [0, 100, 200, 300, 450, 600, 800, 1100]],
   ['M14_friend_card_sheet', '友だちの カードを ひらく', async p => { await ctl(p, 'fr3'); await W(1600) }, p => ev(p, () => __kit.openFC(0)), [0, 100, 200, 300, 400, 550, 700, 900, 1200]],
+  ['M15_shake_connect', 'Shake:ふる → さがす → 見つけた → つながる', async p => { await fr3(p); await ev(p, () => { __kit.openFriend(); __kit.openShake() }); await W(1500) }, async p => { await ev(p, () => __kit.skShake()); setTimeout(() => p.evaluate(() => __kit.skOk()).catch(() => { }), 3300) }, [0, 300, 900, 1500, 1750, 1950, 2200, 2700, 3300, 3700, 4500, 4900, 5600]],
+  ['M16_home_focus', 'Home:はじめの ピント合わせ(フルブリード)', home, p => ev(p, () => __api.homeIn()), [0, 150, 300, 450, 600, 800, 1000, 1300]],
+  ['M17_home_camera_boot', 'Home:カメラの 起動(HUD が ひらく ・ 四すみが レンズから 出る ・ かぎ)', home, p => ev(p, () => __api.homeIn()), [0, 200, 350, 500, 650, 800, 950, 1100, 1300, 1600]],
+  ['M18_iris_shutter', 'まんなかを 押す → しぼり羽根が しまる → はなす → シャッター', home, async p => { const r = await ev(p, () => { const r = document.getElementById('lens').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2] }); await p.mouse.move(r[0], r[1]); await p.mouse.down(); setTimeout(() => p.mouse.up().catch(() => { }), 700) }, [0, 120, 250, 400, 600, 720, 760, 800, 900, 1100, 1400]],
+  ['M19_header_compact', 'Home:下へ スクロール → ヘッダーが 1つの ガラスに まとまる', home, p => ev(p, () => { __kit.hs().scrollTo({ top: 300, behavior: 'smooth' }) }), [0, 120, 240, 360, 480, 640, 800, 1000]],
 ];
 
 (async () => {
