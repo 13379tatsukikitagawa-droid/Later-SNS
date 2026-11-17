@@ -21,6 +21,7 @@ r H15_page_mondo_open home $H -debugPage 3 -debugShots 1 -debugPhoto d
 r H16_page_yesterday home $H -debugPage 4 -debugPhoto d
 r H17_page_yesterday_open home $H -debugPage 4 -debugShots 1 -debugOpened 1 -debugPhoto d
 r H18_page_yesterday_firstday home $H -debugPage 4 -debugFirstDay 1 -debugPhoto d
+r H19_home_scrolled home $H -debugScroll 420 -debugPhoto d
 r L01_today home $H -debugSection sec-active:146
 r L02_active home $H -debugSection sec-active:158
 r L03_yesterday home $H -debugSection sec-yesterday:80

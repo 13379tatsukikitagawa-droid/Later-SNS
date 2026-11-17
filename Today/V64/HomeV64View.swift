@@ -130,7 +130,7 @@ struct HomeV64View: View {
                 // 上の ブロック(ページの 5まい)は 上へ ながれて うすく なる
                 Group {
                     Group { card(f) }
-                        .offset(y: -scrollY).opacity((1 - Double(min(1, scrollY / 420))) * (entered || reduceMotion ? 1 : 0))
+                        .offset(y: -scrollY * 0.8).opacity(max(0, 1 - Double(scrollY) / 560) * (entered || reduceMotion ? 1 : 0))
                         .scaleEffect(entered || reduceMotion ? 1 : 1.06)
                         .allowsHitTesting(scrollY < 120)
                     HV68Header(input: input, f: f, compact: compact, scrollY: scrollY, entered: entered || reduceMotion,
