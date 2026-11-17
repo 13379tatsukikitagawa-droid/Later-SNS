@@ -33,7 +33,7 @@ struct HV68Header: View {
                 Text(Brand.name).font(LF.inter(900, 30)).tracking(-1.95).foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.35), radius: 7, y: 1)
                     .frame(height: 40, alignment: .leading).fixedSize().offset(x: 22, y: 56)
-                modeSwitch.offset(x: f.xr(156), y: 61)
+                todayTag.offset(x: 128, y: 52)
             }
             .scaleEffect(compact ? 0.86 : 1, anchor: .topLeading)
             .offset(y: compact ? -10 : 0)
@@ -47,19 +47,44 @@ struct HV68Header: View {
         .animation(Self.spring, value: compact)
     }
 
-    // MARK: TODAY ・ YESTERDAY(カメラの PHOTO / VIDEO の 切りかえ)
+    // MARK: ● TODAY ⇄(1つ だけ。2回 タップで きのうへ ・ 1回 だと 吹き出し)
 
-    private var modeSwitch: some View {
-        HStack(spacing: 3) {
-            Text("TODAY").font(LF.mono(10.5)).tracking(1.68).foregroundStyle(HV.lime)
-                .frame(width: 58, height: 30)
-                .overlay(alignment: .bottom) { Circle().fill(HV.lime).frame(width: 4, height: 4).shadow(color: HV.lime, radius: 4).offset(y: -2) }
-            Button { Haptics.play(.sel); onYesterday() } label: {
-                Text("YESTERDAY").font(LF.mono(10.5)).tracking(1.68).foregroundStyle(.white.opacity(0.5)).frame(width: 91, height: 30)
-                    .contentShape(Rectangle().inset(by: -7))
-            }.buttonStyle(.plain)
+    @State private var flipped = false
+    @State private var tip = false
+
+    private var todayTag: some View {
+        ZStack(alignment: .topLeading) {
+            Circle().fill(HV.lime).frame(width: 5, height: 5).shadow(color: HV.lime, radius: 3).offset(x: 6, y: 11.5)
+            ZStack {
+                Text(flipped ? "YESTERDAY" : "TODAY").font(LF.mono(9.5)).fontWeight(.bold).tracking(1.52).foregroundStyle(HV.lime).fixedSize()
+                    .id(flipped).transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+            }
+            .frame(width: 37, height: 14, alignment: .leading).offset(x: 16, y: 7)
+            Image(systemName: "arrow.left.arrow.right").font(.system(size: 8.5, weight: .bold)).foregroundStyle(HV.lime).offset(x: 57.7, y: 8.5)
         }
-        .frame(width: 160, height: 30, alignment: .leading)
+        .frame(width: 75, height: 28, alignment: .topLeading)
+        .contentShape(Rectangle().inset(by: -8))
+        .overlay(alignment: .top) {
+            if tip {
+                Text("2回 タップで きのうへ").font(LF.inter(700, 12)).foregroundStyle(.white).fixedSize()
+                    .padding(.horizontal, 12).padding(.vertical, 7).background(Color.black.opacity(0.85), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1))
+                    .offset(y: 34).transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+        }
+        .onTapGesture(count: 2) {
+            Haptics.play(.sel)
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) { flipped = true; tip = false }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onYesterday(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { flipped = false } }
+        }
+        .onTapGesture {
+            Haptics.play(.tick)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { tip = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { withAnimation(.easeOut(duration: 0.2)) { tip = false } }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Today。2回 タップで きのうへ")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { onYesterday() }
     }
 
     // MARK: アバター + 今日の 撮影の 進みの 輪
@@ -93,35 +118,37 @@ struct HV68Header: View {
         return Color(hex: palette[n % palette.count])
     }
 
-    // MARK: HUD(輪 ・ ラベル ・ 秒まで 進む 時計 ・ のこり こま ・ 矢印)
+    // MARK: 時間の カプセル(輪 ・ 消灯まで ・ 秒まで 進む 時計 ・ のこり こま)。まとまる と 中央の 小さな ピル
 
     private var hud: some View {
-        let w: CGFloat = compact ? 196 : 358, h: CGFloat = compact ? 38 : 46
+        let w: CGFloat = compact ? 176 : 358, h: CGFloat = compact ? 38 : 50
         return TimelineView(.periodic(from: .now, by: 1)) { ctx in
             let now = input.debugClock ?? ctx.date
             let t = HV68Clock(now: now)
             ZStack(alignment: .topLeading) {
-                // 輪(今日の 進み)+ まんなかの 録画の ような 点
+                // 輪(今日の 進み)+ まんなかの 点
                 ZStack {
-                    Circle().stroke(.white.opacity(0.18), lineWidth: 2.4)
-                    Circle().trim(from: 0, to: t.progress).stroke(HV.lime, style: StrokeStyle(lineWidth: 2.4, lineCap: .round)).rotationEffect(.degrees(-90))
+                    Circle().stroke(.white.opacity(0.18), lineWidth: 3).frame(width: 26, height: 26)
+                    Circle().trim(from: 0, to: t.progress).stroke(HV.lime, style: StrokeStyle(lineWidth: 3, lineCap: .round)).rotationEffect(.degrees(-90)).frame(width: 26, height: 26)
                     Circle().fill(HV.lime).frame(width: 7, height: 7)
                 }
-                .frame(width: 26, height: 26).scaleEffect(compact ? 0.9 : 1.22).offset(x: compact ? 8 : 8, y: compact ? 6 : 7)
+                .frame(width: 32, height: 32).scaleEffect(compact ? 0.8 : 1)
+                .position(x: compact ? 16 : 16, y: compact ? 19 : 25)
 
-                Text(t.label).font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.72)).fixedSize()
-                    .offset(x: 49, y: 15).opacity(compact ? 0 : 1)
+                Text(t.label).font(LF.inter(700, 12)).foregroundStyle(.white.opacity(0.6)).fixedSize()
+                    .position(x: 42 + 24, y: 25).opacity(compact ? 0 : 1)
 
                 HStack(spacing: 0) {
                     Text(t.hms.0).foregroundStyle(.white)
-                    Text(t.hms.1).foregroundStyle(.white.opacity(0.55))
+                    Text(t.hms.1).foregroundStyle(.white.opacity(0.35))
                 }
-                .font(LF.mono(compact ? 15 : 18)).monospacedDigit().fixedSize()
+                .font(LF.inter(700, compact ? 16 : 21)).monospacedDigit().fixedSize()
                 .contentTransition(.numericText(countsDown: true))
-                .offset(x: compact ? 42 : 114, y: compact ? 9 : 10)
+                .position(x: compact ? 36 + 44 : 98 + 42, y: compact ? 19 : 25)
 
-                Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: compact ? 16 : 20).offset(x: compact ? 118 : 201, y: compact ? 11 : 13)
+                Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: compact ? 16 : 22).position(x: compact ? 157 : 239, y: compact ? 19 : 25)
 
+                if !compact { Text("のこり").font(LF.inter(700, 12.5)).foregroundStyle(.white.opacity(0.6)).fixedSize().position(x: 251 + 18, y: 25) }
                 HStack(spacing: 3) {
                     ForEach(0..<3, id: \.self) { i in
                         let has = i < input.remaining
@@ -131,21 +158,31 @@ struct HV68Header: View {
                             .frame(width: 8, height: 12)
                     }
                 }
-                .offset(x: compact ? 128 : 214, y: compact ? 13 : 17)
-                Text("\(input.remaining)").font(LF.inter(800, 16)).foregroundStyle(.white).fixedSize().offset(x: compact ? 162 : 251, y: compact ? 9 : 13)
-                Text("EXP").font(LF.mono(9)).foregroundStyle(.white.opacity(0.6)).fixedSize().offset(x: 269, y: 16).opacity(compact ? 0 : 1)
-                Circle().fill(.white.opacity(0.16)).frame(width: 34, height: 34)
-                    .overlay(Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(.white))
-                    .offset(x: 318, y: 6).opacity(compact ? 0 : 1)
+                .position(x: 294 + 13, y: 25).opacity(compact ? 0 : 1)
+                if compact {
+                    Text("\(input.remaining)").font(LF.inter(800, 15)).foregroundStyle(HV.lime).fixedSize().position(x: 170, y: 19)
+                } else {
+                    HStack(alignment: .firstTextBaseline, spacing: 3) {
+                        Text("\(input.remaining)").font(LF.inter(800, 17)).foregroundStyle(.white)
+                        Text("枚").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.8))
+                    }.fixedSize().position(x: 331 + 19, y: 25)
+                }
             }
             .frame(width: w, height: h, alignment: .topLeading)
-            .hvGlass(radius: h / 2, tint: 0.16)
+            .background {
+                if compact {
+                    Capsule().fill(.ultraThinMaterial).overlay(Capsule().fill(Color.black.opacity(0.82)))
+                } else {
+                    Capsule().fill(.white.opacity(0.08))
+                }
+            }
+            .overlay(Capsule().strokeBorder(.white.opacity(compact ? 0.14 : 0.16), lineWidth: 0.8))
             .mask(alignment: .leading) { Rectangle().frame(width: entered ? w + 40 : 0) }
             .animation(.timingCurve(0.3, 1, 0.4, 1, duration: 0.7).delay(entered ? 0.26 : 0), value: entered)
             .contentShape(Rectangle())
             .onTapGesture { Haptics.play(.click); onLive() }
         }
-        .offset(x: compact ? f.cx - 98 : 16, y: compact ? 54 : 108)
+        .offset(x: compact ? f.cx - 88 : 16, y: compact ? 52 : 108)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("のこり時間と のこり こま")
         .accessibilityAddTraits(.isButton)

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// P15(v71)§4:まんなかの 本物の カメラの レンズ。直径 312 の 座標で 作って 0.71倍(≈ 222pt)。押す 間 0.68倍。
+// P15(v71)§4 + v73:まんなかの 本物の カメラの レンズ。直径 312 の 座標で 作って 0.737倍(≈ 230pt)。押す 間 0.70倍。まんなかは 黄緑の シャッター。
 // 全部 Shape と グラデーション(画像 ・ ぼかし なし)。動かない 部分は 1つの Canvas + drawingGroup。
 
 /// しぼり羽根:6枚。`hole` = 羽根の 内側の 線が 中心から 何pt か(ふだん 104 ・ 押す 間 66 ・ シャッターで 0)
@@ -59,7 +59,7 @@ private struct HV68LensBody: View {
             }
             // 137.5 字の 帯の 地
             ctx.fill(disc(137.5), with: .color(hex("0A0A0C")))
-            ctx.stroke(disc(137.5), with: .color(.white.opacity(0.14)), lineWidth: 1)
+            ctx.stroke(disc(137.5), with: .color(hex("C8F25A").opacity(0.9)), lineWidth: 3)
             // 141〜149 撮影の 弧(のこり = 黄緑 + 光 ・ 使った = 白 16%)。上から 時計まわり ・ 1本 92°
             for i in 0..<3 {
                 let start = -76.0 + Double(i) * 120
@@ -92,13 +92,13 @@ private struct HV68LensBody: View {
             // 113 前の ガラス(いちばん 奥まで 黒い)
             let gc = CGPoint(x: c.x - 113 + 226 * 0.44, y: c.y - 113 + 226 * 0.38)
             ctx.fill(disc(113), with: .radialGradient(Gradient(stops: [
-                .init(color: hex("1B2433"), location: 0), .init(color: hex("07090D"), location: 0.45), .init(color: hex("020203"), location: 0.85), .init(color: hex("0D0D10"), location: 1)]),
+                .init(color: hex("1D2E16"), location: 0), .init(color: hex("070B06"), location: 0.45), .init(color: hex("020302"), location: 0.85), .init(color: hex("0C0F0B"), location: 1)]),
                 center: gc, startRadius: 0, endRadius: 150))
             ctx.stroke(disc(113), with: .color(.black), lineWidth: 3)
             // 111 / 92 / 70 中の レンズの 輪
             ctx.stroke(disc(111), with: .color(.white.opacity(0.18)), lineWidth: 1)
-            ctx.stroke(disc(92), with: .color(Color(red: 120 / 255, green: 160 / 255, blue: 255 / 255).opacity(0.10)), lineWidth: 1)
-            ctx.stroke(disc(70), with: .color(Color(hex: "C8F25A").opacity(0.10)), lineWidth: 1)
+            ctx.stroke(disc(92), with: .color(Color(hex: "3BD35A").opacity(0.16)), lineWidth: 1)
+            ctx.stroke(disc(70), with: .color(Color(hex: "C8F25A").opacity(0.18)), lineWidth: 1)
         }
         .frame(width: 312, height: 312)
         .drawingGroup()
@@ -111,27 +111,27 @@ private struct HV68LensGlass: View {
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
-            // 左上:紫の 光
-            Ellipse().fill(RadialGradient(colors: [Color(red: 140 / 255, green: 110 / 255, blue: 1).opacity(0.42), .clear], center: .center, startRadius: 0, endRadius: 50))
-                .frame(width: 100, height: 68).position(x: 143, y: 109)
-            // 右下:黄緑の 光
-            Ellipse().fill(RadialGradient(colors: [Color(hex: "C8F25A").opacity(0.32), .clear], center: .center, startRadius: 0, endRadius: 41))
-                .frame(width: 81, height: 59).position(x: 198, y: 212)
-            // 回る 色の 帯(青 14% と 紫 14% の 細い 帯 2本)
+            // 反射 1(左上):黄緑 34%(幅 144 ・ 高さ 112 ・ -18°)
+            Ellipse().fill(RadialGradient(colors: [Color(hex: "C8F25A").opacity(0.34), .clear], center: .center, startRadius: 0, endRadius: 56))
+                .frame(width: 144, height: 112).rotationEffect(.degrees(-18)).position(x: 138, y: 104)
+            // 反射 2(右下):緑 34%
+            Ellipse().fill(RadialGradient(colors: [Color(hex: "3BD35A").opacity(0.34), Color(red: 36 / 255, green: 160 / 255, blue: 60 / 255).opacity(0)], center: .center, startRadius: 0, endRadius: 30))
+                .frame(width: 81, height: 59).position(x: 201, y: 204)
+            // 回る 色の 帯(黄緑 ・ 緑 16%)
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { ctx in
                 let a = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 16) / 16 * 360
                 Circle().fill(AngularGradient(stops: [
-                    .init(color: .clear, location: 0), .init(color: Color(red: 90 / 255, green: 140 / 255, blue: 1).opacity(0.14), location: 0.12),
+                    .init(color: .clear, location: 0), .init(color: Color(hex: "C8F25A").opacity(0.16), location: 0.12),
                     .init(color: .clear, location: 0.2), .init(color: .clear, location: 0.55),
-                    .init(color: Color(red: 150 / 255, green: 100 / 255, blue: 1).opacity(0.14), location: 0.68), .init(color: .clear, location: 0.78), .init(color: .clear, location: 1)],
+                    .init(color: Color(hex: "3BD35A").opacity(0.16), location: 0.68), .init(color: .clear, location: 0.78), .init(color: .clear, location: 1)],
                     center: .center))
                     .rotationEffect(.degrees(a))
             }
-            // 左上の 白い ハイライト
-            Ellipse().fill(LinearGradient(colors: [.white.opacity(0.34), .clear], startPoint: .top, endPoint: .bottom))
-                .frame(width: 74, height: 34).rotationEffect(.degrees(-24)).position(x: 112, y: 76)
-            // 右上の 小さな 光の 点
-            Circle().fill(.white.opacity(0.75)).frame(width: 12, height: 12).position(x: 201, y: 96)
+            // 白い ハイライト(やわらかい)
+            Ellipse().fill(RadialGradient(colors: [.white.opacity(0.34), .clear], center: .center, startRadius: 0, endRadius: 52))
+                .frame(width: 142, height: 126).position(x: 136, y: 106)
+            // 小さな 光の 点
+            Circle().fill(RadialGradient(colors: [.white.opacity(0.95), .clear], center: .center, startRadius: 0, endRadius: 6)).frame(width: 12, height: 12).position(x: 204, y: 103)
         }
         .frame(width: 312, height: 312)
         .clipShape(Circle().inset(by: 43))
@@ -149,7 +149,7 @@ struct HV68Lens: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let k: CGFloat = pressing ? 0.68 : 0.71
+        let k: CGFloat = pressing ? 0.70 : 0.737
         ZStack {
             // 黒い 影(半径 26pt 外まで 55% → 0)
             Circle().fill(RadialGradient(colors: [.black.opacity(0.55), .clear], center: .center, startRadius: 155, endRadius: 181)).frame(width: 362, height: 362)
@@ -158,8 +158,8 @@ struct HV68Lens: View {
             HV68LensGlass()
             // しぼり羽根(半径 109 で 切る)
             HV68Iris(hole: hole)
-                .fill(LinearGradient(colors: [Color(hex: "2A2A2E"), Color(hex: "0D0D0F")], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(0.96))
-                .overlay(HV68Iris(hole: hole).stroke(.white.opacity(0.22), lineWidth: 1))
+                .fill(LinearGradient(colors: [Color(hex: "252B22"), Color(hex: "0A0D09")], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(0.97))
+                .overlay(HV68Iris(hole: hole).stroke(Color(hex: "C8F25A").opacity(0.22), lineWidth: 1))
                 .frame(width: 312, height: 312)
                 .clipShape(Circle().inset(by: 47))
                 .allowsHitTesting(false)
@@ -176,12 +176,10 @@ struct HV68Lens: View {
         .frame(width: 362, height: 362)
         .rotationEffect(.degrees(0))
         .scaleEffect(k)
-        .frame(width: 222, height: 222)
+        .frame(width: 230, height: 230)
         .overlay {
             if !input.done {
-                HVCameraGlyph(width: 46, line: 3, aperture: pressing ? 0.45 : 1)
-                    .shadow(color: .black.opacity(0.7), radius: 9, y: 2)
-                    .allowsHitTesting(false)
+                HV72Shutter(pressing: pressing).scaleEffect(k)
             }
         }
         .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.28), value: pressing)

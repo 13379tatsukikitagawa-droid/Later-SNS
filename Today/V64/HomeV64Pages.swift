@@ -431,6 +431,8 @@ struct HVPager: View {
     let pages: [AnyView]
     @Binding var page: Int
     let width: CGFloat
+    /// ページの 中身の はば(ふだんは width と 同じ。# の ページ だけ 画面の はばまで はみ出す)
+    var contentWidth: CGFloat? = nil
     var onChange: (Int) -> Void = { _ in }
     var onDrag: (CGFloat) -> Void = { _ in }
     @State private var drag: CGFloat = 0
@@ -446,7 +448,7 @@ struct HVPager: View {
                 let d = CGFloat(i) - pos
                 let a = min(1, abs(d))
                 pages[i]
-                    .frame(width: width)
+                    .frame(width: contentWidth ?? width)
                     .offset(x: d * width)
                     .rotation3DEffect(.degrees(reduceMotion ? 0 : Double(-d) * 14), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
                     .scaleEffect(reduceMotion ? 1 : 1 - 0.08 * a)
