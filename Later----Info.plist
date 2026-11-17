@@ -26,11 +26,13 @@
 		<string>message</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>「ふって つながる」で、すぐ近くにいる ともだちの端末を さがすために使います。</string>
+	<string>ちかくで いっしょに ふった 友だちを 見つける ために 使います。</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_later-bump._tcp</string>
 		<string>_later-bump._udp</string>
+		<string>_lattag-shake._tcp</string>
+		<string>_lattag-shake._udp</string>
 	</array>
 	<key>UIAppFonts</key>
 	<array>
