@@ -144,6 +144,8 @@ struct ProfileShelfView: View {
     @State private var toastToken = 0
     /// v51 やりなおし:自分の チェキ(タップで QR)・むかしの 日めくりは たたんで おく
     @State private var chekiFlipped = false
+    /// v81:アイコン(プロフィール写真)を えらぶ シート
+    @State private var showsIconPicker = false
     /// v52:インラインの編集(シートではなく、この画面の中で直接)
     @State private var isEditingInline = false
     @State private var editName = ""
@@ -556,6 +558,32 @@ struct ProfileShelfView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("自分の チェキ。タップで QR")
+        .overlay(alignment: .bottomTrailing) {
+            if UIFlag.v64 && !chekiFlipped {
+                Button { Haptics.play(.click); showsIconPicker = true } label: {
+                    HStack(spacing: 5) { Image(systemName: "camera.fill").font(.system(size: 11, weight: .bold)); Text("写真").font(.system(size: 12, weight: .heavy)) }
+                        .foregroundStyle(.white).padding(.horizontal, 10).frame(height: 28).background(.black.opacity(0.55), in: Capsule())
+                }.buttonStyle(.plain).padding(.trailing, 52).padding(.bottom, 62).accessibilityLabel("アイコンの 写真を えらぶ")
+            }
+        }
+        .sheet(isPresented: $showsIconPicker) {
+            let cur = profile?.profileImageData.flatMap { UIImage(data: $0) }
+            let recent = (profile?.photos ?? []).sorted { $0.captureDate > $1.captureDate }.prefix(8).map { p in
+                (id: p.id.uuidString, image: V64Images.image(key: "ip\(p.id)", data: p.imageData, maxPixel: 240), label: Calendar.current.isDateInYesterday(p.captureDate) ? "きのう" : nil as String?)
+            }
+            IconPickerV81Sheet(name: displayName, current: cur, recent: Array(recent), onSave: { saveIcon($0) }, onClose: { showsIconPicker = false })
+                .presentationDetents([.large]).presentationDragIndicator(.hidden).presentationBackground(Color(hex: "141516"))
+        }
+    }
+
+    /// v81:アイコンを 変えたら その場で 全部の 場所が 変わる(保存 + 参加中の グループへ 再同期 + 公開ディレクトリ)
+    private func saveIcon(_ data: Data?) {
+        guard let user = profile else { return }
+        user.profileImageData = data
+        user.profileUpdatedAt = Date()
+        try? modelContext.save()
+        if let cloud = CloudKitManager.current { for g in user.groups { cloud.markForUpload(userProfile: user, in: g) } }
+        Task { await UserDirectoryService.publish(user) }
     }
 
     private func selfChekiFront(_ initial: String) -> some View {

@@ -54,6 +54,15 @@ r T11_new_trip_cover trip $T -debugStep 3 -debugTripName "京都 2泊3日"
 r T03_trip_pass_new trip $T -debugStep 3 -debugTripName "京都 2泊3日" -debugPass 1
 r T12_trip_home triphome $T
 r T13_trip_home_days triphome $T -debugScrollY 445
+M="-debugBackdrop 1 -debugMock 1"
+r F09_me_calendar me $M -debugMeState seen
+r F18_me_recap_new me $M -debugMeState ready
+r F10_me_scrub me $M -debugMeScroll 557 -debugMeScrub 49
+r F13_me_album me $M -debugMeScroll 1190
+r F14_me_day me $M -debugMeDay 2026-11-15
+r F15_recap_intro me $M -debugMePlay 1 -debugMePlayT 0.9
+r F16_recap_play me $M -debugMePlay 1 -debugMePlayT 3.4
+r F17_recap_end me $M -debugMePlay 1 -debugMePlayT 99
 r C01_tag tag
 r F01_friend_empty friends -debugRequests 1
 r F02_friend_list friends -debugRequests 1 -debugFriends 3

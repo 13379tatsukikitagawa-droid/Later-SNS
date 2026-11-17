@@ -542,7 +542,7 @@ struct FriendIDSearchSheet: View {
     }
 }
 
-private extension View {
+extension View {
     /// 開く とき 下から 16pt(0.46秒 ・ 45ms ずつ)
     func rise(_ on: Bool, _ i: Int) -> some View {
         offset(y: on ? 0 : 16).opacity(on ? 1 : 0).animation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.46).delay(0.045 * Double(i)), value: on)

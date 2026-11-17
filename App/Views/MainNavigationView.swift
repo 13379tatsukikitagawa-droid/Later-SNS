@@ -59,16 +59,28 @@ struct MainNavigationView: View {
 
                 // v14 ③:ME 画面(Recap・7日)。タップした位置(ME カード・ALBUMS 見出し)から円形に広がって出る(0.7秒)。
                 // 戻るときは、薄くなりながら縮む(0.4秒)。右上の 丸(アバター)は Profile を ひらく(ME とは 別)
-                MEScreenV19(
-                    onBack: { show(.home) },
-                    onShoot: {
-                        // Home に戻って、撮影の流れ(タグ → 撮影)をひらく
-                        show(.home)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                            CaptureRequestStore.shared.pendingRequestID = UUID()
+                Group {
+                    if UIFlag.v64 {
+                        MEV86Host(
+                            onBack: { show(.home) },
+                            onShoot: {
+                                show(.home)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { CaptureRequestStore.shared.pendingRequestID = UUID() }
+                            }
+                        )
+                    } else {
+                    MEScreenV19(
+                        onBack: { show(.home) },
+                        onShoot: {
+                            // Home に戻って、撮影の流れ(タグ → 撮影)をひらく
+                            show(.home)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                CaptureRequestStore.shared.pendingRequestID = UUID()
+                            }
                         }
+                    )
                     }
-                )
+                }
                     .frame(width: width)
                     .modifier(CircleReveal(isOpen: screen == .me, origin: MERevealOrigin.point ?? CGPoint(x: width - 44, y: 90)))
                     .allowsHitTesting(screen == .me)

@@ -24,6 +24,7 @@ enum DebugRouter {
         case "friends": showRaw(FriendsV68Preview())
         case "trip": showRaw(TripV83Preview())
         case "triphome": showRaw(TripHomeV83Preview())
+        case "me": showRaw(MEV86Preview())
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
         }
@@ -243,6 +244,45 @@ struct TripHomeV83Preview: View {
         data.chatLine = ("れな", "あと そらだけ。はよ 撮って")
         data.unread = 2
         return TripHomeV83View(data: data, debugScrollY: d.object(forKey: "debugScrollY") == nil ? nil : CGFloat(d.double(forKey: "debugScrollY")))
+    }
+}
+
+/// DEBUG:ME(`-debugMeState ready|seen -debugMeScroll 700 -debugMeDay 2026-11-16 -debugMePlay 1 -debugMePlayT 0.8`)
+struct MEV86Preview: View {
+    var body: some View {
+        let d = UserDefaults.standard
+        let cal = RecapRules.calendar()
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 17, hour: 12, minute: 39, second: 22)) ?? Date()
+        let keys = ["a", "b", "c", "d", "e", "f"]
+        let tags = ["夕焼け", "帰り道", "おやつ", "教室", "電車", "自販機"]
+        var shots: [MEV86Shot] = []
+        let perDay = [2, 0, 2, 2, 1, 3, 2, 0, 2, 3, 3, 3, 3, 2, 3, 3]
+        var n = 0
+        for back in stride(from: 80, through: 1, by: -1) {
+            guard let day = cal.date(byAdding: .day, value: -back, to: cal.startOfDay(for: now)) else { continue }
+            let dayN = cal.component(.day, from: day)
+            let count = back <= 16 && cal.component(.month, from: day) == 11 ? perDay[min(15, dayN - 1)] : [1, 0, 0, 1, 0, 1, 0][back % 7]
+            for k in 0..<count {
+                let t = cal.date(bySettingHour: 9 + k * 4, minute: 12 + back % 40, second: 0, of: day) ?? day
+                shots.append(MEV86Shot(id: "p\(n)", date: t, tag: tags[(n + k) % 6], kept: (n % 3 == 0), image: SampleData.photo(keys[(n * 5 + k) % 6])))
+                n += 1
+            }
+        }
+        var recaps = RecapRules.missing(now: now, shots: shots.map { RecapShot(id: $0.id, date: $0.date, tag: $0.tag, kept: $0.kept) }, existing: [])
+        recaps.sort { $0.start > $1.start }
+        recaps = Array(recaps.prefix(9))
+        if let i = recaps.firstIndex(where: { $0.kind == .week }) {
+            let seen = (d.string(forKey: "debugMeState") ?? "seen") == "seen"
+            recaps[i].state = seen ? .seen : .ready
+            recaps[i].cover = recaps[i].photoIDs.first ?? ""
+        }
+        for i in recaps.indices where i > 1 { recaps[i].state = .seen }
+        var data = MEV86Data(shots: shots, recaps: recaps, now: now)
+        data.shots = shots
+        var day: Date? = nil
+        if let s = d.string(forKey: "debugMeDay") { let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; day = f.date(from: s) }
+        return MEV86View(data: data, startDay: day, startPlay: d.bool(forKey: "debugMePlay"), startPlayT: d.object(forKey: "debugMePlayT") == nil ? nil : d.double(forKey: "debugMePlayT"),
+                         startScrollY: d.object(forKey: "debugMeScroll") == nil ? nil : CGFloat(d.double(forKey: "debugMeScroll")), startScrub: d.object(forKey: "debugMeScrub") == nil ? nil : d.integer(forKey: "debugMeScrub"))
     }
 }
 
