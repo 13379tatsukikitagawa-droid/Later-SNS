@@ -1,3 +1,5 @@
+> **注意(v85)**:**Shake(ふって つながる)の 部分は やらない**。アプリから なくした。`P28_v85_remove_shake.md` を 見る。
+
 # P12 ・ v68 最終ブラッシュアップ(Home フルブリード ・ Friends ・ Shake)
 
 > **使い方**:Claude Code に「`Design/LattagKit/prompts/P12_v68_home_friends_shake.md` を 読んで、その とおりに 進めて」と だけ 伝える。

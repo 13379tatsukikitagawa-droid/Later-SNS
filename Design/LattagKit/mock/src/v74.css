@@ -1,0 +1,31 @@
+
+/* ================= v74(PROMPT v77)・ Home = ミニマム(黒 ・ レンズ 1つ ・ 1行 ・ ピル)================= */
+#home[data-hb="M"]{--hb:#000}
+/* 消す:帯 ・ 四すみ ・ シール ・ 3分割 ・ チップ ・ tomorrow ・ ドーム */
+#home[data-hb="M"] .h71b,#home[data-hb="M"] #odbs,#home[data-hb="M"] .orb svg.stk,#home[data-hb="M"] .vf66 .gd,
+#home[data-hb="M"] #hxc,#home[data-hb="M"] #hxp,#home[data-hb="M"] #hmoon{display:none!important}
+/* レンズ:大きく ・ 少し 上 */
+#home[data-hb="M"] .orb .lens{transform:translateY(-46px) scale(.84)!important}
+#home[data-hb="M"] .orb .lens.prs{transform:translateY(-46px) scale(.8)!important}
+#home[data-hb="M"] .orb .lens::before{inset:-60px;background:radial-gradient(closest-side,rgba(200,242,90,.10),rgba(0,0,0,0) 70%)}
+#home[data-hb="M"] .vf66{display:none!important}
+/* 上の HUD:ガラスを やめて 1行の 字 */
+#home[data-hb="M"] #hst{background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;left:22px!important;width:auto!important;right:22px!important}
+#home[data-hb="M"] #hst::before,#home[data-hb="M"] #hst::after{display:none!important}
+#home[data-hb="M"] .h66{padding:0!important}
+#home[data-hb="M"] .h66 .rg,#home[data-hb="M"] .h66 .ch,#home[data-hb="M"] .h66 .sp,#home[data-hb="M"] .h66 .fm small{display:none!important}
+#home[data-hb="M"] .h66 .lb{font:600 13px var(--sans)!important;color:rgba(255,255,255,.45)!important}
+#home[data-hb="M"] .h66 .tm{font:500 13px var(--mono)!important;color:#fff!important;margin-left:6px}
+#home[data-hb="M"] .h66 .tm .sec{color:rgba(255,255,255,.35)!important}
+#home[data-hb="M"] .h66 .fm{margin-left:auto!important}
+#home[data-hb="M"] .h66 .fm .fr i{width:7px!important;height:7px!important;border-radius:50%!important}
+#home[data-hb="M"] .h66 .fm b{font:600 13px var(--mono)!important;color:rgba(255,255,255,.45)!important}
+/* 下の ひとこと(レンズの 下)*/
+.h74n{position:absolute;left:0;right:0;text-align:center;pointer-events:none;display:none}
+#home[data-hb="M"] .h74n{display:block}
+.h74n b{display:block;font:600 17px var(--sans);letter-spacing:-.01em;color:#fff}
+.h74n small{display:block;margin-top:6px;font:500 13px var(--sans);color:rgba(255,255,255,.42)}
+/* ピル:少し 細く ・ 落ち着いた ガラス */
+#home[data-hb="M"] .hpi{background:rgba(255,255,255,.1)!important;box-shadow:inset 0 0 0 .8px rgba(255,255,255,.2),0 14px 30px -14px rgba(0,0,0,.8)!important}
+#phone:has(#home[data-hb="M"].on) .cmb{display:none!important}
+#home[data-hb="M"] .dusk .dd{display:none!important}

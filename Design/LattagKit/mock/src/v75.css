@@ -1,0 +1,67 @@
+
+/* ================= v75(PROMPT v78)・ Home = # が 主役(アイコンと 同じ 構図)・ 撮る ボタンを 戻す ・ TODAY は ロゴの 右上 ================= */
+#home[data-hb="H"]{--hb:#000}
+#home[data-hb="H"] .h71b,#home[data-hb="H"] #odbs,#home[data-hb="H"] .orb svg.stk,#home[data-hb="H"] .vf66,
+#home[data-hb="H"] #hxc,#home[data-hb="H"] #hxp,#home[data-hb="H"] .dusk .dd,#home[data-hb="H"] .h74n{display:none!important}
+#phone:has(#home[data-hb="H"].on) .cmb{display:none!important}
+/* 大きな # */
+.h75g{position:absolute;left:0;top:0;width:390px;height:600px;pointer-events:none;display:none;z-index:0;overflow:hidden}
+#home[data-hb="H"] .h75g{display:block}
+/* レンズ:# の まんなかに */
+#home[data-hb="H"] .orb .lens{transform:translateY(-40px) scale(.737)!important}
+#home[data-hb="H"] .orb .lens.prs{transform:translateY(-40px) scale(.70)!important}
+#home[data-hb="H"] .orb .lens::before{display:none}
+/* 1行の 情報(v74 と 同じ)*/
+#home[data-hb="H"] #hst{background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;left:22px!important;width:auto!important;right:22px!important}
+#home[data-hb="H"] #hst::before,#home[data-hb="H"] #hst::after{display:none!important}
+#home[data-hb="H"] .h66{padding:0!important}
+#home[data-hb="H"] .h66 .rg,#home[data-hb="H"] .h66 .ch,#home[data-hb="H"] .h66 .sp,#home[data-hb="H"] .h66 .fm small{display:none!important}
+#home[data-hb="H"] .h66 .lb{font:600 13px var(--sans)!important;color:rgba(255,255,255,.45)!important}
+#home[data-hb="H"] .h66 .tm{font:500 13px var(--mono)!important;color:#fff!important;margin-left:6px}
+#home[data-hb="H"] .h66 .tm .sec{color:rgba(255,255,255,.35)!important}
+#home[data-hb="H"] .h66 .fm{margin-left:auto!important}
+#home[data-hb="H"] .h66 .fm .fr i{width:7px!important;height:7px!important;border-radius:50%!important}
+#home[data-hb="H"] .h66 .fm b{font:600 13px var(--mono)!important;color:rgba(255,255,255,.45)!important}
+#home[data-hb="H"] .hpi{background:rgba(255,255,255,.1)!important;box-shadow:inset 0 0 0 .8px rgba(255,255,255,.2),0 14px 30px -14px rgba(0,0,0,.8)!important}
+/* TODAY:ロゴの 右上に 1つ だけ(2つ ならべない)*/
+#home #hhd #dsw{display:none!important}
+.h75t{position:absolute;left:128px;top:52px;height:28px;padding:0 6px;border:0;background:none;display:flex;align-items:center;gap:5px;font:700 9.5px var(--mono);letter-spacing:.16em;color:#C8F25A;-webkit-tap-highlight-color:transparent;z-index:3}
+.h75t i{width:5px;height:5px;border-radius:50%;background:#C8F25A;box-shadow:0 0 6px #C8F25A}
+.h75t svg{width:11px;height:11px;fill:none;stroke:rgba(200,242,90,.7);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#hhd.cpt .h75t{opacity:0;pointer-events:none}
+
+/* ================= v79 ・ 上の 時間を わかりやすく(カプセル)・ ピルから CAMERA を 外す ================= */
+#home[data-hb="H"] #hst{left:16px!important;right:16px!important;width:auto!important;height:50px!important;border-radius:25px!important;
+  background:rgba(255,255,255,.08)!important;box-shadow:inset 0 0 0 .8px rgba(255,255,255,.16)!important;padding:0 16px 0 10px!important}
+#home[data-hb="H"] .h66{padding:0!important;height:100%;display:flex!important;align-items:center}
+#home[data-hb="H"] .h66 .rg{display:grid!important;width:32px;height:32px}
+#home[data-hb="H"] .h66 .lb{display:block!important;margin-left:10px!important;font:700 12px var(--sans)!important;color:rgba(255,255,255,.6)!important}
+#home[data-hb="H"] .h66 .tm{margin-left:8px!important;font:700 21px/1 Inter,var(--sans)!important;letter-spacing:-.02em!important;color:#fff!important;font-variant-numeric:tabular-nums}
+#home[data-hb="H"] .h66 .tm .sec{color:rgba(255,255,255,.35)!important}
+#home[data-hb="H"] .h66 .sp{display:block!important;height:22px;margin:0 12px 0 auto!important;background:rgba(255,255,255,.16)!important}
+#home[data-hb="H"] .h66 .fm{margin-left:0!important;display:flex;align-items:center;gap:7px}
+#home[data-hb="H"] .h66 .fm::before{content:'のこり';font:700 12px var(--sans);color:rgba(255,255,255,.6)}
+#home[data-hb="H"] .h66 .fm .fr i{width:8px!important;height:12px!important;border-radius:2px!important}
+#home[data-hb="H"] .h66 .fm b{font:800 17px Inter,var(--sans)!important;color:#fff!important}
+#home[data-hb="H"] .h66 .fm b::after{content:' 枚';font:700 12px var(--sans);color:rgba(255,255,255,.6)}
+#home[data-hb="H"] .h66 .fm small,#home[data-hb="H"] .h66 .ch{display:none!important}
+/* ピル:CAMERA を 外す(# の レンズが 撮影 そのもの)。ほかの ページに いる 時だけ、もどる ための 小さな # の 丸 */
+#home[data-hb="H"] #hpi button[data-i="0"].on{display:none!important}
+#home[data-hb="H"] #hpi button[data-i="0"]:not(.on) span{display:none!important}
+#home[data-hb="H"] #hpi button[data-i="0"]:not(.on){flex:none!important;width:44px!important;padding:0!important}
+#home[data-hb="H"] #hpi:has(button[data-i="0"].on) .hpk{opacity:0!important}
+#home[data-hb="H"] #hpi:has(button[data-i="0"].on){padding:4px 10px!important}
+.h75t .tip{position:absolute;left:0;top:30px;white-space:nowrap;height:26px;padding:0 10px;border-radius:13px;background:rgba(40,41,44,.92);font:700 11px var(--sans);font-style:normal;letter-spacing:0;color:#fff;display:flex;align-items:center;opacity:0;pointer-events:none}
+.h75t.hint{animation:zwig2 .4s cubic-bezier(.3,1.5,.5,1)}
+.h75t.hint .tip{animation:ztip2 1.6s ease forwards}
+@keyframes zwig2{30%{transform:scale(.92)}60%{transform:scale(1.05)}}
+@keyframes ztip2{0%{opacity:0;transform:translateY(-4px)}12%,75%{opacity:1;transform:none}100%{opacity:0}}
+
+/* ================= v80 ・ スクロール した 時:上の カプセルを 小さく(アバターと かぶらない)================= */
+#home[data-hb="H"] #hhd #hst{transition:left .55s cubic-bezier(.3,1.15,.4,1),right .55s cubic-bezier(.3,1.15,.4,1),width .55s cubic-bezier(.3,1.15,.4,1),height .55s cubic-bezier(.3,1.15,.4,1),top .55s cubic-bezier(.3,1.15,.4,1),padding .4s}
+#home[data-hb="H"] #hhd.cpt #hst{left:50%!important;right:auto!important;width:176px!important;margin-left:-88px!important;top:52px!important;height:38px!important;border-radius:19px!important;padding:0 12px 0 4px!important;background:rgba(30,31,33,.82)!important;-webkit-backdrop-filter:blur(20px)!important;backdrop-filter:blur(20px)!important}
+#home[data-hb="H"] #hhd.cpt .h66 .lb,#home[data-hb="H"] #hhd.cpt .h66 .fm::before,#home[data-hb="H"] #hhd.cpt .h66 .fm b::after,#home[data-hb="H"] #hhd.cpt .h66 .fm .fr{display:none!important}
+#home[data-hb="H"] #hhd.cpt .h66 .rg{transform:scale(.8)}
+#home[data-hb="H"] #hhd.cpt .h66 .tm{font-size:16px!important;margin-left:4px!important}
+#home[data-hb="H"] #hhd.cpt .h66 .sp{margin:0 8px 0 auto!important;height:16px}
+#home[data-hb="H"] #hhd.cpt .h66 .fm b{font-size:15px!important;color:#C8F25A!important}

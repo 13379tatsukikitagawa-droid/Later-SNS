@@ -1,0 +1,19 @@
+
+/* ================= v69(PROMPT v73)・ レンズの まんなか = シャッター ・ テーマカラーの レンズ ================= */
+/* 1) まんなか:カメラの 絵 → 黄緑の シャッターボタン(# 入り)*/
+.lzc{position:absolute;inset:0;width:312px;height:312px;pointer-events:none;z-index:2;display:none;overflow:visible}
+.orb[data-m="shoot"] .lzc{display:block}
+.orb[data-m="shoot"] .lens .lnin i{opacity:0!important}
+.lzc .bt{transform-origin:0 0;transition:transform .22s cubic-bezier(.3,1.5,.5,1)}
+.lens.prs .lzc .bt{transform:scale(.88)}
+.lzc .rg{transform-origin:0 0;transition:transform .38s cubic-bezier(.3,1.1,.4,1),opacity .3s}
+.lens.prs .lzc .rg{transform:scale(1.08);opacity:.6}
+.lzc .pl{transform-origin:0 0;animation:lzpl 2.8s cubic-bezier(.3,0,.3,1) infinite}
+@keyframes lzpl{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(1.32);opacity:0}}
+.orb[data-sh="3"] .lzc .pl,.lens.prs .lzc .pl{animation:none;opacity:0}
+/* 2) テーマカラーの コーティング(紫 ・ 青 → 黄緑 ・ 緑)*/
+.lzr .c1{background:radial-gradient(closest-side,rgba(200,242,90,.34),rgba(200,242,90,0))!important;filter:none!important;left:14%!important;top:10%!important;width:56%!important;height:34%!important;transform:rotate(-18deg)}
+.lzr .c2{background:radial-gradient(closest-side,rgba(59,211,90,.34),rgba(36,160,60,0))!important}
+.lzr .cg{background:conic-gradient(from 0deg,rgba(200,242,90,0) 0 16%,rgba(200,242,90,.16) 22%,rgba(200,242,90,0) 30% 60%,rgba(59,211,90,.16) 68%,rgba(59,211,90,0) 76%)!important}
+.irs .bl rect{fill:url(#ir69g)!important;stroke:rgba(200,242,90,.22)!important}
+@media (prefers-reduced-motion:reduce){.lzc .pl{animation:none;opacity:0}}

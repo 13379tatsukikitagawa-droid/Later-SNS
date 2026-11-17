@@ -1,6 +1,6 @@
 # 見本画像の 一覧(screens/)
 
-- すべて **モック `mock/lattag_v68.html` から 自動で 撮った もの**(390 × 844pt を 2倍 = 780 × 1688px の JPG)。**v71 に 更新済み**(まんなかの レンズ ・ かぎ ・「Friends」の 表記)。その 前は v70(Home の ヘッダー ・ 四すみ ・ フルブリード、Friends ・ Shake)。
+- すべて **モック `mock/lattag_v82.html` から 自動で 撮った もの**(390 × 844pt を 2倍 = 780 × 1688px の JPG)。**v85 に 更新済み**(Shake を なくした)。その 前は v83(Trip の 入力 ・ ホーム)。その 前は v82(Mondo の 地球 = 字なし)。その 前は v81(アイコン = プロフィール写真)。その 前は v80(スクロールで 上が 小さく ・ Mondo の 字 なし)。その 前は v79(時間の カプセル ・ あなたの きのう ・ Mondo の 大きな 地球 ・ ない 日)。その 前は v73(まんなかの シャッター)。その 前は v71(まんなかの レンズ ・ かぎ ・「Friends」の 表記)。その 前は v70(Home の ヘッダー ・ 四すみ ・ フルブリード、Friends ・ Shake)。
 - 同じ ID の **数値データ** が `spec/screens/<ID>.json` に ある(位置 ・ 大きさ ・ 書体 ・ 色 ・ 角丸 ・ 影 ・ ぼかし。**CSS の 上書きを ぜんぶ 計算した あとの 最終値**)。
 - どうやって その 状態に したかは `tools/capture_mock.js` の 同じ ID の 行を 見る。
 - JSON の 座標は **画面の 左上 = (0, 0)、単位 = pt**。`el` は モックの 要素名(タグ#id.class)。
@@ -89,25 +89,19 @@
 | `Y05_yesterday_scroll` | Lattag yesterday:下へ | 244 |
 | `Y06_photo_viewer` | 写真を ひらいた ところ | 161 |
 
-## P07 / P12 Friends・Shake・Profile
+## P07 / P12 Friends・Profile(Shake は v85 で なくした)
 
 | ID | 画面 | 部品の 数 |
 |---|---|---|
-| `F01_friend_empty` | Friends(だれも いない ・ 大きな Shake) | 202 |
-| `F02_friend_list` | Friends(一覧:さがす ・ Shake ・ 友だち) | 237 |
+| `F01_friend_empty` | Friends(だれも いない ・ QR で 会って つながる) | 202 |
+| `F02_friend_list` | Friends(一覧:さがす ・ QR ・ 友だち) | 237 |
 | `F03_friend_requests` | Friends:申請が とどいた | 232 |
 | `F04_friend_scroll` | Friends:下へ(ヘッダーが ぼける) | 245 |
-| `K01_shake_idle` | Shake:ふる まえ | 260 |
-| `K02_shake_seek` | Shake:さがして いる | 255 |
-| `K03_shake_found` | Shake:見つけた(カード) | 262 |
-| `K04_shake_wait` | Shake:相手を まつ | 251 |
-| `K05_shake_done` | Shake:つながった | 247 |
-| `K06_friend_new` | Friends:つながった あと(新しい 行が 光る) | 249 |
 | `F05_friend_card` | 友だちの カード(シート) | 272 |
 | `F06_add_friends` | Add friends(ID ・ QR) | 178 |
 | `F07_dm_chat` | 友だちと チャット | 202 |
 | `F08_profile` | Profile | 156 |
-| `F09_me_calendar` | ME(1年 のこす) | 212 |
+| `F09_me_calendar` | ME:Recap が 主役(見た あと)| — |
 | `F10_qr_scan` | QR を 読む | 162 |
 
 ## P08 Trip
@@ -123,3 +117,37 @@
 | `T07_trip_chat` | Trip の 部屋(チャット) | 215 |
 | `T08_invite` | 招待が とどいた | 155 |
 | `T09_active_card` | Home 下:Active に Trip | 144 |
+
+
+## v75 で 足した 画面
+
+| ID | 中身 |
+|---|---|
+| `Y07_yesterday_other_shot` | Lattag yesterday:小さな 写真を 押して 入れかえ |
+| `Y08_mondo_empty` | Mondo:だれも 投稿して いない |
+| `Y09_mondo_empty_scroll` | Mondo:だれも いない(下へ)|
+| `F10_me_scrub` | ME:Recaps の 列 ・ 縦線で 日を えらぶ |
+| `Y10_mondo_globe` | Mondo:地球儀(タップ する まえ)|
+| `Y11_mondo_tap` | Mondo:地球儀を タップ(光る)|
+| `Y12_mondo_ranking` | Mondo:きのうの タグ ランキング ・ 図の 説明 |
+| `Y13_friends_tags` | Friends:ハッシュタグ(押すと 入れかわる)|
+| `Y14_notifications` | yesterday:左上の 通知 |
+| `Y15_my_yesterday` | yesterday:あなたの きのう(自分の 写真)|
+| `Y16_mondo_ranking_more` | Mondo:タグ ランキング 4〜8位 |
+| `Y17_mondo_tag_filter` | Mondo:タグで しぼった 写真 |
+| `H19_home_scrolled` | Home:下へ スクロール(時間が 小さく まとまる)|
+| `Y18_friends_scrolled` | yesterday:下へ スクロール(上の 帯が 小さく)|
+| `F11_icon_picker` | アイコン:写真を えらぶ シート |
+| `F12_profile_no_photo` | Profile:写真 なし(1文字 + 色)|
+| `T10_new_trip_who` | New trip ③だれと |
+| `T11_new_trip_cover` | New trip ④表紙 + 確認 |
+| `T12_trip_home` | Trip の ホーム(メイン)|
+| `T13_trip_home_days` | Trip の ホーム:日ごとの フィルム |
+| `F13_me_album` | ME:アルバム(月の カレンダー ・ 1日 1枚)|
+| `F14_me_day` | ME:1日の 全画面(横に スワイプ)|
+| `F15_recap_intro` | Recap:はじまりの 題(Your week.)|
+| `F16_recap_play` | Recap:再生中(上の 線 ・ 曜日 ・ 時刻 ・ タグ)|
+| `F17_recap_end` | Recap:おわり(数字 ・ 保存 ・ シェア ・ もう1回)|
+| `F18_me_recap_new` | ME:新しい Recap が できた(現像の 途中)|
+
+> v86:ME は **Recap が 主役**。動きは `motion/M24_recap_develop` `M25_recap_play`。

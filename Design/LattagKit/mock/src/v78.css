@@ -1,0 +1,29 @@
+
+/* ================= v78(PROMPT v85)・ Shake(ふって つながる)を なくす ・ かわりに QR で 会って つながる ================= */
+button[data-a="shake"],#ctl [data-c="shake65"],#shk{display:none!important}
+/* Friends:QR の カード(Shake の カードの 場所)*/
+.fq78{display:flex;gap:8px;margin:14px 16px 0}
+.fq78 button{position:relative;flex:1;height:142px;border:0;border-radius:24px;padding:14px;text-align:left;color:#fff;overflow:hidden;transition:transform .16s cubic-bezier(.3,1.5,.5,1)}
+.fq78 button:active{transform:scale(.97)}
+.fq78 .fqs{background:#C8F25A;color:#0B0C0D}
+.fq78 .fqc{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.fq78 b{display:block;font:900 17px var(--sans);letter-spacing:-.02em}
+.fq78 small{display:block;margin-top:3px;font:600 11.5px var(--sans);opacity:.65}
+.fq78 .qr{display:block!important;box-sizing:border-box;position:absolute;right:12px;bottom:12px;width:56px;height:56px;padding:5px;border-radius:12px;background:#F4F1EA}
+.fq78 .qr svg{width:46px!important;height:46px!important;min-width:46px;display:block!important;stroke:none!important}
+.fq78 .sn{position:absolute;right:14px;bottom:14px;width:56px;height:56px}
+.fq78 .sn svg{width:100%!important;height:100%!important;fill:none;stroke:#C8F25A;stroke-width:2.2;stroke-linecap:round}
+.fq78 .sn i{position:absolute;left:8px;right:8px;top:50%;height:2px;background:#C8F25A;box-shadow:0 0 8px #C8F25A;animation:fq78s 1.8s ease-in-out infinite}
+@keyframes fq78s{0%,100%{transform:translateY(-16px)}50%{transform:translateY(16px)}}
+.fq78.big{flex-direction:column}
+.fq78.big button{height:150px;flex:none}
+.fq78.big .qr{width:96px;height:96px;right:18px;bottom:18px}
+.fq78.big .qr svg{width:86px!important;height:86px!important;min-width:86px}
+.fq78.big .sn{width:80px;height:80px;right:20px;bottom:18px}
+.fq78.big b{font-size:22px}
+/* 下の 3つの ボタン:QR は カードに 入った ので Link ・ ID だけ */
+#fscr .f65w button[data-a="qr"]{display:none!important}
+@media (prefers-reduced-motion:reduce){.fq78 .sn i{animation:none}}
+:is(div,nav,section):has(> button[data-a="shake"]){grid-template-columns:repeat(3,1fr)!important}
+:is(div,nav,section):has(> button[data-a="shake"])>button{flex:1}
+.fq78 button{display:block}

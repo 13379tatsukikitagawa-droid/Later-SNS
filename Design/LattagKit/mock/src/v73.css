@@ -1,0 +1,52 @@
+
+/* ================= v73(PROMPT v75)・ ME = 縦線を 重ねた デザイン ================= */
+#mew .m73{position:absolute;inset:0;background:#0B0C0D;color:#fff;overflow:hidden;font-family:var(--sans)}
+#mew .m73 i,#mew .m73 b,#mew .m73 small,#mew .m73 em,#mew .m73 span,#mew .m73 button{position:static;width:auto;height:auto;inset:auto;transform:none;margin:0;opacity:1;animation:none}
+#mew .m73 .zs{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-bottom:40px}
+#mew .m73 .zs::-webkit-scrollbar{display:none}
+#mew .m73 .zh{display:flex;align-items:center;gap:12px;padding:54px 16px 0}
+#mew .m73 .zbk{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.24);display:grid;place-items:center}
+#mew .m73 .zbk svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+#mew .m73 .zt{position:relative;font:900 46px/1 Inter,var(--sans);letter-spacing:-.06em}
+#mew .m73 .zy{margin-left:auto;text-align:right;font:700 10px var(--mono);letter-spacing:.16em;color:rgba(255,255,255,.5)}
+#mew .m73 .zy b{display:block;font:900 15px Inter,var(--sans);letter-spacing:-.01em;color:#fff}
+/* ヒーロー:縦線の バーコード */
+#mew .m73 .zbc{position:relative;margin:20px 16px 0;height:236px;border-radius:28px;background:#121315;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);touch-action:none}
+#mew .m73 .zbc svg{position:absolute;left:16px;right:16px;top:44px;width:calc(100% - 32px);height:150px;overflow:visible;display:block}
+#mew .m73 .zbc .lb{position:absolute;left:18px;top:16px;font:700 9.5px var(--mono);letter-spacing:.16em;color:rgba(255,255,255,.5)}
+#mew .m73 .zbc .lb b{font:inherit;color:#C8F25A}
+#mew .m73 .zbc .rd{position:absolute;right:18px;top:12px;text-align:right;font:900 20px Inter,var(--sans);letter-spacing:-.03em}
+#mew .m73 .zbc .rd small{display:block;font:700 9px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.5)}
+#mew .m73 .zbc .ax{position:absolute;left:16px;right:16px;bottom:14px;display:flex;justify-content:space-between;font:700 9px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.35)}
+#mew .m73 .zbc .cur{position:absolute;top:36px;bottom:34px;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.8);pointer-events:none;transition:left .12s}
+/* 数字 */
+#mew .m73 .zst{display:flex;margin:14px 16px 0;border-radius:20px;background:#121315;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+#mew .m73 .zst div{flex:1;padding:12px 14px;border-left:1px solid rgba(255,255,255,.07)}
+#mew .m73 .zst div:first-child{border-left:0}
+#mew .m73 .zst b{display:block;font:900 24px Inter,var(--sans);letter-spacing:-.04em}
+#mew .m73 .zst small{font:700 9px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.5)}
+#mew .m73 .zst div:first-child b{color:#C8F25A}
+/* えらんだ 日 */
+#mew .m73 .zdy{margin:22px 16px 0}
+#mew .m73 .zdh{display:flex;justify-content:space-between;align-items:baseline}
+#mew .m73 .zdh b{font:400 34px/1 var(--ttl)}
+#mew .m73 .zdh small{font:700 9.5px var(--mono);letter-spacing:.14em;color:#C8F25A}
+#mew .m73 .zdp{display:flex;gap:8px;margin-top:12px}
+#mew .m73 .zdp i{flex:1;aspect-ratio:3/4;border-radius:14px;background:#1a1b1e center/cover;display:block;position:relative}
+#mew .m73 .zdp i.e{background:repeating-linear-gradient(90deg,#16171a 0 6px,#121315 6px 12px)}
+/* 1週間:縦の フィルム */
+#mew .m73 .zwk{margin:26px 0 0}
+#mew .m73 .zwh{display:flex;justify-content:space-between;padding:0 16px;font:700 9.5px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.5)}
+#mew .m73 .zwh b{font:800 16px var(--sans);letter-spacing:0;color:#fff}
+#mew .m73 .zfs{display:flex;gap:10px;overflow-x:auto;padding:12px 16px 4px;scrollbar-width:none}
+#mew .m73 .zfs::-webkit-scrollbar{display:none}
+#mew .m73 .zfc{flex:none;width:72px;padding:0 9px;border-radius:6px;background:#17181B;position:relative}
+#mew .m73 .zfc::before,#mew .m73 .zfc::after{content:'';position:absolute;top:0;bottom:0;width:5px;background:repeating-linear-gradient(180deg,transparent 0 5px,#0B0C0D 5px 10px)}
+#mew .m73 .zfc::before{left:2px}#mew .m73 .zfc::after{right:2px}
+#mew .m73 .zfc small{display:block;padding:8px 0 6px;text-align:center;font:700 9px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.55)}
+#mew .m73 .zfc small b{display:block;font:900 15px Inter,var(--sans);color:#fff;letter-spacing:-.02em}
+#mew .m73 .zfc i{display:block;height:74px;margin-bottom:6px;border-radius:3px;background:#222 center/cover;position:relative}
+#mew .m73 .zfc i em{position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#C8F25A;display:grid;place-items:center;font:900 9px var(--sans);font-style:normal;color:#111}
+#mew .m73 .znt{padding:14px 16px 0;font:600 12px/1.6 var(--sans);color:rgba(255,255,255,.45)}
+/* ME の 字の 右に 3本の 縦線(重ねる)*/
+#mew .m73 .zt::after{content:'';display:inline-block;width:16px;height:34px;margin-left:10px;vertical-align:-2px;background:linear-gradient(90deg,#C8F25A 0 5px,transparent 5px 6px,#fff 6px 10px,transparent 10px 11px,#24A03C 11px 16px)}

@@ -12,7 +12,10 @@
 | `CLAUDE.md` | Claude Code が毎回読むルール。**リポジトリのいちばん上に置く** |
 | `prompts/P00〜P09` | 10段階の作業指示。**1回に 1つずつ**使う |
 | `prompts/reference/` | これまでの詳しい仕様（PROMPT v54〜v70 と、全部をまとめたもの） |
-| `mock/lattag_v68.html` | 最新のモック（Safari で開いて触れる） |
+| `mock/lattag_v82.html` | 最新のモック（Safari で開いて触れる） |
+| `mock/lattag_v82.html` の デモボタン | `きのう を ひらく` ・ `Mondo:投稿 あり / なし` ・ `Mondo:地球に もどす` ・ `Friends へ` で yesterday を 動かせる |
+| `mock/opening_v72.html` | 新しいオープニングの動く見本（本番 B ・ ゆっくり） |
+| `assets/` | アプリアイコン・起動画面の印 |
 | `mock/src/` | モックの元のコード（読む順番は `LOAD_ORDER.md`） |
 | `screens/` | オープニングから Trip 作成までの見本画像 **83枚**（`INDEX.md` に一覧） |
 | `spec/screens/` | 83画面それぞれの**実測データ**（位置・大きさ・書体・色・角丸・影・ぼかし） |
@@ -60,10 +63,24 @@ Design/LattagKit/prompts/P00_setup.md を 読んで、その とおりに 進め
 | P07 | `P07_friends.md` | Friends・Profile・ME（10画面） | 2回 |
 | P08 | `P08_trip.md` | Trip をつくるまで（9画面） | 1〜2回 |
 | P09 | `P09_finish.md` | 本物のデータとつなぐ・全76画面をもう一度比べる・仕上げ | 1〜2回 |
-| P12 | `P12_v68_home_friends_shake.md` | **v68 最終ブラッシュアップ**:Home フルブリード ・ Friends(BeReal 型)・ Shake で つながる | 2〜3回 |
+| P12 | `P12_v68_home_friends_shake.md` | **v68 最終ブラッシュアップ**:Home フルブリード ・ Friends(BeReal 型)。**Shake の 部分は やらない(v85)** | 2〜3回 |
 | P13 | `P13_v69_camera_header.md` | **v69**:Home を カメラの ファインダーに(ヘッダーの HUD ・ 四すみ 78pt ・ しぼり羽根)| 1〜2回 |
 | P14 | `P14_v70_friends_card.md` | **v70**:Home 下の Friends カード(Instagram / BeReal 型 ・ キャラクター なし)| 1回 |
 | P15 | `P15_v71_lens.md` | **v71**:まんなかを 本物の カメラの レンズに ・「Friends」の 表記 ・ 四すみの かぎを ボタンに 沿わせる | 1回 |
+| P16 | `P16_v72_opening.md` | **v72**:新しい アプリアイコン(# + レンズ)・ オープニング B(黒い 画面で アイコンが 横へ → Lattag + 9:00 → レンズから Home)| 1回 |
+| P17 | `P17_v73_shutter.md` | **v73**:レンズの まんなかを 黄緑の シャッター(# 入り)に ・ レンズを 黄緑 / 緑に | 1回 |
+| P18 | `P18_v74_home_background.md` | **v74**:Home の 地を 単色(黒)に ・ ガラスは ボタン だけ | 1回 |
+| P19 | `P19_v75_home_yesterday_me.md` | **v75**:**C(ME の 縦線)だけ** やる(A は P21、B は P20 で 置きかえ)| 1回 |
+| P20 | `P20_v76_yesterday.md` | **v76**:Lattag yesterday:Friends = BeReal の 形(未公開は キャプション + ぼかし)・ Mondo = 壮大(投稿 あり / なし)・ タブ = Apple 標準 | 1〜2回 |
+| P21 | `P21_v77_home_min_mondo.md` | **v77**:**B(Friends の タグ)・ C(Mondo の 地球儀)だけ** やる(A の Home は P22 で 置きかえ)| 1回 |
+| P22 | `P22_v78_hash_home_yesterday.md` | **v78**:Home を 大きな # に(撮る ボタンを 戻す ・ TODAY は ロゴの 右上)・ yesterday の 上の 帯(通知 ・ Friends ・ TODAY)・ あなたの きのう ・ Mondo の タグ ランキング | 2回 |
+| P23 | `P23_v79_switch_mondo_home.md` | **v79**:ダブルタップで 切りかえ ・ あなたの きのう(BeReal の 大きさ)・ Mondo の 大きな 地球(指で 回す)・ ない 日 ・ 時間の カプセル ・ ピルから CAMERA を 外す | 1〜2回 |
+| P24 | `P24_v80_scroll_compact.md` | **v80**:スクロールで 上の 帯を 小さく(Home ・ yesterday)・ Mondo の 大きな 字を 消す | 1回 |
+| P25 | `P25_v81_profile_icon.md` | **v81**:アイコン(プロフィール写真)を プロフィール ・ はじめての 設定で 設定 ・ yesterday 右上 = 自分の アイコン | 1回 |
+| P26 | `P26_v82_mondo_globe_notext.md` | **v82**:Mondo の 地球の 画面を 字なしに(写真の ピン ・ 弧 ・ 丸い ボタン)| 1回 |
+| P27 | `P27_v83_trip.md` | **v83**:Trip を わかりやすく(1問ずつの 入力 ・ できた 後は Trip の ホーム ・ チャットは サブ)| 2回 |
+| P28 | `P28_v85_remove_shake.md` | **v85**:Shake(ふって つながる)を なくす ・ かわりに QR で 会って つながる | 1回 |
+| P29 | `P29_v86_me_recap.md` | **v86**:ME を Recap 中心に(毎週 月曜 9:00 に できる ・ 作成中の リング ・ これまでの Recap ・ アルバム ・ 1日の 全画面 ・ Recap の 再生)| 2回(A 画面 → B しくみ)|
 
 > 1つの段階が 1回で終わらなかったら、`/clear` のあとに「`Design/LattagKit/prompts/P02_home_top_card.md` の続き。`Design/LattagKit/PROGRESS.md` を見て、のこりをやって」と送る。
 

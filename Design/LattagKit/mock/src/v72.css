@@ -1,0 +1,362 @@
+
+/* ================= v72(PROMPT v76)・ Lattag yesterday:Friends = BeReal の 形 ・ Mondo = 壮大 ・ タブ = Apple 標準 ================= */
+#yst.y72on{background:#000!important}
+#yst.y72on>:not(.y72){display:none!important}
+#yst .y72 i,#yst .y72 b,#yst .y72 small,#yst .y72 em,#yst .y72 span,#yst .y72 button,#yst .y72 p,#yst .y72 h2{position:static;width:auto;height:auto;inset:auto;transform:none;margin:0;opacity:1;animation:none}
+#yst .y72{position:absolute;inset:0;overflow:hidden;color:#fff;background:#000;font-family:var(--sans)}
+#yst .y72 .zsc{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding-bottom:120px}
+#yst .y72 .zsc::-webkit-scrollbar{display:none}
+/* ヘッダー(Today と 同じ 位置)*/
+#yst .y72 .zhd{position:relative;height:100px}
+#yst .y72 .zlg{position:absolute;left:22px;top:56px;font:900 30px/40px Inter,var(--sans);letter-spacing:-.065em}
+#yst .y72 .zds{position:absolute;right:78px;top:61px;height:30px;display:flex;align-items:center;gap:14px;border:0;background:none;padding:0 7px;font:700 10.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+#yst .y72 .zds b{position:relative;font:inherit;color:#C8F25A}
+#yst .y72 .zds b::after{content:'';position:absolute;left:50%;bottom:-8px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#C8F25A;box-shadow:0 0 6px #C8F25A}
+#yst .y72 .zav{position:absolute;right:20px;top:54px;width:44px;height:44px;border-radius:50%;background:center/cover;box-shadow:0 0 0 2px #fff}
+/* ===== Friends(BeReal の 形)===== */
+#yst .y72 .zme{display:flex;flex-direction:column;align-items:center;padding:6px 0 4px}
+#yst .y72 .zme .zt{display:flex;gap:4px}
+#yst .y72 .zme .zt i{width:44px;height:58px;border-radius:9px;background:#222 center/cover;box-shadow:0 0 0 1.5px #000}
+#yst .y72 .zme .zt i:nth-child(1){transform:rotate(-6deg) translateY(3px)}
+#yst .y72 .zme .zt i:nth-child(3){transform:rotate(6deg) translateY(3px)}
+#yst .y72 .zme b{margin-top:10px;font:700 14px var(--sans)}
+#yst .y72 .zme small{margin-top:2px;font:500 12.5px var(--sans);color:rgba(255,255,255,.5)}
+#yst .y72 .zbn{display:flex;align-items:center;gap:12px;margin:14px 16px 0;padding:14px;border-radius:20px;background:#121314}
+#yst .y72 .zbn .tx{flex:1}
+#yst .y72 .zbn .tx b{display:block;font:800 15px var(--sans)}
+#yst .y72 .zbn .tx small{font:500 12.5px var(--sans);color:rgba(255,255,255,.55)}
+#yst .y72 .zbn button{flex:none;height:40px;padding:0 16px;border:0;border-radius:20px;background:#C8F25A;color:#111;font:900 14px var(--sans)}
+#yst .y72 .zpo{margin-top:22px}
+#yst .y72 .zph{display:flex;align-items:center;gap:10px;padding:0 16px 10px}
+#yst .y72 .zph i{width:36px;height:36px;border-radius:50%;background:center/cover #333}
+#yst .y72 .zph .nm{flex:1;min-width:0}
+#yst .y72 .zph .nm b{display:block;font:700 15px var(--sans)}
+#yst .y72 .zph .nm small{font:500 12.5px var(--sans);color:rgba(255,255,255,.5)}
+#yst .y72 .zph .mr{width:36px;height:36px;border:0;background:none;color:#fff;font:900 18px var(--sans);letter-spacing:1px}
+#yst .y72 .zpc{position:relative;margin:0 8px;aspect-ratio:3/4;border-radius:18px;overflow:hidden;background:#111}
+#yst .y72 .zpc .mn{position:absolute;inset:0;background:center/cover;transition:filter .3s}
+#yst .y72 .zpc .sm{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:8px;z-index:2}
+#yst .y72 .zpc .sm button{width:86px;height:112px;padding:0;border:2px solid #000;border-radius:14px;background:#222 center/cover;box-shadow:0 6px 16px -6px rgba(0,0,0,.6);transition:transform .2s cubic-bezier(.3,1.4,.5,1)}
+#yst .y72 .zpc .sm button:active{transform:scale(.94)}
+#yst .y72 .zpc .tm{position:absolute;right:12px;top:12px;height:26px;padding:0 10px;border-radius:13px;background:rgba(0,0,0,.45);font:700 11px var(--mono);display:flex;align-items:center;z-index:2}
+#yst .y72 .zpc .rj{position:absolute;left:12px;bottom:12px;display:flex;z-index:2}
+#yst .y72 .zpc .rj i{width:34px;height:34px;border-radius:50%;background:center/cover #333;box-shadow:0 0 0 2px #000;margin-left:-8px}
+#yst .y72 .zpc .rj i:first-child{margin-left:0}
+#yst .y72 .zpc .ra{position:absolute;right:12px;bottom:12px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.4);display:grid;place-items:center;z-index:2}
+#yst .y72 .zpc .ra svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#yst .y72 .zcp{padding:10px 16px 0;font:500 14.5px/1.45 var(--sans)}
+#yst .y72 .zcm{padding:4px 16px 0;font:500 13px var(--sans);color:rgba(255,255,255,.45)}
+/* まだ 公開して いない:キャプション と ぼかし だけ */
+#yst .y72 .zpo.np .zpc .mn,#yst .y72 .zpc.bl .mn{filter:blur(28px) brightness(.6) saturate(1.2);transform:scale(1.2)}
+#yst .y72 .zpo.np .zpc .sm,#yst .y72 .zpo.np .zpc .tm,#yst .y72 .zpo.np .zpc .rj,#yst .y72 .zpo.np .zpc .ra,#yst .y72 .zpo.np .zcm,
+#yst .y72 .zpc.bl .sm,#yst .y72 .zpc.bl .rj,#yst .y72 .zpc.bl .ra{display:none}
+#yst .y72 .zpo.np .zph .nm small{color:rgba(255,255,255,.4)}
+/* ===== Mondo(壮大に)===== */
+#yst .y72 .zmh{position:relative;height:560px;overflow:hidden}
+#yst .y72 .zmh .ey{position:absolute;left:0;right:0;top:12px;text-align:center;font:700 10.5px var(--mono);letter-spacing:.32em;color:rgba(255,255,255,.55)}
+#yst .y72 .zmh .wm{position:absolute;left:0;right:0;top:34px;text-align:center;font:400 112px/1 var(--ttl);letter-spacing:-.035em;white-space:nowrap}
+#yst .y72 .zmh .wm span{display:inline-block}
+#yst .y72 .zmh .gl{position:absolute;left:50%;top:166px;width:360px;height:360px;margin-left:-180px}
+#yst .y72 .zmh .gl::before{content:'';position:absolute;inset:-40px;border-radius:50%;background:radial-gradient(closest-side,rgba(200,242,90,.22),rgba(59,211,90,.08) 60%,rgba(0,0,0,0) 72%);pointer-events:none}
+#yst .y72 .zmh .gl svg{position:relative;width:100%;height:100%;display:block}
+#yst .y72 .zmh .ct{position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center;gap:22px;font:700 10px var(--mono);letter-spacing:.16em;color:rgba(255,255,255,.55)}
+#yst .y72 .zmh .ct b{display:block;font:900 26px Inter,var(--sans);letter-spacing:-.04em;color:#fff;text-align:center}
+#yst .y72 .zmh .ct div:first-child b{color:#C8F25A}
+#yst .y72 .zex{margin:22px 16px 0;border-radius:24px;background:#0E0F10;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+#yst .y72 .zex div{display:flex;gap:14px;padding:16px;border-top:1px solid rgba(255,255,255,.06)}
+#yst .y72 .zex div:first-child{border-top:0}
+#yst .y72 .zex em{flex:none;font:700 11px var(--mono);font-style:normal;color:#C8F25A;padding-top:3px}
+#yst .y72 .zex p{font:600 14px/1.55 var(--sans);color:rgba(255,255,255,.86)}
+#yst .y72 .zex p small{display:block;font:500 12px/1.5 var(--sans);color:rgba(255,255,255,.45)}
+#yst .y72 .zt1{position:relative;margin:22px 16px 0;aspect-ratio:4/5;border-radius:26px;overflow:hidden;background:#111}
+#yst .y72 .zt1 .mn{position:absolute;inset:0;background:center/cover}
+#yst .y72 .zt1 .sh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 60%,rgba(0,0,0,.7))}
+#yst .y72 .zt1 .tp{position:absolute;left:18px;top:16px;font:700 10.5px var(--mono);letter-spacing:.2em;color:#C8F25A}
+#yst .y72 .zt1 .bt{position:absolute;left:18px;right:18px;bottom:18px}
+#yst .y72 .zt1 .bt b{display:block;font:900 30px/1.1 var(--sans);letter-spacing:-.02em}
+#yst .y72 .zt1 .bt small{display:block;margin-top:4px;font:700 11px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.7)}
+#yst .y72 .zgh{display:flex;justify-content:space-between;align-items:baseline;padding:26px 16px 10px}
+#yst .y72 .zgh b{font:800 17px var(--sans)}
+#yst .y72 .zgh small{font:700 9.5px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.45)}
+#yst .y72 .zgr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 8px}
+#yst .y72 .zgr i{position:relative;aspect-ratio:3/4;border-radius:14px;background:#111 center/cover;overflow:hidden}
+#yst .y72 .zgr i em{position:absolute;left:8px;bottom:8px;font:800 12px var(--sans);font-style:normal;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+#yst .y72 .zgr i em small{display:block;font:700 9px var(--mono);letter-spacing:.1em;color:rgba(255,255,255,.75)}
+#yst .y72 .zgr.bl i{filter:blur(16px) brightness(.6)}
+#yst .y72 .zem{margin:22px 16px 0;padding:26px 20px;border-radius:26px;background:#0E0F10;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);text-align:center}
+#yst .y72 .zem b{display:block;font:900 22px/1.3 var(--sans);letter-spacing:-.02em}
+#yst .y72 .zem small{display:block;margin-top:8px;font:500 13.5px/1.6 var(--sans);color:rgba(255,255,255,.55)}
+#yst .y72 .zem button{margin-top:18px;height:50px;padding:0 26px;border:0;border-radius:25px;background:#C8F25A;color:#111;font:900 15px var(--sans)}
+#yst .y72 .zem .cd{margin-top:14px;font:700 10.5px var(--mono);letter-spacing:.16em;color:rgba(255,255,255,.45)}
+/* ===== タブ(Apple 標準 ・ iOS 26 の タブバー)===== */
+#yst .y72 .ztb{position:absolute;left:50%;bottom:24px;margin-left:-104px;width:208px;height:62px;padding:4px;border-radius:31px;display:flex;z-index:5;
+  background:rgba(40,40,42,.55);-webkit-backdrop-filter:blur(24px) saturate(1.8);backdrop-filter:blur(24px) saturate(1.8);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.22),0 12px 30px -10px rgba(0,0,0,.7)}
+#yst .y72 .ztb button{flex:1;border:0;border-radius:27px;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:rgba(255,255,255,.88);font:600 10px -apple-system,var(--sans);transition:background .25s}
+#yst .y72 .ztb button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#yst .y72 .ztb button.on{background:rgba(255,255,255,.14);color:#C8F25A}
+@media (prefers-reduced-motion:reduce){#yst .y72 .zmh .wm span{animation:none}}
+/* v77:Friends の 見出し */
+#yst .y72 .zfh{padding:10px 16px 2px}
+#yst .y72 .zfh h2{font:900 34px/1.05 Inter,var(--sans);letter-spacing:-.045em}
+#yst .y72 .zfh small{display:block;margin-top:4px;font:600 12.5px var(--sans);color:rgba(255,255,255,.5)}
+/* v77:ハッシュタグ(3枚 = 3つの タグ ・ 今 見て いる 1枚の タグが 黄緑)*/
+#yst .y72 .ztg{display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px 0}
+#yst .y72 .ztg button{height:32px;padding:0 12px 0 4px;border:0;border-radius:16px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);color:rgba(255,255,255,.75);font:800 13.5px var(--sans);transition:background .2s,color .2s,transform .16s cubic-bezier(.3,1.5,.5,1)}
+#yst .y72 .ztg button:active{transform:scale(.94)}
+#yst .y72 .ztg button i{width:24px;height:24px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.12);font:900 13px Inter,var(--sans);font-style:normal;color:#fff}
+#yst .y72 .ztg button.on{background:#C8F25A;color:#0B0C0D;box-shadow:none}
+#yst .y72 .ztg button.on i{background:#0B0C0D;color:#C8F25A}
+/* v77:Mondo の 舞台(地球儀)*/
+#yst .y72 .zst{position:relative;height:640px;display:flex;flex-direction:column;align-items:center}
+#yst .y72 .zst .zsh{margin-top:14px;font:700 10.5px var(--mono);letter-spacing:.32em;color:rgba(255,255,255,.5)}
+#yst .y72 .zdg{position:relative;margin-top:40px;width:330px;height:394px;border:0;padding:0;background:none;-webkit-tap-highlight-color:transparent}
+#yst .y72 .zdg svg{width:100%;height:100%;display:block;overflow:visible}
+#yst .y72 .zdg::before{content:'';position:absolute;left:50%;top:6%;width:300px;height:300px;margin-left:-150px;border-radius:50%;background:radial-gradient(closest-side,rgba(200,242,90,.16),rgba(0,0,0,0) 72%);pointer-events:none}
+#yst .y72 .zring{position:absolute;left:50%;top:39.5%;width:236px;height:236px;margin:-118px 0 0 -118px;border-radius:50%;border:1.5px solid rgba(200,242,90,.7);animation:zring 2.2s cubic-bezier(.3,0,.3,1) infinite;pointer-events:none}
+@keyframes zring{0%{transform:scale(1);opacity:.9}80%,100%{transform:scale(1.25);opacity:0}}
+#yst .y72 .zhint{margin-top:26px;text-align:center}
+#yst .y72 .zhint b{display:block;font:700 16px var(--sans)}
+#yst .y72 .zhint small{display:block;margin-top:6px;font:700 10px var(--mono);letter-spacing:.3em;color:#C8F25A}
+#yst .y72 .zfl{position:absolute;left:50%;top:44%;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;background:radial-gradient(closest-side,rgba(240,255,200,.95),rgba(200,242,90,.55) 45%,rgba(200,242,90,0) 72%);opacity:0;pointer-events:none}
+/* v77:タグ ランキング */
+#yst .y72 .zrk{margin:26px 16px 0}
+#yst .y72 .zrh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+#yst .y72 .zrh b{font:800 18px var(--sans)}
+#yst .y72 .zrh small{font:700 9.5px var(--mono);letter-spacing:.16em;color:rgba(255,255,255,.45)}
+#yst .y72 .zr1{display:flex;align-items:center;gap:12px;padding:16px;border-radius:22px;background:#C8F25A;color:#0B0C0D}
+#yst .y72 .zr1 em{font:900 26px Inter,var(--sans);font-style:normal;letter-spacing:-.04em}
+#yst .y72 .zr1 .tx{flex:1;min-width:0}
+#yst .y72 .zr1 .tx b{display:flex;align-items:center;gap:6px;font:900 28px/1.05 var(--sans);letter-spacing:-.03em}
+#yst .y72 .zr1 .tx b i{width:30px;height:30px;border-radius:15px;background:#0B0C0D;color:#C8F25A;display:grid;place-items:center;font:900 17px Inter,var(--sans);font-style:normal}
+#yst .y72 .zr1 .tx small{display:block;margin-top:5px;font:700 11px var(--mono);letter-spacing:.06em;color:rgba(11,12,13,.65)}
+#yst .y72 .zr1 .ph{display:flex}
+#yst .y72 .zr1 .ph i{width:46px;height:60px;border-radius:9px;background:center/cover #222;box-shadow:0 0 0 2px #C8F25A;margin-left:-14px}
+#yst .y72 .zr1 .ph i:first-child{margin-left:0;transform:rotate(-6deg)}
+#yst .y72 .zr1 .ph i:last-child{transform:rotate(6deg)}
+#yst .y72 .zrr{display:grid;grid-template-columns:28px 104px 1fr 46px;align-items:center;gap:10px;height:48px;padding:0 4px;border-bottom:1px solid rgba(255,255,255,.07)}
+#yst .y72 .zrr em{font:900 15px Inter,var(--sans);font-style:normal;color:rgba(255,255,255,.45)}
+#yst .y72 .zrr b{font:800 16px var(--sans);white-space:nowrap}
+#yst .y72 .zrr b span{color:#C8F25A;margin-right:2px}
+#yst .y72 .zrr .bar{height:8px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}
+#yst .y72 .zrr .bar i{display:block;height:100%;border-radius:4px;background:#3BD35A;transform-origin:left}
+#yst .y72 .zrr small{font:700 11px var(--mono);color:rgba(255,255,255,.55);text-align:right}
+#yst .y72 .zre{position:relative;padding:18px;border-radius:22px;background:#0E0F10;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+#yst .y72 .zre i{display:block;height:10px;margin:8px 0;border-radius:5px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 10px,transparent 10px 16px)}
+#yst .y72 .zre i:nth-child(2){width:70%}#yst .y72 .zre i:nth-child(3){width:45%}
+#yst .y72 .zre p{margin-top:10px;font:600 13px var(--sans);color:rgba(255,255,255,.5)}
+/* v77:説明 = 図の カード(横に スワイプ)*/
+#yst .y72 .zxp{margin:28px 0 0}
+#yst .y72 .zxp .zrh{padding:0 16px}
+#yst .y72 .zxs{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scroll-snap-type:x mandatory;scrollbar-width:none}
+#yst .y72 .zxs::-webkit-scrollbar{display:none}
+#yst .y72 .zxc{flex:none;width:236px;padding:14px 14px 16px;border-radius:22px;background:#0E0F10;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);scroll-snap-align:start}
+#yst .y72 .zxc svg{display:block;width:100%;height:118px;overflow:visible}
+#yst .y72 .zxc b{display:block;margin-top:10px;font:800 15px var(--sans)}
+#yst .y72 .zxc small{display:block;margin-top:3px;font:500 12px var(--sans);color:rgba(255,255,255,.5)}
+#yst .y72 .zx1{stroke-dashoffset:0;animation:zx1 1.2s linear infinite}
+@keyframes zx1{to{stroke-dashoffset:-18}}
+#yst .y72 .zx1d{offset-path:path('M70 58 Q 115 8 160 52');animation:zx1d 2.2s cubic-bezier(.4,0,.3,1) infinite}
+@keyframes zx1d{0%{offset-distance:0%;opacity:0}15%{opacity:1}85%{opacity:1}100%{offset-distance:100%;opacity:0}}
+#yst .y72 .zx2h{transform-origin:110px 62px;animation:zx2h 3s cubic-bezier(.5,0,.3,1) infinite}
+@keyframes zx2h{0%{transform:rotate(-120deg)}60%,100%{transform:rotate(0)}}
+#yst .y72 .zx2s{animation:zx2s 3s cubic-bezier(.5,0,.3,1) infinite}
+@keyframes zx2s{0%{transform:translateY(0);opacity:.2}60%,100%{transform:translateY(-58px) translateX(-62px);opacity:1}}
+#yst .y72 .zx3{transform-origin:110px 60px;animation:zx3 2.6s cubic-bezier(.3,1.4,.5,1) infinite}
+@keyframes zx3{0%,20%{transform:translateY(14px) scale(.9)}50%,100%{transform:none}}
+#yst .y72 .zx4{animation:zx4 3s ease-in-out infinite}#yst .y72 .zx4.b{animation-delay:.4s}#yst .y72 .zx4.c{animation-delay:.8s}
+@keyframes zx4{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* Mondo の グリッドの タグ */
+#yst .y72 .zgr i u{position:absolute;left:8px;top:8px;height:22px;padding:0 8px;border-radius:11px;background:rgba(0,0,0,.5);font:800 11px var(--sans);text-decoration:none;display:flex;align-items:center}
+@media (prefers-reduced-motion:reduce){#yst .y72 .zring,#yst .y72 .zx1,#yst .y72 .zx1d,#yst .y72 .zx2h,#yst .y72 .zx2s,#yst .y72 .zx3,#yst .y72 .zx4{animation:none}}
+/* ===== v78:yesterday の 上の 帯(Lattag は 出さない)===== */
+#yst .y72 .zhd{display:none}
+#yst .y72 .zhd2{position:sticky;top:0;z-index:4;height:112px;padding:52px 12px 0;display:flex;align-items:flex-start;justify-content:space-between;background:linear-gradient(#000 70%,rgba(0,0,0,0))}
+#yst .y72 .zbl{position:relative;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.22);display:grid;place-items:center}
+#yst .y72 .zbl svg{width:21px;height:21px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#yst .y72 .zbl i{position:absolute;right:9px;top:9px;width:9px;height:9px;border-radius:50%;background:#FF3B30;box-shadow:0 0 0 2px #000}
+#yst .y72 .zti{position:absolute;left:70px;right:70px;top:52px;text-align:center;pointer-events:none}
+#yst .y72 .zti h1{margin:0;font:900 24px/30px Inter,var(--sans);letter-spacing:-.04em}
+#yst .y72 .zti small{display:block;margin-top:1px;font:600 11.5px var(--sans);color:rgba(255,255,255,.5)}
+#yst .y72 .ztd{height:44px;padding:0 10px;border:0;background:none;display:flex;align-items:center;gap:5px;font:700 9.5px var(--mono);letter-spacing:.16em;color:rgba(255,255,255,.6)}
+#yst .y72 .ztd i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.4)}
+#yst .y72 .zfh{display:none}
+/* あなたの きのう(いちばん 上 ・ 押せる)*/
+#yst .y72 .zme{width:100%;border:0;background:none;color:#fff;padding:2px 0 6px}
+#yst .y72 .zme .zt i{width:54px;height:72px;border-radius:11px}
+#yst .y72 .zme small{color:#C8F25A!important}
+/* 通知 */
+#yst .y72 .znp{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s}
+#yst .y72 .znp.on{background:rgba(0,0,0,.55);pointer-events:auto}
+#yst .y72 .zns{position:absolute;left:8px;right:8px;top:50px;max-height:560px;padding:6px 0 10px;border-radius:30px;background:rgba(28,29,31,.86);-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.18),0 30px 60px -20px #000;transform:translateY(-14px) scale(.96);opacity:0;transform-origin:30px 0;transition:transform .42s cubic-bezier(.3,1.25,.4,1),opacity .25s}
+#yst .y72 .znp.on .zns{transform:none;opacity:1}
+#yst .y72 .znh{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px 20px}
+#yst .y72 .znh b{font:900 22px Inter,var(--sans);letter-spacing:-.03em}
+#yst .y72 .znh button{width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font:600 20px/1 var(--sans)}
+#yst .y72 .zni{display:flex;align-items:center;gap:12px;padding:10px 16px}
+#yst .y72 .zni>i{flex:none;width:42px;height:42px;border-radius:50%;background:center/cover #333;display:grid;place-items:center}
+#yst .y72 .zni>i.ic{background:#C8F25A;color:#0B0C0D;font:900 20px Inter,var(--sans);font-style:normal}
+#yst .y72 .zni>i.ic svg{width:22px;height:22px;fill:none;stroke:#0B0C0D;stroke-width:2}
+#yst .y72 .zni p{flex:1;min-width:0;font:500 14px/1.4 var(--sans);color:rgba(255,255,255,.85)}
+#yst .y72 .zni p b{font-weight:800;color:#fff}
+#yst .y72 .zni p small{display:block;font:600 11.5px var(--sans);color:rgba(255,255,255,.45)}
+#yst .y72 .zni.nw p small::before{content:'';display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:#C8F25A;vertical-align:1px}
+#yst .y72 .zni button{flex:none;height:32px;padding:0 14px;border:0;border-radius:16px;background:#C8F25A;color:#111;font:800 13px var(--sans)}
+/* あなたの きのう(全画面)*/
+#yst .y72 .zmv{position:absolute;inset:0;z-index:21;background:#000;transform:translateY(100%);transition:transform .5s cubic-bezier(.3,1.1,.4,1);overflow-y:auto;padding-bottom:40px}
+#yst .y72 .zmv.on{transform:none}
+#yst .y72 .zmvh{display:flex;align-items:center;justify-content:space-between;padding:52px 12px 10px}
+#yst .y72 .zmvh button{width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font:600 20px/1 var(--sans)}
+#yst .y72 .zmvh div{text-align:center}
+#yst .y72 .zmvh b{display:block;font:900 20px Inter,var(--sans);letter-spacing:-.03em}
+#yst .y72 .zmvh small{font:700 10px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.5)}
+#yst .y72 .zmvp{position:relative;margin:4px 8px 0;aspect-ratio:3/4;border-radius:22px;background:center/cover #111;overflow:hidden}
+#yst .y72 .zmvp button{position:absolute;top:0;bottom:0;width:45%;border:0;background:none}
+#yst .y72 .zmvp .l{left:0}#yst .y72 .zmvp .r{right:0}
+#yst .y72 .zmvd{position:absolute;left:0;right:0;top:12px;display:flex;justify-content:center;gap:5px}
+#yst .y72 .zmvd i{width:26px;height:3px;border-radius:2px;background:rgba(255,255,255,.4)}
+#yst .y72 .zmvd i.on{background:#fff}
+#yst .y72 .zmvr{display:flex;align-items:center;gap:0;padding:12px 16px 0}
+#yst .y72 .zmvr span{font:600 13px var(--sans);color:rgba(255,255,255,.5);margin-right:10px}
+#yst .y72 .zmvr i{width:30px;height:30px;border-radius:50%;background:center/cover #333;box-shadow:0 0 0 2px #000;margin-left:-6px}
+#yst .y72 .zmvr b{margin-left:8px;font:800 14px var(--sans)}
+/* ===== v78:Mondo ===== */
+#yst .y72 .zmh .ey{display:none}
+#yst .y72 .zmh{height:520px}
+#yst .y72 .zmh .wm{top:0}
+#yst .y72 .zmh .gl{top:128px}
+#yst .y72 .zst{height:600px}
+#yst .y72 .zno{display:flex;flex-direction:column;align-items:center;padding:40px 24px 0;text-align:center}
+#yst .y72 .zno svg{width:260px;height:260px;opacity:.55;filter:grayscale(.6)}
+#yst .y72 .zno b{margin-top:18px;font:900 24px/1.3 var(--sans);letter-spacing:-.02em}
+#yst .y72 .zno small{margin-top:10px;font:500 14px/1.65 var(--sans);color:rgba(255,255,255,.5)}
+/* タグ ランキング(ブラッシュアップ)*/
+#yst .y72 .zk1{position:relative;display:block;width:100%;height:236px;border:0;padding:0;border-radius:26px;overflow:hidden;background:#111;color:#fff;text-align:left}
+#yst .y72 .zk1>i{position:absolute;top:0;bottom:0;width:50%;background:center/cover}
+#yst .y72 .zk1>i:first-child{left:0}#yst .y72 .zk1>i:nth-child(2){right:0}
+#yst .y72 .zk1 u,#yst .y72 .zk2 u{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.25) 40%,rgba(10,30,6,.92));text-decoration:none}
+#yst .y72 .zk1 .rk{position:absolute;left:14px;top:14px;width:44px;height:44px;border-radius:50%;background:#C8F25A;color:#0B0C0D;display:grid;place-items:center;font:900 18px Inter,var(--sans)}
+#yst .y72 .mv{position:absolute;right:14px;top:14px;height:24px;padding:0 9px;border-radius:12px;background:rgba(0,0,0,.5);font:700 10.5px var(--mono);display:flex;align-items:center;color:rgba(255,255,255,.7)}
+#yst .y72 .mv.up{color:#C8F25A}#yst .y72 .mv.dn{color:rgba(255,255,255,.45)}
+#yst .y72 .zk1 .tx{position:absolute;left:16px;right:16px;bottom:16px}
+#yst .y72 .zk1 .tx b{display:block;font:900 46px/1 var(--sans);letter-spacing:-.04em}
+#yst .y72 .zk1 .tx b em,#yst .y72 .zk2 b em,#yst .y72 .zk3 b em{font-style:normal;color:#C8F25A;margin-right:2px}
+#yst .y72 .zk1 .tx small{display:block;margin-top:8px;font:700 11px var(--mono);letter-spacing:.06em;color:rgba(255,255,255,.75)}
+#yst .y72 .zk2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+#yst .y72 .zk2 button{position:relative;height:168px;border:0;padding:0;border-radius:22px;overflow:hidden;background:#111;color:#fff;text-align:left}
+#yst .y72 .zk2 button>i{position:absolute;inset:0;background:center/cover}
+#yst .y72 .zk2 .rk{position:absolute;left:12px;top:12px;font:900 20px Inter,var(--sans);letter-spacing:-.03em}
+#yst .y72 .zk2 .mv{right:10px;top:12px}
+#yst .y72 .zk2 b{position:absolute;left:12px;right:12px;bottom:30px;font:900 24px/1 var(--sans);letter-spacing:-.03em}
+#yst .y72 .zk2 small{position:absolute;left:12px;bottom:12px;font:700 10.5px var(--mono);color:rgba(255,255,255,.7)}
+#yst .y72 .zk3{margin-top:8px;border-radius:22px;background:#0E0F10;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);padding:4px 0}
+#yst .y72 .zk3 button{position:relative;width:100%;display:grid;grid-template-columns:26px 44px 92px 1fr 34px 40px;align-items:center;gap:8px;height:54px;padding:0 12px;border:0;background:none;color:#fff;text-align:left;border-top:1px solid rgba(255,255,255,.06)}
+#yst .y72 .zk3 button:first-child{border-top:0}
+#yst .y72 .zk3 .rk{font:900 14px Inter,var(--sans);color:rgba(255,255,255,.45)}
+#yst .y72 .zk3 .th{position:relative;width:44px;height:34px}
+#yst .y72 .zk3 .th i{position:absolute;top:0;width:26px;height:34px;border-radius:6px;background:center/cover #222;box-shadow:0 0 0 1.5px #0E0F10}
+#yst .y72 .zk3 .th i:first-child{left:0}#yst .y72 .zk3 .th i:last-child{left:16px}
+#yst .y72 .zk3 b{font:800 15.5px var(--sans);white-space:nowrap}
+#yst .y72 .zk3 .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}
+#yst .y72 .zk3 .bar i{display:block;height:100%;border-radius:4px;background:#3BD35A;transform-origin:left}
+#yst .y72 .zk3 small{font:700 10.5px var(--mono);color:rgba(255,255,255,.5);text-align:right}
+#yst .y72 .zk3 .mv{position:static;height:auto;padding:0;background:none;justify-content:flex-end}
+#yst .y72 .zgh .ftg{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 6px 0 14px;border-radius:17px;background:#C8F25A;color:#0B0C0D;font:900 16px var(--sans)}
+#yst .y72 .zgh .ftg button{width:24px;height:24px;border:0;border-radius:50%;background:#0B0C0D;color:#C8F25A;font:700 14px/1 var(--sans)}
+/* ===== v79:右上 = アイコン(ダブルタップで 今日へ)===== */
+#yst .y72 .ztd{position:relative;width:44px;height:44px;padding:0;border-radius:50%;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.22);display:grid;place-items:center}
+#yst .y72 .ztd svg{width:22px;height:22px;fill:none;stroke:#C8F25A;stroke-width:2}
+#yst .y72 .ztd svg .f{fill:#C8F25A;stroke:none}
+#yst .y72 .ztd .tip{position:absolute;right:0;top:50px;white-space:nowrap;height:28px;padding:0 10px;border-radius:14px;background:rgba(40,41,44,.92);font:700 11.5px var(--sans);color:#fff;display:flex;align-items:center;opacity:0;transform:translateY(-4px);pointer-events:none}
+#yst .y72 .ztd.hint{animation:zwig .4s cubic-bezier(.3,1.5,.5,1)}
+#yst .y72 .ztd.hint .tip{animation:ztip 1.6s ease forwards}
+@keyframes zwig{0%,100%{transform:none}30%{transform:scale(.9)}60%{transform:scale(1.06)}}
+@keyframes ztip{0%{opacity:0;transform:translateY(-4px)}12%,75%{opacity:1;transform:none}100%{opacity:0}}
+/* ===== v79:あなたの きのう(BeReal の サイズ感)===== */
+#yst .y72 .zme{display:none}
+#yst .y72 .zmy{padding:8px 0 4px;text-align:center}
+#yst .y72 .zmyr{position:relative;height:160px}
+#yst .y72 .zmyp{position:absolute;left:50%;top:0;width:120px;height:160px;margin-left:-60px;border:0;padding:0;border-radius:16px;background:center/cover #222;box-shadow:0 14px 30px -14px rgba(0,0,0,.9)}
+#yst .y72 .zmyp span{position:absolute;right:6px;top:6px;height:20px;padding:0 7px;border-radius:10px;background:rgba(0,0,0,.45);font:700 9.5px var(--mono);color:#fff;display:flex;align-items:center}
+#yst .y72 .zmyp em{position:absolute;left:6px;bottom:6px;height:22px;padding:0 8px;border-radius:11px;background:#C8F25A;font:800 11px var(--sans);font-style:normal;color:#0B0C0D;display:flex;align-items:center}
+#yst .y72 .zmym{position:absolute;left:calc(50% + 74px);top:12px;width:100px;height:136px;border:1.5px solid rgba(255,255,255,.22);border-radius:14px;background:#000;color:#fff;overflow:hidden;padding:0}
+#yst .y72 .zmym i{position:absolute;width:44px;height:58px;border-radius:7px;background:center/cover #333;opacity:.55}
+#yst .y72 .zmym i:nth-child(1){left:12px;top:14px;transform:rotate(-6deg)}
+#yst .y72 .zmym i:nth-child(2){right:12px;top:18px;transform:rotate(6deg)}
+#yst .y72 .zmym b{position:absolute;left:0;right:0;top:78px;font:800 22px Inter,var(--sans)}
+#yst .y72 .zmym small{position:absolute;left:0;right:0;top:106px;font:600 12px var(--sans);color:rgba(255,255,255,.75)}
+#yst .y72 .zmyc{margin-top:16px;font:600 16px var(--sans);color:#fff}
+#yst .y72 .zmyb{display:flex;justify-content:center;gap:14px;margin-top:12px}
+#yst .y72 .zmyb button{width:50px;height:50px;border:0;border-radius:50%;background:#1C1C1E;display:grid;place-items:center;color:#fff}
+#yst .y72 .zmyb svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#yst .y72 .zmyb b{font:900 22px Inter,var(--sans);color:#C8F25A}
+/* ===== v79:Mondo の 舞台 = 大きな 地球(指で まわす)===== */
+#yst .y72 .zst{position:relative;height:660px;display:block;overflow:hidden}
+#yst .y72 .zsq{position:relative;z-index:2;padding:10px 22px 0}
+#yst .y72 .zsq small{font:700 10.5px var(--mono);letter-spacing:.2em;color:#C8F25A}
+#yst .y72 .zsq b{display:block;margin-top:8px;font:400 44px/1.05 var(--ttl);letter-spacing:-.01em}
+#yst .y72 .zsq b em{font-style:italic;color:#C8F25A}
+#yst .y72 .zst .zdg{position:absolute;left:-95px;top:200px;width:580px;height:580px;margin:0;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent}
+#yst .y72 .zst .zdg::before{left:0;top:0;width:580px;height:580px;margin:0;background:radial-gradient(closest-side,rgba(200,242,90,.0) 88%,rgba(200,242,90,.18) 93%,rgba(0,0,0,0) 100%)}
+#yst .y72 .zst .zring{left:50%;top:50%;width:556px;height:556px;margin:-278px 0 0 -278px}
+#yst .y72 .zst .zhint{position:absolute;left:0;right:0;top:470px;z-index:3;margin:0;pointer-events:none}
+#yst .y72 .zst .zhint b{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 22px;border-radius:24px;background:#C8F25A;color:#0B0C0D;font:900 15px var(--sans);box-shadow:0 14px 30px -10px rgba(200,242,90,.45)}
+#yst .y72 .zst .zhint b i{width:8px;height:8px;border-radius:50%;background:#0B0C0D;animation:zdot 1.4s ease-in-out infinite}
+@keyframes zdot{50%{transform:scale(.5);opacity:.4}}
+#yst .y72 .zst .zhint small{margin-top:10px;letter-spacing:.06em;font:600 12px var(--sans);color:rgba(255,255,255,.6)}
+#yst .y72 .zst .zfl{top:66%}
+/* ===== v79:Mondo が ない 日 ===== */
+#yst .y72 .zno2{position:relative;min-height:700px;overflow:hidden}
+#yst .y72 .zno2 .stars{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 78% 12%,rgba(255,255,255,.5),transparent),radial-gradient(1.5px 1.5px at 62% 28%,rgba(255,255,255,.7),transparent),radial-gradient(1px 1px at 30% 40%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 88% 44%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 46% 8%,rgba(255,255,255,.45),transparent);animation:ztw 4s ease-in-out infinite alternate}
+@keyframes ztw{to{opacity:.4}}
+#yst .y72 .zno2 .zdg.nt{position:absolute;left:-95px;top:330px;width:580px;height:580px;opacity:.6;filter:grayscale(.85) brightness(.8);pointer-events:none}
+#yst .y72 .zno2 .zdg.nt svg{width:100%;height:100%}
+#yst .y72 .zno2 .tx{position:relative;z-index:2;padding:12px 22px 0}
+#yst .y72 .zno2 .tx small{font:700 10.5px var(--mono);letter-spacing:.2em;color:rgba(255,255,255,.45)}
+#yst .y72 .zno2 .tx b{display:block;margin-top:8px;font:400 56px/.98 var(--ttl);letter-spacing:-.02em}
+#yst .y72 .zno2 .tx b em{font-style:italic;color:rgba(255,255,255,.4)}
+#yst .y72 .zno2 .tx p{margin-top:16px;font:900 20px var(--sans)}
+#yst .y72 .zno2 .tx span{display:block;margin-top:6px;font:500 13.5px/1.6 var(--sans);color:rgba(255,255,255,.5)}
+#yst .y72 .zno2 .cdc{position:absolute;left:16px;right:16px;top:470px;z-index:2;padding:18px;border-radius:26px;background:rgba(14,15,16,.82);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+#yst .y72 .zno2 .cdc small{font:700 11px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.55)}
+#yst .y72 .zno2 .cdc>b{display:block;margin-top:4px;font:700 40px/1 Inter,var(--sans);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#yst .y72 .zno2 .cdc>b em{font-style:normal;color:rgba(255,255,255,.35)}
+#yst .y72 .zno2 .cdc>i{display:block;height:4px;margin-top:12px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}
+#yst .y72 .zno2 .cdc>i u{display:block;height:100%;width:0;background:#C8F25A;border-radius:2px;transition:width 1s linear}
+#yst .y72 .zno2 .bt{display:flex;gap:8px;margin-top:16px}
+#yst .y72 .zno2 .bt button{flex:1;height:48px;white-space:nowrap;border:0;border-radius:24px;background:#C8F25A;color:#0B0C0D;font:900 14px var(--sans)}
+#yst .y72 .zno2 .bt .nf{flex:none;padding:0 14px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);color:#fff;font:700 12.5px var(--sans);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.2)}
+#yst .y72 .zno2 .bt .nf svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#yst .y72 .zno2 .bt .nf.on{background:rgba(200,242,90,.16);color:#C8F25A;box-shadow:inset 0 0 0 1px rgba(200,242,90,.5)}
+#yst .y72 .zno2 .bt .nf.on svg{stroke:#C8F25A}
+@media (prefers-reduced-motion:reduce){#yst .y72 .zno2 .stars,#yst .y72 .zst .zhint b i{animation:none}}
+/* ===== v80:yesterday の 上の 帯を スクロールで 小さく ===== */
+#yst .y72 .zhd2{transition:height .45s cubic-bezier(.3,1.15,.4,1),padding .45s cubic-bezier(.3,1.15,.4,1),background .3s}
+#yst .y72 .zhd2 .zbl,#yst .y72 .zhd2 .ztd{transition:transform .45s cubic-bezier(.3,1.15,.4,1)}
+#yst .y72 .zhd2 .zti{transition:top .45s cubic-bezier(.3,1.15,.4,1)}
+#yst .y72 .zhd2 .zti h1{transition:font-size .45s cubic-bezier(.3,1.15,.4,1),line-height .45s}
+#yst .y72 .zhd2 .zti small{transition:opacity .25s,max-height .3s;max-height:20px}
+#yst .y72 .zhd2.cp{height:96px;padding-top:50px;background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:0 .5px 0 rgba(255,255,255,.1)}
+#yst .y72 .zhd2.cp .zbl,#yst .y72 .zhd2.cp .ztd{transform:scale(.8)}
+#yst .y72 .zhd2.cp .zti{top:55px}
+#yst .y72 .zhd2.cp .zti h1{font-size:17px;line-height:22px}
+#yst .y72 .zhd2.cp .zti small{opacity:0;max-height:0}
+/* ===== v80:Mondo の 大きな 字を 消す(地球を 上へ)===== */
+#yst .y72 .zmh{height:420px}
+#yst .y72 .zmh .gl{top:6px}
+/* ===== v82:Mondo の 舞台(字を 使わない)===== */
+#yst .y72 .zst{position:relative;height:640px;overflow:hidden}
+#yst .y72 .zst .stars{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 10% 12%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 84% 8%,rgba(255,255,255,.5),transparent),radial-gradient(1.5px 1.5px at 66% 20%,rgba(255,255,255,.65),transparent),radial-gradient(1px 1px at 22% 30%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 92% 34%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 40% 4%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 6% 70%,rgba(255,255,255,.35),transparent),radial-gradient(1px 1px at 95% 78%,rgba(255,255,255,.35),transparent);animation:ztw 4s ease-in-out infinite alternate}
+#yst .y72 .zst .zdg{position:absolute;left:0;top:10px;width:390px;height:520px;margin:0;cursor:grab;touch-action:none}
+#yst .y72 .zst .zdg::before{left:50%;top:262px;width:450px;height:450px;margin:-225px 0 0 -225px;background:radial-gradient(closest-side,rgba(0,0,0,0) 76%,rgba(200,242,90,.22) 80%,rgba(59,211,90,.08) 88%,rgba(0,0,0,0) 100%)}
+#yst .y72 .zst .zdg svg{position:absolute;inset:0;width:390px;height:520px;overflow:visible}
+#yst .y72 .zst .arc{animation:zarc 1.6s linear infinite}
+@keyframes zarc{to{stroke-dashoffset:-16}}
+#yst .y72 .zst .pin{position:absolute;left:0;top:0;width:36px;height:46px;border-radius:9px;background:center/cover #222;box-shadow:0 0 0 2px #0B0C0D,0 0 0 3.5px #C8F25A,0 8px 18px -6px rgba(0,0,0,.8);transform-origin:18px 46px;pointer-events:none;transition:opacity .2s}
+#yst .y72 .zst .pin::after{content:'';position:absolute;left:50%;bottom:-9px;width:2px;height:8px;margin-left:-1px;background:#C8F25A;border-radius:1px}
+#yst .y72 .zst .zring{left:195px;top:262px;width:364px;height:364px;margin:-182px 0 0 -182px;border:1.5px solid rgba(200,242,90,.65)}
+#yst .y72 .zst .zring.b{animation-delay:1.1s}
+#yst .y72 .zst .zhint{position:absolute;left:50%;top:536px;width:68px;height:68px;margin:0 0 0 -34px;padding:0;border:0;border-radius:50%;background:#C8F25A;display:grid;place-items:center;box-shadow:0 0 0 6px rgba(200,242,90,.14),0 16px 34px -10px rgba(200,242,90,.55);pointer-events:auto;z-index:3;transition:transform .18s cubic-bezier(.3,1.5,.5,1)}
+#yst .y72 .zst .zhint:active{transform:scale(.9)}
+#yst .y72 .zst .zhint svg{width:26px;height:26px;fill:none;stroke:#0B0C0D;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+#yst .y72 .zst .zfl{top:44%}
+@media (prefers-reduced-motion:reduce){#yst .y72 .zst .arc,#yst .y72 .zst .stars{animation:none}}

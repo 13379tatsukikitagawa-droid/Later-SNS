@@ -1,0 +1,24 @@
+
+/* ================= v71(PROMPT v75)・ Home = 写ルンです の 配色(黒い 本体 + 黄緑の 帯 + 3色の 線)================= */
+#home[data-hb="U"]{--hb:#0B0C0D;--band:#C8F25A;--ink:#0B0C0D}
+.h71b{position:absolute;left:0;right:0;top:38px;height:450px;z-index:0;pointer-events:none;display:none;background:var(--band);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.18)}
+#home[data-hb="U"] .h71b{display:block}
+/* 左の 3色の 線(写ルンです の 帯の 線 ・ 色は そのまま)*/
+.h71b i{position:absolute;top:0;bottom:0;left:6px;width:18px;display:flex;gap:2px}
+.h71b i b{flex:none;height:100%}
+.h71b i b:nth-child(1){width:5px;background:#E2492F}
+.h71b i b:nth-child(2){width:4px;background:#F4EFE6}
+.h71b i b:nth-child(3){width:5px;background:#8A5A3C}
+/* 帯の 中は 黒い 字 ・ 白い ガラス */
+#home[data-hb="U"] .hxc,#home[data-hb="U"] .hxp,#home[data-hb="U"] .odb i{background:rgba(255,255,255,.34)!important;box-shadow:inset 0 0 0 1.2px rgba(255,255,255,.78),0 10px 24px -14px rgba(60,90,0,.6)!important;color:var(--ink)!important}
+#home[data-hb="U"] .hxc *,#home[data-hb="U"] .hxp b,#home[data-hb="U"] .odb .lb b{color:var(--ink)!important}
+#home[data-hb="U"] .odb i svg,#home[data-hb="U"] .hxp svg{stroke:var(--ink)!important;color:var(--ink)!important}
+#home[data-hb="U"] .hxp em,#home[data-hb="U"] .hxp small{color:rgba(11,12,13,.55)!important}
+#home[data-hb="U"] .odb .ck{border-color:rgba(11,12,13,.85)!important}
+#home[data-hb="U"] .odb.lk .ck{border-color:rgba(11,12,13,.35)!important}
+#home[data-hb="U"] .odb.lk .lb b{color:rgba(11,12,13,.5)!important}
+#home[data-hb="U"] .orb svg.stk.s1 path,#home[data-hb="U"] .orb svg.stk.s2 path{fill:var(--ink);stroke:var(--ink)}
+#home[data-hb="U"] .vf66 .gd{filter:invert(1);opacity:.1}
+#home[data-hb="U"] .vf66 .af{border-color:var(--ink)!important;box-shadow:none!important}
+#home[data-hb="U"] .orb .lens .lnb{box-shadow:0 40px 60px -26px rgba(40,70,0,.75),0 0 0 2px rgba(0,0,0,.25)!important}

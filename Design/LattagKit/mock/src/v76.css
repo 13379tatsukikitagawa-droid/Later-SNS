@@ -1,0 +1,52 @@
+
+/* ================= v76(PROMPT v81)・ アイコン(プロフィール写真)・ どこからでも 写真を 設定 ================= */
+/* yesterday 右上 = 自分の アイコン */
+#yst .y72 .ztd.zava{padding:0;background:none;box-shadow:none}
+#yst .y72 .ztd.zava>i{width:40px;height:40px;border-radius:50%;background:center/cover #333;box-shadow:0 0 0 2px #000,0 0 0 3.5px #C8F25A;display:grid;place-items:center;font:900 17px var(--sans);font-style:normal;color:#fff}
+#yst .y72 .ztd.zava>i.ini{background:linear-gradient(135deg,#61D278,#EE5E9C)}
+#yst .y72 .zhd2.cp .ztd.zava>i{box-shadow:0 0 0 2px #000,0 0 0 3px #C8F25A}
+/* Home の アバター(写真 なし = 名前の 1文字 + 色)*/
+#home #hhd .av.ini{background:linear-gradient(135deg,#61D278,#EE5E9C)!important;display:grid;place-items:center}
+#home #hhd .av .avi{position:absolute;inset:0;display:grid;place-items:center;font:900 18px var(--sans);color:#fff;z-index:1}
+/* プロフィールの チェキ に 写真 */
+#prf .pic.ph76{background-size:cover!important;background-position:center!important}
+#prf .pic.ph76>b{opacity:0}
+.av76b{position:absolute;right:8px;bottom:8px;z-index:3;height:30px;padding:0 10px 0 8px;border:0;border-radius:15px;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:700 11px var(--sans)}
+.av76b svg{width:15px;height:15px;fill:none;stroke:#C8F25A;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pset .av76r{display:flex;align-items:center;gap:12px}
+.pset .av76r i{width:32px;height:32px;border-radius:50%;background:center/cover #333;flex:none}
+/* はじめての 設定:アイコンの 丸 */
+.ob76{display:flex;align-items:center;gap:14px;margin:6px 0 14px}
+.ob76 button{position:relative;width:76px;height:76px;flex:none;border:0;padding:0;border-radius:50%;background:center/cover rgba(255,255,255,.08);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.25);display:grid;place-items:center;color:#fff}
+.ob76 button svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ob76 button.on{box-shadow:0 0 0 3px #0b0b0d,0 0 0 5px #C8F25A}
+.ob76 button.on svg{display:none}
+.ob76 button u{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:#C8F25A;color:#111;display:grid;place-items:center;font:900 16px/1 var(--sans);text-decoration:none;box-shadow:0 0 0 3px #070708}
+.ob76 p{margin:0;font:600 13px/1.5 var(--sans);color:rgba(255,255,255,.6)}
+.ob76 p b{display:block;font:800 15px var(--sans);color:#fff}
+/* 写真を えらぶ シート */
+#av76s{position:absolute;inset:0;z-index:400;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s}
+#av76s.on{background:rgba(0,0,0,.6);pointer-events:auto}
+#av76s .k7sh{position:absolute;left:0;right:0;bottom:0;max-height:92%;overflow-y:auto;padding:10px 16px 34px;border-radius:32px 32px 0 0;background:#141516;box-shadow:inset 0 .8px 0 rgba(255,255,255,.12);color:#fff;transform:translateY(100%);transition:transform .5s cubic-bezier(.3,1.1,.4,1)}
+#av76s.on .k7sh{transform:none}
+#av76s .k7gb{width:40px;height:5px;margin:0 auto 10px;border-radius:3px;background:rgba(255,255,255,.25)}
+#av76s .k7hd{display:flex;align-items:center;justify-content:space-between}
+#av76s .k7hd b{font:900 22px Inter,var(--sans);letter-spacing:-.03em}
+#av76s .k7hd button{width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font:600 20px/1 var(--sans)}
+#av76s .k7pv{position:relative;width:188px;height:188px;margin:16px auto 0;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#61D278,#EE5E9C);box-shadow:0 0 0 3px #141516,0 0 0 5px #C8F25A;touch-action:none;cursor:grab}
+#av76s .k7pv i{position:absolute;inset:0;background:center/cover;transform-origin:center}
+#av76s .k7pv b{position:absolute;inset:0;display:grid;place-items:center;font:900 72px var(--sans)}
+#av76s .k7zm{display:flex;align-items:center;gap:10px;margin:14px 26px 0;font:700 10px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.5)}
+#av76s .k7zm input{flex:1;accent-color:#C8F25A}
+#av76s .k7ac{display:flex;gap:8px;margin-top:16px}
+#av76s .k7ac button{flex:1;height:64px;border:0;border-radius:18px;background:rgba(255,255,255,.08);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:700 12px var(--sans)}
+#av76s .k7ac svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#av76s .k7ac button.dl{color:#FF6B6B}#av76s .k7ac button.dl svg{stroke:#FF6B6B}
+#av76s .k7lb{margin-top:18px;font:700 10.5px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.5)}
+#av76s .k7gr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+#av76s .k7gr button{aspect-ratio:1;border:0;padding:0;border-radius:12px;background:center/cover #222;position:relative}
+#av76s .k7gr button.on{box-shadow:0 0 0 2.5px #141516,0 0 0 4.5px #C8F25A}
+#av76s .k7gr button em{position:absolute;left:5px;bottom:5px;font:700 8.5px var(--mono);font-style:normal;color:#fff;text-shadow:0 1px 4px #000}
+#av76s .k7ok{width:100%;height:54px;margin-top:18px;border:0;border-radius:27px;background:#C8F25A;color:#0B0C0D;font:900 16px var(--sans)}
+.ob76{justify-content:flex-start;text-align:left}
+.ob76 p{text-align:left}

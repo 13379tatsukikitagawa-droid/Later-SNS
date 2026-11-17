@@ -1,0 +1,37 @@
+
+/* ================= v70(PROMPT v74)・ Home の 地 = 単色 ・ ガラスは ボタン だけ ================= */
+#home{--hb:#0B0C0D}
+#home[data-hb="K"]{--hb:#0B0C0D}
+#home[data-hb="G"]{--hb:#0F2A16}
+#home[data-hb="L"]{--hb:#C8F25A}
+/* 写真 ・ ぼかし ・ 光 ・ 暗い ふちを ぜんぶ かくして 単色 1枚 */
+.h65 .h70t{position:absolute;inset:0;z-index:4;pointer-events:none;display:block;background:var(--hb)}
+.h65{background:var(--hb)!important}
+.h65 .hxb .ph,.h65 .pg{animation:none!important}
+/* 上の 帯(スクロール 時):ガラスを やめて 地と 同じ 単色 */
+#hhd::before{background:var(--hb)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+/* 黄緑の 地(L):字 ・ 線を 黒に、ボタンは 白い ガラス(ふち 白)+ 黒い 中身 */
+#home[data-hb="L"]{--ink:#0B0C0D;--g70:rgba(255,255,255,.34);--g70b:rgba(255,255,255,.75)}
+#home[data-hb="L"] #hhd .lg{color:var(--ink)!important}
+#home[data-hb="L"] #dsw em{color:rgba(11,12,13,.5)!important}
+#home[data-hb="L"] #dsw em.on{color:var(--ink)!important}
+#home[data-hb="L"] #dsw em.on::after{background:var(--ink)!important;box-shadow:none!important}
+#home[data-hb="L"] #hst,#home[data-hb="L"] .hxc,#home[data-hb="L"] .hxp,#home[data-hb="L"] .hpi,#home[data-hb="L"] .odb i{background:var(--g70)!important;box-shadow:inset 0 0 0 1.2px var(--g70b),0 10px 24px -14px rgba(60,90,0,.55)!important;color:var(--ink)!important}
+#home[data-hb="L"] #hst *,#home[data-hb="L"] .hxc *,#home[data-hb="L"] .hxp b,#home[data-hb="L"] .odb .lb b,#home[data-hb="L"] .hpi button:not(.on) *{color:var(--ink)!important;-webkit-text-fill-color:currentColor}
+#home[data-hb="L"] .odb i svg,#home[data-hb="L"] .hpi button:not(.on) svg,#home[data-hb="L"] .hxp svg{stroke:var(--ink)!important;color:var(--ink)!important}
+#home[data-hb="L"] .hpi .hpk{background:var(--ink)!important}
+#home[data-hb="L"] .hpi button.on *{color:#C8F25A!important}
+#home[data-hb="L"] .hpi button.on svg{stroke:#C8F25A!important}
+#home[data-hb="L"] .odb .ck{border-color:rgba(11,12,13,.85)!important}
+#home[data-hb="L"] .orb svg.stk.s1 path,#home[data-hb="L"] .orb svg.stk.s2 path{fill:var(--ink);stroke:var(--ink)}
+#home[data-hb="L"] .vf66 .gd{opacity:.25;filter:invert(1)}
+#home[data-hb="L"] .h66 .rg svg .t{stroke:rgba(11,12,13,.18)!important}
+#home[data-hb="L"] .h66 .rg svg .p{stroke:var(--ink)!important}
+#home[data-hb="L"] .h66 .rg i{background:var(--ink)!important;animation:none}
+#home[data-hb="L"] .h66 .fm .fr i{background:var(--ink)!important;box-shadow:none!important}
+#home[data-hb="L"] .h66 .fm .fr i.u{background:transparent!important;box-shadow:inset 0 0 0 1.4px rgba(11,12,13,.35)!important}
+#home[data-hb="L"] .h66 .sp{background:rgba(11,12,13,.2)!important}
+#home[data-hb="L"] .h66 .ch{background:rgba(11,12,13,.1)!important}
+#home[data-hb="L"] .h66 .ch svg{stroke:var(--ink)!important}
+#home[data-hb="L"] .h66 .tm .sec{color:rgba(11,12,13,.45)!important}
+#home[data-hb="L"] .vf66 .gd{opacity:.12}

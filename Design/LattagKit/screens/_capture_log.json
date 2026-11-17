@@ -1,65 +1,9 @@
 [
  {
-  "id": "F01_friend_empty",
+  "id": "F18_me_recap_new",
   "ph": 6,
-  "name": "Friends(だれも いない ・ 大きな Shake)",
-  "n": 176,
-  "errs": []
- },
- {
-  "id": "F02_friend_list",
-  "ph": 6,
-  "name": "Friends(一覧:さがす ・ Shake ・ 友だち)",
-  "n": 210,
-  "errs": []
- },
- {
-  "id": "F03_friend_requests",
-  "ph": 6,
-  "name": "Friends:申請が とどいた",
-  "n": 205,
-  "errs": []
- },
- {
-  "id": "F04_friend_scroll",
-  "ph": 6,
-  "name": "Friends:下へ(ヘッダーが ぼける)",
-  "n": 219,
-  "errs": []
- },
- {
-  "id": "F05_friend_card",
-  "ph": 6,
-  "name": "友だちの カード(シート)",
-  "n": 247,
-  "errs": []
- },
- {
-  "id": "F06_add_friends",
-  "ph": 6,
-  "name": "Add friends(ID ・ QR)",
-  "n": 151,
-  "errs": []
- },
- {
-  "id": "F07_dm_chat",
-  "ph": 6,
-  "name": "友だちと チャット",
-  "n": 175,
-  "errs": []
- },
- {
-  "id": "F08_profile",
-  "ph": 6,
-  "name": "Profile",
-  "n": 129,
-  "errs": []
- },
- {
-  "id": "F09_me_calendar",
-  "ph": 6,
-  "name": "ME(1年 のこす)",
-  "n": 185,
+  "name": "ME:新しい Recap が できた(現像の 途中)",
+  "n": 128,
   "errs": []
  }
 ]
