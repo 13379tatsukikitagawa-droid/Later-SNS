@@ -100,3 +100,61 @@
 - 注意:テスト関数名に 数字 + `_` を 入れると Xcode の ビルドシステムが 落ちた(`0_65秒` など)。名前は ひらがな / 漢字だけに した。
 - **未確認(実機 2台が 必要)**:ふって つながる / 片方 だけ ふって 相手が 出ないか / とじた あと センサーと 通信が 止まるか / ローカルネットワークの 許可。
 - 古い `ShakeConnect` と `_later-bump` は **まだ 消して いない**(実機で 新しい 方が 動いて から)。V64 の Friends 画面は 新しい 方だけ 使う ので 同時には さがさない。
+
+## 2026-11-17 M6(仕上げ)・ P12〜P15 の まとめ
+
+- 全 471 テスト 成功 ・ Release ビルド 成功 ・ Home アイドル CPU 約 13%(`PERF.md`)。
+- 点数(新しい 見本・`-debugMock 1`):
+
+| ID | score |
+|---|---|
+| H01_home | 9.3 |
+| H02_home_hint | 16.4 |
+| H03_home_press | 10.9 |
+| H04_home_1shot | 9.5 |
+| H05_home_2shot | 9.4 |
+| H06_home_3shot | 7.3 |
+| H07_home_friends | 9.1 |
+| H08_home_firstday | 12.6 |
+| H09_home_night | 9.2 |
+| H10_live_panel | 6.2 |
+| H11_page_friends | 5.0 |
+| H12_page_friends_filled | 5.0 |
+| H13_page_trip | 6.0 |
+| H14_page_mondo_locked | 6.3 |
+| H15_page_mondo_open | 6.0 |
+| H16_page_yesterday | 8.6 |
+| H17_page_yesterday_open | 8.4 |
+| H18_page_yesterday_firstday | 8.0 |
+| L01_today | 7.4 |
+| L02_active | 7.1 |
+| L03_yesterday | 9.3 |
+| L04_yesterday_open | 8.8 |
+| L05_mondo_row | 7.1 |
+| L06_albums | 10.4 |
+| L07_onthisday | 10.1 |
+| L08_friends_card_empty | 9.9 |
+| L09_friends_card | 9.7 |
+| L12_friends_card_noreq | 11.1 |
+| L10_firstday_yesterday | 6.4 |
+| L11_develop_view | 12.5 |
+| Y01_yesterday_locked | 41.2 |
+| Y02_yesterday_open | 41.4 |
+| Y03_yesterday_mondo_tab | 53.1 |
+| Y04_yesterday_friends_tab | 41.6 |
+| Y05_yesterday_scroll | 76.5 |
+| Y06_photo_viewer | 1.4 |
+| C01_tag | 26.7 |
+| F01_friend_empty | 9.8 |
+| F02_friend_list | 12.4 |
+| F03_friend_requests | 13.0 |
+| K01_shake_idle | 8.1 |
+| K02_shake_seek | 7.1 |
+| K03_shake_found | 6.5 |
+| K04_shake_wait | 10.9 |
+| K05_shake_done | 5.1 |
+
+- 8 以下:H06 H10〜H15 H18 L01 L02 L05 L10 K02 K03 K05 Y06。
+- **のこり(大きい)**:Y01〜Y05(Lattag yesterday)は 新しい 見本が 暗い 画面 + 新しい ヘッダーに 変わった ため 41〜76。`YesterdayV64View`(白い ページ)を 作りなおす 必要が ある(P12〜P15 の 対象外 → 決めて から)。Y05 の 見本に キャラクターが 残って いる。
+- **のこり(小さい)**:H02 16.4 / H08 12.6 / L06〜L12 10〜12 / F02 12.4 / F03 13.0 / K04 10.9 / L11 12.5 / C01 26.7(見本の キーボードは HTML 描画)。
+- **実機で 確認**:Shake(2台)・ ヘッダーが まとまる 動き ・ 四すみの 入場 ・ レンズの しぼり ・ SE(幅 375)。

@@ -18,3 +18,15 @@
 - ガラスの 影(`.shadow`)が 多い所(HomeV64View 15)。`compositingGroup` へ まとめる 余地。
 - `AnyView` の ページ配列、下の 区画の `VStack`(`LazyVStack` に できる)。
 - ライブドット / バッジの 30Hz `TimelineView` が 複数 ある。
+
+## 2026-11-17 v68〜v71 作り直し後(Release ・ シミュレータ ・ 6秒 ながめた あとの CPU%)
+
+| 場面 | CPU | メモリ |
+|---|---|---|
+| Home(全面の 写真 ・ HUD ・ 本物の レンズ ・ 四すみ)| 約 11〜16%(平均 13%)| 約 290MB |
+| Friends 画面 | 約 8〜13% | 約 291MB |
+| Shake(さがす ・ 輪 + レーダー)| 約 11〜13% | 約 291MB |
+
+- 目標(Home アイドル 15% 以下)を 満たした。直す 前の v64 は 約 90%(P11 で 約 10%)。
+- 効いている 決まり:ぼかし ・ 彩度 ・ 明るさは 小さな 画像に 1回だけ 焼きこむ(`V64Images.blurred`)/ レンズの 動かない 部分は `drawingGroup` / 動く のは 色の 帯 ・ 刻印 ・ しぼり だけ / 見えない とき ・ 裏の とき ・ Reduce Motion で 止める / ふちの 光は 絵を 1回 作って 回す。
+- 実機の Instruments(Time Profiler ・ Animation Hitches)は ユーザーの 作業。
