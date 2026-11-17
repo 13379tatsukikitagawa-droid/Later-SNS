@@ -57,7 +57,7 @@ struct HVPageBackdrop: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 1))
-        .shadow(color: .black.opacity(0.6), radius: 30, y: 30)
+        .background(HVCardShadow())
     }
 }
 
@@ -434,6 +434,7 @@ struct HVPager: View {
     var onChange: (Int) -> Void = { _ in }
     @State private var drag: CGFloat = 0
     @State private var horizontal: Bool? = nil
+    @State private var settling = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -448,11 +449,12 @@ struct HVPager: View {
                     .rotation3DEffect(.degrees(reduceMotion ? 0 : Double(-d) * 14), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
                     .scaleEffect(reduceMotion ? 1 : 1 - 0.08 * a)
                     .opacity(1 - 0.45 * Double(a))
-                    .opacity(abs(d) < 1.2 ? 1 : 0)
+                    .opacity(i == page || drag != 0 || settling ? (abs(d) < 1.2 ? 1 : 0) : 0)
                     .allowsHitTesting(i == page && drag == 0)
                     .accessibilityHidden(i != page)
             }
         }
+        .onChange(of: page) { _, _ in settling = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { settling = false } }
         .frame(width: width, height: 508)
         .mask(Rectangle().frame(width: width, height: 700))   // 左右の ページは カードの 外へ はみ出さない
         .contentShape(Rectangle())
@@ -477,7 +479,9 @@ struct HVPager: View {
                     next = max(0, min(pages.count - 1, next))
                     if next == page && abs(v.translation.width) > 20 && (page == 0 || page == pages.count - 1) { Haptics.play(.soft) }
                     let changed = next != page
+                    settling = true
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) { page = next; drag = 0 }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { settling = false }
                     if changed { onChange(next) }
                 }
         )

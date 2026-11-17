@@ -81,23 +81,15 @@ struct HVStackGlyph: View {
     var color: Color = .white
     var line: CGFloat = 2.2
     var body: some View {
-        // モックの CMY(viewBox -4 -4 72 72):うしろの 角丸 + まえの 角丸(まんなかに 丸と やまの 線)
-        let s = size / 72
+        let u = size / 26
         ZStack {
-            RoundedRectangle(cornerRadius: 5 * s).stroke(color, lineWidth: line).frame(width: 44 * s, height: 50 * s)
-                .rotationEffect(.degrees(8)).offset(x: (36 - 36 + 4) * s, y: (29 - 36 + 4) * s)
+            RoundedRectangle(cornerRadius: 5 * u).stroke(color, lineWidth: line).frame(width: 15 * u, height: 17 * u).offset(x: 3.5 * u, y: -3 * u)
             ZStack {
-                RoundedRectangle(cornerRadius: 5 * s).fill(Color.black.opacity(0.25))
-                RoundedRectangle(cornerRadius: 5 * s).stroke(color, lineWidth: line)
-                Circle().fill(color).frame(width: 8 * s, height: 8 * s).offset(x: -7 * s, y: -9 * s)
-                Path { p in
-                    p.move(to: CGPoint(x: 6 * s, y: 40 * s)); p.addLine(to: CGPoint(x: 18 * s, y: 29 * s)); p.addLine(to: CGPoint(x: 26 * s, y: 36 * s))
-                    p.addLine(to: CGPoint(x: 33 * s, y: 31 * s)); p.addLine(to: CGPoint(x: 42 * s, y: 39 * s))
-                }.stroke(color, style: StrokeStyle(lineWidth: line, lineCap: .round, lineJoin: .round)).offset(x: -3 * s, y: -3 * s)
-            }
-            .frame(width: 44 * s, height: 50 * s).rotationEffect(.degrees(-6)).offset(x: (30 - 36) * s - 1 * s, y: (35 - 36) * s + 4 * s)
-        }
-        .frame(width: size, height: size)
+                RoundedRectangle(cornerRadius: 5 * u).fill(Color.black.opacity(0.0))
+                RoundedRectangle(cornerRadius: 5 * u).stroke(color, lineWidth: line)
+                Circle().stroke(color, lineWidth: line).frame(width: 6 * u, height: 6 * u)
+            }.frame(width: 15 * u, height: 17 * u).offset(x: -2.5 * u, y: 2.5 * u)
+        }.frame(width: size, height: size)
     }
 }
 
@@ -113,9 +105,9 @@ struct HVIcon: View {
         Group {
             switch kind {
             case .yesterday: HVStackGlyph(size: size * 0.9, color: color, line: size / 13)
-            case .trip: Image(systemName: "suitcase").font(.system(size: size * 0.8, weight: .medium))
-            case .mondo: Image(systemName: "globe").font(.system(size: size * 0.85, weight: .medium))
-            case .friends: Image(systemName: "person.2").font(.system(size: size * 0.8, weight: .medium))
+            case .trip: Image(systemName: "briefcase").font(.system(size: size * 0.85, weight: .semibold))
+            case .mondo: Image(systemName: "globe").font(.system(size: size * 0.9, weight: .medium))
+            case .friends: Image(systemName: "person.2").font(.system(size: size * 0.85, weight: .semibold))
             case .camera: Image(systemName: "record.circle").font(.system(size: size * 0.95, weight: .medium))
             }
         }
@@ -205,18 +197,17 @@ struct HVSquiggle: View {
     var body: some View {
         Canvas { ctx, sz in
             var p = Path()
-            let n = 3, w = sz.width / CGFloat(n)
-            p.move(to: CGPoint(x: 2, y: sz.height * 0.7))
+            let n = 4, w = (sz.width - 4) / CGFloat(n)
+            p.move(to: CGPoint(x: 2, y: sz.height * 0.8))
             for i in 0..<n {
                 let x0 = 2 + CGFloat(i) * w
-                p.addQuadCurve(to: CGPoint(x: x0 + w / 2, y: sz.height * 0.25), control: CGPoint(x: x0 + w * 0.12, y: sz.height * 0.25))
-                p.addQuadCurve(to: CGPoint(x: x0 + w, y: sz.height * 0.7), control: CGPoint(x: x0 + w * 0.9, y: sz.height * 0.25))
+                p.addQuadCurve(to: CGPoint(x: x0 + w * 0.5, y: sz.height * 0.15), control: CGPoint(x: x0 + w * 0.15, y: sz.height * 0.15))
+                p.addQuadCurve(to: CGPoint(x: x0 + w, y: sz.height * 0.8), control: CGPoint(x: x0 + w * 0.85, y: sz.height * 0.15))
             }
-            ctx.stroke(p, with: .color(.black), style: StrokeStyle(lineWidth: 5.6, lineCap: .round, lineJoin: .round))
-            ctx.stroke(p, with: .color(.white), style: StrokeStyle(lineWidth: 3.0, lineCap: .round, lineJoin: .round))
+            ctx.stroke(p, with: .color(.white), style: StrokeStyle(lineWidth: 3.2, lineCap: .round, lineJoin: .round))
         }
         .frame(width: 46.6, height: 19.9)
-        .shadow(color: .black.opacity(0.3), radius: 3, y: 2)
+        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
     }
 }
 

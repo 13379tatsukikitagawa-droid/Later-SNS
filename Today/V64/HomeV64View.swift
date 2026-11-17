@@ -88,23 +88,23 @@ struct HomeV64View: View {
             let f = HV.Frame(w: g.size.width, h: g.size.height)
             let dark = Double(min(1, max(0, (scrollY - 160) / 260)))
             ZStack(alignment: .topLeading) {
-                HVL.bg
+                HV.bg
+                HVBackground(f: f).offset(y: -scrollY)
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         ZStack(alignment: .topLeading) {
                             VStack(spacing: 0) { Color.clear.frame(width: 1, height: input.debugScroll); Color.clear.frame(width: 1, height: 1).id("dbg"); Spacer(minLength: 0) }.frame(width: 1)
                             VStack(spacing: 0) {
-                                HVBackground(f: f).frame(width: f.w, height: 1125 + 2 * f.mid)
-                                HVLowerSections(input: input, data: input.lower, actions: actions)
-                                    .frame(width: f.w).offset(y: -(1125 + 2 * f.mid - (810 + 2 * f.mid))).padding(.bottom, -(1125 + 2 * f.mid - (810 + 2 * f.mid)))
+                                Color.clear.frame(height: 810 + 2 * f.mid)
+                                HVLowerSections(input: input, data: input.lower, actions: actions).frame(width: f.w)
                             }
                         }
-                    }
+                        }
                     .onChange(of: wantsToday) { _, _ in withAnimation(.easeInOut(duration: 0.6)) { proxy.scrollTo("today", anchor: .top) } }
                     .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, new in scrollY = new }
                     .onAppear {
                         if let sec = input.debugSection, let y = Double(sec.split(separator: ":").last ?? "150") {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo(String(sec.split(separator: ":").first ?? ""), anchor: UnitPoint(x: 0.5, y: y / Double(f.h))) }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { proxy.scrollTo(String(sec.split(separator: ":").first ?? ""), anchor: UnitPoint(x: 0.5, y: y / Double(f.h))) }
                         } else if input.debugScroll > 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo("dbg", anchor: .top) } }
                     }
                 }
@@ -116,7 +116,7 @@ struct HomeV64View: View {
                         .allowsHitTesting(scrollY < 120)
                     header(f, dark: dark)
                 }
-                .blur(radius: input.spotlight || showLive ? 5 : 0).opacity(input.spotlight ? 0.55 : 1)
+                .modifier(HVVeil(on: input.spotlight || showLive, dim: input.spotlight))
                 .animation(.easeOut(duration: 0.35), value: input.spotlight)
                 moon(f)
                 if showLive { HVLivePanel(input: input, onClose: { withAnimation(.easeOut(duration: 0.25)) { showLive = false } }, onShoot: actions.shoot).zIndex(10) }
@@ -171,7 +171,7 @@ struct HomeV64View: View {
                 .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.16), lineWidth: 1))
                 .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.18), lineWidth: 1.5).mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.04))))
-                .shadow(color: .black.opacity(0.35), radius: 40, y: 22)
+                .background(HVCardShadow())
 
             HVStar().offset(x: 14, y: 12)
             HVSquiggle().offset(x: cardW - 60.3, y: 26.4)
@@ -292,7 +292,7 @@ struct HVCardBackdrop: View {
                 .frame(width: 333, height: 386).offset(x: 110, y: -150).opacity(0.39).blendMode(.screen)
             // かげ(四すみ + 上下)
             RadialGradient(colors: [.clear, .clear, .black.opacity(0.5)], center: UnitPoint(x: 0.5, y: 0.42), startRadius: 0, endRadius: 330)
-            LinearGradient(stops: [.init(color: .black.opacity(0.38), location: 0), .init(color: .clear, location: 0.24), .init(color: .clear, location: 0.64), .init(color: .black.opacity(0.55), location: 1)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(stops: [.init(color: .black.opacity(0.52), location: 0), .init(color: .clear, location: 0.30), .init(color: .clear, location: 0.64), .init(color: .black.opacity(0.55), location: 1)], startPoint: .top, endPoint: .bottom)
             HVGrain().opacity(0.17).blendMode(.overlay)
         }
     }
@@ -331,6 +331,13 @@ struct HVLens: View {
         ZStack {
             // ガラス
             Circle().fill(Color.white.opacity(0.10))
+                .overlay {
+                    if let img = input.backdrop.first {
+                        // うしろを ぼかして 彩度 1.6・明るさ 1.14(モックの backdrop-filter)
+                        Image(uiImage: img).resizable().scaledToFill().frame(width: 520, height: 712)
+                            .blur(radius: 20).saturation(2.0).brightness(0.10).clipShape(Circle().inset(by: 0)).frame(width: D, height: D).clipped().clipShape(Circle())
+                    }
+                }
                 .overlay(Circle().fill(Color.white.opacity(0.08)).blendMode(.plusLighter))
                 .overlay(Circle().strokeBorder(Color.white.opacity(0.55), lineWidth: 2.6))
                 .overlay(Circle().strokeBorder(LinearGradient(colors: [.white.opacity(0.32), .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.08)), lineWidth: 4))
@@ -768,7 +775,7 @@ struct HVHintBubble: View {
         .padding(.leading, 12).padding(.trailing, 16).frame(height: 38)
         .background(Color(hex: "111111"), in: Capsule())
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Color(hex: "111111")).frame(width: 14, height: 14).rotationEffect(.degrees(45)).offset(y: 12)
+            Rectangle().fill(Color(hex: "111111")).frame(width: 14, height: 14).clipShape(RoundedRectangle(cornerRadius: 3)).rotationEffect(.degrees(45)).offset(y: 7)
         }
         .shadow(color: .black.opacity(0.55), radius: 14, y: 12)
         .allowsHitTesting(false)
@@ -798,5 +805,22 @@ struct HVCornerPop: ViewModifier {
             .rotationEffect(.degrees(entered || reduceMotion ? 0 : -160))
             .opacity(entered || reduceMotion ? 1 : 0)
             .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.76).delay(0.18 + 0.09 * Double(index)), value: entered)
+    }
+}
+
+/// ライブパネル / はじめの 合図の ときだけ ぼかす(いつもは なにも かけない)
+struct HVVeil: ViewModifier {
+    let on: Bool
+    let dim: Bool
+    @ViewBuilder func body(content: Content) -> some View {
+        if on { content.blur(radius: 5).opacity(dim ? 0.55 : 1) } else { content }
+    }
+}
+
+/// カードの 下の かげ(モック:0 30px 60px -24px 黒 60% = ひろがり なしで 下だけ)
+struct HVCardShadow: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 40, style: .continuous).fill(Color.black.opacity(0.42))
+            .padding(.horizontal, 24).padding(.vertical, 24).blur(radius: 30).offset(y: 30).allowsHitTesting(false)
     }
 }

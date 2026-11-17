@@ -30,7 +30,7 @@ struct HVLabel: View {
     var trailing: String? = nil
     var body: some View {
         HStack {
-            Text(text).font(LF.mono(11)).tracking(2.8).foregroundStyle(HVL.label)
+            Text(text).font(LF.mono(10.5)).tracking(2.1).foregroundStyle(HVL.label)
             Spacer()
             if let trailing { Text(trailing).font(LF.mono(10)).tracking(2.0).foregroundStyle(HVL.label.opacity(0.8)) }
         }
@@ -88,12 +88,12 @@ struct HVTodayPanel: View {
 
 /// Active:進行中の Trip と「New trip」
 struct HVActiveRow: View {
+    var body: some View { VStack(spacing: 0) { HVAnchor(id: "sec-active"); content } }
     let data: HomeV64LowerData
     let input: HomeV64Input
     let actions: HomeV64Actions
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HVAnchor(id: "sec-active")
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HVLabel(text: "ACTIVE")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -103,26 +103,26 @@ struct HVActiveRow: View {
                                 Spacer()
                                 Text(t.name).font(LF.serif(24)).foregroundStyle(.white)
                                 Text(t.sub).font(LF.inter(600, 11)).foregroundStyle(HVL.label)
-                            }.padding(16).frame(width: 170, height: 248, alignment: .leading).background(HVL.card, in: RoundedRectangle(cornerRadius: 30))
-                                .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(.white.opacity(0.12), lineWidth: 1))
+                            }.padding(16).frame(width: 170, height: 248, alignment: .leading).background(HVL.card, in: RoundedRectangle(cornerRadius: 24))
+                                .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                         }.buttonStyle(HVPress(scale: 0.97))
                     }
                     Button { Haptics.play(.tick); actions.openTrip() } label: {
-                        VStack(spacing: 8) {
-                            ZStack {
-                                ForEach(0..<3, id: \.self) { i in
-                                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "E8E4DA")).frame(width: 40, height: 56)
-                                        .overlay(Group { if let img = input.tripSamples[safe: i] { Image(uiImage: img).resizable().scaledToFill().frame(width: 34, height: 44).clipped() } }.offset(y: -3))
-                                        .rotationEffect(.degrees(Double(i - 1) * 8)).offset(x: CGFloat(i - 1) * 24, y: i == 1 ? -4 : 0)
-                                }
-                                Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(HV.ink)
-                                    .frame(width: 34, height: 34).background(Color(hex: "F4F1EA"), in: Circle()).offset(y: 34)
-                            }.frame(height: 100)
-                            Text("New trip").font(LF.serif(22)).foregroundStyle(.white)
-                            Text("旅行 ・ 合宿 ・ イベント").font(LF.inter(600, 11)).foregroundStyle(HVL.label)
+                        ZStack(alignment: .topLeading) {
+                            RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color(hex: "0E0E0F"))
+                            ForEach(0..<3, id: \.self) { i in
+                                RoundedRectangle(cornerRadius: 3).fill(Color(hex: "E8E4DA")).frame(width: i == 1 ? 52 : 62, height: i == 1 ? 68 : 75)
+                                    .overlay(Group { if let img = input.tripSamples[safe: i] { Image(uiImage: img).resizable().scaledToFill().frame(width: i == 1 ? 46 : 56, height: i == 1 ? 58 : 64).clipped() } else { Color(hex: "3A3A3C").frame(width: 46, height: 58) } }.offset(y: -3))
+                                    .rotationEffect(.degrees(i == 0 ? -7 : (i == 2 ? 7 : 0)))
+                                    .offset(x: [38, 59, 70][i], y: [53, 56, 53][i])
+                            }
+                            Image(systemName: "plus").font(.system(size: 15, weight: .semibold)).foregroundStyle(HV.ink)
+                                .frame(width: 34, height: 34).background(Color(hex: "F4EFEA"), in: Circle()).offset(x: 68, y: 106)
+                            Text("New trip").font(LF.serif(24)).foregroundStyle(.white).frame(width: 170).offset(y: 143)
+                            Text("旅行 ・ 合宿 ・ イベント").font(LF.inter(600, 10.5)).foregroundStyle(HVL.label).frame(width: 170).offset(y: 182)
                         }
-                        .frame(width: 170, height: 248).background(Color.white.opacity(0.02), in: RoundedRectangle(cornerRadius: 30))
-                        .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(.white.opacity(0.12), lineWidth: 1))
+                        .frame(width: 170, height: 248)
+                        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                     }.buttonStyle(HVPress(scale: 0.97))
                 }.padding(.horizontal, 18)
             }
@@ -138,10 +138,10 @@ struct HVYesterdayBlock: View {
 
     var body: some View {
         let locked = input.locked
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
             HVAnchor(id: "sec-yesterday")
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
-            HVLabel(text: "YESTERDAY", trailing: data.weekday)
+            HVLabel(text: "YESTERDAY", trailing: data.weekday).padding(.top, 8).padding(.bottom, 6)
             if input.isFirstDay { firstDay } else { hero(locked: locked) }
             if !input.isFirstDay {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
@@ -152,43 +152,33 @@ struct HVYesterdayBlock: View {
     }
 
     private func hero(locked: Bool) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 30).fill(Color(hex: "1A1618"))
-            if let img = data.hero?.photo {
-                Image(uiImage: img).resizable().scaledToFill().frame(width: 362, height: locked ? 330 : 450).clipped()
-                    .blur(radius: locked ? 22 : 0).saturation(locked ? 0.35 : 1).brightness(locked ? 0.35 : 0)
-                Color.black.opacity(locked ? 0.0 : 0.25)
-                if locked { LinearGradient(stops: [.init(color: .clear, location: 0.45), .init(color: Color(hex: "0A0A0B"), location: 1)], startPoint: .top, endPoint: .bottom) }
+        // モック `.ayh`:ロック中も 開いて いる ときも 同じ 並び(幅 362 × 高さ 452)。ロック中は ぼかした 空 + 白い「shoot today to open」
+        ZStack(alignment: .topLeading) {
+            if locked {
+                LinearGradient(stops: [.init(color: Color(hex: "BDB8C4"), location: 0), .init(color: Color(hex: "E9DDE2"), location: 0.34), .init(color: Color(hex: "7A6A70"), location: 0.56), .init(color: Color(hex: "1E1A1C"), location: 0.8)], startPoint: .top, endPoint: .bottom)
+            } else {
+                Color(hex: "1A1618")
+                if let img = data.hero?.photo { Image(uiImage: img).resizable().scaledToFill().frame(width: 362, height: 452).clipped() }
+                LinearGradient(colors: [.black.opacity(0.1), .black.opacity(0.28), .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
             }
             if locked {
-                VStack { Spacer()
-                    HStack(spacing: 8) { Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)); Text("shoot today to open").font(LF.inter(800, 15)) }
-                        .foregroundStyle(.white).padding(.horizontal, 18).frame(height: 38).hvGlass(radius: 19, tint: 0.12).padding(.bottom, 24)
-                }
-            } else if let h = data.hero {
-                VStack(spacing: 10) {
-                    Spacer()
-                    Text("Yesterday").font(LF.serif(42)).tracking(-0.4).foregroundStyle(.white)
-                    Text(h.dateLabel).font(LF.mono(10)).tracking(3).foregroundStyle(.white.opacity(0.6))
-                    HStack {
-                        stat("\(h.moments)", "Moments"); Spacer()
-                        ZStack { Ellipse().stroke(HV.green, lineWidth: 2.5).frame(width: 70, height: 46).rotationEffect(.degrees(-6)); stat("\(h.daysLeft)d", "Left") }
-                        Spacer(); stat("\(h.people)", "People ›")
-                    }.padding(.horizontal, 34).padding(.top, 14)
-                    HStack(spacing: 8) {
-                        Button { Haptics.play(.pop); actions.openMondo() } label: {
-                            HStack(spacing: 8) { Image(systemName: "globe").font(.system(size: 17, weight: .semibold)); Text("Mondo").font(LF.inter(800, 17)) }
-                                .foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 54).background(.white, in: Capsule())
-                        }.buttonStyle(HVPress(scale: 0.97))
-                        Image(systemName: "bubble.left").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 54, height: 54).background(Color.white.opacity(0.12), in: Circle())
-                    }.padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 16)
-                }
-                Text(h.tag).font(LF.inter(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 8)
-                    .background(h.tagColor, in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(8))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing).padding(18)
+                HStack(spacing: 8) { Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)); Text("shoot today to open").font(LF.inter(800, 13)) }
+                    .foregroundStyle(HV.ink).frame(width: 177, height: 38).background(.white, in: Capsule()).offset(x: 92, y: 150)
             }
+            let h = data.hero
+            Text("Yesterday").font(LF.serif(54)).foregroundStyle(.white).frame(width: 362, height: 78).offset(y: 206)
+            Text(h?.dateLabel ?? "NOV 15").font(LF.mono(10.5)).tracking(3).foregroundStyle(.white.opacity(0.7)).frame(width: 362).offset(y: 268)
+            stat("\(h?.moments ?? 6)", "Moments").frame(width: 100).offset(x: 31, y: 296)
+            ZStack { Ellipse().stroke(HV.green, lineWidth: 2.5).frame(width: 68, height: 46).rotationEffect(.degrees(-4)); stat("\(h?.daysLeft ?? 6)d", "Left") }.frame(width: 100).offset(x: 131, y: 296)
+            stat("\(h?.people ?? 4)", "People ›").frame(width: 100).offset(x: 231, y: 296)
+            Button { Haptics.play(.pop); locked ? Haptics.play(.warn) : actions.openMondo() } label: {
+                HStack(spacing: 8) { Image(systemName: "globe").font(.system(size: 17, weight: .semibold)); Text("Mondo").font(LF.inter(800, 17)) }
+                    .foregroundStyle(HV.ink).frame(width: 268, height: 54).background(.white, in: Capsule())
+            }.buttonStyle(HVPress(scale: 0.97)).offset(x: 16, y: 382)
+            Image(systemName: "bubble.left").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 54, height: 54).background(Color.white.opacity(0.14), in: Circle()).offset(x: 292, y: 382)
+            if !locked, let h { Text(h.tag).font(LF.inter(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 8).background(h.tagColor, in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(8)).offset(x: 293, y: 18) }
         }
-        .frame(width: 362, height: locked ? 330 : 450).clipShape(RoundedRectangle(cornerRadius: 30))
+        .frame(width: 362, height: 452).clipShape(RoundedRectangle(cornerRadius: 30))
         .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(.white.opacity(0.08), lineWidth: 1))
         .padding(.horizontal, 14)
     }
@@ -228,13 +218,13 @@ struct HVYesterdayBlock: View {
             if let img = t.photo { Image(uiImage: img).resizable().scaledToFill().blur(radius: locked ? 14 : 0).saturation(locked ? 0.4 : 1) }
             LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
             HStack {
-                Text("\(t.name).").font(LF.serif(20, italic: true)).foregroundStyle(.white)
+                if !locked { Text("\(t.name).").font(LF.serif(20, italic: true)).foregroundStyle(.white) }
                 Spacer()
                 if locked { Image(systemName: "lock.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white) }
                 else if let tm = t.time { Text(tm).font(LF.mono(9.5)).foregroundStyle(Color(hex: "FF9A3C")) }
             }.padding(14)
         }
-        .frame(height: 220).clipShape(RoundedRectangle(cornerRadius: 26))
+        .frame(height: 212).clipShape(RoundedRectangle(cornerRadius: 26))
         .overlay(RoundedRectangle(cornerRadius: 26).strokeBorder(.white.opacity(0.08), lineWidth: 1))
         .overlay(alignment: .topTrailing) { if t.own { Image(systemName: "star").font(.system(size: 15, weight: .bold)).foregroundStyle(Color(hex: "FFD60A")).padding(12) } }
     }
@@ -257,7 +247,7 @@ struct HVMondoRow: View {
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
             HVLabel(text: "MONDO", trailing: "TOP 5").padding(.top, 18)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                HStack(spacing: 9) {
                     ForEach(Array(data.mondo.enumerated()), id: \.offset) { i, m in
                         Button { input.locked ? Haptics.play(.warn) : actions.openMondo() } label: {
                             ZStack(alignment: .bottomLeading) {
@@ -265,7 +255,7 @@ struct HVMondoRow: View {
                                 if let img = m.photo { Image(uiImage: img).resizable().scaledToFill().frame(width: 142, height: 188).clipped().blur(radius: input.locked ? 10 : 0) }
                                 LinearGradient(colors: [.black.opacity(0.1), .clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
                                 Text(String(format: "%02d", i + 1)).font(LF.serif(40, italic: true)).foregroundStyle(.white.opacity(0.95)).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(.leading, 12).padding(.top, 6)
-                                Text(m.tag).font(LF.inter(800, 18)).foregroundStyle(.white).padding(14)
+                                Text(m.tag).font(LGFont.mincho(21)).foregroundStyle(.white).padding(14)
                                 if input.locked { Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.white).frame(width: 30, height: 30).background(Color.black.opacity(0.6), in: Circle()).frame(maxWidth: .infinity, maxHeight: .infinity) }
                             }
                             .frame(width: 142, height: 188).clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
@@ -286,15 +276,15 @@ struct HVAlbums: View {
         VStack(alignment: .leading, spacing: 0) {
             HVAnchor(id: "sec-albums")
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
-            HVLabel(text: "ALBUMS", trailing: "7 DAYS · RECAP ›").padding(.top, 20)
+            HVLabel(text: "ALBUMS", trailing: "7 DAYS · RECAP ›").padding(.top, 14)
             ForEach(Array(data.albums.enumerated()), id: \.element.id) { k, a in
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 9) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(a.label).font(LF.serif(26)).tracking(-0.26).foregroundStyle(.white)
+                        Text(a.label).font(LF.serif(26)).tracking(-0.26).foregroundStyle(.white).frame(height: 25)
                         Spacer()
                         Text(a.left).font(LF.mono(9.5)).tracking(1.6).foregroundStyle(HVL.label)
                     }.padding(.horizontal, 18)
-                    HStack(spacing: 9) {
+                    HStack(spacing: 7) {
                         ForEach(0..<3, id: \.self) { j in
                             ZStack {
                                 RoundedRectangle(cornerRadius: 18).fill(Color.white.opacity(0.02))
@@ -308,7 +298,7 @@ struct HVAlbums: View {
                         }.frame(maxWidth: .infinity).frame(height: 112).background(HVL.card).clipShape(RoundedRectangle(cornerRadius: 18))
                     }.padding(.horizontal, 14)
                 }
-                .padding(.top, 18)
+                .padding(.top, k == 0 ? 14 : 22)
                 .opacity(1 - Double(k) * 0.07)
             }
         }
@@ -367,18 +357,18 @@ struct HVMascot: View {
             }.offset(y: 10)
             Text("hi!").font(LF.hand(24)).foregroundStyle(HV.lime).rotationEffect(.degrees(-8)).offset(x: -62, y: -62)
             RoundedRectangle(cornerRadius: 3).fill(Color(hex: "9ED8FF")).frame(width: 14, height: 22).offset(x: 40, y: -42)
-        }.frame(maxWidth: .infinity).frame(height: 120)
+        }.scaleEffect(1.2).frame(maxWidth: .infinity).frame(height: 158)
     }
 }
 
 /// Friends カード(下)
 struct HVFriendsCard: View {
+    var body: some View { VStack(spacing: 0) { HVAnchor(id: "sec-friends"); content } }
     let input: HomeV64Input
     let actions: HomeV64Actions
-    var body: some View {
+    @ViewBuilder private var content: some View {
         let took = input.friends.filter { $0.shots > 0 }.count
         VStack(alignment: .leading, spacing: 14) {
-            HVAnchor(id: "sec-friends")
             HStack {
                 (Text("F").font(LF.serif(40, italic: true)).foregroundColor(HV.lime) + Text("riends").font(LF.serif(40)).foregroundColor(.white))
                 Spacer()
@@ -400,7 +390,7 @@ struct HVFriendsCard: View {
             if input.friends.isEmpty {
                 HVMascot()
                 VStack(spacing: 6) {
-                    Text("まだ ひとり。").font(LGFont.mincho(26)).foregroundStyle(.white)
+                    Text("まだ ひとり。").font(LGFont.mincho(24)).foregroundStyle(.white).frame(height: 29)
                     Text("さいしょの 友だちを よぼう ・ 人数の 上限は ありません").font(LF.inter(500, 12.5)).foregroundStyle(HVL.label).multilineTextAlignment(.center)
                 }.frame(maxWidth: .infinity)
                 HStack(spacing: 10) {
@@ -470,6 +460,6 @@ struct HVLowerSections: View {
             HVFriendsCard(input: input, actions: actions)
             Spacer().frame(height: 300)
         }
-        .background(HVL.bg)
+        .background(alignment: .top) { VStack(spacing: 0) { Color.clear.frame(height: 90); HVL.bg } }
     }
 }

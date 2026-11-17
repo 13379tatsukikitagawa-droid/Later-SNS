@@ -20,7 +20,7 @@ enum DebugRouter {
         case "home": show(HomeV64Preview())
         case "yesterday": show(YesterdayV64Preview())
         case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
-        case "tag": show(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black))
+        case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black))
         default: return false
         }
         return true
@@ -41,7 +41,12 @@ enum DebugRouter {
         show(OpeningV21View(variant: .full, start: Date(), onFinish: { hide() }))
     }
 
+    /// 見本画像と くらべる ため だけ:モックが かいている 端末の わく(ダイナミックアイランド ・ 時計 ・ 電波 ・ 電池 ・ 丸い かど)を 重ねる。本番には 入らない
     static func show<V: View>(_ view: V) {
+        showRaw(ZStack { view; DebugMockChrome() })
+    }
+
+    static func showRaw<V: View>(_ view: V) {
         hide()
         guard let window = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).flatMap(\.windows).first(where: \.isKeyWindow) else { return }
         let vc = UIHostingController(rootView: view)
@@ -105,9 +110,9 @@ struct HomeV64Preview: View {
         low.today = .init(thumbs: [P("c"), P("a"), P("e")], times: ["16:05"])
         low.hero = .init(photo: P("d"), tag: "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: "NOV 15", moments: 6, people: 4, daysLeft: 6)
         low.tiles = [.init(photo: P("d"), name: "あや", time: "17:05"), .init(photo: P("b"), name: "you", time: "16:05", own: true), .init(photo: P("d"), name: "れな", time: "12:40"), .init(photo: P("e"), name: "そら", time: "09:12")]
-        low.mondo = [("#夕焼け", P("a")), ("#放課後", P("e")), ("#帰り道", P("d"))]
-        low.albums = (1...6).map { k in .init(label: "Nov \(16 - k)", left: "\(7 - k)D LEFT · \(["SUN", "SAT", "FRI", "THU", "WED", "TUE"][k - 1])", tiles: [P("c"), P("d"), P("a")], more: [8, 5, 12, 3, 9, 6][k - 1]) }
-        low.onThisDay = (P("a"), 335, "'25 11 17")
+        low.mondo = [("#散歩", P("a")), ("#放課後", P("f")), ("#夕焼け", P("a"))]
+        low.albums = (1...6).map { k in .init(label: "Nov \(16 - k)", left: "\(7 - k)D LEFT · \(["SUN", "SAT", "FRI", "THU", "WED", "TUE"][k - 1])", tiles: [[P("c"), P("d"), P("e")], [P("e"), P("f"), nil], [P("a"), P("b"), P("c")], [P("d"), P("e"), P("f")], [P("a"), P("c"), P("e")], [P("b"), P("d"), P("f")]][k - 1], more: [8, 5, 12, 3, 9, 6][k - 1]) }
+        low.onThisDay = (P("c"), 335, "'26 10 17")
         input.lower = low
         input.now = Calendar.current.date(bySettingHour: 11, minute: 54, second: 0, of: Date()) ?? Date()
         return HomeV64View(input: input).background(Color.black).ignoresSafeArea()
@@ -157,6 +162,29 @@ struct YesterdayV64Preview: View {
         y.mondoPhoto = SampleData.photo("a")
         y.now = Calendar.current.date(bySettingHour: 12, minute: 3, second: 0, of: Date()) ?? Date()
         return YesterdayV64View(input: y)
+    }
+}
+
+struct DebugMockChrome: View {
+    var clock: String = UserDefaults.standard.string(forKey: "debugClockText") ?? "11:55"
+    var dark = false
+    var body: some View {
+        GeometryReader { g in
+            let ink = Color(hex: "111111")
+            ZStack(alignment: .topLeading) {
+                // 丸い かど
+                Canvas { ctx, size in
+                    var p = Path(CGRect(origin: .zero, size: size))
+                    p.addRoundedRect(in: CGRect(origin: .zero, size: size), cornerSize: CGSize(width: 50, height: 50), style: .continuous)
+                    ctx.fill(p, with: .color(Color(hex: "0D0D0F")), style: FillStyle(eoFill: true))
+                }
+                Text(clock).font(LF.inter(700, 16)).foregroundStyle(UserDefaults.standard.bool(forKey: "debugChromeLight") ? .white : ink).offset(x: 42, y: 19)
+                Capsule().fill(.black).frame(width: 122, height: 35).offset(x: (g.size.width - 122) / 2, y: 11)
+                Image(systemName: "cellularbars").font(.system(size: 13, weight: .bold)).foregroundStyle(UserDefaults.standard.bool(forKey: "debugChromeLight") ? .white : ink).offset(x: 310, y: 21)
+                RoundedRectangle(cornerRadius: 4).stroke(UserDefaults.standard.bool(forKey: "debugChromeLight") ? .white : ink, lineWidth: 1).frame(width: 25, height: 12).offset(x: 333, y: 23).opacity(0.9)
+            }
+        }
+        .ignoresSafeArea().allowsHitTesting(false)
     }
 }
 #endif

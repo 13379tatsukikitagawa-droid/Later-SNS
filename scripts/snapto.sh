@@ -11,7 +11,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BID="${LATTAG_BID:-com.tatsukikitagawa.laternew2}"
 UD="${LATTAG_SIM:-815EEF6B-47AA-4F2E-BDAD-1E36BDFB851A}"
 xcrun simctl terminate "$UD" "$BID" 2>/dev/null || true
-ARGS=(-debugRoute "$ROUTE"); [ -n "$T" ] && ARGS+=(-debugT "$T")
+LIGHT=0; case "$ID" in L*|Y06*|C0*|C1*) LIGHT=1;; esac
+ARGS=(-debugRoute "$ROUTE" -debugChromeLight $LIGHT); [ -n "$T" ] && ARGS+=(-debugT "$T")
 xcrun simctl launch "$UD" "$BID" "${ARGS[@]}" "$@" >/dev/null
 sleep "${SNAP_WAIT:-3.5}"
 "$ROOT/scripts/snap.sh" "$ID" 2>&1 | grep -E "score|→"
