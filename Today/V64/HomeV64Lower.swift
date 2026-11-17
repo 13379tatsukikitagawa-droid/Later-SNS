@@ -318,19 +318,19 @@ struct HVOnThisDay: View {
                     ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 4).fill(Color(hex: "F4F1EA"))
                         ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = o.photo { Image(uiImage: img).resizable().scaledToFill() } }
-                            .frame(width: 130, height: 150).clipped().offset(x: 9, y: 9)
-                        Text(o.date).font(LF.mono(9)).foregroundStyle(Color(hex: "FF9A3C")).offset(x: 78, y: 134)
-                        Image(systemName: "sparkle").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: "FFD60A")).offset(x: 10, y: 166)
-                    }.frame(width: 148, height: 196).rotationEffect(.degrees(-4)).shadow(color: .black.opacity(0.6), radius: 14, y: 10)
+                            .frame(width: 136, height: 146).clipped().offset(x: 9, y: 9)
+                        Text(o.date).font(LF.mono(9)).foregroundStyle(Color(hex: "FF9A3C")).offset(x: 86, y: 134)
+                        Image(systemName: "sparkle").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: "FFD60A")).offset(x: 10, y: 160)
+                    }.frame(width: 154, height: 186).rotationEffect(.degrees(-4)).shadow(color: .black.opacity(0.6), radius: 14, y: 10)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Oct 17").font(LF.serif(44)).tracking(-0.9).foregroundStyle(.white).padding(.top, 20)
+                        Text("Oct 17").font(LF.serif(44)).tracking(-0.9).foregroundStyle(.white).padding(.top, 14)
                         Text("1 month ago").font(LF.serif(19, italic: true)).foregroundStyle(HVL.label)
                         ZStack(alignment: .leading) { Capsule().fill(Color.white.opacity(0.08)).frame(height: 3); Capsule().fill(Color(hex: "24A03C")).frame(width: 150, height: 3) }.padding(.top, 14)
                         Text("\(o.daysLeft) DAYS LEFT").font(LF.mono(10)).tracking(2).foregroundStyle(HVL.label)
                         HStack(spacing: 5) { Capsule().fill(.white).frame(width: 14, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5) }
                     }
                     Spacer(minLength: 0)
-                }.padding(.horizontal, 18).padding(.top, 20)
+                }.padding(.horizontal, 16).padding(.top, 24)
             }
         }
     }
