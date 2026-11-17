@@ -158,3 +158,11 @@
 - **のこり(大きい)**:Y01〜Y05(Lattag yesterday)は 新しい 見本が 暗い 画面 + 新しい ヘッダーに 変わった ため 41〜76。`YesterdayV64View`(白い ページ)を 作りなおす 必要が ある(P12〜P15 の 対象外 → 決めて から)。Y05 の 見本に キャラクターが 残って いる。
 - **のこり(小さい)**:H02 16.4 / H08 12.6 / L06〜L12 10〜12 / F02 12.4 / F03 13.0 / K04 10.9 / L11 12.5 / C01 26.7(見本の キーボードは HTML 描画)。
 - **実機で 確認**:Shake(2台)・ ヘッダーが まとまる 動き ・ 四すみの 入場 ・ レンズの しぼり ・ SE(幅 375)。
+
+## 2026-11-18 P28(v85)Shake を なくした ✓
+
+- 消した:`ShakeV68View` `ShakeSession` `ShakeV68Rules` `ShakeV68Tests`、旧 `ShakeConnect` `ShakeRules` `ShakeConnectSheet`(`FriendsHub`)、旧 Home の `V17Bump`、Friends の ふる カード、Add / 旧 Friends の `Shake` タイル、はじめての 設定の `ふって つながる`、DEBUG の `shake` ルート、`snapall` の K01〜K05。
+- Info.plist:`NSBonjourServices`(`_later-bump` `_lattag-shake`)と `NSLocalNetworkUsageDescription` を 消した(ほかに ローカルネットワークを 使う 所は ない。`InfoPlist.xcstrings` と `LocalizationTests` も そろえた)。
+- Friends:`QR を 見せる`(黄緑)/ `QR を 読む` の 2枚(0人 = たてに 大きく 150、いる 時 = 横に 142)+ `Link` `ID` の 2つ。F01 11.5 ・ F02 8.5 ・ F03 9.7。背景の 写真が 画面より 広がって いた ずれも 直した。
+- `QR を 見せる` は プロフィールの チェキを 裏返す 画面が できる まで、自分の QR の シートで 見せる(のこり:P25/P29 で つなぐ)。
+- のこり:Add friends(F06)の `QR ・ Link ・ Scan` 3つ(F06 を 作る とき)。

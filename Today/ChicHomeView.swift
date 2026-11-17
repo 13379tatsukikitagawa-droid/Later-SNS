@@ -42,7 +42,6 @@ struct ChicHomeView: View {
     /// v17:下へつづく区画の中身と操作
     var v17: HomeV17Data = .empty
     var v17Actions = HomeV17Actions()
-    var bump: V17Bump?
     /// v28/v29 暗室:グループ(ACTIVE)・部屋を ひらく・写真に 返信
     var groups: [LaterGroup] = []
     var onOpenChat: (UUID) -> Void = { _ in }
@@ -192,16 +191,6 @@ struct ChicHomeView: View {
                               photos: v17.shots.map { d in mine.first { $0.captureDate == d } },
                               onClose: { showsDevelop = false }, onShoot: v17Actions.shoot)
         }
-        .confirmationDialog(
-            bump?.pending.map { "「\($0.name)」と つながる?" } ?? "",
-            isPresented: Binding(get: { bump?.pending != nil }, set: { if !$0, bump?.pending != nil { bump?.cancel() } }),
-            titleVisibility: .visible
-        ) {
-            Button("つながる") { bump?.confirm() }
-            Button("やめる", role: .cancel) { bump?.cancel() }
-        } message: {
-            Text("相手の画面でも、きいています")
-        }
         .background {
             if palette.isNight {
                 ChicNightBackground().ignoresSafeArea()
@@ -263,12 +252,10 @@ struct ChicHomeView: View {
                 .id(HomeV17Section.film.rawValue)
 
             // ともだち(D は あとで。いまは v17 の まま 置いておく)
-            if let bump {
-                V17FriendsSection(friends: v17.friends, ink: V17Ink(night: palette.isNight), feel: feel, actions: v17Actions, bump: bump)
-                    .padding(.horizontal, 22)
-                    .padding(.top, 72)
-                    .v17Reveal()
-            }
+            V17FriendsSection(friends: v17.friends, ink: V17Ink(night: palette.isNight), feel: feel, actions: v17Actions)
+                .padding(.horizontal, 22)
+                .padding(.top, 72)
+                .v17Reveal()
 
             Color.clear.frame(height: HomeV17Rules.bottomSpace)
             } else {
@@ -352,7 +339,7 @@ struct ChicHomeView: View {
 
     /// はじめての 合図を 出してよい(Home が 前面・オープニングと 登場が おわった・もぐっていない)
     private var hintsAllowed: Bool {
-        isVisible && launch == .finished && !introRunning && !isDiving && !showsLights && !showsDevelop && bump?.pending == nil
+        isVisible && launch == .finished && !introRunning && !isDiving && !showsLights && !showsDevelop
     }
 
     // MARK: v32 まんなかの 丸

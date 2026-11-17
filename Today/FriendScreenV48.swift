@@ -3,7 +3,7 @@ import SwiftUI
 
 /// v48/v48b/v48c:ともだち画面を ぜんぶ 作りなおし。黒い 背景・大きな 12の 席・
 /// 自分の チェキ・なかまの イラスト(「BUMP」の文字は 出さない)。
-/// 友達追加・ふって つながる・つつく・ブロック・通報は 今ある 処理を 呼ぶだけ。
+/// 友達追加・つつく・ブロック・通報は 今ある 処理を 呼ぶだけ。
 struct FriendScreenV48: View {
     let myName: String
     var myColorIndex: Int?
@@ -20,8 +20,6 @@ struct FriendScreenV48: View {
     @Environment(\.modelContext) private var modelContext
     @State private var pendingInboxCount = 0
     @State private var selected: HomeFriend?
-    @State private var shake = ShakeConnect()
-    @State private var showsShakeSheet = false
     @State private var showsFriendScan = false
     @State private var shareItems: [Any]?
     @State private var toast: String?
@@ -82,10 +80,6 @@ struct FriendScreenV48: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: toast)
-        .sheet(isPresented: $showsShakeSheet, onDismiss: { shake.stop() }) {
-            ShakeConnectSheet(shake: shake, isFull: isFull, myName: myName, friendCount: friends.count) { message in show(message) }
-                .environment(\.palette, .night)
-        }
         .fullScreenCover(isPresented: $showsFriendScan) {
             FriendQRScanView(myName: myName, friendCount: friends.count) { message in show(message) }
         }
@@ -178,7 +172,7 @@ struct FriendScreenV48: View {
             Spacer(minLength: 0)
             Button {
                 Haptics.play(.tick)
-                showsShakeSheet = true
+                showsFriendScan = true
             } label: {
                 Text("Add").font(LF.inter(800, 14)).foregroundStyle(.black)
                     .padding(.horizontal, 18).frame(height: 38).background(Capsule().fill(.white))
@@ -281,7 +275,7 @@ struct FriendScreenV48: View {
         let point = position(for: index)
         return Button {
             Haptics.play(.pop)
-            showsShakeSheet = true
+            showsFriendScan = true
         } label: {
             PulsingDashedSeatBig()
         }
@@ -294,7 +288,7 @@ struct FriendScreenV48: View {
         let point = position(for: index)
         return Button {
             Haptics.play(.pop)
-            showsShakeSheet = true
+            showsFriendScan = true
         } label: {
             Circle().strokeBorder(.white.opacity(0.16), style: StrokeStyle(lineWidth: 1.6, dash: [3, 5]))
                 .frame(width: Self.seatSize, height: Self.seatSize)
@@ -304,7 +298,7 @@ struct FriendScreenV48: View {
         .accessibilityHidden(true)
     }
 
-    // MARK: まんなか:ふって つながる(長押し)
+    // MARK: まんなか:QR で つながる(長押し)
 
     @ViewBuilder
     private var center: some View {
@@ -341,12 +335,12 @@ struct FriendScreenV48: View {
                 Haptics.play(.rumble)
                 withAnimation(.linear(duration: 1.5)) { ring = 1 }
             } else {
-                if holding, ring < 0.98 { show("MORE SHAKE") }
+                if holding, ring < 0.98 { show("もうすこし") }
                 holding = false
                 withAnimation(.easeOut(duration: 0.3)) { ring = 0 }
             }
         }
-        .accessibilityLabel("ながおしで、ふって つながる")
+        .accessibilityLabel("ながおしで、QR を よみとる")
         .accessibilityAddTraits(.isButton)
     }
 
@@ -355,8 +349,7 @@ struct FriendScreenV48: View {
         ring = 0
         guard !isFull else { Haptics.play(.warn); show("12の 席が、うまりました"); return }
         Haptics.play(.success)
-        shake.bumpByHold()
-        showsShakeSheet = true
+        showsFriendScan = true
     }
 
     private func selectedCenter(_ friend: HomeFriend) -> some View {
@@ -526,12 +519,6 @@ struct FriendScreenV48: View {
 
     private var connectTiles: some View {
         HStack(spacing: 8) {
-            connectTile(icon: "iphone.radiowaves.left.and.right", title: "Shake", primary: false) {
-                guard !isFull else { refuseFull(); return }
-                Haptics.play(.tick)
-                shake.start(name: myName, recordName: myRecordName)
-                showsShakeSheet = true
-            }
             connectTile(icon: "qrcode", title: "QR", primary: true) {
                 guard !isFull else { refuseFull(); return }
                 Haptics.play(.tick)

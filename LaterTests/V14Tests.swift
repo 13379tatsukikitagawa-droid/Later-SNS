@@ -157,14 +157,6 @@ struct V14Tests {
         #expect(FriendRules.recordName(from: url) == "_abc")
     }
 
-    @Test func ふってつながる_2秒以内だけペア() {
-        let t = Date(timeIntervalSince1970: 100)
-        #expect(ShakeRules.isPair(mine: t, theirs: t.addingTimeInterval(1.9)))
-        #expect(!ShakeRules.isPair(mine: t, theirs: t.addingTimeInterval(2.5)))
-        #expect(ShakeRules.isShake(x: 2, y: 1, z: 0.5))
-        #expect(!ShakeRules.isShake(x: 0, y: -1, z: 0))
-    }
-
     @Test func 招待カードは_入るを押すまでpending() throws {
         let defaults = try #require(UserDefaults(suiteName: "V14-\(UUID().uuidString)"))
         #expect(InviteCardStore.status("x", defaults: defaults) == .pending)

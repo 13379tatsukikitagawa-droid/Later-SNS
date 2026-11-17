@@ -1,13 +1,11 @@
 import CloudKit
 import CoreImage.CIFilterBuiltins
-import CoreMotion
-import MultipeerConnectivity
 import SwiftData
 import SwiftUI
 import UIKit
 
 // v14 ⑤ ともだち:プロフィールを見せるだけで つながる。
-// 3つのサブタブ:呼ぶ(プロフィールカード・送る・コピー・ふって つながる・QR)/ グループに えらぶ / とどいた。
+// 3つのサブタブ:呼ぶ(プロフィールカード・送る・コピー・QR)/ グループに えらぶ / とどいた。
 //
 // CloudKit(公開 DB。Development で作ってから Production に Deploy):
 // - Friendship(fromUserId, toUserId, fromName, createdAt):片方が作ると「申請」、相手も作ると「成立」(相互)。
@@ -88,7 +86,7 @@ enum FriendCloud {
         return await (out, incoming)
     }
 
-    /// v17:ふって つながった人(自分が「つながる」を押した相手)。名前は、相手の Friendship の fromName か、つながったときの控え
+    /// v17:QR などで つながった人(自分が「つながる」を押した相手)。名前は、相手の Friendship の fromName か、つながったときの控え
     static func connections() async -> [BumpFriend] {
         guard let database, let me = CloudKitManager.current?.currentUserRecordName else { return BumpFriendStore.cached }
         async let out = records(database, field: "fromUserId", equals: me)
@@ -183,31 +181,15 @@ enum InviteCardStore {
     }
 }
 
-// MARK: - ふって つながる(BUMP 風):CoreMotion + MultipeerConnectivity(近くの端末だけ)
+// MARK: - つながった人の控え
 
-/// 振った強さ・ペアの決まり(テストで確かめる)
-enum ShakeRules {
-    /// 振ったとみなす加速度(G)
-    static let threshold = 2.2
-    /// 両方が振った時刻の差が、これ以内ならペア
-    static let pairWindow: TimeInterval = 2.0
-
-    static func isShake(x: Double, y: Double, z: Double) -> Bool {
-        (x * x + y * y + z * z).squareRoot() >= threshold
-    }
-
-    static func isPair(mine: Date, theirs: Date) -> Bool {
-        abs(mine.timeIntervalSince(theirs)) <= pairWindow
-    }
-}
-
-/// ふって つながった人(公開 DB の Friendship から)
+/// QR などで つながった人(公開 DB の Friendship から)
 struct BumpFriend: Codable, Equatable, Identifiable {
     let id: String
     let name: String
 }
 
-/// ふって つながった人の控え(端末の中だけ。通信できないときと、名前の控えに使う)
+/// QR などで つながった人の控え(端末の中だけ。通信できないときと、名前の控えに使う)
 @MainActor
 enum BumpFriendStore {
     private static let listKey = "bumpFriends.v1"
@@ -237,151 +219,6 @@ extension Notification.Name {
     static let bumpFriendsChanged = Notification.Name("bumpFriendsChanged")
 }
 
-@MainActor @Observable
-final class ShakeConnect: NSObject {
-    enum Phase: Equatable {
-        case idle
-        /// ふっている(0〜1:画面がだんだん強く揺れる)
-        case shaking(Double)
-        /// 相手が見つかった。両方の画面で「つながる?」
-        case confirm(name: String, recordName: String)
-        case connected(name: String)
-        case failed(String)
-    }
-
-    private(set) var phase: Phase = .idle
-    @ObservationIgnored private let motion = CMMotionManager()
-    @ObservationIgnored private var peerID: MCPeerID?
-    @ObservationIgnored private var session: MCSession?
-    @ObservationIgnored private var advertiser: MCNearbyServiceAdvertiser?
-    @ObservationIgnored private var browser: MCNearbyServiceBrowser?
-    @ObservationIgnored private var lastShake: Date?
-    @ObservationIgnored private var shakeEnergy = 0.0
-    @ObservationIgnored private var lastTick = Date.distantPast
-    @ObservationIgnored private var myName = ""
-    @ObservationIgnored private var myRecordName = ""
-
-    static let serviceType = "later-bump"
-
-    func start(name: String, recordName: String) {
-        stop()
-        myName = name
-        myRecordName = recordName
-        phase = .idle
-        let peer = MCPeerID(displayName: String(name.prefix(20)).isEmpty ? "Later" : String(name.prefix(20)))
-        peerID = peer
-        let session = MCSession(peer: peer, securityIdentity: nil, encryptionPreference: .required)
-        session.delegate = self
-        self.session = session
-        let advertiser = MCNearbyServiceAdvertiser(peer: peer, discoveryInfo: nil, serviceType: Self.serviceType)
-        advertiser.delegate = self
-        advertiser.startAdvertisingPeer()
-        self.advertiser = advertiser
-        let browser = MCNearbyServiceBrowser(peer: peer, serviceType: Self.serviceType)
-        browser.delegate = self
-        browser.startBrowsingForPeers()
-        self.browser = browser
-        guard motion.isAccelerometerAvailable else { return }
-        motion.accelerometerUpdateInterval = 1.0 / 50
-        motion.startAccelerometerUpdates(to: .main) { [weak self] data, _ in
-            guard let data else { return }
-            MainActor.assumeIsolated { self?.sample(x: data.acceleration.x, y: data.acceleration.y, z: data.acceleration.z) }
-        }
-    }
-
-    func stop() {
-        motion.stopAccelerometerUpdates()
-        advertiser?.stopAdvertisingPeer()
-        browser?.stopBrowsingForPeers()
-        session?.disconnect()
-        advertiser = nil
-        browser = nil
-        session = nil
-    }
-
-    func reset() { phase = .idle; shakeEnergy = 0 }
-
-    func confirmed() { if case .confirm(let name, _) = phase { phase = .connected(name: name) } }
-
-    /// v17:ふれない人のための代わり(長押し 1.5秒)。ふり切ったのと同じく、近くの相手に「ふった」を送る
-    func bumpByHold() {
-        switch phase {
-        case .confirm, .connected: return
-        default: break
-        }
-        lastShake = Date()
-        send(["shake": Date().timeIntervalSince1970, "name": myName, "id": myRecordName])
-    }
-
-    /// いま近くの端末と、つながっているか(長押しが空ぶりかどうかの目安)
-    var hasNearbyPeer: Bool { !(session?.connectedPeers.isEmpty ?? true) }
-
-    /// ふっている間 tick(だんだん速く)→ 後半 thud → 1秒ぶんたまったら、近くの相手に「ふった」を送る
-    private func sample(x: Double, y: Double, z: Double) {
-        switch phase {
-        case .confirm, .connected: return
-        default: break
-        }
-        if ShakeRules.isShake(x: x, y: y, z: z) {
-            shakeEnergy = min(1, shakeEnergy + 0.06)
-            let interval = 0.3 - 0.22 * shakeEnergy
-            if Date().timeIntervalSince(lastTick) >= interval {
-                lastTick = Date()
-                Haptics.play(shakeEnergy > 0.6 ? .thud : .tick, gap: 0)
-            }
-            phase = .shaking(shakeEnergy)
-            if shakeEnergy >= 1 {
-                lastShake = Date()
-                send(["shake": Date().timeIntervalSince1970, "name": myName, "id": myRecordName])
-                shakeEnergy = 0.5
-            }
-        } else {
-            shakeEnergy = max(0, shakeEnergy - 0.01)
-            if shakeEnergy == 0, case .shaking = phase { phase = .idle }
-        }
-    }
-
-    private func send(_ payload: [String: Any]) {
-        guard let session, !session.connectedPeers.isEmpty,
-              let data = try? JSONSerialization.data(withJSONObject: payload) else { return }
-        try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
-    }
-
-    fileprivate func received(_ payload: [String: Any]) {
-        guard let time = payload["shake"] as? Double, let name = payload["name"] as? String, let id = payload["id"] as? String,
-              let mine = lastShake, ShakeRules.isPair(mine: mine, theirs: Date(timeIntervalSince1970: time)) else { return }
-        Haptics.play(.success)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { Haptics.play(.pop) }
-        phase = .confirm(name: name, recordName: id)
-    }
-}
-
-extension ShakeConnect: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
-    nonisolated func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {}
-    nonisolated func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        guard let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
-        nonisolated(unsafe) let box = payload
-        Task { @MainActor in self.received(box) }
-    }
-    nonisolated func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
-    nonisolated func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}
-    nonisolated func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {}
-
-    nonisolated func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-        nonisolated(unsafe) let handler = invitationHandler
-        Task { @MainActor in handler(true, self.session) }
-    }
-
-    nonisolated func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
-        Task { @MainActor in
-            guard let session = self.session else { return }
-            browser.invitePeer(peerID, to: session, withContext: nil, timeout: 10)
-        }
-    }
-
-    nonisolated func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {}
-}
-
 // MARK: - 画面
 
 struct FriendsHubView: View {
@@ -397,8 +234,6 @@ struct FriendsHubView: View {
     @State private var picked: Set<String> = []
     @State private var inbox: [FriendInviteCard] = []
     @State private var toast: String?
-    @State private var shake = ShakeConnect()
-    @State private var showsShake = false
     /// v47:ともだちのQRをカメラで読む
     @State private var showsFriendScan = false
     @State private var shareItems: [Any]?
@@ -463,10 +298,6 @@ struct FriendsHubView: View {
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.8), value: tab)
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: toast)
-        .sheet(isPresented: $showsShake, onDismiss: { shake.stop() }) {
-            ShakeConnectSheet(shake: shake, isFull: isFull, myName: myName, friendCount: friends.count) { message in show(message) }
-                .environment(\.palette, palette)
-        }
         .fullScreenCover(isPresented: $showsFriendScan) {
             FriendQRScanView(myName: myName, friendCount: friends.count) { message in show(message) }
         }
@@ -517,11 +348,6 @@ struct FriendsHubView: View {
                     Haptics.play(.pop)
                     show("リンクを コピーしたよ")
                 }
-            }
-            rowButton(icon: "iphone.radiowaves.left.and.right", title: "ふって つながる", note: "となりの子と、いっしょに スマホを ふる") {
-                guard !isFull else { refuseFull(); return }
-                shake.start(name: myName, recordName: myRecordName)
-                showsShake = true
             }
             rowButton(icon: "qrcode.viewfinder", title: "QRを よみとる", note: "ともだちの カードを カメラで") {
                 guard !isFull else { refuseFull(); return }
@@ -734,89 +560,6 @@ struct FriendsHubView: View {
     private func show(_ message: String) {
         toast = message
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.9) { if toast == message { toast = nil } }
-    }
-}
-
-/// ふって つながる の画面:画面がだんだん強く揺れる → BUMP! → 輪が3重に広がる → 両方で「つながる?」
-struct ShakeConnectSheet: View {
-    let shake: ShakeConnect
-    let isFull: Bool
-    let myName: String
-    let friendCount: Int
-    let onToast: (String) -> Void
-
-    @Environment(\.palette) private var palette
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.dismiss) private var dismiss
-    @State private var rings = 0
-
-    private var energy: Double { if case .shaking(let e) = shake.phase { return e } else { return 0 } }
-
-    var body: some View {
-        VStack(spacing: 18) {
-            Spacer(minLength: 20)
-            ZStack {
-                ForEach(0..<3, id: \.self) { i in
-                    Circle().strokeBorder(LinearGradient(colors: GroupAddColors.sunset, startPoint: .top, endPoint: .bottom), lineWidth: 3)
-                        .frame(width: 120, height: 120)
-                        .scaleEffect(rings > 0 ? 1 + CGFloat(i + 1) * 0.7 : 1)
-                        .opacity(rings > 0 ? 0 : 0.6)
-                        .animation(.easeOut(duration: 0.9).delay(Double(i) * 0.12), value: rings)
-                }
-                Text(bumpText).font(.system(size: 30, weight: .heavy)).foregroundStyle(palette.ink)
-            }
-            .offset(x: reduceMotion ? 0 : CGFloat(sin(Date().timeIntervalSinceReferenceDate * 70) * 8 * energy))
-            .frame(height: 300)
-            Text(caption).font(.system(size: 14, weight: .semibold)).foregroundStyle(palette.groupAdd.note).multilineTextAlignment(.center)
-            if case .confirm(let name, let id) = shake.phase {
-                HStack(spacing: 10) {
-                    Button("やめる") { Haptics.play(.soft); shake.reset() }
-                        .font(.system(size: 16, weight: .heavy)).foregroundStyle(palette.ink)
-                        .frame(maxWidth: .infinity, minHeight: 54).background(Capsule().fill(palette.fill))
-                    Button("つながる") {
-                        Task {
-                            let result = await FriendCloud.connect(to: id, myName: myName, myCount: friendCount, theirCount: 0)
-                            switch result {
-                            case .success:
-                                Haptics.play(.success)
-                                BumpFriendStore.remember(id: id, name: name)
-                                shake.confirmed()
-                                onToast("\(name) と つながった")
-                            case .failure(let error):
-                                Haptics.play(.warn)
-                                onToast(error.message)
-                            }
-                        }
-                    }
-                    .font(.system(size: 16, weight: .heavy)).foregroundStyle(palette.bg)
-                    .frame(maxWidth: .infinity, minHeight: 54).background(Capsule().fill(palette.ink))
-                }
-                .padding(.horizontal, 22)
-            }
-            Spacer(minLength: 20)
-        }
-        .background(palette.bg.ignoresSafeArea())
-        .onChange(of: shake.phase) { _, phase in
-            if case .confirm = phase { rings += 1 }
-        }
-        .presentationDetents([.medium, .large])
-    }
-
-    private var bumpText: String {
-        switch shake.phase {
-        case .confirm, .connected: return "BUMP!"
-        default: return "ふって!"
-        }
-    }
-
-    private var caption: String {
-        switch shake.phase {
-        case .idle: return "となりの子と、いっしょに スマホを ふってね。\n近くの 端末だけ さがすよ。"
-        case .shaking: return "その ちょうし…"
-        case .confirm(let name, _): return "\(name) と つながる?\n(相手の画面でも きいてるよ)"
-        case .connected(let name): return "\(name) と つながった"
-        case .failed(let message): return message
-        }
     }
 }
 

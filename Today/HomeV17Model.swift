@@ -65,8 +65,6 @@ enum HomeV17Rules {
     /// ひらいたあと、ミルクにもどるまで
     static let developShow: TimeInterval = 2.6
     static let developReturn: TimeInterval = 1.1
-    /// 「ふって つながる」の長押し
-    static let bumpHold: TimeInterval = 1.5
     /// つつく:これより長く ためたら「つよく」
     static let strongKnock: TimeInterval = 0.9
     static let knockFull: TimeInterval = 1.0
@@ -232,7 +230,7 @@ enum HomeV17Rules {
         return keys.mapValues { min(3, $0.count) }
     }
 
-    /// グループのともだち + ふって つながった人(同じ人は1人。12人まで)
+    /// グループのともだち + QR などで つながった人(同じ人は1人。12人まで)
     static func friends(group: [HomeFriend], bump: [BumpFriend], counts: [String: Int], myID: String?) -> [V17Friend] {
         var result: [V17Friend] = group.filter { !$0.isMe }.map { friend in
             V17Friend(id: friend.id, name: friend.name, avatarData: friend.avatarData, seed: friend.seed,
@@ -266,7 +264,7 @@ struct V17Friend: Identifiable, Equatable {
     let seed: UUID
     /// 今日撮ったこま数(0〜3)
     let shotsToday: Int
-    /// グループのともだち(つつける)。ふって つながっただけの人は nil
+    /// グループのともだち(つつける)。QR で つながっただけの人は nil
     let home: HomeFriend?
 
     var canKnock: Bool { home.map { !$0.knockOff && !$0.groupIDs.isEmpty } ?? false }

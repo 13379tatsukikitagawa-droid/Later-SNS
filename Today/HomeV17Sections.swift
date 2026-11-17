@@ -1112,13 +1112,11 @@ struct V17FriendsSection: View {
     let ink: V17Ink
     let feel: HomeV17Feel
     let actions: HomeV17Actions
-    let bump: V17Bump
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             V17SectionHeader(kicker: "FRIENDS", title: "ともだち", number: "\(friends.count) / \(FriendRules.maxFriends)", ink: ink)
             if friends.isEmpty {
-                V17FriendsEmpty(ink: ink, feel: feel, actions: actions, bump: bump)
+                V17FriendsEmpty(ink: ink, feel: feel, actions: actions)
             } else {
                 V17FriendsRow(friends: friends, ink: ink, feel: feel, actions: actions)
                 Text("まわりの光 = 今日 撮った こま数。長押しで、つよく つつけます。")
@@ -1131,21 +1129,11 @@ struct V17FriendsSection: View {
     }
 }
 
-/// 0人:2台のスマホ・「ふって つながる」(長押し 1.5秒の代わりつき)
+/// 0人:QR で 会って つながる(v85。Shake は なくした)
 private struct V17FriendsEmpty: View {
     let ink: V17Ink
     let feel: HomeV17Feel
     let actions: HomeV17Actions
-    let bump: V17Bump
-
-    @State private var progress: Double = 0
-    @State private var holding = false
-    @State private var loop: Task<Void, Never>?
-    @State private var ramp = HapticRamp()
-    @State private var pulse = 0
-
-    /// 本物の「ふる」の強さと、長押しの強さの大きいほう
-    private var gauge: Double { max(progress, bump.shakeEnergy) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1162,9 +1150,21 @@ private struct V17FriendsEmpty: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 8)
                 .padding(.bottom, 18)
-            shakeButton
-                .scaleEffect(pulse.isMultiple(of: 2) ? 1 : 1.06)
-                .animation(.spring(response: 0.25, dampingFraction: 0.4), value: pulse)
+            Button {
+                Haptics.play(.pop)
+                actions.openFriends()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "qrcode").font(.system(size: 15, weight: .bold))
+                    Text("QR で つながる").font(.system(size: 15, weight: .heavy))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color(hex: "111111"), in: Capsule())
+                .shadow(color: .black.opacity(0.35), radius: 14, y: 14)
+            }
+            .buttonStyle(.plain)
             HStack(spacing: 18) {
                 link("合言葉で 呼ぶ")
                 link("QR を 見せる")
@@ -1181,46 +1181,6 @@ private struct V17FriendsEmpty: View {
             V17TwoPhones().frame(width: 118, height: 96).padding(.trailing, 10).padding(.top, 12)
         }
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        // 見えているあいだだけ、近くの相手をさがす(ふるのも、ここで受けとる)
-        .onScrollVisibilityChange(threshold: 0.3) { visible in
-            if visible { bump.start() } else { bump.stop() }
-        }
-        .onDisappear { loop?.cancel(); ramp.stop(); feel.rattle = 0; bump.stop() }
-        .onChange(of: bump.connectedToken) { _, _ in
-            pulse += 1
-        }
-        .onChange(of: bump.shakeEnergy) { _, energy in
-            if !holding { feel.rattle = energy > 0.05 ? 0.15 + energy * 0.85 : 0 }
-        }
-    }
-
-    private var shakeButton: some View {
-        ZStack(alignment: .leading) {
-            GeometryReader { proxy in
-                LinearGradient(colors: [Color(hex: "FFB36A"), Color(hex: "FF6A3D"), Color(hex: "FF5DA2"), Color(hex: "9A7CFF")], startPoint: .leading, endPoint: .trailing)
-                    .frame(width: proxy.size.width * gauge)
-            }
-            HStack(spacing: 8) {
-                Image(systemName: "iphone.radiowaves.left.and.right").font(.system(size: 15, weight: .bold))
-                Text(bump.isPairing ? "BUMP!" : "ふって つながる").font(.system(size: 15, weight: .heavy))
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-        }
-        .frame(height: 56)
-        .background(Color(hex: "111111"))
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.35), radius: 14, y: 14)
-        .contentShape(Capsule())
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in if !holding { begin() } }
-                .onEnded { _ in end(completed: false) }
-        )
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("ふって つながる。スマホを ふるか、長押し")
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { complete() }
     }
 
     private func link(_ title: String) -> some View {
@@ -1235,49 +1195,6 @@ private struct V17FriendsEmpty: View {
                 .overlay(alignment: .bottom) { Rectangle().fill(Color(hex: "111111")).frame(height: 1.4) }
         }
         .buttonStyle(.plain)
-    }
-
-    private func begin() {
-        holding = true
-        Haptics.play(.pop)
-        ramp.start()
-        bump.start()
-        loop?.cancel()
-        let start = Date()
-        loop = Task { @MainActor in
-            var lastTick = Date.distantPast
-            while !Task.isCancelled && holding {
-                let k = min(1, Date().timeIntervalSince(start) / HomeV17Rules.bumpHold)
-                progress = k
-                ramp.update(k)
-                feel.rattle = 0.15 + k * 0.85
-                // ためるほど、カリッ → カチッ が速くなる
-                if Date().timeIntervalSince(lastTick) > 0.23 - k * 0.16 {
-                    lastTick = Date()
-                    Haptics.play(k > 0.7 ? .click : .tick, gap: 0)
-                }
-                if k >= 1 { complete(); return }
-                try? await Task.sleep(for: .milliseconds(16))
-            }
-        }
-    }
-
-    private func end(completed: Bool) {
-        guard holding else { return }
-        holding = false
-        loop?.cancel()
-        ramp.stop()
-        feel.rattle = 0
-        withAnimation(.easeOut(duration: 0.2)) { progress = 0 }
-        if !completed { Haptics.play(.soft) }
-    }
-
-    /// 1.5秒ためた:ふり切ったのと同じく、近くの相手に「ふった」を送る
-    private func complete() {
-        end(completed: true)
-        Haptics.play(.success)
-        pulse += 1
-        bump.bumpByHold()
     }
 }
 
@@ -1495,98 +1412,6 @@ private struct V17TwoPhones: View {
     }
 }
 
-/// ホームの「ふって つながる」(ShakeConnect を、見えているあいだだけ動かす)
-@MainActor @Observable
-final class V17Bump {
-    @ObservationIgnored private let shake = ShakeConnect()
-    @ObservationIgnored private var running = false
-    @ObservationIgnored var myName: () -> String = { "" }
-    @ObservationIgnored var friendCount: () -> Int = { 0 }
-    @ObservationIgnored var onToast: (String) -> Void = { _ in }
-    /// つながったときに1つ進む
-    private(set) var connectedToken = 0
-    /// 相手が見つかった(「つながる?」をきいている)
-    var pending: (name: String, id: String)?
-
-    var shakeEnergy: Double {
-        if case .shaking(let e) = shake.phase { return e }
-        return 0
-    }
-
-    var isPairing: Bool {
-        switch shake.phase {
-        case .confirm, .connected: return true
-        default: return false
-        }
-    }
-
-    nonisolated init() {}
-
-    func start() {
-        guard !running, let me = CloudKitManager.current?.currentUserRecordName else { return }
-        running = true
-        shake.start(name: myName(), recordName: me)
-        watch()
-    }
-
-    func stop() {
-        guard running, pending == nil else { return }
-        running = false
-        shake.stop()
-    }
-
-    /// 長押し 1.5秒:ふり切ったのと同じ。近くに相手がいなければ、そう伝える
-    func bumpByHold() {
-        if !running { start() }
-        shake.bumpByHold()
-        let hadPeer = shake.hasNearbyPeer
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { [weak self] in
-            guard let self, self.pending == nil, !self.isPairing else { return }
-            self.onToast(hadPeer ? "相手も いっしょに ふってね" : "近くに、ふっている人が 見つかりません")
-        }
-    }
-
-    func confirm() {
-        guard let pending else { return }
-        Task { @MainActor in
-            let result = await FriendCloud.connect(to: pending.id, myName: myName(), myCount: friendCount(), theirCount: 0)
-            switch result {
-            case .success:
-                Haptics.play(.success)
-                BumpFriendStore.remember(id: pending.id, name: pending.name)
-                shake.confirmed()
-                connectedToken += 1
-                onToast("BUMP!\n「\(pending.name)」と、つながりました")
-            case .failure(let error):
-                Haptics.play(.warn)
-                onToast(error.message)
-                shake.reset()
-            }
-            self.pending = nil
-        }
-    }
-
-    func cancel() {
-        Haptics.play(.soft)
-        pending = nil
-        shake.reset()
-    }
-
-    private func watch() {
-        withObservationTracking {
-            _ = shake.phase
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                guard let self, self.running else { return }
-                if case .confirm(let name, let id) = self.shake.phase, self.pending == nil {
-                    self.pending = (name, id)
-                }
-                self.watch()
-            }
-        }
-    }
-}
-
 // MARK: - F Later の、3つの やくそく
 
 struct V17PromisesSection: View {
@@ -1741,7 +1566,6 @@ struct HomeV17Stack: View {
     let data: HomeV17Data
     let actions: HomeV17Actions
     let feel: HomeV17Feel
-    let bump: V17Bump?
     let isActive: Bool
 
     @Environment(\.palette) private var palette
@@ -1776,9 +1600,7 @@ struct HomeV17Stack: View {
             V17WordsSection(mode: HomeV17Rules.wordsMode(state: state, shotsToday: max(FilmCounter.shared.used, data.shots.count)),
                             words: data.words, countries: data.countries, ink: ink, actions: actions)
         case .friends:
-            if let bump {
-                V17FriendsSection(friends: data.friends, ink: ink, feel: feel, actions: actions, bump: bump)
-            }
+            V17FriendsSection(friends: data.friends, ink: ink, feel: feel, actions: actions)
         case .promises:
             V17PromisesSection(ink: ink)
         }

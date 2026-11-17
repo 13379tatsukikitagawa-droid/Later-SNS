@@ -276,7 +276,6 @@ struct OnboardingV64View: View {
                         .background(OB.line, in: RoundedRectangle(cornerRadius: 20))
                 }.buttonStyle(.plain)
                 HStack(spacing: 12) {
-                    Button { Haptics.play(.heart); say("となりの人と、スマホを ふる") } label: { Text("ふって つながる").frame(height: 44).padding(.horizontal, 12) }
                     Button { Haptics.play(.pop); showingShare = true } label: { Text("リンクを おくる").frame(height: 44).padding(.horizontal, 12) }
                 }
                 .font(LF.inter(700, 13)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2)

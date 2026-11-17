@@ -91,7 +91,7 @@ struct HomeV17Tests {
         #expect(list.map(\.id) == ["g0", "g1", "g2", "b1"])
         #expect(list[0].shotsToday == 2)
         #expect(list[0].canKnock)
-        // ふって つながっただけの人は、つつけない(同じグループがない)
+        // QR で つながっただけの人は、つつけない(同じグループがない)
         #expect(!list[3].canKnock)
         let many = (0..<20).map { BumpFriend(id: "x\($0)", name: "x") }
         #expect(HomeV17Rules.friends(group: [], bump: many, counts: [:], myID: nil).count == FriendRules.maxFriends)
@@ -173,7 +173,7 @@ struct HomeV17SnapshotTests {
             groupSummaries: [], canCreateGroup: true, isCovered: false, holdModel: HoldGaugeModel(),
             avatarImage: nil, avatarSeed: UUID(), showsAvatarBadge: false,
             onOpenProfile: {}, onDevelopTap: {}, onSelectGroup: { _ in }, onCreateGroup: {},
-            v17: data, bump: V17Bump()
+            v17: data
         )
     }
 

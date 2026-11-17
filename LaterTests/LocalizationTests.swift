@@ -20,7 +20,7 @@ struct LocalizationTests {
     @Test func 許可の文も両方ある() {
         let en = table("en", "InfoPlist"), ja = table("ja", "InfoPlist")
         for key in ["NSCameraUsageDescription", "NSLocationWhenInUseUsageDescription", "NSMicrophoneUsageDescription",
-                    "NSPhotoLibraryAddUsageDescription", "NSPhotoLibraryUsageDescription", "NSAppleMusicUsageDescription", "NSLocalNetworkUsageDescription"] {
+                    "NSPhotoLibraryAddUsageDescription", "NSPhotoLibraryUsageDescription", "NSAppleMusicUsageDescription"] {
             #expect(en[key]?.isEmpty == false, "en:\(key)")
             #expect(ja[key]?.isEmpty == false, "ja:\(key)")
         }

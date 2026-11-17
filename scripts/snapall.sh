@@ -43,8 +43,3 @@ r C01_tag tag
 r F01_friend_empty friends -debugRequests 1
 r F02_friend_list friends -debugRequests 1 -debugFriends 3
 r F03_friend_requests friends -debugRequests 1 -debugFriends 3
-r K01_shake_idle shake -debugShake idle
-r K02_shake_seek shake -debugShake seek
-r K03_shake_found shake -debugShake found
-r K04_shake_wait shake -debugShake wait
-r K05_shake_done shake -debugShake done

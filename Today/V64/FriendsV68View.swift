@@ -22,9 +22,9 @@ struct FriendsV68View: View {
     @FocusState private var searching: Bool
     @State private var incoming: [FriendRequests.Request] = []
     @State private var hidden: Set<String> = []
-    @State private var showsShake = false
     @State private var blockedIDs: Set<String> = []
     @State private var showsScan = false
+    @State private var showsMyQR = false
     @State private var showsID = false
     @State private var idSeed = ""
     @State private var shareItems: [Any]?
@@ -54,7 +54,7 @@ struct FriendsV68View: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Color.clear.frame(height: 62 + 44 + 12)
                     if !empty { todayLine.rise(on, 0); search.rise(on, 1) }
-                    shakeCard.rise(on, empty ? 0 : 2)
+                    qrCards.rise(on, empty ? 0 : 2)
                     connectRow.rise(on, empty ? 1 : 3)
                     if !requests.isEmpty { requestsBlock.rise(on, empty ? 2 : 4) }
                     if !empty { friendsBlock.rise(on, 5) }
@@ -84,15 +84,7 @@ struct FriendsV68View: View {
             withAnimation(.easeOut(duration: 0.4)) { appeared = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { Haptics.play(.tick) }
         }
-        .fullScreenCover(isPresented: $showsShake) {
-            ShakeV68Host(myName: myName, myRecordName: myRecordName, myAvatarData: myAvatarData,
-                         friendIDs: Set(list.map(\.id)), blockedIDs: blockedIDs,
-                         onClose: { showsShake = false },
-                         onQR: { showsShake = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsScan = true } },
-                         onID: { showsShake = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { idSeed = ""; showsID = true } },
-                         onToast: { show($0) },
-                         onConnected: { Task { incoming = await FriendRequests.incoming() } })
-        }
+        .sheet(isPresented: $showsMyQR) { MyQRSheet(name: myName, link: FriendRules.link(recordName: myRecordName).absoluteString) }
         .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: myName, friendCount: list.count) { show($0) } }
         .sheet(isPresented: $showsID) { FriendIDSearchSheet(myName: myName, seed: idSeed) { show($0) } }
         .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
@@ -122,8 +114,9 @@ struct FriendsV68View: View {
         return ZStack(alignment: .top) {
             Color(hex: "0A0A0B")
             if let img = imgs.first {
-                Image(uiImage: V64Images.blurred(key: "fk\(ObjectIdentifier(img).hashValue)", source: img, maxPixel: 96, radius: 26, saturation: 1.4, brightness: 0.5))
-                    .resizable().scaledToFill().frame(height: 640).clipped()
+                Color.clear.frame(maxWidth: .infinity).frame(height: 640)
+                    .overlay { Image(uiImage: V64Images.blurred(key: "fk\(ObjectIdentifier(img).hashValue)", source: img, maxPixel: 96, radius: 26, saturation: 1.4, brightness: 0.5)).resizable().scaledToFill() }
+                    .clipped()
                     .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black.opacity(0.7), location: 0.45), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
             } else {
                 RadialGradient(colors: [Color(red: 36 / 255, green: 160 / 255, blue: 60 / 255).opacity(0.38), .clear], center: UnitPoint(x: 0.85, y: 0.05), startRadius: 0, endRadius: 320)
@@ -187,49 +180,64 @@ struct FriendsV68View: View {
         .padding(.horizontal, 16).padding(.top, 20)
     }
 
-    // MARK: ふる カード(Shake の 入口)
+    // MARK: QR を 見せる / QR を 読む(v85。Shake は なくした)
 
-    private var shakeCard: some View {
-        Button { Haptics.play(.click); showsShake = true } label: {
-            ZStack {
-                RoundedRectangle(cornerRadius: 30, style: .continuous)
-                    .fill(LinearGradient(colors: [Color(hex: "17351F"), Color(hex: "0E1A11"), Color(hex: "0B0B0C")], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).strokeBorder(Color(hex: "3BD35A").opacity(0.25), lineWidth: 1))
-                if empty { bigBody } else { smallBody }
+    @ViewBuilder private var qrCards: some View {
+        if empty {
+            VStack(spacing: 8) {
+                showCard(compact: false)
+                readCard(compact: false)
             }
-            .frame(height: empty ? 330 : 124)
+            .padding(.horizontal, 32).padding(.top, 14)
+        } else {
+            HStack(spacing: 8) {
+                showCard(compact: true)
+                readCard(compact: true)
+            }
+            .padding(.horizontal, 32).padding(.top, 12)
+        }
+    }
+
+    private func showCard(compact: Bool) -> some View {
+        Button { Haptics.play(.click); showsMyQR = true } label: {
+            ZStack(alignment: compact ? .bottomTrailing : .trailing) {
+                RoundedRectangle(cornerRadius: compact ? 24 : 30, style: .continuous).fill(HV.lime)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("QR を 見せる").font(LF.inter(900, compact ? 17 : 22)).foregroundStyle(HV.ink)
+                    Text("会った 友だちに").font(LF.inter(600, 11.5)).foregroundStyle(HV.ink.opacity(0.78))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(.leading, 14)
+                MiniQR(text: FriendRules.link(recordName: myRecordName).absoluteString, box: compact ? 56 : 96)
+                    .padding(compact ? 12 : 18)
+            }
+            .frame(maxWidth: .infinity).frame(height: compact ? 142 : 150)
         }
         .buttonStyle(HVPress(scale: 0.98))
-        .padding(.horizontal, 16).padding(.top, empty ? 0 : 12)
-        .accessibilityLabel("ふって、つながる")
+        .accessibilityLabel("QR を 見せる")
     }
 
-    private var smallBody: some View {
-        HStack(spacing: 0) {
-            ShakeBadge(size: 54, ring: 127).frame(width: 127, height: 127).offset(x: -3)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("ふって、つながる").font(LF.inter(800, 20)).foregroundStyle(.white)
-                Text("となりの 友だちと いっしょに スマホを ふる").font(LF.inter(600, 12.5)).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
-            }.padding(.leading, 2)
-            Spacer(minLength: 6)
-            Image(systemName: "arrow.right").font(.system(size: 14, weight: .bold)).foregroundStyle(.white).frame(width: 34, height: 34).background(.white.opacity(0.14), in: Circle()).padding(.trailing, 16)
+    private func readCard(compact: Bool) -> some View {
+        Button { Haptics.play(.click); showsScan = true } label: {
+            ZStack(alignment: compact ? .bottomTrailing : .trailing) {
+                RoundedRectangle(cornerRadius: compact ? 24 : 30, style: .continuous).fill(.white.opacity(0.08))
+                    .overlay(RoundedRectangle(cornerRadius: compact ? 24 : 30, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 1))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("QR を 読む").font(LF.inter(900, compact ? 17 : 22)).foregroundStyle(.white)
+                    Text("カメラで 読む").font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.6))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(.leading, 14)
+                ScanFrame(size: compact ? 44 : 80).padding(compact ? 12 : 18)
+            }
+            .frame(maxWidth: .infinity).frame(height: compact ? 142 : 150)
         }
-    }
-
-    private var bigBody: some View {
-        VStack(spacing: 0) {
-            ShakeBadge(size: 84, ring: 220).frame(width: 220, height: 220).padding(.top, 8)
-            Spacer(minLength: 0)
-            Text("ふって、つながる").font(LF.inter(800, 26)).foregroundStyle(.white)
-            Text("となりの 友だちと いっしょに スマホを ふる").font(LF.inter(600, 13.5)).foregroundStyle(.white.opacity(0.7)).padding(.top, 6).padding(.bottom, 36)
-        }
+        .buttonStyle(HVPress(scale: 0.98))
+        .accessibilityLabel("QR を 読む")
     }
 
     // MARK: QR / Link / ID
 
     private var connectRow: some View {
         HStack(spacing: 8) {
-            tile("qrcode", "QR") { Haptics.play(.tick); showsScan = true }
             tile("link", "Link") { Haptics.play(.tick); shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }
             tile("at", "ID") { Haptics.play(.tick); idSeed = ""; showsID = true }
         }
@@ -239,7 +247,7 @@ struct FriendsV68View: View {
     private func tile(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) { Image(systemName: icon).font(.system(size: 16, weight: .semibold)); Text(title).font(LF.inter(700, 14)) }
-                .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 48)
+                .foregroundStyle(.white).frame(width: 114, height: 48)
                 .background(.white.opacity(0.10), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.14), lineWidth: 1))
         }.buttonStyle(HVPress(scale: 0.96))
     }
@@ -408,27 +416,69 @@ struct FriendsV68View: View {
     }
 }
 
-// MARK: - ふる カードの 黄緑の 丸 + 3本の 輪(2.4秒ごとに ぶるっと ゆれる)
+// MARK: - 自分の QR(大)。プロフィールの チェキを 裏返す 画面が できる まで、これで 見せる
 
-private struct ShakeBadge: View {
+private struct MyQRSheet: View {
+    let name: String
+    let link: String
+    var body: some View {
+        VStack(spacing: 18) {
+            Text(name).font(LF.inter(900, 22)).foregroundStyle(.white)
+            MiniQR(text: link, box: 260)
+            Text("会った 友だちに 読んで もらう").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(hex: "0A0A0B"))
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - 自分の QR(小)と 読み取りの 枠
+
+private struct MiniQR: View {
+    let text: String
+    let box: CGFloat
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: box > 60 ? 18 : 12, style: .continuous).fill(Color(hex: "F4F1EA"))
+            if let ui = QRImage.make(text) {
+                Image(uiImage: ui).interpolation(.none).resizable().frame(width: box - (box > 60 ? 10 : 8), height: box - (box > 60 ? 10 : 8))
+            }
+        }
+        .frame(width: box, height: box)
+    }
+}
+
+/// 読み取りの 枠(4すみの かぎ + 上下に 動く 線 ・ 1.8秒)。見えない / Reduce Motion では 止める
+private struct ScanFrame: View {
     let size: CGFloat
-    let ring: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            let phase = t.truncatingRemainder(dividingBy: 2.4) / 2.4
-            let wob = reduceMotion ? 0 : (phase < 0.18 ? sin(phase / 0.18 * .pi * 6) * 9 * (1 - phase / 0.18) : 0)
+            let t = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.8) / 1.8
+            let k = reduceMotion ? 0.5 : (t < 0.5 ? t * 2 : (1 - t) * 2)
             ZStack {
-                ForEach(0..<3, id: \.self) { i in
-                    let p = (phase + Double(i) * (0.8 / 2.4)).truncatingRemainder(dividingBy: 1)
-                    Circle().strokeBorder(HV.lime.opacity(0.28 * (1 - p)), lineWidth: 1)
-                        .frame(width: size + (ring - size) * (0.55 + 0.45 * p), height: size + (ring - size) * (0.55 + 0.45 * p))
-                }
-                Circle().fill(HV.lime).frame(width: size, height: size).shadow(color: HV.lime.opacity(0.4), radius: 14)
-                Image(systemName: "iphone.radiowaves.left.and.right").font(.system(size: size * 0.42, weight: .semibold)).foregroundStyle(HV.ink).rotationEffect(.degrees(wob))
+                Corners().stroke(HV.lime, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)).frame(width: size * 0.75, height: size * 0.75)
+                Capsule().fill(HV.lime).frame(width: size * 0.8, height: 2)
+                    .offset(y: (k - 0.5) * size * 0.7)
             }
+            .frame(width: size, height: size)
+        }
+    }
+    private struct Corners: Shape {
+        func path(in r: CGRect) -> Path {
+            let l = r.width * 0.28, c = r.width * 0.09
+            var p = Path()
+            for (sx, sy) in [(CGFloat(0), CGFloat(0)), (1, 0), (0, 1), (1, 1)] {
+                let x = r.minX + sx * r.width, y = r.minY + sy * r.height
+                let dx: CGFloat = sx == 0 ? 1 : -1, dy: CGFloat = sy == 0 ? 1 : -1
+                p.move(to: CGPoint(x: x + dx * l, y: y))
+                p.addLine(to: CGPoint(x: x + dx * c, y: y))
+                p.addQuadCurve(to: CGPoint(x: x, y: y + dy * c), control: CGPoint(x: x, y: y))
+                p.addLine(to: CGPoint(x: x, y: y + dy * l))
+            }
+            return p
         }
     }
 }

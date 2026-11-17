@@ -21,8 +21,18 @@
     "CFBundleSpokenName" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lattag" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイタグ" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "レイタグ"
+          }
+        }
       }
     },
     "CFBundleName" : {
@@ -67,23 +77,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "思い出を記録し、グループで共有するためにカメラを使用します。"
-          }
-        }
-      }
-    },
-    "NSLocalNetworkUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lattag looks for friends' phones nearby when you shake to connect."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「ふって つながる」で、すぐ近くにいる ともだちの端末を さがすために使います。"
           }
         }
       }

@@ -93,10 +93,8 @@ struct TodayView: View {
     /// v21 E:オープニング(ゼロから起動した時だけ)
     @State private var opening: (variant: OpeningVariant, start: Date)?
     @State private var ejectRamp = HapticRamp()
-    /// v17:ふって つながった人(公開 DB の Friendship)
+    /// v17:QR などで つながった人(公開 DB の Friendship)
     @State private var bumpFriends: [BumpFriend] = BumpFriendStore.cached
-    /// v17:ホームの「ふって つながる」
-    @State private var bump = V17Bump()
     /// 現像ページャーで開く枚数目(v14 ⑧)
     @State private var developPage = 0
     /// グループの設定(グループの画面の上に重ねる。「←」でもどる)
@@ -535,7 +533,6 @@ struct TodayView: View {
                 },
                 v17: v17Data(sharedGroups: sharedGroups),
                 v17Actions: v17Actions(sharedGroups: sharedGroups),
-                bump: bump,
                 groups: sharedGroups,
                 onOpenChat: { id in openChat(id) },
                 onReplyPhoto: { id, photo in
@@ -2271,9 +2268,6 @@ struct TodayView: View {
 
     private func v17Actions(sharedGroups: [LaterGroup]) -> HomeV17Actions {
         let layer = layerActions(sharedGroups: sharedGroups)
-        bump.myName = { currentUser?.name ?? "" }
-        bump.friendCount = { bumpFriends.count }
-        bump.onToast = { presentToast($0) }
         return HomeV17Actions(
             toast: { presentToast($0) },
             shoot: {
@@ -2293,7 +2287,7 @@ struct TodayView: View {
         )
     }
 
-    /// ふって つながった人を読みなおす
+    /// QR などで つながった人を読みなおす
     private func refreshBumpFriends() async {
         let list = await FriendCloud.connections()
         bumpFriends = list

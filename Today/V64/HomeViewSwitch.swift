@@ -62,7 +62,6 @@ struct HomeViewSwitch: View {
     /// v17:下へつづく区画
     var v17: HomeV17Data = .empty
     var v17Actions = HomeV17Actions()
-    var bump: V17Bump?
     /// v28 暗室
     var groups: [LaterGroup] = []
     var onOpenChat: (UUID) -> Void = { _ in }
@@ -109,7 +108,6 @@ struct HomeViewSwitch: View {
             onOpenShot: onOpenShot,
             v17: v17,
             v17Actions: v17Actions,
-            bump: bump,
             groups: groups,
             onOpenChat: onOpenChat,
             onReplyPhoto: onReplyPhoto
