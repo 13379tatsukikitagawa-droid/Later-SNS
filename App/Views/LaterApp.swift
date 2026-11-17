@@ -175,7 +175,7 @@ struct RootView: View {
     private static func initialOpening() -> (variant: OpeningVariant, start: Date)? {
         #if DEBUG
         // 状態を 直接 開く 起動(-debugRoute)では 出さない
-        if ProcessInfo.processInfo.arguments.contains("-debugRoute") { return nil }
+        if ProcessInfo.processInfo.arguments.contains("-debugRoute") || ProcessInfo.processInfo.arguments.contains("-debugOnbStep") { return nil }
         #endif
         return OpeningSettings.variant(reduceMotion: UIAccessibility.isReduceMotionEnabled).map { ($0, Date()) }
     }

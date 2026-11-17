@@ -37,6 +37,9 @@ struct OnboardingV64View: View {
 
     // 入力
     @State private var name = ""
+    /// v81:アイコン(プロフィール写真)。とばしても よい(1文字 + 色)
+    @State private var iconData: Data?
+    @State private var showsIcon = false
     @State private var tags: [String] = []          // 「#」なしで 保存(TagRules と 同じ)
     @State private var customDraft = ""
     @State private var addingTag = false
@@ -113,6 +116,10 @@ struct OnboardingV64View: View {
         .onChange(of: photoItem) { _, item in loadPhoto(item) }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
         .sheet(isPresented: $showingPolicy) { PrivacyPolicyView() }
+        .sheet(isPresented: $showsIcon) {
+            IconPickerV81Sheet(name: name, current: iconData.flatMap { UIImage(data: $0) }, recent: [], onSave: { iconData = $0 }, onClose: { showsIcon = false })
+                .presentationDetents([.large]).presentationBackground(Color(hex: "141516"))
+        }
         .sheet(isPresented: $showingShare) { ShareSheet(activityItems: shareItems) { _ in } }
         .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkOpened)) { _ in
             guard step == .mail || step == .sent else { return }
@@ -261,7 +268,24 @@ struct OnboardingV64View: View {
                 Rectangle().fill(focus == .name ? OB.accent : .white).frame(height: 2.5)
                 Text("\(name.count) / 12").font(LF.mono(11.5, bold: true)).foregroundStyle(OB.sub).padding(.top, 8)
             }
-            .frame(width: w).offset(x: 24, y: 597.2 + mid)
+            .frame(width: w).offset(x: 24, y: 691 + mid)
+            Button { Haptics.play(.click); showsIcon = true } label: {
+                HStack(spacing: 14) {
+                    ZStack(alignment: .bottomTrailing) {
+                        ZStack {
+                            Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            if let d = iconData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() }
+                            else { Text(String(name.prefix(1))).font(LF.inter(900, 28)).foregroundStyle(.white) }
+                        }.frame(width: 76, height: 76).clipShape(Circle()).overlay(Circle().strokeBorder(OB.accent, lineWidth: 3).padding(-3))
+                        Image(systemName: "plus").font(.system(size: 13, weight: .black)).foregroundStyle(HV.ink).frame(width: 28, height: 28).background(OB.accent, in: Circle()).overlay(Circle().strokeBorder(.black, lineWidth: 2)).offset(x: 4, y: 4)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("アイコンの 写真").font(LF.inter(800, 16)).foregroundStyle(.white)
+                        Text("あとで プロフィールでも 変えられます").font(LF.inter(600, 13)).foregroundStyle(OB.sub)
+                    }
+                    Spacer()
+                }.padding(.horizontal, 0)
+            }.buttonStyle(.plain).frame(width: w).offset(x: 24, y: 592 + mid)
         case .tag:
             heading([("じぶんを、", false), ("タグ", true), ("で。", false)]).offset(y: 424 + mid)
             swatches.frame(width: W).offset(y: 488 + mid)
@@ -668,6 +692,7 @@ struct OnboardingV64View: View {
         if profile.username.isEmpty { profile.username = OnboardingRules.generatedUsername() }
         if !appleUserID.isEmpty { profile.appleUserID = appleUserID }
         if !firebaseUID.isEmpty { profile.firebaseUID = firebaseUID; profile.firebaseEmail = firebaseEmail.isEmpty ? nil : firebaseEmail }
+        if let iconData { profile.profileImageData = iconData; UserDefaults.standard.set(iconData, forKey: "profileImageData") }
         profile.profileUpdatedAt = Date()
         LaterGroup.ensurePersonalSpace(for: profile, context: modelContext)
         do { try modelContext.save() } catch { print("[Onboarding] 名前の保存に失敗: \(error)") }

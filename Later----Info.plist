@@ -5,6 +5,7 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>jp.shotoku.later.prune</string>
+		<string>app.lattag.recap</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
