@@ -53,10 +53,4 @@ struct OnboardingV64Tests {
         #expect(OpeningStyle.shortDate(d) == "11.06")
         #expect(OpeningStyle.shortDate(d, apostrophe: true) == "'26 11 06")
     }
-
-    @Test func 短縮版は全体を半分の長さに() {
-        let full = OpeningTimeline(variant: .full), short = OpeningTimeline(variant: .short)
-        #expect(abs(short.morph - full.morph / 2) < 0.001 && abs(short.letters - full.letters / 2) < 0.001)
-        #expect(abs(short.end - 1.85) < 0.06)
-    }
 }

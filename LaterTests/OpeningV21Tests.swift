@@ -1,54 +1,41 @@
 import SwiftUI
 import Testing
-import UIKit
 @testable import Later_再度
 
-/// v21 E:オープニング
+/// v72 B:オープニング
 @MainActor
 struct OpeningV21Tests {
-    @Test func 時刻表() {
-        let full = OpeningTimeline(variant: .full)
-        #expect(full.flash == 1.0 && full.chekiIn == 1.2 && full.develop == 1.85 && full.letters == 2.25 && full.morph == 2.67)
-        #expect(abs(full.end - 3.7) < 0.001)
-        let short = OpeningTimeline(variant: .short)
-        #expect(short.end < 2 && short.morph < full.morph)
-        #expect(OpeningVariant.fade.duration == 0.4)
+    @Test func 曲線は両端を通る() {
+        let b = OPBez(0.34, 1.12, 0.42, 1)
+        #expect(b.at(0) == 0 && b.at(1) == 1)
+        #expect(b.at(0.5) > 0.5)
+        #expect(OPBez(0.34, 1.12, 0.42, 1).at(0.8) > 1)   // 少しだけ 行きすぎる
     }
 
-    @Test func はじめてはフル_2回目からは短く() {
+    @Test func キーフレームは区間ごとに補間() {
+        let v = opKeys(0, [(0, 1), (180, 0.86), (360, 1)], OPBez(0.3, 1.4, 0.5, 1))
+        #expect(v == 1)
+        #expect(opKeys(180, [(0, 1), (180, 0.86), (360, 1)], OPBez(0.3, 1.4, 0.5, 1)) == 0.86)
+        #expect(opKeys(999, [(0, 1), (180, 0.86), (360, 1)], OPBez(0.3, 1.4, 0.5, 1)) == 1)
+    }
+
+    @Test func 時間割りは2秒半以内() {
+        #expect(OP72.openStart + OP72.openDur == OP72.total)
+        #expect(OP72.total <= 2500)
+        #expect(OP72.skipAfter == 600)
+    }
+
+    @Test func はじめも2回目も同じ_設定どおり() {
         let d = UserDefaults.standard
-        let savedMode = d.string(forKey: "opening.mode"), savedSeen = d.object(forKey: "opening.fullSeen")
-        defer {
-            d.set(savedMode, forKey: "opening.mode")
-            d.set(savedSeen, forKey: "opening.fullSeen")
-        }
-        d.removeObject(forKey: "opening.fullSeen")
+        let saved = d.string(forKey: "opening.mode")
+        defer { d.set(saved, forKey: "opening.mode") }
         OpeningSettings.mode = .on
         #expect(OpeningSettings.variant(reduceMotion: false) == .full)
-        #expect(OpeningSettings.variant(reduceMotion: false) == .short)
+        #expect(OpeningSettings.variant(reduceMotion: false) == .full)
         #expect(OpeningSettings.variant(reduceMotion: true) == .fade)
         OpeningSettings.mode = .off
         #expect(OpeningSettings.variant(reduceMotion: false) == nil)
         OpeningSettings.mode = .short
         #expect(OpeningSettings.variant(reduceMotion: false) == .short)
-    }
-
-    @Test func 見た目() async throws {
-        guard let path = ProcessInfo.processInfo.environment["LATER_SNAPSHOT_DIR"] else { return }
-        let dir = URL(fileURLWithPath: path)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let size = CGSize(width: 402, height: 874)
-        for t in [0.6, 1.5, 2.1, 2.5, 3.0, 3.35] {
-            let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
-            let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow()
-            window.frame = CGRect(origin: .zero, size: size)
-            let start = Date().addingTimeInterval(-t + 0.25)
-            window.rootViewController = UIHostingController(rootView: OpeningV21View(variant: .full, start: start, onFinish: {}))
-            window.makeKeyAndVisible()
-            try await Task.sleep(for: .seconds(0.25))
-            let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
-            try image.pngData()?.write(to: dir.appendingPathComponent(String(format: "opening-%.2f.png", t)))
-            window.isHidden = true
-        }
     }
 }

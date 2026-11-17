@@ -16,7 +16,7 @@ enum DebugRouter {
         let t = q.first(where: { $0.name == "t" })?.value.flatMap(Double.init)
         switch name {
         case "hide": hide()
-        case "opening": show(OpeningV21View(variant: .full, start: Date(), onFinish: { hide() })); OpeningDebug.frozenT = t
+        case "opening": show(OpeningV72View(variant: .full, start: Date(), onFinish: { hide() })); OpeningDebug.frozenT = t
         case "home": show(HomeV64Preview())
         case "yesterday": show(YesterdayV64Preview())
         case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
@@ -39,7 +39,7 @@ enum DebugRouter {
     /// 状態メニューの「オープニングを もう一度」:今の 画面の 上で 最初から(おわったら 取りのぞく)
     static func playOpening() {
         OpeningDebug.frozenT = nil
-        show(OpeningV21View(variant: .full, start: Date(), onFinish: { hide() }))
+        show(OpeningV72View(variant: .full, start: Date(), onFinish: { hide() }))
     }
 
     /// 見本画像と くらべる ため だけ:モックが かいている 端末の わく(ダイナミックアイランド ・ 時計 ・ 電波 ・ 電池 ・ 丸い かど)を 重ねる。本番には 入らない

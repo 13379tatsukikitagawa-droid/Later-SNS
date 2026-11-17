@@ -51,6 +51,9 @@ struct RootView: View {
     /// 以前の1秒スプラッシュ(MinimalSplashView)。起動アニメーション(LaunchAnimation)をHomeの上で
     /// 再生するようになったため、もう出さない。
     @State private var isSplashActive = false
+    /// v72 B:アプリを 起動した とき だけ(戻った ときは 出さない)。起動画面と 同じ 絵から はじまる
+    @State private var opening: (variant: OpeningVariant, start: Date)? = RootView.initialOpening()
+    @State private var openingRevealed = false
     @State private var cloudKitManager: CloudKitManager?
     @State private var sharedProfile: UserProfile?
     @State private var showingSharedProfile = false
@@ -169,6 +172,14 @@ struct RootView: View {
     }
 
 
+    private static func initialOpening() -> (variant: OpeningVariant, start: Date)? {
+        #if DEBUG
+        // 状態を 直接 開く 起動(-debugRoute)では 出さない
+        if ProcessInfo.processInfo.arguments.contains("-debugRoute") { return nil }
+        #endif
+        return OpeningSettings.variant(reduceMotion: UIAccessibility.isReduceMotionEnabled).map { ($0, Date()) }
+    }
+
     var body: some View {
         ZStack {
             if isSplashActive {
@@ -188,7 +199,7 @@ struct RootView: View {
                     if isSetupCompleted || onboardingCompleted {
                         MainNavigationView()
                     }
-                    if !isSetupCompleted {
+                    if !isSetupCompleted && (opening == nil || openingRevealed) {
                         // 新規ユーザーの初回設定 v2(開幕・はじめる・ニックネーム・Laterの一日・
                         // 仕組みの問題・最初の1枚・預けました)。既存ユーザー(isSetupCompleted済み)は通らない。
                         OnboardingV64View()
@@ -197,11 +208,24 @@ struct RootView: View {
                 .transition(.opacity)
             }
 
+            if let opening {
+                OpeningV72View(variant: opening.variant, start: opening.start, fadeOut: !isSetupCompleted,
+                               onReveal: { openingRevealed = true }) {
+                    self.opening = nil
+                    NotificationCenter.default.post(name: .openingFinished, object: nil)
+                }
+                .zIndex(100)
+            }
+
             if isProcessingGroupJoin {
                 groupJoinProgressOverlay
             }
         }
         .onAppear {
+            if opening == nil {
+                // オープニングを 出さない(設定オフ)とき:Home の 登場だけ 流す
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NotificationCenter.default.post(name: .openingFinished, object: nil) }
+            }
             // 初回起動(初回設定がまだ)は、起動アニメーションではなくオンボーディング。
             if !isSetupCompleted { LaunchCoordinator.hasPlayedInProcess = true }
             #if DEBUG
