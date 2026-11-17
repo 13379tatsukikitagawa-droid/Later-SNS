@@ -34,11 +34,17 @@ r L09_friends_card home $H -debugSection sec-friends:292 -debugFriends 3
 r L12_friends_card_noreq home -debugBackdrop 1 -debugMock 1 -debugSection sec-friends:189
 r L10_firstday_yesterday home $H -debugSection sec-yesterday:200 -debugFirstDay 1
 r L11_develop_view develop
-r Y01_yesterday_locked yesterday -debugShots 0 -debugRequests 1
-r Y02_yesterday_open yesterday -debugShots 2 -debugRequests 1
-r Y03_yesterday_mondo_tab yesterday -debugShots 2 -debugTab 1
-r Y04_yesterday_friends_tab yesterday -debugShots 2 -debugRequests 1 -debugShotFriends 2
-r Y05_yesterday_scroll yesterday -debugShots 2 -debugScrollMe 1
+Y="-debugBackdrop 1 -debugMock 1"
+r Y01_yesterday_locked yesterday $Y -debugShots 0
+r Y02_yesterday_open yesterday $Y
+r Y03_yesterday_mondo_tab yesterday $Y -debugTab 1 -debugMondo open
+r Y04_yesterday_friends_tab yesterday $Y -debugScrollY 560
+r Y05_yesterday_scroll yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 1300
+r Y08_mondo_empty yesterday $Y -debugTab 1 -debugMondo empty
+r Y10_mondo_globe yesterday $Y -debugTab 1 -debugMondo stage
+r Y12_mondo_ranking yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 400
+r Y14_notifications yesterday $Y -debugNotices 1
+r Y15_my_yesterday yesterday $Y -debugMine 1
 r Y06_photo_viewer yesterday -debugShots 2 -debugViewing m
 r C01_tag tag
 r F01_friend_empty friends -debugRequests 1

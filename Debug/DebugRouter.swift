@@ -159,22 +159,51 @@ extension SampleData {
     }
 }
 
-/// DEBUG:Lattag yesterday(`-debugShots 2 -debugTab 1 -debugRequests 1`)
+/// DEBUG:Lattag yesterday(`-debugShots 2 -debugTab 1 -debugNotices 1 -debugMine 1 -debugMondo open|stage|empty -debugFilter 帰り道`)
 struct YesterdayV64Preview: View {
     var body: some View {
         let d = UserDefaults.standard
         var y = YesterdayV64Input()
-        y.shotsUsed = d.integer(forKey: "debugShots")
+        let ph = { (k: String) in SampleData.photo(k) }
+        y.shotsUsed = d.object(forKey: "debugShots") == nil ? 2 : d.integer(forKey: "debugShots")
         y.startTab = d.integer(forKey: "debugTab")
-        y.scrollToMe = d.bool(forKey: "debugScrollMe")
         y.startViewing = d.string(forKey: "debugViewing")
-        y.shotFriends = d.integer(forKey: "debugShotFriends")
         y.requestCount = d.integer(forKey: "debugRequests")
-        y.requestFaces = SampleData.faces(count: y.requestCount > 0 ? 3 : 0)
-        y.cells = [.init(id: "a", photo: SampleData.photo("a"), name: "あや", time: "17:05", tag: nil), .init(id: "b", photo: SampleData.photo("d"), name: "れな", time: "12:40", tag: nil), .init(id: "c", photo: SampleData.photo("b"), name: "そら", time: "09:12", tag: nil), .init(id: "d", photo: SampleData.photo("e"), name: "you", time: "16:05", tag: nil)]
-        y.mondoPhoto = SampleData.photo("a")
-        y.viewerOnly = [.init(id: "m", photo: SampleData.photo("a"), name: "鎌倉市", time: nil, tag: "夕焼け")]
+        y.avatar = ph("f"); y.avatarName = "you"
+        y.openNotices = d.bool(forKey: "debugNotices")
+        y.openMine = d.bool(forKey: "debugMine")
+        if d.object(forKey: "debugScrollY") != nil { y.debugScrollY = CGFloat(d.double(forKey: "debugScrollY")) }
+        y.mineIndex = d.object(forKey: "debugMineIndex") == nil ? 1 : d.integer(forKey: "debugMineIndex")
         y.now = Calendar.current.date(bySettingHour: 12, minute: 3, second: 0, of: Date()) ?? Date()
+        y.mine = [.init(id: "m1", image: ph("b"), time: "09:12", tag: "帰り道"), .init(id: "m2", image: ph("d"), time: "13:40", tag: "放課後"), .init(id: "m3", image: ph("e"), time: "18:05", tag: "夕焼け")]
+        let rx: [UIImage?] = [ph("d"), ph("a"), ph("f")]
+        y.posts = [
+            .init(id: "rena", name: "れな", avatar: ph("d"), place: "鎌倉市", when: "きのう 17:00", photos: [.init(id: "r1", image: ph("a"), time: "17:00", tag: "夕焼け"), .init(id: "r2", image: ph("b"), time: "13:10", tag: "おやつ"), .init(id: "r3", image: ph("c"), time: "09:30", tag: "電車")], caption: nil, reactors: rx),
+            .init(id: "aya", name: "あや", avatar: ph("a"), place: "横浜市", when: "きのう 18:05", photos: [.init(id: "a1", image: ph("e"), time: "18:05", tag: "おやつ"), .init(id: "a2", image: ph("f"), time: "12:40", tag: "教室"), .init(id: "a3", image: ph("a"), time: "17:30", tag: "夕焼け")], caption: "この 自販機 すき", reactors: [ph("d"), ph("a"), ph("e")]),
+            .init(id: "sora", name: "そら", avatar: ph("c"), place: "藤沢市", when: "きのう 09:12", photos: [.init(id: "s1", image: ph("c"), time: "09:12", tag: "電車"), .init(id: "s2", image: ph("d"), time: "16:00", tag: "帰り道")], caption: nil, reactors: [ph("a")]),
+            .init(id: "hina", name: "ひなた", avatar: ph("b"), photos: [.init(id: "h1", image: ph("f"), time: "", tag: nil)], caption: nil, published: false),
+            .init(id: "yui", name: "ゆい", avatar: ph("e"), photos: [.init(id: "y1", image: ph("a"), time: "", tag: nil)], caption: nil, published: false),
+        ]
+        y.cells = [.init(id: "a1", photo: ph("a"), name: "あや", time: "17:05", tag: "夕焼け"), .init(id: "m", photo: ph("a"), name: "鎌倉市", time: nil, tag: "夕焼け")]
+        y.notices = [
+            .init(id: "n1", name: "あや", avatar: ph("a"), text: "あなたの #夕焼け に リアクション", time: "2分", isNew: true),
+            .init(id: "n2", name: "れな", avatar: ph("c"), text: "コメント「この 空 すき」", time: "14分", isNew: true),
+            .init(id: "n3", name: "ひなた", avatar: ph("b"), text: "友だち申請が とどきました", time: "1時間", isNew: true, approveID: "r1"),
+            .init(id: "n4", kind: .lattag, name: "Lattag", avatar: nil, text: "きのうの 3枚が ひらきました", time: "9:00"),
+            .init(id: "n5", kind: .mondo, name: "Mondo", avatar: nil, text: "#夕焼け が 世界 1位に", time: "9:00"),
+            .init(id: "n6", name: "そら", avatar: ph("d"), text: "あなたの #帰り道 に リアクション", time: "きのう"),
+        ]
+        var m = YesterdayMondoInput()
+        let mode = d.string(forKey: "debugMondo") ?? "open"
+        m.hasPosts = mode != "empty"; m.startOpened = mode == "open"; m.filterTag = d.string(forKey: "debugFilter")
+        m.dayLabel = "11/16"
+        m.cities = [.init(id: "tk", name: "TOKYO", lat: 35.7, lon: 139.7, photo: ph("a")), .init(id: "bk", name: "BANGKOK", lat: 13.7, lon: 100.5, photo: ph("e")), .init(id: "sl", name: "SEOUL", lat: 37.5, lon: 127, photo: ph("d")), .init(id: "sy", name: "SYDNEY", lat: -33.9, lon: 151.2, photo: ph("f")), .init(id: "pa", name: "PARIS", lat: 48.9, lon: 2.3, photo: ph("c")), .init(id: "ny", name: "NEW YORK", lat: 40.7, lon: -74, photo: ph("b"))]
+        m.tags = [.init(id: "t1", name: "夕焼け", count: 1203, cities: 92, photos: [ph("a"), ph("c")], delta: 2), .init(id: "t2", name: "帰り道", count: 842, cities: 64, photos: [ph("d")], delta: -1), .init(id: "t3", name: "おやつ", count: 611, cities: 48, photos: [ph("b")], delta: nil),
+                  .init(id: "t4", name: "教室", count: 301, cities: 20, photos: [ph("f"), ph("d")], delta: 1), .init(id: "t5", name: "電車", count: 257, cities: 18, photos: [ph("b"), ph("a")], delta: nil), .init(id: "t6", name: "自販機", count: 198, cities: 12, photos: [ph("c"), ph("e")], delta: 4),
+                  .init(id: "t7", name: "朝", count: 150, cities: 10, photos: [ph("f")], delta: nil), .init(id: "t8", name: "雨", count: 120, cities: 9, photos: [ph("c")], delta: -2)]
+        m.todaysOne = .init(id: "one", photo: ph("a"), city: "鎌倉市", time: "17:42", tag: "夕焼け")
+        m.world = [.init(id: "w1", photo: ph("a"), city: "TOKYO", time: "17:42", tag: "夕焼け"), .init(id: "w2", photo: ph("d"), city: "SEOUL", time: "18:10", tag: "帰り道"), .init(id: "w3", photo: ph("b"), city: "PARIS", time: "10:05", tag: "おやつ"), .init(id: "w4", photo: ph("c"), city: "BANGKOK", time: "15:20", tag: "電車")]
+        y.mondo = m
         return YesterdayV64View(input: y)
     }
 }

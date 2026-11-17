@@ -47,9 +47,38 @@ struct HomeV64Host: View {
         }
         y.friendCount = L.friends.filter { !$0.isMe }.count
         y.shotFriends = L.friends.filter { !$0.isMe && $0.hasShot }.count
+        y.avatarName = src.avatarName
         y.mondoPhoto = L.yesterday.first.flatMap { image($0.imageData, "yd\($0.id)", max: 640) ?? image($0.mosaicTiny, "ym\($0.id)", max: 160) }
         y.mondoTag = L.words.first.map { "#\($0)" } ?? "#夕焼け"
         if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }
+        // v76:友だち 1人 = 1つの 投稿(大きな 1枚 + 小さな 2枚)。自分の 3枚は「あなたの きのう」
+        func photo(_ c: HomeYesterdayCard) -> YesterdayV64Input.Photo { .init(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 640) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: c.imageData == nil ? "" : df.string(from: c.captureDate), tag: c.tag) }
+        let mine = L.yesterday.filter { $0.authorName == src.avatarName }
+        y.mine = mine.sorted { $0.captureDate < $1.captureDate }.map(photo)
+        var order: [String] = []
+        var byAuthor: [String: [HomeYesterdayCard]] = [:]
+        for c in L.yesterday where c.authorName != src.avatarName { if byAuthor[c.authorName] == nil { order.append(c.authorName) }; byAuthor[c.authorName, default: []].append(c) }
+        let others = L.friends.filter { !$0.isMe }
+        y.posts = order.map { name in
+            let cs = (byAuthor[name] ?? []).sorted { $0.captureDate > $1.captureDate }
+            let f = others.first { $0.name == name }
+            let last = cs.first?.captureDate
+            return .init(id: name, name: name, avatar: f.flatMap { image($0.avatarData, "av\($0.id)", max: 96) ?? image($0.mosaicTiny, "mt\($0.id)", max: 96) },
+                         place: f?.city ?? "", when: last.map { "きのう \(df.string(from: $0))" } ?? "きのう", photos: cs.prefix(3).map(photo), caption: nil, reactors: [], published: true)
+        } + others.filter { f in !order.contains(f.name) }.map { f in
+            YesterdayV64Input.Post(id: f.id, name: f.name, avatar: image(f.avatarData, "av\(f.id)", max: 96) ?? image(f.mosaicTiny, "mt\(f.id)", max: 96), photos: [], caption: nil, published: false)
+        }
+        // 通知:来て いる 友だち申請 + きのうが ひらいた 合図(リアクション ・ コメントの 通知は データが できたら 足す)
+        y.notices = incoming.prefix(5).map { r in
+            let secs = max(0, Int(now.timeIntervalSince(r.createdAt)))
+            let ago = secs >= 86400 ? "\(secs / 86400)日" : (secs >= 3600 ? "\(secs / 3600)時間" : "\(max(1, secs / 60))分")
+            return .init(id: r.id, name: r.fromName.isEmpty ? "ともだち" : r.fromName, avatar: nil, text: "友だち申請が とどきました", time: ago, isNew: true, approveID: r.id)
+        }
+        if !L.yesterday.isEmpty { y.notices.append(.init(id: "opened", kind: .lattag, name: "Lattag", avatar: nil, text: "きのうの \(mine.count)枚が ひらきました", time: "9:00")) }
+        y.requestCount = incoming.count
+        // Mondo:世界の 集計は サーバー側。まだ 無い 間は「今日の Mondo は ありません」
+        y.mondo.hasPosts = false
+        y.mondo.dayLabel = { let f = DateFormatter(); f.dateFormat = "MM/dd"; return f.string(from: Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now) }()
         return y
     }
 
@@ -62,6 +91,7 @@ struct HomeV64Host: View {
         a.addFriends = friends; a.openRequests = friends; a.openFriends = friends; a.scanQR = friends
         a.shoot = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }
         a.openProfile = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenProfile() } }
+        a.approve = { id in Task { if let r = incoming.first(where: { $0.id == id }) { _ = await FriendRequests.respond(to: r, accept: true, myName: src.avatarName); await refreshRequests() } } }
         return a
     }
 
