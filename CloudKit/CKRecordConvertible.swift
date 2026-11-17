@@ -83,6 +83,7 @@ extension UserProfile {
         record["firebaseEmail"] = firebaseEmail
         record["selfTags"] = selfTags.isEmpty ? nil : selfTags
         record["knockOff"] = knockOff ? 1 as Int64 : 0 as Int64
+        record["avatarColorIndex"] = avatarColorIndex.map { Int64($0) }
         record["group"] = CKRecord.Reference(recordID: groupRecordID, action: .deleteSelf)
         // CKShare(rootRecord: groupRecord)は階層共有(record.parentで連なるレコードのみが
         // 共有対象になる)方式のため、上のrecord["group"](通常のカスタムフィールド参照)とは
@@ -111,6 +112,7 @@ extension UserProfile {
         firebaseEmail = record["firebaseEmail"] as? String ?? firebaseEmail
         selfTags = record["selfTags"] as? [String] ?? []
         knockOff = (record["knockOff"] as? Int64 ?? 0) != 0
+        avatarColorIndex = (record["avatarColorIndex"] as? Int64).map { Int($0) }
         if let asset = record["avatar"] as? CKAsset, let fileURL = asset.fileURL {
             profileImageData = try? Data(contentsOf: fileURL)
         }

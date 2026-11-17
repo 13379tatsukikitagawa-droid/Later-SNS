@@ -105,6 +105,8 @@ enum MERules {
 
 enum MEPickStore {
     private static let key = "me.picks.v1"
+    /// v47:ON THIS DAY の裏面に出す、その日のタグ(端末だけ)
+    private static let tagsKey = "me.picks.tags.v1"
     static let keepDays = 365
 
     /// dayKey → えらんだ1枚の id
@@ -115,11 +117,18 @@ enum MEPickStore {
 
     static func pick(day: String) -> String? { picks[day] }
 
+    static func tags(day: String) -> [String] {
+        ((UserDefaults.standard.dictionary(forKey: tagsKey) as? [String: [String]]) ?? [:])[day] ?? []
+    }
+
     /// えらぶ(その日の前の★は移る)。画像は小さくして、端末に1年のこす
-    static func set(day: String, shotID: String, imageData: Data?, videoURL: URL? = nil) {
+    static func set(day: String, shotID: String, imageData: Data?, videoURL: URL? = nil, tags: [String] = []) {
         var all = picks
         all[day] = shotID
         picks = all
+        var allTags = (UserDefaults.standard.dictionary(forKey: tagsKey) as? [String: [String]]) ?? [:]
+        allTags[day] = tags
+        UserDefaults.standard.set(allTags, forKey: tagsKey)
         // v20:えらんだのが動画なら、本体の写しも1年のこす(7日の削除とは別の場所)
         try? FileManager.default.removeItem(at: videoFileURL(day: day))
         if let videoURL, FileManager.default.fileExists(atPath: videoURL.path) {
@@ -142,12 +151,15 @@ enum MEPickStore {
         guard let limit = calendar.date(byAdding: .day, value: -keepDays, to: now) else { return }
         let limitKey = ExposureDayStore.dayKey(for: limit, calendar: calendar)
         var all = picks
+        var allTags = (UserDefaults.standard.dictionary(forKey: tagsKey) as? [String: [String]]) ?? [:]
         for day in all.keys where day < limitKey {
             all[day] = nil
+            allTags[day] = nil
             try? FileManager.default.removeItem(at: fileURL(day: day))
             try? FileManager.default.removeItem(at: videoFileURL(day: day))
         }
         picks = all
+        UserDefaults.standard.set(allTags, forKey: tagsKey)
     }
 
     private static var folder: URL {
@@ -204,6 +216,7 @@ struct MEScreenV19: View {
     /// 昨日のホームの タブに あった カレンダー(LaterCalendarView)
     @State private var showsLaterCalendar = false
     @State private var showsProfile = false
+    @State private var showsRecap = false
     @State private var picks: [String: String] = MEPickStore.picks
     @State private var toast: String?
     @State private var squish = [0, 0]
@@ -224,12 +237,16 @@ struct MEScreenV19: View {
                 VStack(alignment: .leading, spacing: 0) {
                     topBar
                     header(list)
+                    // v54:見本 C02 の 順番:見出し → Recap(ヒーロー・362×430 ふう)→ 日ごとの めくり
+                    recapButton
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
                     Text("きょうも いちまい。")
                         .font(.system(size: 27, design: .serif).italic())
                         .tracking(0.14 * 27)
                         .foregroundStyle(Color(hex: "A3A3AA"))
                         .padding(.leading, 28)
-                        .padding(.top, 4)
+                        .padding(.top, 20)
                     MEDayFlow(days: list, picks: $picks, page: $page, width: proxy.size.width, onToast: show, onPlay: { shot, day in projecting = (shot, day) })
                         .frame(height: 400)
                         .padding(.top, 12)
@@ -311,6 +328,9 @@ struct MEScreenV19: View {
                 showsProfile = false
                 onShoot()
             })
+        }
+        .fullScreenCover(isPresented: $showsRecap) {
+            RecapPlayerView(days: days, images: fullImage(for:), onClose: { showsRecap = false })
         }
         .onAppear {
             Haptics.prepare()
@@ -425,6 +445,91 @@ struct MEScreenV19: View {
         .accessibilityHidden(true)
     }
 
+    /// v50:Recap(動画みたいに 流れる まとめ)を ひらく。mock .mrc:高さ430・角丸32・4枚コラージュの背景。
+    private var recapButton: some View {
+        let list = days
+        let shots = list.flatMap { day in day.shots.filter(\.reveal.isOpen).map { ($0, day) } }
+        let covers = Array(list.prefix(4).compactMap { $0.shots.first(where: { $0.reveal.isOpen }) }.compactMap(fullImage(for:)))
+        let keptCount = Set(list.compactMap { MEPickStore.pick(day: $0.key) }).count
+        return Button {
+            Haptics.play(.pop)
+            showsRecap = true
+        } label: {
+            ZStack(alignment: .bottomLeading) {
+                collage(covers)
+                LinearGradient(stops: [
+                    .init(color: .black.opacity(0.15), location: 0),
+                    .init(color: .black.opacity(0.05), location: 0.35),
+                    .init(color: .black.opacity(0.82), location: 1),
+                ], startPoint: .top, endPoint: .bottom)
+
+                Text("RECAP")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(2.4)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 11).frame(height: 26)
+                    .background(Capsule().fill(.black.opacity(0.45)))
+                    .padding(.leading, 22).padding(.top, 20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Your").font(.custom("InstrumentSerif-Regular", size: 46)).foregroundStyle(.white)
+                    Text("week.").font(.custom("InstrumentSerif-Italic", size: 52)).foregroundStyle(Color(hex: "C8F25A"))
+                    HStack(spacing: 4) {
+                        statNumber(shots.count); Text("shots").font(statLabelFont)
+                        statNumber(7); Text("days").font(statLabelFont)
+                        statNumber(keptCount); Text("kept").font(statLabelFont)
+                    }
+                    .foregroundStyle(Color(hex: "C9C9CF"))
+                    .padding(.top, 8)
+                }
+                .padding(.leading, 24).padding(.bottom, 28)
+
+                Image(systemName: "play.fill")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.black)
+                    .frame(width: 68, height: 68)
+                    .background(Circle().fill(.white))
+                    .padding(.trailing, 22).padding(.bottom, 24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            }
+            .frame(height: 430)
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.98))
+    }
+
+    private var statLabelFont: Font { .system(size: 10, weight: .bold, design: .monospaced) }
+
+    private func statNumber(_ n: Int) -> some View {
+        Text("\(n)").font(.custom("InstrumentSerif-Regular", size: 20)).foregroundStyle(.white)
+    }
+
+    /// 2×2(すき間3pt)の 写真コラージュ。足りない分は 色で うめる。
+    private func collage(_ images: [UIImage]) -> some View {
+        func cell(_ i: Int) -> some View {
+            ZStack {
+                if images.indices.contains(i) {
+                    Image(uiImage: images[i]).resizable().scaledToFill()
+                } else {
+                    Color(hex: "161618")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+        }
+        return VStack(spacing: 3) {
+            HStack(spacing: 3) { cell(0); cell(1) }
+            HStack(spacing: 3) { cell(2); cell(3) }
+        }
+        .background(Color.black)
+    }
+
+    /// Recap 用:1コマの本画質(動画は、仕上がっている絵=ポスターを使う)
+    private func fullImage(for shot: MEShot) -> UIImage? {
+        guard let data = me?.photos.first(where: { $0.id == shot.photoID })?.imageData else { return nil }
+        return UIImage(data: data)
+    }
+
     private var calendarButton: some View {
         Button {
             Haptics.play(.pop)
@@ -535,7 +640,7 @@ private struct MEDayFlow: View {
     }
 
     private func pick(day: MEDay, shot: MEShot, data: Data?, video: URL?) {
-        MEPickStore.set(day: day.key, shotID: shot.id, imageData: data, videoURL: video)
+        MEPickStore.set(day: day.key, shotID: shot.id, imageData: data, videoURL: video, tags: day.tags)
         picks = MEPickStore.picks
         Haptics.play(.heart)
         onToast("えらんだ1枚は、1年 のこります")
@@ -892,14 +997,14 @@ private struct MEGhostCard: View {
 
 // MARK: - カレンダー
 
-private enum MECalKind: Equatable {
+enum MECalKind: Equatable {
     case shot(String?)
     case picked(String?)
     case rest
     case future
 }
 
-private struct MECalCell: Identifiable, Equatable {
+struct MECalCell: Identifiable, Equatable {
     let key: String
     let day: Int
     let kind: MECalKind
@@ -907,7 +1012,7 @@ private struct MECalCell: Identifiable, Equatable {
     var id: String { key }
 }
 
-private enum MECalendarRules {
+enum MECalendarRules {
     static func cells(month: Date, exposure: [String: String?], picks: [String: String], now: Date, calendar: Calendar = .current) -> (leading: Int, cells: [MECalCell]) {
         let start = calendar.date(from: calendar.dateComponents([.year, .month], from: month)) ?? month
         let leading = calendar.component(.weekday, from: start) - 1
@@ -928,7 +1033,7 @@ private enum MECalendarRules {
 }
 
 /// カレンダーのボタンの右:直近4週間(7×4)
-private struct MEMiniGrid: View {
+struct MEMiniGrid: View {
     let exposureDays: [ExposureDay]
     let picks: [String: String]
 
@@ -950,7 +1055,7 @@ private struct MEMiniGrid: View {
     }
 }
 
-private struct MECalendarSheet: View {
+struct MECalendarSheet: View {
     let exposureDays: [ExposureDay]
     let picks: [String: String]
     /// 日めくりの7日(今日 → 6日前)

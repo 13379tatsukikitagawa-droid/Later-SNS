@@ -39,6 +39,9 @@ struct GroupLeaveOverlay: View {
     let perform: () async throws -> Void
     let onCancel: () -> Void
     let onHome: () -> Void
+    /// v58 §5:「Trip を おわる」(作成者)として 使う ときは true。
+    /// snapshot.kind(人数)に よらず、「全員 ぶん おわる」ための 正しい 文言に 差しかえる。
+    var isEndingTrip = false
 
     private static let holdDuration: TimeInterval = 1.0
     private static let circleDiameter: CGFloat = 220
@@ -54,7 +57,7 @@ struct GroupLeaveOverlay: View {
     @State private var softFired = false
     @State private var confirmingVoiceOver = false
 
-    private var isEnding: Bool { snapshot.kind == .lastOne }
+    private var isEnding: Bool { isEndingTrip || snapshot.kind == .lastOne }
     /// 「抜けました。」の時刻:1.5秒。処理がそれより遅ければ、終わるまで待つ
     private var textTime: Double { max(1.5, successAt ?? .infinity) }
 
@@ -92,6 +95,13 @@ struct GroupLeaveOverlay: View {
     // MARK: 確認ダイアログ
 
     private var texts: (title: String, bullets: [String]) {
+        if isEndingTrip {
+            return ("『\(snapshot.name)』を\nおわりますか?", [
+                "みんなが、このTripに もう 入れなくなります。",
+                "招待リンク・合言葉も、使えなくなります。",
+                "写真は すぐには 消えません(撮ってから7日で、自然に消えます)。",
+            ])
+        }
         switch snapshot.kind {
         case .member:
             return ("『\(snapshot.name)』から、\n抜けますか?", [

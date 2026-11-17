@@ -65,6 +65,8 @@ enum GroupSharingError: LocalizedError {
     case shareCreationFailed(underlying: Error, detail: String? = nil)
     /// グループ削除(ホスト時はゾーンごと削除、メンバー時は共有からの離脱)が失敗した場合。
     case deleteFailed(underlying: Error)
+    /// v58 §5:作成者(ゾーンの実所有者)以外が endTrip を呼んだ場合。
+    case notHost
     /// グループアイコン/ホストのアバター画像のアップロードでCKError.quotaExceeded
     /// (iCloudの空き容量不足)を検知した場合。groupCreatedWithoutImagesがtrueなら、
     /// 画像を除いて再試行した結果グループ自体(名前・共有リンク含む)は作成できている
@@ -87,6 +89,8 @@ enum GroupSharingError: LocalizedError {
             return Self.describe("共有リンクの作成に失敗しました", underlying: underlying, detail: detail)
         case .deleteFailed(let underlying):
             return "グループの削除に失敗しました(\(underlying.localizedDescription))"
+        case .notHost:
+            return "このTripを おわらせられるのは、作成者だけです"
         case .quotaExceeded(let groupCreatedWithoutImages):
             let base = "iCloudの容量が不足しているため、画像を保存できません。設定アプリのiCloudストレージ管理から空き容量を確認するか、容量を追加してください。"
             guard groupCreatedWithoutImages else { return base }
@@ -804,5 +808,42 @@ final class GroupSharingService {
             error.logPartialItemErrors()
             throw GroupSharingError.deleteFailed(underlying: error)
         }
+    }
+
+    /// v58 §5:「Trip を おわる」(作成者だけ)。
+    ///
+    /// leaveGroup の「最後の1人」の枝とはちがい、ゾーンそのもの(= 写真)は 消さない。
+    /// 写真は 撮ってから7日で 自然に 消える 既存の しくみ(DailyExposure.pruneExpired)に まかせる。
+    /// ここで するのは 最小限:
+    ///   1. CKShare レコードだけ 削除 → ほかの メンバーは 次の 同期で 共有ゾーンが 消えたと 検知し、
+    ///      既存の applyZoneDeletion → EndedGroupsStore(「終わりました」画面)が そのまま動く。
+    ///      ゾーンの 実所有者(自分)の 側は 影響を 受けない(私有DBのゾーンは 消えない)。
+    ///   2. 合言葉の 公開レコード(invite_<code>)を 削除 → 合言葉からも もう 入れない。
+    /// 招待リンクの 文面・URL の 形・CKShare の 発行の しかた 自体は さわらない。
+    func endTrip(_ group: LaterGroup, hostProfile: UserProfile) async throws {
+        guard GroupLeaveService.isHost(group, currentUserRecordName: cloudKitManager.currentUserRecordName) else {
+            throw GroupSharingError.notHost
+        }
+        if let recordID = group.cachedRecordID {
+            do {
+                let record = try await container.privateCloudDatabase.record(for: recordID)
+                if let shareReference = record.share {
+                    _ = try await container.privateCloudDatabase.modifyRecords(saving: [], deleting: [shareReference.recordID])
+                }
+            } catch let ckError as CKError where ckError.code == .unknownItem || ckError.code == .zoneNotFound {
+                // 共有は もう 無い(すでに おわっている・一度も 共有していない)。おわる 処理は そのまま 続ける
+                print("[GroupSync] endTrip: 共有は 既に 無いため スキップします: \(ckError)")
+            } catch {
+                _ = error.loggedDescription(context: "GroupSharingService.endTrip")
+                error.logPartialItemErrors()
+                throw GroupSharingError.deleteFailed(underlying: error)
+            }
+        }
+        if !group.inviteCode.isEmpty {
+            let recordID = CKRecord.ID(recordName: Self.inviteRecordName(joinCode: group.inviteCode))
+            _ = try? await container.publicCloudDatabase.deleteRecord(withID: recordID)
+        }
+        group.ckShareURL = ""
+        try? modelContext.save()
     }
 }

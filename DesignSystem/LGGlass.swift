@@ -19,10 +19,10 @@ final class LGLightDirection: ObservableObject {
         users += 1
         guard users == 1 else { return }
         if motion.isDeviceMotionAvailable {
-            motion.deviceMotionUpdateInterval = 1.0 / 60
+            motion.deviceMotionUpdateInterval = 1.0 / 30
             motion.startDeviceMotionUpdates()
         }
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
     }
@@ -38,7 +38,9 @@ final class LGLightDirection: ObservableObject {
     func touch(x: Double) { lastTouch = Date(); smoothRoll = max(-1, min(1, x)) }
 
     private func tick() {
-        if UIAccessibility.isReduceMotionEnabled { angle = 210; return }
+        // 画面が 前に 出て いない とき(バックグラウンド)は 計算しない
+        guard UIApplication.shared.applicationState == .active else { return }
+        if UIAccessibility.isReduceMotionEnabled { if angle != 210 { angle = 210 }; return }
         var roll = smoothRoll, pitch = smoothPitch
         let idle = Date().timeIntervalSince(lastTouch) > 2.5
         if let m = motion.deviceMotion {
@@ -53,7 +55,9 @@ final class LGLightDirection: ObservableObject {
             smoothRoll += (roll - smoothRoll) * 0.08
             smoothPitch += (pitch - smoothPitch) * 0.08
         }
-        angle = 210 + smoothRoll * 70
+        // 0.4° 未満の 変化では 公開しない(読んで いる 全部の ふちが 作り直されるのを へらす)
+        let next = 210 + smoothRoll * 70
+        if abs(next - angle) >= 0.4 { angle = next }
     }
 }
 

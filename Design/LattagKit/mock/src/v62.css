@@ -1,0 +1,88 @@
+
+/* ================= v62 ・ 仕上げ:バランス ・ 読みやすさ ・ 小さい ボタン ・ Liquid Glass =================
+   ・カードの 中の「Lattag」は ヘッダーと 重なる ので やめ、「だれが 今日 撮ったか」の ガラスの チップに
+   ・小さい 文字を 大きく(四すみの ラベル 7.5 → 9.5pt、のこり 8.6 → 9.7pt、目次 8.5 → 10pt)
+   ・目次の ボタンを 44pt に(Apple の 最小)。選んだ 印は 液体の ように すべって 伸びる
+   ・ガラスの ふちに 光の 向き(端末の かたむき / 指の 位置で 動く)
+   ・下の 4つの 丸と ピルの 高さを そろえ、ステッカーは ぶつかる 2つを 整理 */
+:root{--la:210deg}
+@property --la{syntax:'<angle>';inherits:true;initial-value:210deg}
+
+/* --- ガラスの ふち(光が あたる 側だけ 明るい)--- */
+.lgr{position:absolute;inset:0;border-radius:inherit;pointer-events:none;padding:1.2px;
+  background:conic-gradient(from var(--la),rgba(255,255,255,.95),rgba(255,255,255,.18) 22%,rgba(255,255,255,.08) 45%,rgba(255,255,255,.55) 52%,rgba(255,255,255,.12) 72%,rgba(255,255,255,.95));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.lgh{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 90% at calc(50% + var(--lx,0) * 40%) calc(10% + var(--ly,0) * 30%),rgba(255,255,255,.28),rgba(255,255,255,0) 55%);mix-blend-mode:soft-light}
+
+/* --- 上:だれが 今日 撮ったか(Lattag の 文字の かわり)--- */
+.orb .qsb{display:none!important}
+.hxc{position:absolute;left:50%;top:62px;translate:-50% 0;z-index:5;display:flex;align-items:center;gap:8px;height:40px;padding:0 15px 0 6px;border-radius:20px;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 12px 26px -14px rgba(0,0,0,.7);color:#fff;white-space:nowrap;transition:transform .3s cubic-bezier(.3,1.6,.4,1),background .25s;-webkit-tap-highlight-color:transparent}
+.hxc::before{content:'';position:absolute;inset:-6px -2px;border-radius:26px}
+.hxc:active{transform:scale(1.06);background:rgba(255,255,255,.24)}
+.hxc .av{display:flex}
+.hxc .av i{width:28px;height:28px;margin-left:-9px;border-radius:50%;background:#333 center/cover;box-shadow:0 0 0 2px rgba(255,255,255,.85);filter:url(#chk)}
+.hxc .av i:first-child{margin-left:0}
+.hxc .av i.n{display:grid;place-items:center;background:rgba(255,255,255,.18);font:700 10px var(--mono);font-style:normal;box-shadow:0 0 0 1.5px rgba(255,255,255,.6);filter:none}
+.hxc b{font:700 13.5px var(--sans);letter-spacing:-.01em}
+.hxc small{font:700 10px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.72)}
+.hxc .lv{width:7px;height:7px;border-radius:50%;background:#C8F25A;animation:hxdot 2.2s ease-out infinite}
+.hxc.e{padding-left:14px}
+
+/* --- ステッカー:ぶつかる 2つを 整理(点は なし ・ 花は ガラスに 貼る)--- */
+.orb .s1{left:24px;top:58px;width:34px}
+.orb .s2{right:24px;top:72px;width:46px}
+.orb .s4{display:none!important}
+.orb .s3{top:186px;left:244px;right:auto;bottom:auto;width:36px;z-index:6;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+
+/* --- まんなか:少し 小さく(直径 201pt)して 下に 余白を つくる。文字は 大きく --- */
+.orb .lens{transform:scale(.645)}
+.orb .lens.prs{transform:scale(.615)}
+.orb .lens .lnin i{width:32px;height:32px}.orb .lens .lnin i svg{width:32px;height:32px}
+.orb .lens .lnin b{font-size:62px}
+.orb .lens .lnin span{font-size:15px;letter-spacing:.3em;color:#fff;margin-top:10px}
+.orb[data-m="yday"] .lens .lnin b{font-size:46px}
+.hxs .s{stroke-width:8}
+
+/* --- 下の ピル:下の 2つの 丸と 同じ 高さ(中心 y 428)--- */
+.hxp{top:410px;height:36px}
+.hxp b{font-size:17.5px}
+.hxp em{font-size:9.5px}
+.hxp::after{content:'';position:absolute;inset:-6px -4px;border-radius:24px}
+
+/* --- 四すみ:文字を 大きく ・ 押すと ふくらむ(Liquid Glass の interactive)--- */
+.odb i{box-shadow:inset 0 2px 0 rgba(255,255,255,.22),0 14px 28px -14px rgba(0,0,0,.75)}
+.odb.dn i{transform:scale(1.1);background:rgba(255,255,255,.28)}
+.odb.lk.dn i{transform:scale(1.04)}
+.odb .lb,.odb.lk .lb{top:70px}
+.odb .lb b{font:700 9.5px var(--mono);letter-spacing:.16em;color:#fff}
+.odb.lk .lb b{color:rgba(255,255,255,.6)}
+.odb.lk i::after{width:22px;height:22px;right:-5px;bottom:-5px}
+.odb i u{width:16px;height:16px}
+
+/* --- 目次:ボタンを 44pt に。選んだ 印は すべって 伸びる --- */
+.hpi{bottom:56px;height:52px;padding:4px;gap:4px;border-radius:26px;background:rgba(255,255,255,.13);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2),0 16px 32px -14px rgba(0,0,0,.8)}
+.hpi button{position:relative;z-index:1;height:44px;min-width:44px;padding:0 12px;border-radius:22px;justify-content:center;color:rgba(255,255,255,.78);background:none!important;transition:color .3s,transform .2s cubic-bezier(.3,1.6,.4,1)}
+.hpi button span{transition:none!important}
+.hpi button i,.hpi button i svg{width:20px;height:20px}
+.hpi button span{font:700 10px var(--mono);letter-spacing:.12em}
+.hpi button.on{color:#111;padding:0 16px 0 13px}
+.hpi button.on span{max-width:100px;margin-left:7px}
+.hpi .hpk{position:absolute;z-index:0;top:4px;left:0;height:44px;border-radius:22px;background:#C8F25A;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.08),0 6px 14px -6px rgba(140,190,40,.6);pointer-events:none;will-change:transform,width}
+.hpi button:active{transform:scale(1.08)}
+
+/* --- ヘッダーの today / yesterday を、押しやすい 切りかえに --- */
+.hh .dsw{top:-3px;margin-left:10px;height:38px;padding:3px;gap:0;align-items:center;border-radius:19px;background:rgba(17,17,17,.06);box-shadow:inset 0 0 0 .5px rgba(0,0,0,.05)}
+.hh .dsw i{display:none}
+.hh .dsw em{display:flex;align-items:center;height:32px;padding:0 12px;border-radius:16px;font:italic 400 16.5px var(--serif);color:#8E8E93;transition:background .3s,color .3s,box-shadow .3s}
+.hh .dsw em.on{background:#fff;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.06)}
+.hh .dsw:active{background:rgba(17,17,17,.1)}
+#home.arcm .hh .dsw{background:rgba(255,255,255,.1)}
+#home.arcm .hh .dsw em{color:#8C8C93}
+#home.arcm .hh .dsw em.on{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.25)}
+.hst .lpl{font-size:12px}
+
+/* --- 透明度を 下げる 設定(Reduce Transparency)の かわり --- */
+@media (prefers-reduced-transparency:reduce){
+  .orb .lens .lnb,.odb i,.hxp,.hxc,.hpi{background:rgba(20,20,22,.88)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
+@media (prefers-contrast:more){.hxb .vg{background:rgba(0,0,0,.45)}.odb .lb b,.hxc b,.hxp b{text-shadow:0 1px 3px #000}}
+@media (prefers-reduced-motion:reduce){.hxc .lv{animation:none}}

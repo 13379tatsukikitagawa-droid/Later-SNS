@@ -216,7 +216,8 @@ enum HomePalette {
     static let subText = Color(hex: "BCBBC0")
     static let surface = Color(hex: "1C1C1E")
     static let disabledText = Color(hex: "8E8E93")
-    static let orange = Color(hex: "FF9E5E")
+    /// v42:フジの緑(主役の色。もとは オレンジ #FF9E5E だった場所ぜんぶ)
+    static let orange = Color(hex: "28A842")
     static let blue = Color(hex: "3FA8FF")
     static let yellow = Color(hex: "FFCF5E")
 

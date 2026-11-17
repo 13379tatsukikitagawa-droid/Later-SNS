@@ -41,12 +41,12 @@ struct HomeOrbSnapshotTests {
                             .padding(.top, 40)
                         Spacer(minLength: 0)
                     }
-                    .frame(width: width, height: 440)
+                    .frame(width: width, height: 680)
                     .background(night ? Color(hex: "0E0E12") : ChicColor.paper)
                     .environment(\.palette, night ? .night : .day)
                     let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
                     let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow()
-                    window.frame = CGRect(x: 0, y: 0, width: width, height: 440)
+                    window.frame = CGRect(x: 0, y: 0, width: width, height: 680)
                     window.windowLevel = .alert + 1
                     window.rootViewController = UIHostingController(rootView: view)
                     window.makeKeyAndVisible()

@@ -20,6 +20,7 @@ struct ChicHomeView: View {
     let avatarSeed: UUID?
     let showsAvatarBadge: Bool
     let onOpenProfile: () -> Void
+    var onOpenMe: () -> Void = {}
     var avatarSwitch = AvatarSwitch()
     var avatarName = ""
     let onDevelopTap: () -> Void
@@ -30,6 +31,8 @@ struct ChicHomeView: View {
     var arrivingGroupID: UUID?
     var launch: LaunchFrame = .finished
     var onOrbTap: () -> Void = {}
+    /// v61:じぶんの きのうを ひらく(Home の Yesterday ページの CTA から)
+    var onOpenYesterday: () -> Void = {}
     var isDiving = false
     /// 下へつづく層の中身と操作(HomeLayerModel.swift)
     var layerData: HomeLayerData = .empty
@@ -59,6 +62,10 @@ struct ChicHomeView: View {
     @Environment(\.selectedMainTabIndex) private var selectedMainTabIndex
     @State private var isOnScreen = false
     @State private var showsLights = false
+    /// v47:ピル ⇄ パネルの変形
+    @Namespace private var lightsNS
+    /// v47:暗室のひも。セーフライト(赤)が ついているか
+    @AppStorage("darkroom.safelight.v1") private var safelightOn = false
     /// スクロール位置(ここを読む小さな View だけが、スクロールのたびに描きなおされる)
     @State private var scroll = HomeV17Scroll()
     /// 長押しでためている間の揺れ
@@ -130,8 +137,9 @@ struct ChicHomeView: View {
                     avatarName: avatarName,
                     showsBadge: showsAvatarBadge,
                     onAvatar: { if showsLights { withAnimation(.easeOut(duration: 0.25)) { showsLights = false } } else { onOpenProfile() } },
-                    onConsumption: scrollToFilm,
-                    avatarSwitch: avatarSwitch
+                    onConsumption: toggleLights,
+                    avatarSwitch: avatarSwitch,
+                    namespace: lightsNS
                 )
                 // v28:暗室に 入ったら ヘッダーも 黒に(ロゴ 白・ピル 黒)
                 .environment(\.palette, darkOn ? .night : palette)
@@ -148,7 +156,7 @@ struct ChicHomeView: View {
                     .allowsHitTesting(false)
             }
             .frame(width: width, height: fullHeight)
-            .lightsPanelOverlay(isOpen: $showsLights, now: now, top: top, width: width)
+            .lightsPanelOverlay(isOpen: $showsLights, now: now, top: top, width: width, home: .today, namespace: lightsNS, captureDates: todayShots.map(\.takenAt))
         }
         .onChange(of: state.kind) { _, _ in
             // 状態が変わったら、いちばん上から(撮ったチェキが物干しへ とんでいる間は、今日の film のまま)
@@ -218,15 +226,18 @@ struct ChicHomeView: View {
         return VStack(spacing: 0) {
             Color.clear.frame(height: top + LaterHeader.height + 3)
 
-            // v32:まんなかの 丸 = 万能ボタン(いま いちばんの こと)
+            // v35:まんなかの 丸 = 万能ボタンを、画面いっぱいの 主役に(v32 の 行き先・処理は そのまま)
             let orb = orbContext
-            HomeGlassOrb(input: orb.input, dateText: HomeDevelopCard.stampText(now), isActive: isVisible && scroll.offset < 420,
+            HomeOrbHero(input: orb.input, dateText: HomeDevelopCard.stampText(now), isActive: isVisible && scroll.offset < 420,
                          centerName: orb.centerName, yesterdayPhoto: orb.yesterdayPhoto, introStart: introStart,
                          onCenter: { runOrb($0, center: true) }, onSatellite: { runOrb($0, center: false) },
                          onLocked: { v17Actions.toast(String(localized: "home.orb.locked")) },
+                         groupSummaries: groupSummaries, canCreateGroup: canCreateGroup,
+                         onCreateGroup: onCreateGroup, onJoinGroup: onJoinGroup, onSelectGroup: onSelectGroup,
+                         onOpenYesterday: onOpenYesterday,
                          hintEligible: hintsAllowed && scroll.offset < 40)
                 .scaleEffect(orbScale * max(0.9, 1 - y / 2400))
-                .frame(height: HomeGlassOrb.height * orbScale)
+                .frame(height: HomeOrbHero.height * orbScale)
                 .offset(y: y * 0.25)
                 .opacity(max(0.15, 1 - y / 420))
 
@@ -236,12 +247,6 @@ struct ChicHomeView: View {
                 .offset(y: headIn ? 0 : 14)
                 .opacity(headIn ? 1 : 0)
                 .id("headline-\(used)-\(initial)")
-
-            HomeTodayCard(used: used, initial: initial, now: now, onTap: openDevelop)
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
-                .offset(y: cardIn ? 0 : 24)
-                .opacity(cardIn ? 1 : 0)
 
             HomeV22Groups(summaries: groupSummaries, canCreate: canCreateGroup, isFrontmost: isVisible, shotsToday: used,
                           onSelect: onSelectGroup, onCreate: onCreateGroup, onJoin: onJoinGroup, onAdd: onAddGroup,
@@ -288,27 +293,42 @@ struct ChicHomeView: View {
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { rect in
                     updateDark(dusk: rect)
                 }
-            DarkroomSection(
-                data: data, groups: groups, summaries: groupSummaries, invites: invites, words: v17.words,
-                friends: layerData.friends, now: now,
-                onOpenChat: onOpenChat, onCreateGroup: onCreateGroup,
-                onJoin: { card in
-                    guard let url = card.shareURL else { v17Actions.toast(String(localized: "darkroom.invite.expired")); return }
-                    // 今の「入る」と 同じ(本人が 押したときだけ 共有を 受けいれる)
-                    InviteCardStore.set(.accepted, for: card.id)
-                    if let i = invites.firstIndex(where: { $0.id == card.id }) { invites[i].status = .accepted }
-                    NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.link(url))
-                },
-                onOpenMondo: v17Actions.openMondo,
-                onOpenFriends: v17Actions.openFriends,
-                onOpenPhoto: { viewerItem = $0 },
-                onToast: v17Actions.toast,
-                keepHintEligible: hintsAllowed && FilmCounter.shared.used >= 1
-            )
-            V17EndSection(now: now, ink: V17Ink(night: true), isActive: isVisible)
-                .padding(.top, 70)
-                .frame(maxWidth: .infinity)
-                .background(Darkroom.bg)
+            ZStack {
+                VStack(spacing: 0) {
+                    DarkroomSection(
+                        data: data, groups: groups, summaries: groupSummaries, invites: invites, words: v17.words,
+                        friends: layerData.friends, now: now,
+                        onOpenChat: onOpenChat, onCreateGroup: onCreateGroup,
+                        onJoin: { card in
+                            guard let url = card.shareURL else { v17Actions.toast(String(localized: "darkroom.invite.expired")); return }
+                            // 今の「入る」と 同じ(本人が 押したときだけ 共有を 受けいれる)
+                            InviteCardStore.set(.accepted, for: card.id)
+                            if let i = invites.firstIndex(where: { $0.id == card.id }) { invites[i].status = .accepted }
+                            NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.link(url))
+                        },
+                        onOpenMondo: v17Actions.openMondo,
+                        onOpenWord: v17Actions.openWord,
+                        onOpenFriends: v17Actions.openFriends,
+                        onOpenPhoto: { viewerItem = $0 },
+                        onToast: v17Actions.toast,
+                        keepHintEligible: hintsAllowed && FilmCounter.shared.used >= 1,
+                        onOpenYesterday: avatarSwitch.onSwitch,
+                        onOpenMe: onOpenMe
+                    )
+                    DarkroomSafelightString(isOn: $safelightOn)
+                        .padding(.top, 36)
+                        .padding(.bottom, 28)
+                        .frame(maxWidth: .infinity)
+                        .background(Darkroom.bg)
+                }
+                if safelightOn {
+                    Color(hex: "D81E1E").opacity(0.22)
+                        .blendMode(.multiply)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
+            }
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: safelightOn)
             Darkroom.bg.frame(height: HomeV17Rules.bottomSpace)
         }
     }
@@ -399,19 +419,16 @@ struct ChicHomeView: View {
             v17Actions.openMondo()
         case .friends:
             v17Actions.openFriends()
+        case .trip:
+            // v61:四すみの Trip は Home の 中で ページを スライドするだけ(HomeGlassOrb 側で 処理)。
+            // ここに 来ることは ない はずだが、万一 来ても グループを つくる 入口に ふっておく。
+            onCreateGroup()
         }
     }
 
     /// v22 G:今日のカード → 現像ビューが 下から せり上がる
     private func openDevelop() {
         showsDevelop = true
-    }
-
-    private func scrollToFilm() {
-        Haptics.play(.detent)
-        withAnimation(.easeInOut(duration: reduceMotion ? 0.01 : 0.45)) {
-            scrollPosition.scrollTo(id: HomeV17Section.film.rawValue, anchor: UnitPoint(x: 0.5, y: 0.2))
-        }
     }
 
     /// B-10:オープニングのあとの 登場(球 → 見出し → 丸 → カード → グループ)

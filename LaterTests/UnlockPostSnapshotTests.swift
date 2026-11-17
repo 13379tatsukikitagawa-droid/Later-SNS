@@ -24,6 +24,8 @@ struct UnlockPostSnapshotTests {
             capturedAt: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
             groups: [ProfileShareGroup(name: "よいしょー", otherMemberCount: 4)],
             showsMondo: true,
+            totalCount: 3,
+            tag: "夕焼け",
             playsUnlock: scene.progress != nil,
             haptics: ExposureHaptics(),
             onDecide: { _ in },

@@ -110,11 +110,15 @@ struct LaterHeader: View {
     var onConsumption: () -> Void = {}
     var avatarSwitch = AvatarSwitch()
     var clock: () -> Date = Date.init
+    /// v47:ピル ⇄ ライブパネルの変形(nil なら、ただの拡大・縮小)
+    var namespace: Namespace.ID?
 
     @Environment(\.palette) private var palette
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var onScreen = false
+    /// v47:まんなかの緑の点が「生きてる」感じで脈打つ(2.2秒)
+    @State private var breathe = false
 
     private var tickActive: Bool { onScreen && scenePhase == .active }
 
@@ -130,7 +134,12 @@ struct LaterHeader: View {
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .frame(height: Self.height, alignment: .top)
-        .onAppear { onScreen = true }
+        .onAppear {
+            onScreen = true
+            if !reduceMotion {
+                withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { breathe = true }
+            }
+        }
         .onDisappear { onScreen = false }
     }
 
@@ -198,57 +207,65 @@ struct LaterHeader: View {
         let label = DailyWindow.capsuleParts(now: now).label
         let lastHour = LaterHeaderTime.isLastHour(now: now)
         let timeText = LaterHeaderTime.text(now: now)
-        let pulseOn = lastHour && !reduceMotion && tickActive
-        let dim = pulseOn && Int(tick.timeIntervalSinceReferenceDate) % 2 != 0
-        let onInk = palette.bg
-        let textColor = lastHour ? onInk : palette.ink
-        let dotColor = palette.isNight ? Color(hex: "FF9E5E") : palette.accent
+        let progress = LightsPanelLogic.progress(now: now)
+        let textColor = palette.ink
+        let dotColor = LaterColor.filmLight
         let usedFrame = palette.isNight ? Color.white.opacity(0.25) : Color(hex: "D1D1D6")
         let spoken = "\(label) \(LaterHeaderTime.spokenDuration(capsule.minutes))。フィルム のこり\(remaining)枚"
+        let shape = Capsule()
 
         let content = HStack(spacing: 8) {
-            Circle()
-                .fill(dotColor)
-                .frame(width: 7, height: 7)
-                .background(Circle().fill(dotColor.opacity(0.16)).frame(width: 13, height: 13))
-                .opacity(dim ? 0.6 : 1)
-                .animation(.easeInOut(duration: 1), value: dim)
+            progressRing(progress: progress, dotColor: dotColor)
             Text(label)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(textColor)
+                .font(LF.inter(600, 11.5))
+                .tracking(0.23)
+                .foregroundStyle(palette.isNight ? palette.sub : LaterColor.Day.sub)
                 .lineLimit(1)
             Text(timeText)
-                .font(HeaderFont.mono(12.5))
+                .font(LF.inter(700, 13.5))
+                .tracking(-0.135)
                 .monospacedDigit()
-                .foregroundStyle(textColor)
+                .contentTransition(.numericText(countsDown: true))
+                .foregroundStyle(lastHour ? LaterColor.red : textColor)
                 .lineLimit(1)
                 .fixedSize()
-            Rectangle()
-                .fill(lastHour ? onInk.opacity(0.2) : palette.line)
-                .frame(width: 1, height: 11)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: timeText)
             HStack(spacing: 3) {
                 ForEach(0..<FilmRoll.shotsPerDay, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                        .fill(index < remaining ? dotColor : usedFrame)
-                        .frame(width: 6, height: 9)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(index < remaining ? LaterColor.film : usedFrame)
+                        .shadow(color: index < remaining ? LaterColor.film.opacity(0.45) : .clear, radius: 6)
+                        .frame(width: 7, height: 12)
                 }
             }
             Text("\(remaining)")
-                .font(HeaderFont.mono(11))
-                .foregroundStyle(lastHour ? onInk.opacity(0.6) : palette.sub)
-            Text("›")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(lastHour ? onInk.opacity(0.6) : palette.sub)
+                .font(LF.inter(700, 12.5))
+                .tracking(0.25)
+                .foregroundStyle(textColor)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(palette.sub)
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(.black.opacity(0.05)))
         }
         .padding(.leading, 10)
         .padding(.trailing, 12)
-        .frame(height: 30)
-        .background(Capsule().fill(palette.ink).opacity(lastHour ? 1 : 0))
+        .frame(height: 36)
+        .background {
+            if let namespace {
+                shape.fill(.clear)
+                    .laterGlass(shape)
+                    .matchedGeometryEffect(id: "lightsPill", in: namespace)
+            } else {
+                shape.fill(.clear).laterGlass(shape)
+            }
+        }
+        .overlay(pillSheen(shape: shape))
         .contentShape(Rectangle())
-        .animation(.easeInOut(duration: 0.3), value: lastHour)
 
         return Button {
             TapConsumption.mark()
+            Haptics.play(.pop)
             onConsumption()
         } label: { content }
             .buttonStyle(.plain)
@@ -257,13 +274,58 @@ struct LaterHeader: View {
             .accessibilityLabel(spoken)
             .accessibilityHint("ダブルタップで詳細")
     }
+
+    /// v47:進みリング(24pt)。まんなかの点が脈打つ
+    private func progressRing(progress: Double, dotColor: Color) -> some View {
+        ZStack {
+            Circle().stroke(palette.line, lineWidth: 2.5)
+            Circle()
+                .trim(from: 0, to: max(0.02, progress))
+                .stroke(dotColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Circle()
+                .fill(dotColor)
+                .frame(width: 6, height: 6)
+                .shadow(color: LaterColor.film.opacity(0.41), radius: 3)
+                .scaleEffect(breathe ? 1.2 : 0.82)
+                .opacity(breathe ? 1 : 0.55)
+        }
+        .frame(width: 24, height: 24)
+        .accessibilityHidden(true)
+    }
+
+    /// v47:ふちを光が1周(7秒)・表面を光が横切る(6秒に1回)。視差を減らすなら止める
+    private func pillSheen(shape: Capsule) -> some View {
+        TimelineView(.animation(paused: reduceMotion || !tickActive)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let rotation = Angle(degrees: (t.truncatingRemainder(dividingBy: 7) / 7) * 360)
+            let sweep = (t.truncatingRemainder(dividingBy: 6) / 6)
+            ZStack {
+                shape.strokeBorder(
+                    AngularGradient(colors: [.clear, .white.opacity(0.5), .clear], center: .center, angle: rotation),
+                    lineWidth: 1
+                )
+                GeometryReader { geo in
+                    LinearGradient(colors: [.clear, .white.opacity(0.16), .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: geo.size.width * 0.4)
+                        .offset(x: -geo.size.width * 0.4 + sweep * geo.size.width * 1.4)
+                }
+                .clipShape(shape)
+            }
+        }
+        .allowsHitTesting(false)
+    }
 }
 
 // MARK: - 光のパネル(今日のホーム用。昨日のホームは HomeV5Container が持つ)
 
 extension View {
     /// 「消灯まで」の行から光のパネルをひらく(暗幕つき)。top はヘッダーの上端(安全領域の高さ)。
-    func lightsPanelOverlay(isOpen: Binding<Bool>, now: Date, top: CGFloat, width: CGFloat) -> some View {
+    /// v47:namespace を渡すと、ピルがそのまま ひろがって パネルに なる(matchedGeometryEffect)。
+    func lightsPanelOverlay(
+        isOpen: Binding<Bool>, now: Date, top: CGFloat, width: CGFloat,
+        home: HomeKind = .today, namespace: Namespace.ID? = nil, captureDates: [Date] = []
+    ) -> some View {
         overlay {
             ZStack(alignment: .topLeading) {
                 if isOpen.wrappedValue {
@@ -272,13 +334,16 @@ extension View {
                         .transition(.opacity)
                     LightsPanel(
                         now: now,
-                        width: min(300, width - 44),
+                        width: min(330, width - 44),
+                        home: home,
+                        namespace: namespace,
+                        captureDates: captureDates,
                         onClose: { withAnimation(.easeOut(duration: 0.25)) { isOpen.wrappedValue = false } }
                     )
                     .padding(.top, top + LaterHeader.height + 6)
                     .padding(.leading, 20)
                     .environment(\.colorScheme, .dark)
-                    .transition(LightsPanel.transition(anchor: .topLeading))
+                    .transition(.opacity)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

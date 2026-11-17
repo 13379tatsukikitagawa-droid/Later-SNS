@@ -84,6 +84,7 @@ struct GroupChatRoomView: View {
     var onToast: (String) -> Void = { _ in }
     /// v28:はじめから この 写真への 返信に する
     var initialReply: LaterPhoto? = nil
+    @State private var showsInviteFriends = false
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.palette) private var palette
@@ -184,6 +185,10 @@ struct GroupChatRoomView: View {
         .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
             ShareSheet(activityItems: shareItems ?? []) { _ in shareItems = nil }
         }
+        .fullScreenCover(isPresented: $showsInviteFriends) {
+            FriendsHubView(myName: UserProfile.current(from: profiles)?.name ?? "", friends: friends, groups: [group], startTab: 1, onClose: { showsInviteFriends = false })
+                .environment(\.palette, palette)
+        }
         .confirmationDialog("通報する 理由", isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }), titleVisibility: .visible) {
             ForEach(ChatReport.Reason.allCases) { reason in
                 Button(reason.rawValue) { if let message = reporting { report(message, reason: reason) } }
@@ -233,6 +238,7 @@ struct GroupChatRoomView: View {
                     show(store.isMuted(group.id) ? "この 部屋の 通知を オフに しました" : "この 部屋の 通知を オンに しました")
                 }
                 Button("リンクで よぶ", systemImage: "link") { shareLink() }
+                Button("友だちから 招待", systemImage: "person.badge.plus") { showsInviteFriends = true }
                 Button("ぬける", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { onOpenGroupSheet() }
             } label: {
                 Image(systemName: "ellipsis").font(.system(size: 17, weight: .bold)).foregroundStyle(ink)
@@ -259,7 +265,7 @@ struct GroupChatRoomView: View {
     }
 
     private func memberIcon(_ member: GroupTogether.Member) -> some View {
-        Button { poke(member) } label: {
+        Button { tapMember(member) } label: {
             LayerAvatar(data: member.avatarData, seed: member.seed, name: member.name)
                 .frame(width: 38, height: 38)
                 .padding(3)
@@ -269,9 +275,27 @@ struct GroupChatRoomView: View {
                 )
         }
         .buttonStyle(SquishButtonStyle())
-        .disabled(member.isMe || member.shotToday)
         .accessibilityLabel("\(member.name)。\(member.shotToday ? "今日 撮った" : "まだ")")
-        .accessibilityHint(member.isMe || member.shotToday ? "" : "つつきます")
+        .accessibilityHint(member.isMe ? (member.shotToday ? "現像を見ます" : "撮影へ") : (member.shotToday ? "" : "つつきます"))
+    }
+
+    /// v47:自分(撮った)→ 現像 / 自分(まだ)→ 撮影 / ほかの人(撮った)→ 知らせる / ほかの人(まだ)→ つつく
+    private func tapMember(_ member: GroupTogether.Member) {
+        if member.isMe {
+            Haptics.play(.tick)
+            if member.shotToday {
+                DevelopRequestStore.shared.request()
+            } else {
+                CaptureRequestStore.shared.pendingRequestID = UUID()
+            }
+            return
+        }
+        if member.shotToday {
+            Haptics.play(.tick)
+            show("\(member.name)・今日 撮った・9:00に ひらく")
+            return
+        }
+        poke(member)
     }
 
     private var weekDots: some View {

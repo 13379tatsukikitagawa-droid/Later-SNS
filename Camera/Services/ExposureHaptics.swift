@@ -410,6 +410,8 @@ enum Haptics {
     enum Kind: String, CaseIterable, Sendable {
         /// カリッ(つまみの1時間・ふる途中・タブ・リール・ページめくり)0.45 / 0.9
         case tick
+        /// v54:コツッ(えらぶ・きりかえ・タブ)11ms・強さ0.50・鋭さ0.7。HAPTICS.md の `sel`。
+        case sel
         /// コツッ(やくそくを1枚めくる)0.6 / 0.75
         case detent
         /// ポンッ(チェキ・顔・つまむ・カードが出た)0.75 / 0.45
@@ -436,15 +438,21 @@ enum Haptics {
         case land
         /// カタカタ(上映のはじまり)0.45 / 0.85、4回・46ms ごと
         case projector
+        /// カタカタ(v34:現像の瞬間・チェキが排出口から出てくる)6回、途中で一度 間をあける
+        case rattle
         /// ブッ(タグ4つ目・13人目)
         case warn
+        /// v54:ブルブル(短く)120ms・強さ0.75。HAPTICS.md の `buzz`。
+        case buzz
+        /// v54:ブイッ(上がるカーブ)40-20-320ms・強さ1.0。HAPTICS.md の `vui`。
+        case vui
     }
 
     /// 強さ・間隔の定数(実機で調整する)
     enum Tuning {
         typealias Beat = (time: TimeInterval, intensity: Float, sharpness: Float)
         /// 最短の間(秒)。これより早い2回目は鳴らさない
-        static let gaps: [Kind: TimeInterval] = [.land: 0.1, .projector: 0.2, .tick: 0.055, .detent: 0.08, .pop: 0.09, .click: 0.1, .thud: 0.12, .soft: 0.08, .double: 0.2, .heart: 0.15, .burst: 0.25, .success: 0.25, .warn: 0.25]
+        static let gaps: [Kind: TimeInterval] = [.land: 0.1, .projector: 0.2, .tick: 0.055, .sel: 0.08, .detent: 0.08, .pop: 0.09, .click: 0.1, .thud: 0.12, .soft: 0.08, .double: 0.2, .heart: 0.15, .burst: 0.25, .success: 0.25, .warn: 0.25, .buzz: 0.2, .vui: 0.4]
         /// スクロールで鳴らす tick の最短の間
         static let scrollGap: TimeInterval = 0.07
         /// 長押し中の heart の間隔:520ms → 190ms
@@ -453,22 +461,30 @@ enum Haptics {
         /// v17 の表(強さ / するどさ)
         static func beats(_ kind: Kind) -> [Beat] {
             switch kind {
-            case .tick: return [(0, 0.45, 0.9)]
+            case .tick: return [(0, 0.35, 0.6)]
+            case .sel: return [(0, 0.50, 0.7)]
             case .detent: return [(0, 0.6, 0.75)]
-            case .pop: return [(0, 0.75, 0.45)]
-            case .click: return [(0, 0.8, 0.65)]
-            case .thud: return [(0, 1.0, 0.25)]
-            case .soft: return [(0, 0.35, 0.3)]
+            case .pop: return [(0, 0.70, 0.35)]
+            case .click: return [(0, 0.65, 0.9)]
+            case .thud: return [(0, 1.0, 0.3)]
+            case .soft: return [(0, 0.30, 0.2)]
             case .double: return [(0, 0.6, 0.5), (0.07, 0.6, 0.5)]
-            case .heart: return [(0, 0.9, 0.35), (0.13, 0.6, 0.25)]
+            case .heart: return [(0, 0.9, 0.35), (0.1, 0.55, 0.25)]
             case .burst: return [(0, 1.0, 0.6), (0.06, 0.75, 0.5), (0.13, 0.5, 0.4), (0.2, 0.28, 0.3), (0.3, 0.08, 0.2)]
-            case .rumble: return [(0, 0.7, 0.6), (0.03, 0.6, 0.6), (0.06, 0.7, 0.6), (0.09, 0.55, 0.6), (0.12, 0.65, 0.6)]
+            // HAPTICS.md:continuous 1.0 を 0.2秒 + transient を 35ms 毎に 6回(連続の ふるえを 近似)
+            case .rumble: return [(0, 1.0, 0.6), (0.035, 1.0, 0.6), (0.07, 1.0, 0.6), (0.105, 1.0, 0.6), (0.14, 1.0, 0.6), (0.175, 1.0, 0.6)]
             // 撮れた瞬間:1.0 / 0.9 → 0.7 / 0.5(0.07秒あけて)
             case .shutter: return [(0, 1.0, 0.9), (0.07, 0.7, 0.5)]
-            case .land: return [(0, 0.85, 0.3)]
+            case .land: return [(0, 0.85, 0.4)]
             case .projector: return [(0, 0.45, 0.85), (0.046, 0.45, 0.85), (0.092, 0.45, 0.85), (0.138, 0.45, 0.85)]
-            case .success: return [(0, 0.6, 0.5), (0.1, 0.6, 0.5), (0.22, 1.0, 0.6)]
+            case .rattle: return [(0, 0.5, 0.85), (0.16, 0.4, 0.8), (0.34, 0.5, 0.85), (0.95, 0.4, 0.8), (1.1, 0.5, 0.85), (1.25, 0.42, 0.8)]
+            // HAPTICS.md:0.9 を 0 / 80 / 160ms(最後だけ 少し 長く)
+            case .success: return [(0, 0.9, 0.5), (0.08, 0.9, 0.5), (0.16, 0.9, 0.6)]
             case .warn: return [(0, 0.8, 0.55), (0.09, 0.8, 0.55)]
+            // v54:ブルブル(短く)0〜80ms・40ms毎(continuous 0.75 を 0.12秒ぶんの 近似)
+            case .buzz: return [(0, 0.75, 0.6), (0.04, 0.75, 0.6), (0.08, 0.75, 0.6)]
+            // v54:ブイッ(上がるカーブ)0〜300ms・60ms毎、強さが だんだん 上がる
+            case .vui: return [(0, 0.3, 0.5), (0.06, 0.45, 0.55), (0.12, 0.6, 0.6), (0.18, 0.75, 0.65), (0.24, 0.9, 0.7), (0.3, 1.0, 0.75)]
             }
         }
 
@@ -565,7 +581,7 @@ enum Haptics {
         let k = CGFloat(scale)
         switch kind {
         case .tick, .detent: selection.selectionChanged(); selection.prepare()
-        case .pop: light.impactOccurred(intensity: k); light.prepare()
+        case .pop, .sel: light.impactOccurred(intensity: k); light.prepare()
         case .click: medium.impactOccurred(intensity: k); medium.prepare()
         case .thud: rigid.impactOccurred(intensity: k); rigid.prepare()
         case .soft: softGen.impactOccurred(intensity: k); softGen.prepare()

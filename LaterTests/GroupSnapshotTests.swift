@@ -68,7 +68,8 @@ struct GroupSnapshotTests {
     }
 
     @Test func qr() throws {
-        let view = InviteQROverlay(url: InviteConfig.joinLink(shareURL: URL(string: "https://www.icloud.com/share/0abcDEF123#Later")!), auraIndex: 1, onClose: {})
+        let group = LaterGroup(name: "京都")
+        let view = InviteQROverlay(group: group, url: InviteConfig.joinLink(shareURL: URL(string: "https://www.icloud.com/share/0abcDEF123#Later")!), auraIndex: 1, memberCount: 4, onClose: {})
         try write(view, size: CGSize(width: 390, height: 844), name: "invite_qr")
     }
 }

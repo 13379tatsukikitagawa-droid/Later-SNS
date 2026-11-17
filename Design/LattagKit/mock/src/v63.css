@@ -1,0 +1,74 @@
+
+/* ================= v63 =================
+   1) まんなかの ボタンは カメラの 絵だけ(文字なし)
+   2) 上(ヘッダー):プロフィール と「消灯まで」を ガラスに そろえる
+   3) 下(今日を撮る):月の 形は 残し、黒い すりガラスに(うしろの 画面が すける)。点の 地球は やめる
+   4) はじめて ログインした 日も、いつもの Home と 同じ 形(空っぽの ところは「あした 9:00 から」) */
+
+/* --- 1) カメラの 絵だけ --- */
+.orb .lens .lnin b,.orb .lens .lnin span{display:none!important}
+.orb .lens .lnin i{width:104px;height:80px;opacity:1}
+.orb .lens .lnin i svg{width:104px;height:80px;overflow:visible}
+.cmg .bd{fill:none;stroke:#fff;stroke-width:3.4;stroke-linejoin:round}
+.cmg .ln{fill:none;stroke:#fff;stroke-width:3.4}
+.cmg .ap{fill:#fff;transform-box:fill-box;transform-origin:50% 50%;transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+.cmg .fl{fill:#C8F25A}
+.cmg{filter:drop-shadow(0 4px 14px rgba(0,0,0,.28))}
+.lens.prs .cmg .ap{transform:scale(.45)}
+.orb[data-m="yday"] .lens .lnin i{width:84px;height:84px}
+.orb[data-m="yday"] .lens .lnin i svg{width:84px;height:84px}
+
+/* --- 2) 上 --- */
+#home .hh .av{background:#61D278 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 46'%3E%3Ccircle cx='15.5' cy='21' r='3' fill='%23111'/%3E%3Ccircle cx='30.5' cy='21' r='3' fill='%23111'/%3E%3Cpath d='M17.5 29q5.5 5 11 0' fill='none' stroke='%23111' stroke-width='2.4' stroke-linecap='round'/%3E%3Cellipse cx='10' cy='28' rx='3.6' ry='2.4' fill='%23FF7FAE' opacity='.8'/%3E%3Cellipse cx='36' cy='28' rx='3.6' ry='2.4' fill='%23FF7FAE' opacity='.8'/%3E%3C/svg%3E") center/cover;
+  box-shadow:0 0 0 2.5px #fff,0 0 0 3.5px rgba(17,17,17,.08),0 10px 22px -8px rgba(36,160,60,.55)}
+#home .hh .av::before{content:'';position:absolute;inset:-7px;border-radius:50%;padding:2.5px;background:conic-gradient(#24A03C 0 calc(var(--fp,0) * 1turn),rgba(17,17,17,.1) 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);transition:--fp .6s}
+@property --fp{syntax:'<number>';inherits:false;initial-value:0}
+#home .hh .av u{width:13px;height:13px;right:-3px;top:-3px;background:#D8262C;border:2.5px solid #fff}
+#home .hh .av::after{content:'';position:absolute;inset:-12px;border-radius:50%}
+#home .hst{left:16px;top:106px;height:38px;padding:0 6px 0 10px;border-radius:19px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);
+  box-shadow:inset 0 0 0 .8px rgba(255,255,255,.9),inset 0 -1px 0 rgba(17,17,17,.05),0 10px 24px -14px rgba(17,17,17,.35)}
+#home .hst .lpl{color:#6E6E73;font-size:12px}
+#home .hst b,#home .hst .lpd{font-variant-numeric:tabular-nums}
+#home .hst .lpc{width:28px;height:28px;background:rgba(17,17,17,.06);display:grid;place-items:center}
+#home .hst::after{content:'';position:absolute;inset:-4px 0}
+#home.arcm .hst{background:rgba(28,28,31,.6);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.14),0 10px 24px -14px rgba(0,0,0,.6)}
+
+/* --- 3) 下:今日を撮る(黒い すりガラスの 月)--- */
+#home .hmoon{background:rgba(14,14,16,.62);-webkit-backdrop-filter:blur(26px) saturate(1.7);backdrop-filter:blur(26px) saturate(1.7);
+  box-shadow:0 -20px 46px -16px rgba(0,0,0,.45);transition:transform .3s cubic-bezier(.3,1.5,.5,1),background .3s}
+#home .hmoon .mgl,#home .hmoon .mat{display:none!important}
+#home .hmoon .r2{inset:0;box-shadow:none}
+#home .hmoon::after{background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.16) 50%,transparent 58%) no-repeat;background-size:260% 100%}
+#home .hmoon .lgr{padding:1.4px}
+#home .hmoon .mt{top:20px;display:flex;flex-direction:column;align-items:center}
+#home .hmoon .mrow{display:flex;align-items:center;justify-content:center;gap:9px;width:100%}
+#home .hmoon .mrow svg{width:26px;height:20px;overflow:visible}
+#home .hmoon b{font:800 21px var(--sans);letter-spacing:-.01em;color:#fff;text-shadow:none}
+#home .hmoon small{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:7px;font:700 10.5px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.7);text-shadow:none}
+#home .hmoon small .fd{display:flex;gap:4px}
+#home .hmoon small .fd i{width:14px;height:6px;border-radius:3px;background:#C8F25A}
+#home .hmoon small .fd i.u{background:rgba(255,255,255,.2)}
+#home .hmoon:active{transform:translateY(-4px) scale(1.015);background:rgba(24,24,27,.66)}
+#home .hmoon.lock b{color:rgba(255,255,255,.85)}
+
+/* --- 4) はじめての 日(きのうが まだ ない)--- */
+#home.nu .nuh,#home.nu #ayh,#home.nu #ayg,#home.nu #amd,#home.nu #aal,#home.nu #otd{display:none!important}
+#anew{display:none}
+#home.nu #anew{display:block}
+.anew{position:relative;margin:0 14px;padding:26px 22px 22px;border-radius:30px;overflow:hidden;background:#161618;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);color:#fff}
+.anew .fan{position:relative;height:150px;margin-bottom:6px}
+.anew .fan i{position:absolute;left:50%;top:10px;width:96px;height:118px;margin-left:-48px;border-radius:6px;border:1.6px dashed rgba(255,255,255,.28);rotate:var(--r);translate:var(--x) var(--y)}
+.anew .fan i::after{content:'';position:absolute;left:8px;right:8px;top:8px;height:78px;border-radius:2px;background:rgba(255,255,255,.04)}
+.anew .fan i.m{border:1.6px solid rgba(255,255,255,.5);background:rgba(255,255,255,.05)}
+.anew .fan i.m b{position:absolute;left:0;right:0;bottom:8px;text-align:center;font:700 9px var(--mono);letter-spacing:.14em;color:#C8F25A}
+.anew .fan i.m::after{background:radial-gradient(circle at 50% 45%,rgba(200,242,90,.16),rgba(255,255,255,.03) 70%)}
+.anew h4{font:400 40px/1 var(--ttl);letter-spacing:-.01em;text-align:center}
+.anew p{margin-top:8px;text-align:center;font:500 13px/1.5 var(--sans);color:rgba(255,255,255,.66)}
+.anew .cd{display:flex;justify-content:center;margin-top:14px}
+.anew .cd span{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:17px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);font:700 11px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.85);font-variant-numeric:tabular-nums}
+.anew .cd span i{width:7px;height:7px;border-radius:50%;background:#C8F25A;animation:hxdot 2.2s ease-out infinite}
+.hpfan.nu i{border:1.6px dashed rgba(255,255,255,.3)!important;background:none!important;box-shadow:none!important}
+.hpfan.nu i span{display:none}
+
+.hpfan.nu i s{display:none}
+#hpc4.nu .hpbg{display:none}

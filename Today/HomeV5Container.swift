@@ -20,6 +20,8 @@ struct HomeV5Container: View {
     let isCovered: Bool
     let shotEvent: ShotEvent?
     let onOpenProfile: () -> Void
+    /// v54:ME カード(きのうの まい)→ ME 画面。アバターは Profile(別の 入口)
+    var onOpenMe: () -> Void = {}
     let onOpenGroupSheet: (UUID) -> Void
     let onAddGroup: () -> Void
     /// 0 グループの GROUP 画面から。つくる(ステッカーの言葉を名前に入れて)・参加する
@@ -34,6 +36,8 @@ struct HomeV5Container: View {
     var friendsActions = HomeLayerActions()
     var onFriend: (HomeFriend) -> Void = { _ in }
     var onInviteFriend: () -> Void = {}
+    /// v47:ライブパネルの帯に出す、今日撮った時刻(発行判定には使わない。表示だけ)
+    var todayCaptureDates: [Date] = []
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -42,13 +46,15 @@ struct HomeV5Container: View {
     @Query private var exposureDays: [ExposureDay]
     /// 右上の「消灯まで」ピルから出す光のパネル
     @State private var showsLightsPanel = false
+    /// v47:ピル ⇄ パネルの変形(Namespace は親からもらわず、ここで持つ)
+    @Namespace private var lightsNS
     /// 新しいヘッダー(80pt)が、これまでの48ptより下へ広がった分(各ページの上の余白に足す)
     private static let headerExtra: CGFloat = 32
     @AppStorage(FirstGuide.seenKey) private var guideSeen = false
     @AppStorage("mondoSeen") private var mondoSeen = false
 
-    /// 最後に見ていたタブ(mondo / group / calendar)。開きなおしても覚えている(はじめは Mondo)
-    @AppStorage("homeV5LastTab") private var tabRaw = "mondo"
+    /// 最後に見ていたタブ(mondo / group)。開きなおしても覚えている(はじめは Groups)
+    @AppStorage("homeV5LastTab") private var tabRaw = "group"
     /// はじめての使い方カード(1回だけ)
     @AppStorage("coach.tabs.v1") private var coachSeen = false
     @State private var seenSignature: Int?
@@ -245,6 +251,69 @@ struct HomeV5Container: View {
         }
     }
 
+    /// v36:Mondo / グループ の 両方を ずっと 置いたまま、opacity で 切りかえる(型チェックが 重くならない よう body から 分ける)
+    /// v54:自作の 浮かぶガラスの タブバー(アイコン無し・ガラスに なっていない・中身と 重なる)は やめて、
+    /// iOS 26 純正の TabView(Tab(...))に する。バーの 後ろに 不透明な 面は 置かない(中身が 下を くぐって 透ける)。
+    private func pagesLayer(top: CGFloat, proxy: GeometryProxy) -> some View {
+        TabView(selection: tabBinding) {
+            Tab("Mondo", systemImage: "globe", value: HomeTab.mondo) {
+                HomeV5MondoPage(
+                    phase: loader.phase,
+                    dayKey: dayKey,
+                    isActive: isCalm && tab == .mondo,
+                    topInset: top + Self.headerExtra,
+                    onTick: {}, // v14:触覚は V5Globe の中で Haptics.tick(12°ごと・55ms)
+                    onSettings: { showsMondoSettings = true },
+                    onRetry: { Task { await loader.load(now: now, blocked: MondoService.blockedMondoIDs(blockedUsers), force: true) } },
+                    onOpenTag: openTagFeed,
+                    onOpenAll: openAll,
+                    announced: picks.world(day: dayKey),
+                    onOpenAnnounced: openAnnouncedWorld,
+                    scrollToTopToken: mondoTop,
+                    locked: locked
+                )
+            }
+
+            Tab("Groups", systemImage: "person.2.fill", value: HomeTab.group) {
+                HomeV5GroupPage(
+                    sections: sections,
+                    isActive: isCalm && tab == .group,
+                    haptics: haptics,
+                    shotEvent: shotEvent,
+                    windowKey: DailyWindow.key(for: now),
+                    topInset: top + Self.headerExtra,
+                    canCreate: canCreateGroup,
+                    onOpenRoom: openRoom,
+                    onOpenTile: openGroupTile,
+                    onCycleLocation: cycleLocation,
+                    onAdd: onAddGroup,
+                    userName: currentUser?.name ?? "",
+                    onCreateGroup: onCreateGroup,
+                    onJoinGroup: onJoinGroup,
+                    now: now,
+                    sharedGroups: sharedGroups,
+                    me: CloudKitManager.current?.currentUserRecordName,
+                    blocked: blocked,
+                    announced: announcedGroupPicks,
+                    litTileIDs: litTileIDs,
+                    onOpenAnnounced: openAnnouncedGroup,
+                    scrollToTopToken: groupTop,
+                    locked: locked,
+                    friendsState: state,
+                    friendsData: friendsData,
+                    friendsActions: friendsActions,
+                    onFriend: onFriend,
+                    onInviteFriend: onInviteFriend,
+                    onOpenMe: onOpenMe,
+                    onOpenToOpen: { setLightsPanel(!showsLightsPanel) }
+                )
+                .badge(groupBadge)
+            }
+        }
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .toolbarVisibility(calendarPath.isEmpty ? .visible : .hidden, for: .tabBar)
+    }
+
     /// 光のパネルをひらく(ひらくとき1回だけ軽い触覚)・とじる
     private func setLightsPanel(_ open: Bool) {
         guard open != showsLightsPanel else { return }
@@ -264,64 +333,9 @@ struct HomeV5Container: View {
             ZStack(alignment: .top) {
                 ChicColor.paper.ignoresSafeArea()
 
-                TabView(selection: tabBinding) {
-                    Tab("Mondo", systemImage: "globe.asia.australia.fill", value: HomeTab.mondo) {
-                        measured(
-                            HomeV5MondoPage(
-                                phase: loader.phase,
-                                dayKey: dayKey,
-                                isActive: isCalm && tab == .mondo,
-                                topInset: top + Self.headerExtra,
-                                onTick: {}, // v14:触覚は V5Globe の中で Haptics.tick(12°ごと・55ms)
-                                onSettings: { showsMondoSettings = true },
-                                onRetry: { Task { await loader.load(now: now, blocked: MondoService.blockedMondoIDs(blockedUsers), force: true) } },
-                                onOpenTag: openTagFeed,
-                                onOpenAll: openAll,
-                                announced: picks.world(day: dayKey),
-                                onOpenAnnounced: openAnnouncedWorld,
-                                scrollToTopToken: mondoTop,
-                                locked: locked
-                            ),
-                            safeBottom: proxy.safeAreaInsets.bottom
-                        )
-                    }
-
-                    Tab("グループ", systemImage: "person.2.fill", value: HomeTab.group) {
-                        measured(
-                            HomeV5GroupPage(
-                                sections: sections,
-                                isActive: isCalm && tab == .group,
-                                haptics: haptics,
-                                shotEvent: shotEvent,
-                                windowKey: DailyWindow.key(for: now),
-                                topInset: top + Self.headerExtra,
-                                canCreate: canCreateGroup,
-                                onOpenRoom: openRoom,
-                                onOpenTile: openGroupTile,
-                                onCycleLocation: cycleLocation,
-                                onAdd: onAddGroup,
-                                userName: currentUser?.name ?? "",
-                                onCreateGroup: onCreateGroup,
-                                onJoinGroup: onJoinGroup,
-                                announced: announcedGroupPicks,
-                                litTileIDs: litTileIDs,
-                                onOpenAnnounced: openAnnouncedGroup,
-                                scrollToTopToken: groupTop,
-                                locked: locked,
-                                friendsState: state,
-                                friendsData: friendsData,
-                                friendsActions: friendsActions,
-                                onFriend: onFriend,
-                                onInviteFriend: onInviteFriend,
-                                onOpenMe: onOpenProfile
-                            ),
-                            safeBottom: proxy.safeAreaInsets.bottom
-                        )
-                    }
-                    .badge(groupBadge)
-
-                }
-                .tint(ChicColor.ink)
+                // v54:iOS 26 純正の TabView(下のバーは 自動で Liquid Glass)。Mondo / Groups の 中身は
+                // どちらも タブとして 持ったまま なので、スクロール位置・読みこみ ずみのデータを 失わない。
+                pagesLayer(top: top, proxy: proxy)
 
                 V5HeaderScrim()
                     .opacity(calendarPath.isEmpty ? 1 : 0)
@@ -340,7 +354,8 @@ struct HomeV5Container: View {
                     onAvatar: { if showsLightsPanel { setLightsPanel(false) } else { onOpenProfile() } },
                     onConsumption: { setLightsPanel(!showsLightsPanel) },
                     avatarSwitch: avatarSwitch,
-                    clock: { now }
+                    clock: { now },
+                    namespace: lightsNS
                 )
                 .overlay(alignment: .topTrailing) { avatarPulse(top: top) }
                 // 日の詳細(1段 push)では、ナビゲーションバーと重ならないよう、ヘッダーを静かに消す
@@ -351,14 +366,17 @@ struct HomeV5Container: View {
                 if showsLightsPanel, calendarPath.isEmpty {
                     LightsPanel(
                         now: now,
-                        width: min(300, proxy.size.width - 44),
+                        width: min(330, proxy.size.width - 44),
+                        home: .yesterday,
+                        namespace: lightsNS,
+                        captureDates: todayCaptureDates,
                         onClose: { setLightsPanel(false) }
                     )
                     .padding(.top, LaterHeader.height + 6)
                     .padding(.leading, 20)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
                     .environment(\.colorScheme, .dark)
-                    .transition(LightsPanel.transition(anchor: .topLeading))
+                    .transition(.opacity)
                 }
 
                 if let flight {
@@ -888,3 +906,4 @@ private struct CalendarDayPage: View {
             }
     }
 }
+

@@ -68,6 +68,8 @@ enum HomeFirstDay {
 /// まんなか・まわりに 出せる こと
 enum HomeOrbAction: String, CaseIterable, Sendable {
     case join, shoot, chat, yesterday, develop, newGroup, mondo, friends
+    /// v61:四すみ固定の4つめ(右上)。裏側は 既存の グループ作成/CKShare招待を そのまま 使う(見た目だけ)。
+    case trip
 
     /// まわりの 小さい ラベル(英語のまま)
     var label: String {
@@ -80,6 +82,7 @@ enum HomeOrbAction: String, CaseIterable, Sendable {
         case .newGroup: "NEW GROUP"
         case .mondo: "MONDO"
         case .friends: "FRIENDS"
+        case .trip: "TRIP"
         }
     }
 
@@ -87,6 +90,7 @@ enum HomeOrbAction: String, CaseIterable, Sendable {
     var title: String {
         switch self {
         case .newGroup: "New group"
+        case .trip: "Trip"
         default: label.prefix(1) + label.dropFirst().lowercased()
         }
     }
@@ -101,22 +105,12 @@ enum HomeOrbAction: String, CaseIterable, Sendable {
         case .newGroup: "person.badge.plus"
         case .mondo: "globe"
         case .friends: "person.2"
+        case .trip: "bag.fill"
         }
     }
 
-    /// まわりの 丸の 色(見本の OCOL)
-    var tint: String {
-        switch self {
-        case .shoot: "FFD6C2"
-        case .yesterday: "CDE4FF"
-        case .chat: "FFC9DF"
-        case .newGroup: "CFF3E5"
-        case .mondo: "E3D4FF"
-        case .friends: "FFF0B8"
-        case .develop: "FFE2C4"
-        case .join: "FFB27A"
-        }
-    }
+    /// まわりの 丸の 色(v42:ぜんぶ クリーム。いま おすすめの 1つだけ 緑 ― satellite(_:index:) で 先頭だけ 上書き)
+    var tint: String { "F5F0E8" }
 }
 
 enum HomeOrbRules {
@@ -145,14 +139,10 @@ enum HomeOrbRules {
     }
 
     /// まわり:撮る → 現像 → きのう → チャット → New group → Mondo → Friends(まんなか 以外の 先頭 4つ)
+    /// v61 §8:四すみは 状況で 入れかえない。固定 4つ(左上 Yesterday・右上 Trip・左下 Mondo・右下 Friends)。
+    /// Chat は Friends の 中から、グループを つくる 入口は Trip の「New trip」に 一本化(四すみからは 消す)。
     static func satellites(_ input: Input, center: HomeOrbAction) -> [HomeOrbAction] {
-        var list: [HomeOrbAction] = []
-        if input.remaining > 0 { list.append(.shoot) }
-        if input.used > 0 { list.append(.develop) }
-        list.append(.yesterday)
-        if input.hasGroups { list.append(.chat) }
-        list += [.newGroup, .mondo, .friends]
-        return Array(list.filter { $0 != center }.prefix(4))
+        [.yesterday, .trip, .mondo, .friends]
     }
 
     static func plan(_ input: Input) -> Plan {
@@ -166,11 +156,13 @@ enum HomeOrbRules {
         used == 0 && (action == .yesterday || action == .mondo)
     }
 
-    /// 右上の 橙の 点(新しい メッセージ・グループが 0 の New group)
+    /// v61 §8:右上の 赤い 点(Friends に 申請が とどいて いる とき)。
+    /// 注:まだ 専用の「申請 件数」が この Input に 無いので、既存の hasUnread を 近似として 流用している。
     static func hasDot(_ action: HomeOrbAction, input: Input) -> Bool {
         switch action {
         case .chat: input.hasUnread
         case .newGroup: !input.hasGroups
+        case .friends: input.hasUnread
         default: false
         }
     }
@@ -206,13 +198,21 @@ enum HomeOrbRules {
     /// 3本の フィルムの 弧:のこり = 橙(i >= used)
     static func arcIsRemaining(_ index: Int, used: Int) -> Bool { index >= min(3, max(0, used)) }
 
-    /// まわりの 位置(中心から。左上・右上・左下・右下)
-    static let satelliteOffsets: [CGSize] = [CGSize(width: -135, height: -74), CGSize(width: 135, height: -74),
-                                             CGSize(width: -135, height: 74), CGSize(width: 135, height: 74)]
+    /// まわりの 位置(中心から。左上・右上・左下・右下)。
+    /// v61 §15:端に 寄せる ものは「端からの 距離」で 決める(横は 幅に 応じて 動く)。縦(y)は 見本 A01/A02 に あわせた 固定値。
+    /// 既定の `width` 引数(390)は テスト・古い呼び出しの ための 後方互換。実機では 実際の 幅を 渡す。
+    static func satelliteOffsets(width w: CGFloat = width) -> [CGSize] {
+        let half = w / 2 - 62
+        return [CGSize(width: -half, height: -232), CGSize(width: half, height: -232),
+                CGSize(width: -half, height: 218), CGSize(width: half, height: 218)]
+    }
+
+    static let width: CGFloat = 390
 
     /// まわりの 1つが しめる 場所(丸 50 + 影 + 下の 字。浮き沈み 4pt ぶん 広め)。文字の輪は ここでは 消える
-    static func satelliteHole(_ action: HomeOrbAction, index i: Int) -> CGRect {
-        let o = satelliteOffsets[min(max(i, 0), satelliteOffsets.count - 1)]
+    static func satelliteHole(_ action: HomeOrbAction, index i: Int, width w: CGFloat = width) -> CGRect {
+        let offsets = satelliteOffsets(width: w)
+        let o = offsets[min(max(i, 0), offsets.count - 1)]
         let labelWidth = CGFloat(action.label.count) * (8 * 0.6 + 8 * 0.14) + 10
         let half = max(29, labelWidth / 2 + 2)
         // ボタンの 中心 = o.y + 4.5、丸の 上 = 中心 - 34.5、字の 下 = 中心 + 34.5
@@ -235,6 +235,18 @@ struct HomeGlassOrb: View {
     let onCenter: (HomeOrbAction) -> Void
     let onSatellite: (HomeOrbAction) -> Void
     var onLocked: () -> Void = {}
+    /// v61:Trip ページの 中身(既存の グループ)。裏側は いまの CloudKit グループ作成/CKShare招待を そのまま 使う。
+    var groupSummaries: [GroupSummary] = []
+    var canCreateGroup = true
+    var onCreateGroup: () -> Void = {}
+    var onJoinGroup: () -> Void = {}
+    var onSelectGroup: (UUID) -> Void = { _ in }
+    /// v61:「じぶんの きのう」を ひらく(既存の YesterdayViewer(scope: .mine))。Mondo(= 世界の きのう)とは 別の 行き先。
+    var onOpenYesterday: () -> Void = {}
+    /// v35:主役(HomeOrbHero)の 中で 使う ときは、まわりの 丸を 少し 小さく(1.42倍の 中で 画面から はみ出しすぎない ように)
+    var compactSatellites = false
+    /// v35:四すみの ステッカーは HomeOrbHero が 持つので、ここでは 出さない
+    var showsStickers = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.palette) private var palette
@@ -245,51 +257,73 @@ struct HomeGlassOrb: View {
     @State private var swap = 0
     @State private var satPressed: HomeOrbAction?
     @State private var satBounce: [HomeOrbAction: Int] = [:]
+    /// v61 §9:0 Camera / 1 Friends / 2 Trip / 3 Mondo / 4 Yesterday
+    @State private var pageIndex = 0
 
-    static let height: CGFloat = 300
+    /// v54:写ルンですの 本体(見本 A01 / A02)。幅 390・高さ 560。
+    static let height: CGFloat = 560
+    static let width: CGFloat = 390
 
     private var plan: HomeOrbRules.Plan { HomeOrbRules.plan(input) }
     private var running: Bool { isActive && !reduceMotion && !lowPower }
     private var intro: Bool { !reduceMotion && introStart.map { Date().timeIntervalSince($0) < 1.6 } ?? false }
+    /// はじめての 合図(ChicHomeView から)
+    var hintEligible = false
 
     var body: some View {
+        // v61 §15:実機の 幅(375 / 390 / 402 …)を 測って、端に 寄せる ものを そこから 計算する。
+        // 中まんなかの もの(レンズ・リング)は 固定サイズの まま(w に よらない)。
+        GeometryReader { geo in
+            let w = geo.size.width
+            TabView(selection: $pageIndex) {
+                cameraPage(width: w).tag(0)
+                secondaryPage(.friends, index: 1, width: w) { onSatellite(.friends) }
+                    .tag(1)
+                tripPage(width: w).tag(2)
+                secondaryPage(.mondo, index: 3, width: w) { onSatellite(.mondo) }
+                    .tag(3)
+                secondaryPage(.yesterday, index: 4, width: w) { onOpenYesterday() }
+                    .tag(4)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(width: w, height: Self.height)
+            .onChange(of: pageIndex) { _, _ in Haptics.play(.sel) }
+            // v61 §9:端(0・4)を こえて ひっぱると ゴム。ネイティブ TabView には ゴムの 物理が 無いので、
+            // 代わりに 端で 大きく 引いた ドラッグを 横取りせず 観測して soft だけ 鳴らす(簡易版。実機で 要確認)。
+            .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in
+                guard abs(value.translation.width) > abs(value.translation.height) * 1.2 else { return }
+                if (pageIndex == 0 && value.translation.width > 40) || (pageIndex == 4 && value.translation.width < -40) {
+                    Haptics.play(.soft)
+                }
+            })
+            .overlay(alignment: .bottom) { pageDock.padding(.bottom, 8) }
+            .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+                lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            }
+            .frame(width: w)
+        }
+        .frame(height: Self.height)
+    }
+
+    // MARK: ページ 0・カメラの カード(いままでの 中身。四すみの ボタンは ここだけに ある)
+
+    private func cameraPage(width w: CGFloat) -> some View {
         let plan = plan
-        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !running && !intro)) { context in
+        return TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !running && !intro)) { context in
             let t = running ? context.date.timeIntervalSinceReferenceDate : 0
             let reveal = Self.reveal(now: context.date, start: reduceMotion ? nil : introStart)
             ZStack {
-                // うしろの ふんわり光(桃〜藤)
-                Circle()
-                    .fill(RadialGradient(stops: [
-                        .init(color: Color(red: 1, green: 0.78, blue: 0.67).opacity(0.38), location: 0),
-                        .init(color: Color(red: 0.86, green: 0.78, blue: 1).opacity(0.26), location: 0.45),
-                        .init(color: .clear, location: 0.7),
-                    ], center: .center, startRadius: 0, endRadius: 150))
-                    .frame(width: 300, height: 300)
-                    .allowsHitTesting(false)
-                // 6.4秒ごとの 波紋(2つ)
-                ForEach(0..<2, id: \.self) { i in
-                    let p = ((t + Double(i) * 3.2).truncatingRemainder(dividingBy: 6.4)) / 6.4
-                    Circle().stroke(Color(red: 1, green: 0.59, blue: 0.43).opacity(0.35), lineWidth: 1.2)
-                        .frame(width: 192, height: 192)
-                        .scaleEffect(1 + 0.42 * p)
-                        .opacity(running ? 0.9 * (1 - p) : 0)
-                        .allowsHitTesting(false)
-                }
-                // 外の文字の輪(200秒で一周)
-                // まわりの 4つの 下では 字を 消す(SE 幅で かさならない ように)
-                HomeRingText(text: HomeOrbRules.ringText(now: Date()), radius: 128,
+                cameraBody
+                stripStripe
+                aura(t: t)
+                // 外の文字の輪(200秒で一周)。まわりの 4つの ところだけ 字を 消す
+                HomeRingText(text: HomeOrbRules.ringText(now: Date()), radius: 172,
                              rotation: (t.truncatingRemainder(dividingBy: 200) / 200) * 2 * .pi,
-                             holes: plan.satellites.enumerated().map { HomeOrbRules.satelliteHole($0.element, index: $0.offset) })
-                    .opacity(reveal)
-                // ガラスの球(ドットは うすい 光の粒)
-                globe(t: t, reveal: reveal)
-                // 3本の フィルムの 弧(のこり = 橙)
-                HomeOrbFilmArcs(used: input.used)
-                    .frame(width: 226, height: 226)
-                    .opacity(reveal)
-                // まんなかの ボタン
-                centerButton(plan: plan, t: t, reveal: reveal)
+                             holes: plan.satellites.enumerated().map { HomeOrbRules.satelliteHole($0.element, index: $0.offset, width: w) })
+                    .opacity(reveal * 0.72)
+                ripples(t: t)
+                filmArcsAndDisc(plan: plan, t: t)
+                lens(plan: plan, t: t, reveal: reveal)
                 // シャッターの 白い光
                 Circle()
                     .fill(RadialGradient(stops: [.init(color: .white, location: 0.3), .init(color: .white.opacity(0), location: 0.7)], center: .center, startRadius: 0, endRadius: 92))
@@ -303,34 +337,34 @@ struct HomeGlassOrb: View {
                         KeyframeTrack(\.scale) { LinearKeyframe(0.6, duration: 0.001); LinearKeyframe(1.6, duration: 0.42) }
                     }
                     .allowsHitTesting(false)
-                // 黒い ピル(橙の 点 + TAP / OPEN / JOIN)
-                pill(plan: plan, t: t)
-                    .offset(y: 92 + 14)
-                    .opacity(reveal)
-                    .allowsHitTesting(false)
                 // ステッカー(星・波線・花・点)
-                stickers(t: t, reveal: reveal)
-                // まわりの 4つ
+                if showsStickers { stickers(t: t, reveal: reveal) }
+                // 四すみの ボタン(押すと その ページへ スライド。ロック中は スライドしない)
                 ForEach(Array(plan.satellites.enumerated()), id: \.element) { i, action in
                     satellite(action, index: i, t: t)
-                        .offset(HomeOrbRules.satelliteOffsets[i])
+                        .offset(HomeOrbRules.satelliteOffsets(width: w)[i])
                         .opacity(reveal)
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
                 }
+                // 下の「TODAY ↓」
+                Text(verbatim: "TODAY ↓")
+                    .font(LF.mono(9.5, bold: true)).tracking(2.85)
+                    .foregroundStyle(Color(hex: "8A8A84"))
+                    .opacity(reveal)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 10)
+                    .allowsHitTesting(false)
             }
-            .frame(height: Self.height)
-        }
-        .animation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.72), value: plan)
-        .onChange(of: plan) { _, _ in
-            if !reduceMotion { swap += 1 }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
-            lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            .frame(width: w, height: Self.height)
+            .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
+            .animation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.72), value: plan)
+            .onChange(of: plan) { _, _ in
+                if !reduceMotion { swap += 1 }
+            }
         }
     }
 
     private struct FlashFrame { var opacity = 0.0; var scale = 1.0 }
-    private struct BladeFrame { var angle = 0.0; var scale = 1.0 }
 
     static func reveal(now: Date, start: Date?) -> Double {
         guard let start else { return 1 }
@@ -338,84 +372,197 @@ struct HomeGlassOrb: View {
         return 1 - pow(1 - k, 3)
     }
 
-    private func globe(t: Double, reveal: Double) -> some View {
-        ZStack {
-            Circle().fill(RadialGradient(stops: [
-                .init(color: .white, location: 0), .init(color: Color(hex: "FBFBFD"), location: 0.3),
-                .init(color: Color(hex: "F1F1F5"), location: 0.72), .init(color: Color(hex: "E7E7EE"), location: 1),
-            ], center: UnitPoint(x: 0.32, y: 0.24), startRadius: 0, endRadius: 120))
-            HomeOrbDots(used: input.used, t: t, reveal: reveal)
-                .saturation(1.3)
-                .opacity(0.32)
-            // 左上の つや
-            Ellipse().fill(LinearGradient(colors: [.white.opacity(0.95), .white.opacity(0)], startPoint: .top, endPoint: .bottom))
-                .frame(width: 184 * 0.44, height: 184 * 0.16)
-                .rotationEffect(.degrees(-16))
-                .offset(x: -184 * 0.08, y: -184 * 0.34)
+    // MARK: 本体(v61 §3:黒 / フジの緑の帯 / 黒。境目は はっきり)
+
+    private var cameraBody: some View {
+        GeometryReader { geo in
+            LinearGradient(stops: [
+                .init(color: Color(hex: "1B1B1B"), location: 0),
+                .init(color: Color(hex: "101010"), location: 0.22),
+                .init(color: Color(hex: "24A03C"), location: 0.22),
+                .init(color: Color(hex: "28A842"), location: 0.5),
+                .init(color: Color(hex: "1F9236"), location: 0.78),
+                .init(color: Color(hex: "101010"), location: 0.78),
+                .init(color: Color(hex: "0B0B0B"), location: 1),
+            ], startPoint: .top, endPoint: .bottom)
+            .frame(width: geo.size.width, height: geo.size.height)
         }
-        .frame(width: 184, height: 184)
-        .overlay {
-            // 虹色のふち(2pt・24秒で ゆっくり回る)
-            Circle()
-                .strokeBorder(AngularGradient(colors: [Color(hex: "FFB38A"), Color(hex: "F7A8D8"), Color(hex: "B9A4FF"), Color(hex: "8EC5FF"), Color(hex: "9EE6D0"), Color(hex: "FFE08A"), Color(hex: "FFB38A")], center: .center), lineWidth: 2)
-                .rotationEffect(.degrees((t.truncatingRemainder(dividingBy: 24) / 24) * 360))
+        .overlay(alignment: .top) {
+            VStack(spacing: 2) {
+                Text(verbatim: "Lattag")
+                    .font(LF.inter(900, 20)).italic().tracking(-0.4)
+                    .foregroundStyle(.white)
+                Text(verbatim: "FILM FOR TOMORROW")
+                    .font(LF.mono(7.5, bold: true)).tracking(1.5)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .padding(.top, 20)
         }
-        .shadow(color: Color(red: 0.47, green: 0.35, blue: 0.63).opacity(0.35), radius: 20, y: 18)
-        .scaleEffect(0.7 + 0.3 * min(1, reveal * 1.4))
+    }
+
+    /// v61 §4 StrapStripe:写ルンですの ストラップ(白 / 赤 / 白 / ベージュ)。緑の帯の 範囲に のる。
+    private var stripStripe: some View {
+        GeometryReader { geo in
+            let h = geo.size.height
+            let greenTop = h * 0.22, greenH = h * 0.56
+            VStack(spacing: 0) {
+                Color.white.frame(height: greenH * 0.40)
+                LaterColor.red.frame(height: greenH * 0.22)
+                Color.white.frame(height: greenH * 0.08)
+                LaterColor.gold.frame(height: greenH * 0.30)
+            }
+            .frame(width: 14, height: greenH)
+            // v61 §15:端に 寄せる ものは「端からの 距離」(幅に よらず 左端から 53pt)。幅で のばさない。
+            .position(x: 53, y: greenTop + greenH / 2)
+        }
         .allowsHitTesting(false)
     }
 
-    // MARK: まんなか
+    // MARK: v61 §7:白いリングと光(レンズのまわり)
 
-    private func centerButton(plan: HomeOrbRules.Plan, t: Double, reveal: Double) -> some View {
+    /// 息を する 緑の 光 ×2
+    private func aura(t: Double) -> some View {
+        let b1 = running ? sin(t * 2 * .pi / 6) : 0
+        let b2 = running ? sin(-(t * 2 * .pi / 22) + 0.857) : 0
+        return ZStack {
+            Circle()
+                .fill(RadialGradient(stops: [
+                    .init(color: Color(hex: "25AC40").opacity(0.55), location: 0),
+                    .init(color: Color(hex: "70E086").opacity(0.25), location: 0.45),
+                    .init(color: .clear, location: 0.7),
+                ], center: .center, startRadius: 0, endRadius: 260))
+                .frame(width: 520, height: 520)
+                .blur(radius: 40)
+                .scaleEffect(1 + 0.04 * (1 + b1))
+                .opacity(0.7 + 0.3 * (running ? cos(t * 2 * .pi / 6) : 1))
+            Circle()
+                .fill(RadialGradient(stops: [
+                    .init(color: Color(hex: "C3F1CC").opacity(0.9), location: 0),
+                    .init(color: .clear, location: 0.65),
+                ], center: .center, startRadius: 0, endRadius: 170))
+                .frame(width: 340, height: 340)
+                .blur(radius: 50)
+                .scaleEffect(1 + 0.032 * (1 + b2))
+            Circle()
+                .fill(RadialGradient(stops: [
+                    .init(color: Color(hex: "61DD7A").opacity(0.32), location: 0),
+                    .init(color: Color(hex: "96E8A7").opacity(0.18), location: 0.45),
+                    .init(color: .clear, location: 0.7),
+                ], center: .center, startRadius: 0, endRadius: 213))
+                .frame(width: 426, height: 426)
+                .opacity(0.9)
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// 波紋 ×2(272 → 386、6.4秒。2本目は 3.2秒 遅れ)
+    private func ripples(t: Double) -> some View {
+        ZStack {
+            ripple(t: t, delay: 0)
+            ripple(t: t, delay: 3.2)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func ripple(t: Double, delay: Double) -> some View {
+        let period = 6.4
+        let phase = running ? ((t + delay).truncatingRemainder(dividingBy: period)) / period : 0
+        let scale = 272.0 / 272.0 + (386.0 / 272.0 - 1) * phase
+        let opacity = running ? 0.9 * (1 - phase) : 0
+        return Circle()
+            .strokeBorder(Color(hex: "24A03C").opacity(0.28), lineWidth: 1)
+            .frame(width: 272, height: 272)
+            .scaleEffect(scale)
+            .opacity(opacity)
+    }
+
+    /// 白い 弧 ×3(今日の のこり フィルム)+ クリーム色の 円盤
+    private func filmArcsAndDisc(plan: HomeOrbRules.Plan, t: Double) -> some View {
+        ZStack {
+            Circle()
+                .fill(RadialGradient(stops: [
+                    .init(color: .white, location: 0),
+                    .init(color: Color(hex: "CCE8D1").opacity(0.35), location: 0.6),
+                    .init(color: Color(hex: "EFE7DA"), location: 1),
+                ], center: .topLeading, startRadius: 0, endRadius: 185))
+                .frame(width: 261, height: 261)
+                .shadow(color: Color(hex: "5A3214").opacity(0.45), radius: 44, y: 20)
+            Circle()
+                .strokeBorder(
+                    AngularGradient(
+                        stops: (0...8).map { i in
+                            .init(color: i % 2 == 0 ? Color(hex: "121212") : LaterColor.film, location: Double(i) / 8)
+                        },
+                        center: .center
+                    ),
+                    lineWidth: 2
+                )
+                .frame(width: 261, height: 261)
+                .rotationEffect(.degrees(running ? (t.truncatingRemainder(dividingBy: 40) / 40) * 360 : 0))
+                .drawingGroup()
+            ForEach(0..<3, id: \.self) { i in
+                let remaining = HomeOrbRules.arcIsRemaining(i, used: input.used)
+                Circle()
+                    .trim(from: CGFloat(i) * 0.333 + 0.012, to: CGFloat(i) * 0.333 + 0.333 - 0.012)
+                    .stroke(remaining ? Color.white : Color(hex: "DCD2C4"),
+                            style: StrokeStyle(lineWidth: 2.7, lineCap: .round))
+                    .frame(width: 320, height: 320)
+                    .rotationEffect(.degrees(-90))
+                    .shadow(color: remaining ? .white.opacity(0.6) : .clear, radius: 3)
+                    .animation(.easeInOut(duration: 0.4), value: remaining)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    // MARK: レンズ(まんなか)
+
+    private func lens(plan: HomeOrbRules.Plan, t: Double, reveal: Double) -> some View {
         let c = plan.center
         let photoMode = c == .yesterday && !plan.done && (yesterdayPhoto != nil || yesterdayImage != nil)
-        let warm = c == .join || c == .chat
         return Button {
             tapCenter(plan.center)
         } label: {
             ZStack {
-                Circle().fill(RadialGradient(stops: warm ? [
-                    .init(color: .white, location: 0), .init(color: Color(hex: "FFE9DC"), location: 0.5), .init(color: Color(hex: "FFC9DF"), location: 1),
-                ] : [
-                    .init(color: .white, location: 0), .init(color: Color(hex: "FAF7F3"), location: 0.45), .init(color: Color(hex: "EFE9F3"), location: 1),
-                ], center: UnitPoint(x: 0.34, y: 0.26), startRadius: 0, endRadius: 110))
-                // 6まいの 絞りの 羽(40秒で 一周)
-                HomeApertureBlades()
-                    .frame(width: 104, height: 104)
-                    .rotationEffect(.degrees((t.truncatingRemainder(dividingBy: 40) / 40) * 360 + (pressed ? 30 : 0)))
-                    .scaleEffect(pressed ? 0.82 : 1)
-                    .keyframeAnimator(initialValue: BladeFrame(), trigger: shutter) { content, f in
-                        content.rotationEffect(.degrees(f.angle)).scaleEffect(f.scale)
-                    } keyframes: { _ in
-                        KeyframeTrack(\.angle) { CubicKeyframe(90, duration: 0.19); CubicKeyframe(120, duration: 0.23); LinearKeyframe(0, duration: 0.001) }
-                        KeyframeTrack(\.scale) { CubicKeyframe(0.6, duration: 0.19); CubicKeyframe(1, duration: 0.23) }
+                // 絞りの ふち(刻み・LATER · 28mm … の 文字)
+                Circle().fill(Color(hex: "121212"))
+                    .overlay(ApertureTicks().stroke(.white.opacity(0.14), lineWidth: 1))
+                    .overlay {
+                        HomeRingText(text: "LATER · 28mm 1:1.4 · ∞ 10 5 3 2 1.5 1 0.7m · ", radius: 70,
+                                     textColor: Color(hex: "6E6E73"), fontSize: 8.4)
                     }
-                    .opacity(photoMode ? 0 : warm ? 0.35 : 0.95)
-                if photoMode {
-                    photo
-                        .overlay(RadialGradient(stops: [.init(color: .black.opacity(0.42), location: 0), .init(color: .black.opacity(0.12), location: 0.7)], center: .center, startRadius: 0, endRadius: 66))
-                        .clipShape(Circle())
-                        .transition(.opacity)
-                }
-                // 左上の つや
-                if !photoMode {
-                    Ellipse().fill(LinearGradient(colors: [.white.opacity(0.95), .white.opacity(0)], startPoint: .top, endPoint: .bottom))
-                        .frame(width: 66, height: 24)
-                        .rotationEffect(.degrees(-16))
-                        .offset(x: -4, y: -42)
-                }
+                // ガラスの 玉(暗い・左上の つや)
+                Circle().fill(RadialGradient(stops: [
+                    .init(color: Color(hex: "050506"), location: 0), .init(color: Color(hex: "1B1B1D"), location: 0.72),
+                    .init(color: Color(hex: "0A0A0B"), location: 1),
+                ], center: .center, startRadius: 0, endRadius: 70))
+                    .frame(width: 139, height: 139)
+                Circle().fill(RadialGradient(stops: [.init(color: Color(hex: "0D1016"), location: 0), .init(color: Color(hex: "020203"), location: 0.72)], center: .center, startRadius: 0, endRadius: 56))
+                    .frame(width: 112, height: 112)
+                    .overlay {
+                        if photoMode { photo.clipShape(Circle()) }
+                    }
+                Ellipse().fill(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 42, height: 32)
+                    .rotationEffect(.degrees(-24))
+                    .offset(x: -18, y: -29)
+                    .blur(radius: 1)
+                    .allowsHitTesting(false)
+                apertureBlades
                 centerText(plan: plan, photoMode: photoMode)
+                // のこりこまの 黒い 札
+                if !plan.done, case .shoot = c {
+                    filmBadge
+                } else if !plan.done {
+                    filmBadge
+                }
             }
-            .frame(width: 132, height: 132)
-            .saturation(plan.done ? 0.4 : 1)
-            .opacity(plan.done ? 0.82 : 1)
-            .background(Circle().fill(.white.opacity(0.7)).padding(-6))
-            .shadow(color: Color(red: 0.59, green: 0.35, blue: 0.55).opacity(0.45), radius: 15, y: 14)
-            .scaleEffect(pressed ? 0.9 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.55), value: pressed)
+            .frame(width: 193, height: 193)
+            .saturation(plan.done ? 0.5 : 1)
+            .scaleEffect(pressed ? 0.965 : 1)
+            .animation(.timingCurve(0.3, 1.3, 0.4, 1, duration: 0.45), value: pressed)
             .keyframeAnimator(initialValue: 1.0, trigger: bounce &+ swap) { content, s in content.scaleEffect(s) } keyframes: { _ in
-                CubicKeyframe(1.08, duration: 0.14); CubicKeyframe(1, duration: 0.18)
+                CubicKeyframe(1.05, duration: 0.14); CubicKeyframe(1, duration: 0.18)
             }
             .contentShape(Circle())
         }
@@ -428,46 +575,85 @@ struct HomeGlassOrb: View {
         .firstHint(.orb, eligible: hintEligible, edge: .bottom, shape: .circle, onDark: palette.isNight, gap: 58)
     }
 
-    /// はじめての 合図(ChicHomeView から)
-    var hintEligible = false
+    /// レンズ 右上の 黒い 札(のこりこま の 数字)
+    private var filmBadge: some View {
+        Text(verbatim: "\(input.remaining)")
+            .font(LF.mono(16, bold: true))
+            .foregroundStyle(.white)
+            .frame(width: 24, height: 19)
+            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color(hex: "0A0A0B")))
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(.white, lineWidth: 1.5))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .padding(.top, 15).padding(.trailing, -1)
+    }
 
     @ViewBuilder
     private var photo: some View {
         if let yesterdayImage {
-            Image(uiImage: yesterdayImage).resizable().scaledToFill().frame(width: 132, height: 132)
+            Image(uiImage: yesterdayImage).resizable().scaledToFill().frame(width: 112, height: 112)
         } else if let yesterdayPhoto {
-            DarkThumb(photo: yesterdayPhoto, maxPixel: 400).frame(width: 132, height: 132)
+            DarkThumb(photo: yesterdayPhoto, maxPixel: 400).frame(width: 112, height: 112)
         }
     }
 
+    /// v61 §6:絞り羽根 ×6(112pt)。ふだんは 開いた まま。押すと 回って しまる。
+    private var apertureBlades: some View {
+        ZStack {
+            ForEach(0..<6, id: \.self) { i in
+                ApertureBlade()
+                    .fill(Color(hex: "151517"))
+                    .rotationEffect(.degrees(Double(i) * 60))
+            }
+        }
+        .frame(width: 112, height: 112)
+        .opacity(0.5)
+        .clipShape(Circle())
+        .rotationEffect(.degrees(pressed ? 26 : 0))
+        .scaleEffect(pressed ? 0.82 : 1)
+        .animation(.timingCurve(0.3, 1.3, 0.4, 1, duration: 0.45), value: pressed)
+        .keyframeAnimator(initialValue: BladeFrame(), trigger: shutter) { content, f in
+            content.rotationEffect(.degrees(f.rotation)).scaleEffect(f.scale)
+        } keyframes: { _ in
+            KeyframeTrack(\.rotation) {
+                CubicKeyframe(40, duration: 0.152)
+                CubicKeyframe(0, duration: 0.228)
+            }
+            KeyframeTrack(\.scale) {
+                CubicKeyframe(0.55, duration: 0.152)
+                CubicKeyframe(1, duration: 0.228)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private struct BladeFrame { var rotation = 0.0; var scale = 1.0 }
+
     private func centerText(plan: HomeOrbRules.Plan, photoMode: Bool) -> some View {
         let c = plan.center
-        let ink = photoMode ? Color.white : Color(hex: "111111")
         let title = plan.done ? String(localized: "home.orb.tomorrow") : c.title
-        let font: Font = plan.done ? Darkroom.title(title, size: 24) : .custom("InstrumentSerif-Regular", size: photoMode ? 26 : 34)
-        return VStack(spacing: 2) {
-            Image(systemName: c.symbol)
-                .font(.system(size: 19, weight: .semibold))
-                .frame(width: 22, height: 22)
-                .padding(.bottom, 2)
+        let font: Font = plan.done ? LF.inter(900, 22) : LF.serif(photoMode ? 32 : 46)
+        return VStack(spacing: 4) {
+            if !photoMode {
+                Image(systemName: c.symbol)
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.85))
+            }
             Text(verbatim: title)
                 .font(font)
-                .tracking(-0.015 * 34)
+                .tracking(-0.015 * 46)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-                .shadow(color: photoMode ? .black.opacity(0.4) : .white, radius: photoMode ? 5 : 7, y: photoMode ? 2 : 0)
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.5), radius: photoMode ? 5 : 2, y: 2)
             Text(verbatim: HomeOrbRules.sub(c, input: input, name: centerName, done: plan.done))
-                .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                .tracking(0.24 * 8.5)
-                .foregroundStyle(photoMode ? Color(hex: "FFB27A") : Color(hex: "FF6A1A"))
-                .shadow(color: photoMode ? .clear : .white, radius: 4)
+                .font(LF.mono(10.5, bold: true))
+                .tracking(0.24 * 10.5)
+                .foregroundStyle(photoMode ? LaterColor.filmPale : .white)
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .frame(maxWidth: 110)
-                .padding(.top, 4)
+                .frame(maxWidth: 100)
         }
-        .foregroundStyle(ink)
-        .frame(width: 120)
+        .frame(width: 110)
     }
 
     private func tapCenter(_ action: HomeOrbAction) {
@@ -484,94 +670,356 @@ struct HomeGlassOrb: View {
         }
     }
 
-    private func pill(plan: HomeOrbRules.Plan, t: Double) -> some View {
-        let p = running ? (t.truncatingRemainder(dividingBy: 1.6)) / 1.6 : 1
-        return HStack(spacing: 6) {
-            Circle().fill(Color(hex: "FF6A1A")).frame(width: 6, height: 6)
-                .background(Circle().fill(Color(hex: "FF6A1A").opacity(0.7 * (1 - p))).frame(width: 6 + 18 * p, height: 6 + 18 * p))
-            Text(verbatim: HomeOrbRules.pill(plan.center))
-                .font(.system(size: 10.5, weight: .heavy, design: .monospaced))
-                .tracking(0.16 * 10.5)
-                .foregroundStyle(.white)
-        }
-        .padding(.horizontal, 12)
-        .frame(height: 28)
-        .background(Capsule().fill(Color(hex: "111111")))
-        .shadow(color: .black.opacity(0.4), radius: 7, y: 6)
-    }
+    // MARK: 四すみの ボタン(丸 65〜70pt・黒い縁・下に ラベル札)
 
-    // MARK: まわり
-
+    /// v61 §8:白い丸 直径62pt・黒ふち2.4pt・アイコン26pt。タップ域は+12ptずつ(86pt)。ラベルは丸の8pt下。
     private func satellite(_ action: HomeOrbAction, index i: Int, t: Double) -> some View {
         let locked = HomeOrbRules.isLocked(action, used: input.used)
         let dot = HomeOrbRules.hasDot(action, input: input)
-        let line = locked ? Color(hex: "9C99A6") : Color(hex: "111111")
         let down = satPressed == action
-        let float = running ? -4 * (1 - cos(2 * .pi * (t + 1.2 * Double(i)) / 5)) / 2 : 0
+        let scale: CGFloat = compactSatellites ? 56.0 / 62.0 : 1
+        let size: CGFloat = 62 * scale, hitSize: CGFloat = 86 * scale, iconSize: CGFloat = 26 * scale
+        let fill: Color = locked ? Color(hex: "3A3A3C") : .white
+        let iconColor: Color = locked ? Color(hex: "8E8E93") : Color(hex: "121212")
         return Button {
             if locked {
-                LayerHaptics.softDouble()
+                // v61 §8:ロック中は スライドしない。やわらかく 2回(warn)+ ゆれる + トースト。
+                Haptics.play(.warn)
                 onLocked()
                 return
             }
-            Haptics.play(.pop)
-            if reduceMotion { onSatellite(action); return }
+            if reduceMotion { pageIndex = Self.page(for: action); return }
             satBounce[action, default: 0] += 1
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { onSatellite(action) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { pageIndex = Self.page(for: action) }
         } label: {
-            VStack(spacing: 5) {
+            VStack(spacing: 8 * scale) {
                 ZStack {
-                    Circle().fill(line).offset(y: down ? 1 : 3)
-                    Circle().fill(locked ? Color(hex: "EEECF2") : Color(hex: action.tint))
-                        .overlay(Circle().strokeBorder(line, lineWidth: 2.2))
+                    Circle().fill(fill)
+                        .overlay(Circle().strokeBorder(Color(hex: "121212"), lineWidth: 2.4))
                         .overlay {
                             Image(systemName: action.symbol)
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(line)
+                                .font(.system(size: iconSize, weight: .semibold))
+                                .foregroundStyle(iconColor)
                         }
-                        .overlay(alignment: .topTrailing) {
-                            if dot {
-                                Circle().fill(Color(hex: "FF6A1A")).frame(width: 13, height: 13)
-                                    .overlay(Circle().strokeBorder(.white, lineWidth: 2.2))
-                                    .offset(x: 2, y: -2)
-                            }
+                        .frame(width: size, height: size)
+                        .shadow(color: .black, radius: 0, y: down ? 0.5 : 4)
+                        .shadow(color: locked ? .clear : .black.opacity(0.6), radius: down ? 9 : 18, x: 0, y: down ? 5 : 10)
+                        .offset(y: down ? 3.5 : 0)
+                        .keyframeAnimator(initialValue: 1.0, trigger: satBounce[action, default: 0]) { content, s in content.scaleEffect(s) } keyframes: { _ in
+                            CubicKeyframe(0.84, duration: 0.19); CubicKeyframe(1.1, duration: 0.19); CubicKeyframe(1, duration: 0)
                         }
-                        .offset(y: down ? 2 : 0)
+                    if locked {
+                        // v61 §8:ロック中は 右下に 小さい 鍵(約22pt)
+                        Circle().fill(Color(hex: "111111")).frame(width: 22 * scale, height: 22 * scale)
+                            .overlay(Image(systemName: "lock.fill").font(.system(size: 10 * scale, weight: .semibold)).foregroundStyle(.white))
+                            .offset(x: size * 0.36, y: size * 0.36)
+                    }
+                    if dot {
+                        Circle().fill(LaterColor.red).frame(width: 15 * scale, height: 15 * scale)
+                            .overlay(Circle().strokeBorder(.white, lineWidth: 2.4))
+                            .overlay { notifyRing(t: t) }
+                            .offset(x: size * 0.38, y: -size * 0.38)
+                    }
                 }
-                .frame(width: 50, height: 50)
-                .rotationEffect(.degrees((Double(i) - 1.5) * 5))
-                .keyframeAnimator(initialValue: 1.0, trigger: satBounce[action, default: 0]) { content, s in content.scaleEffect(s) } keyframes: { _ in
-                    CubicKeyframe(0.82, duration: 0.1); CubicKeyframe(1.08, duration: 0.14); CubicKeyframe(1, duration: 0.14)
-                }
+                .frame(width: hitSize, height: hitSize)
+                .contentShape(Circle())
                 Text(verbatim: action.label)
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                    .tracking(0.14 * 8)
-                    .foregroundStyle(locked ? Color(hex: "9C99A6") : Color(hex: "111111"))
+                    .font(LF.mono(7.5 * scale, bold: true)).tracking(0.16 * 7.5 * scale)
+                    .foregroundStyle(locked ? Color(hex: "8E8E93") : .white)
                     .lineLimit(1)
                     .fixedSize()
-                    .padding(.horizontal, 5).padding(.vertical, 2)
-                    .background(RoundedRectangle(cornerRadius: 5).fill(.white.opacity(0.85)))
+                    .padding(.horizontal, 7 * scale).padding(.vertical, 3 * scale)
+                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(locked ? Color(hex: "2A2A2C") : Color(hex: "121212")))
+                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.10), lineWidth: 1))
             }
-            .frame(width: 70)
             .contentShape(Rectangle())
             .animation(.spring(response: 0.2, dampingFraction: 0.5), value: down)
         }
-        .buttonStyle(HomeOrbPressStyle(pressed: Binding(get: { satPressed == action }, set: { satPressed = $0 ? action : (satPressed == action ? nil : satPressed) })))
-        .offset(y: float + 4.5)
-        .accessibilityLabel(Text(verbatim: action.title))
+        .buttonStyle(HomeOrbPressStyle(pressed: Binding(get: { satPressed == action }, set: { satPressed = $0 ? action : (satPressed == action ? nil : satPressed) })) { on in
+            // v61 §8:押した 瞬間に click(ロック中も ふくめて)。ページへの 切りかえは pageIndex が 変わった ときの sel が 別で 鳴る。
+            if on { Haptics.play(.click) }
+        })
+        .accessibilityLabel(Text(verbatim: locked ? "\(action.title)、ロック中" : action.title))
+    }
+
+    /// v61 §8:通知の 赤い 点の まわりに、1.8秒ごとに 広がる 輪(0→9pt、不透明度 60%→0)
+    private func notifyRing(t: Double) -> some View {
+        let phase = running ? (t.truncatingRemainder(dividingBy: 1.8)) / 1.8 : 0
+        return Circle()
+            .strokeBorder(LaterColor.red.opacity(running ? 0.6 * (1 - phase) : 0), lineWidth: 1.5)
+            .scaleEffect(1 + (9.0 / 15.0) * phase)
+            .allowsHitTesting(false)
+    }
+
+    /// v61 §8:四すみの 行き先 → ページ 番号(0 Camera / 1 Friends / 2 Trip / 3 Mondo / 4 Yesterday)
+    private static func page(for action: HomeOrbAction) -> Int {
+        switch action {
+        case .friends: 1
+        case .trip: 2
+        case .mondo: 3
+        case .yesterday: 4
+        default: 0
+        }
     }
 
     private func stickers(t: Double, reveal: Double) -> some View {
         let s = running ? sin(t * 2 * .pi / 5) : 0, s2 = running ? sin(t * 2 * .pi / 6) : 0
-        // 見本 v32 の 位置(390 幅・高さ 300 の 中心から)。まわりの 4つと かさならない ように 角へ
+        // 見本 A01/A02 の 位置(角に 1つずつ。まわりの 4つの ボタンと かさならない ように)
         return ZStack {
-            ChicDoodle(kind: .star, width: 36).rotationEffect(.degrees(10 * s)).offset(x: -157, y: -138 - 7 * s)
-            ChicDoodle(kind: .wave, width: 50).rotationEffect(.degrees(-8 * s2)).offset(x: 152, y: -142 + 5 * s2)
-            ChicDoodle(kind: .flower, width: 38).rotationEffect(.degrees(10 * s2)).offset(x: 142, y: 161 - 7 * s2)
-            ChicDoodle(kind: .dots, width: 26).offset(x: -142, y: 133 + 5 * s)
+            // v54:まわりの ボタン(y ±198〜266)と かさならない すきま(レンズと ボタンの 間)に 置く
+            ChicDoodle(kind: .star, width: 32).foregroundStyle(.white).rotationEffect(.degrees(10 * s)).offset(x: -144, y: -150 - 7 * s)
+            ChicDoodle(kind: .wave, width: 44).foregroundStyle(.white).rotationEffect(.degrees(-8 * s2)).offset(x: 144, y: -150 + 5 * s2)
+            ChicDoodle(kind: .flower, width: 30).rotationEffect(.degrees(10 * s2)).offset(x: 144, y: 150 - 7 * s2)
+            ChicDoodle(kind: .dots, width: 24).foregroundStyle(.white).offset(x: -144, y: 150 + 5 * s)
         }
         .opacity(reveal)
         .allowsHitTesting(false)
+    }
+
+    // MARK: v61 §10 PageDock(ナビピル)
+
+    private var pageDock: some View {
+        HStack(spacing: 4) {
+            dockButton(label: "CAMERA", symbol: "circle.fill", index: 0)
+            dockButton(label: "FRIENDS", symbol: "person.2.fill", index: 1)
+            dockButton(label: "TRIP", symbol: "bag.fill", index: 2)
+            dockButton(label: "MONDO", symbol: "globe", index: 3)
+            dockButton(label: "YESTERDAY", symbol: "photo.stack", index: 4)
+        }
+        .padding(4)
+        .frame(height: 42)
+        .background(Capsule().fill(.black.opacity(0.78)))
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
+        .shadow(color: .black.opacity(0.7), radius: 22, y: 10)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func dockButton(label: String, symbol: String, index: Int) -> some View {
+        let selected = pageIndex == index
+        return Button {
+            pageIndex = index
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(.system(size: 13, weight: .semibold))
+                if selected {
+                    Text(verbatim: label).font(LF.mono(8.5, bold: true)).tracking(0.14 * 8.5)
+                }
+            }
+            .foregroundStyle(selected ? Color(hex: "111111") : Color(hex: "8E8E93"))
+            .padding(.horizontal, selected ? 10 : 0)
+            .frame(width: selected ? 84 : 36, height: 34)
+            .background(Capsule().fill(selected ? LaterColor.lime : .clear))
+            .animation(.easeInOut(duration: 0.35), value: selected)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(verbatim: "ページ、\(index + 1) / 5、\(label.capitalized)"))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    // MARK: v61 §11-2 Trip ページ(裏側は 既存の グループ作成/CKShare招待 を そのまま 使う)
+
+    private func tripPage(width w: CGFloat) -> some View {
+        let trip = groupSummaries.first
+        return secondaryPageShell(.trip, index: 2, statusText: trip == nil ? nil : "\(trip!.memberCount) / \(trip!.memberLimit)", width: w) {
+            VStack(alignment: .leading, spacing: 14) {
+                if let trip {
+                    Text(verbatim: trip.name)
+                        .font(LF.serif(32)).foregroundStyle(.white)
+                    Text(verbatim: trip.invitingText ?? "みんなで、ひらく。")
+                        .font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+                } else {
+                    (Text("Take a trip,\n") + Text("together.").italic().foregroundStyle(LaterColor.lime))
+                        .font(LF.serif(32))
+                        .foregroundStyle(.white)
+                        .lineSpacing(2)
+                    Text(verbatim: "旅行・合宿・イベント。1日 23枚を、みんなで。")
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+                }
+            }
+        } cta: {
+            if let trip {
+                ctaButton(title: "Open", systemImage: "arrow.right") { onSelectGroup(trip.id) }
+            } else {
+                ctaButton(title: "New trip", systemImage: "plus") { onCreateGroup() }
+            }
+        }
+    }
+
+    // MARK: v61 §11 共通の 型(Friends / Mondo / Yesterday)
+
+    /// Friends・Mondo・Yesterday は 同じ 型(ヘッダー行 + タイトル + CTA)。
+    /// 注:まだ 友だちの 一覧・人気タグ・チェキの 実データが この コンポーネントに 来ていないので、
+    /// いま ある 信号(input)だけで 正直に 組んでいる(プレースホルダーの 絵は 作らない)。
+    private func secondaryPage(_ action: HomeOrbAction, index: Int, width w: CGFloat, onOpen: @escaping () -> Void) -> some View {
+        let locked = HomeOrbRules.isLocked(action, used: input.used)
+        return secondaryPageShell(action, index: index, statusText: locked ? "LOCKED" : nil, width: w) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(verbatim: title(for: action))
+                    .font(LF.serif(32)).foregroundStyle(.white)
+                Text(verbatim: subtitle(for: action, locked: locked))
+                    .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+            }
+        } cta: {
+            if locked {
+                ctaButton(title: "Shoot first", systemImage: "camera.fill") { onCenter(.shoot) }
+            } else {
+                ctaButton(title: action == .friends ? "Open friends" : (action == .mondo ? "Explore" : "Open"), systemImage: "arrow.right", onOpen)
+            }
+        }
+    }
+
+    private func title(for action: HomeOrbAction) -> String {
+        switch action {
+        case .friends: "Friends"
+        case .mondo: "The world,\nyesterday."
+        case .yesterday: "Yesterday"
+        default: action.title
+        }
+    }
+
+    private func subtitle(for action: HomeOrbAction, locked: Bool) -> String {
+        switch action {
+        case .friends: input.hasUnread ? "申請が とどいています" : "友だちの きのうを、見にいく"
+        case .mondo: locked ? "今日 1枚 撮ると、ひらきます" : "きのうの 世界を、のぞく"
+        case .yesterday: locked ? "今日 1枚 撮ると、ひらきます" : "\(input.openedYesterday) OPENED"
+        default: ""
+        }
+    }
+
+    private func secondaryPageShell<Content: View, CTA: View>(
+        _ action: HomeOrbAction, index: Int, statusText: String?, width w: CGFloat,
+        @ViewBuilder content: () -> Content, @ViewBuilder cta: () -> CTA
+    ) -> some View {
+        ZStack(alignment: .topLeading) {
+            LinearGradient(colors: [Color(hex: "1B1B1B"), Color(hex: "101010"), Color(hex: "0B0B0C")], startPoint: .top, endPoint: .bottom)
+            Capsule().fill(LaterColor.gold.opacity(0.34))
+                .frame(width: 7)
+                .padding(.vertical, 120)
+                .padding(.leading, 16)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Image(systemName: action.symbol)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color(hex: "121212"))
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(.white))
+                        .overlay(Circle().strokeBorder(.black, lineWidth: 2.2))
+                        .accessibilityHidden(true)
+                    Text(verbatim: "0\(index) / 04")
+                        .font(LF.mono(9, bold: true)).tracking(0.18 * 9)
+                        .foregroundStyle(Color(hex: "6C6C73"))
+                        .accessibilityHidden(true)
+                    Spacer()
+                    if let statusText {
+                        Text(verbatim: statusText)
+                            .font(LF.mono(9.5, bold: true)).tracking(0.12 * 9.5)
+                            .foregroundStyle(statusText == "LOCKED" ? Color(hex: "8E8E93") : LaterColor.liveGreen)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(verbatim: "ページ \(index) / 4\(statusText.map { "、\($0)" } ?? "")"))
+                Spacer(minLength: 0)
+                content()
+                    .accessibilityElement(children: .combine)
+                Spacer(minLength: 0)
+                cta()
+            }
+            .padding(.top, 22).padding(.horizontal, 22).padding(.bottom, 18)
+        }
+        .frame(width: w, height: Self.height)
+        .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.05), lineWidth: 1))
+        .shadow(color: .black.opacity(0.6), radius: 60, y: 30)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func ctaButton(title: String, systemImage: String, _ action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.play(.click)
+            action()
+        } label: {
+            HStack {
+                Text(verbatim: title).font(LF.inter(800, 17))
+                Spacer()
+                Circle().fill(LaterColor.filmLight).frame(width: 42, height: 42)
+                    .overlay(Image(systemName: systemImage).font(.system(size: 16, weight: .bold)).foregroundStyle(.black))
+            }
+            .padding(.leading, 20).padding(.trailing, 6)
+            .frame(height: 56)
+            .background(Capsule().fill(.white))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+        .foregroundStyle(Color(hex: "111111"))
+    }
+}
+
+/// レンズの ふちの 刻み(等間隔の 細い 線・絞りの 目盛りふう)
+private struct ApertureTicks: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let outer = rect.width / 2 - 2
+        let inner = outer - 6
+        for i in 0..<72 {
+            let a = Double(i) / 72 * 2 * .pi
+            path.move(to: CGPoint(x: c.x + cos(a) * inner, y: c.y + sin(a) * inner))
+            path.addLine(to: CGPoint(x: c.x + cos(a) * outer, y: c.y + sin(a) * outer))
+        }
+        return path
+    }
+}
+
+/// v61 §6:絞り羽根(6枚で 1つ)の 1枚。中心 寄りの 頂点 → 外周の 弧 → もどる、の 扇形。
+private struct ApertureBlade: Shape {
+    func path(in rect: CGRect) -> Path {
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let r = rect.width / 2
+        var path = Path()
+        path.move(to: c)
+        path.addLine(to: CGPoint(x: c.x + cos(-0.08) * r, y: c.y + sin(-0.08) * r))
+        path.addArc(center: c, radius: r, startAngle: .radians(-0.08), endAngle: .radians(1.02), clockwise: false)
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - v35 まんなかの 丸を 画面いっぱいの 主役に(見本:later_v35.html)
+
+/// v54:写ルンですの 本体を そのまま 使う(拡大しない・虹色の オーロラは 無い)。
+/// スクロールしたら 小さく・うすく なる 動き(ChicHomeView 側)は 変えない。行き先・処理は HomeGlassOrb と 同じ
+struct HomeOrbHero: View {
+    let input: HomeOrbRules.Input
+    let dateText: String
+    let isActive: Bool
+    var centerName: String?
+    var yesterdayPhoto: LaterPhoto?
+    var yesterdayImage: UIImage?
+    var introStart: Date?
+    let onCenter: (HomeOrbAction) -> Void
+    let onSatellite: (HomeOrbAction) -> Void
+    var onLocked: () -> Void = {}
+    /// v61:Trip ページ(既存の グループ作成/CKShare招待を そのまま 使う。見た目だけ 新しい)
+    var groupSummaries: [GroupSummary] = []
+    var canCreateGroup = true
+    var onCreateGroup: () -> Void = {}
+    var onJoinGroup: () -> Void = {}
+    var onSelectGroup: (UUID) -> Void = { _ in }
+    /// v61:じぶんの きのう(既存の YesterdayViewer(scope: .mine))。Mondo とは 別の 行き先。
+    var onOpenYesterday: () -> Void = {}
+    var hintEligible = false
+
+    static let height: CGFloat = HomeGlassOrb.height
+
+    var body: some View {
+        HomeGlassOrb(input: input, dateText: dateText, isActive: isActive, centerName: centerName,
+                     yesterdayPhoto: yesterdayPhoto, yesterdayImage: yesterdayImage, introStart: introStart,
+                     onCenter: onCenter, onSatellite: onSatellite, onLocked: onLocked,
+                     groupSummaries: groupSummaries, canCreateGroup: canCreateGroup,
+                     onCreateGroup: onCreateGroup, onJoinGroup: onJoinGroup, onSelectGroup: onSelectGroup,
+                     onOpenYesterday: onOpenYesterday,
+                     hintEligible: hintEligible)
     }
 }
 
@@ -589,161 +1037,6 @@ struct HomeOrbPressStyle: ButtonStyle {
     }
 }
 
-/// 6まいの 絞りの 羽(見本の SVG:viewBox -50…50)。パステル 6色・白い 線
-struct HomeApertureBlades: View {
-    private static let colors = ["FFD6C2", "FFC9DF", "E3D4FF", "CDE4FF", "CFF3E5", "FFF0B8"]
-
-    var body: some View {
-        Canvas { ctx, size in
-            let k = size.width / 100
-            ctx.translateBy(x: size.width / 2, y: size.height / 2)
-            for i in 0..<6 {
-                let path = Self.blade(i, k: k)
-                ctx.fill(path, with: .color(Color(hex: Self.colors[i])))
-                ctx.stroke(path, with: .color(.white), style: StrokeStyle(lineWidth: 1.4 * k, lineJoin: .round))
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    /// 内の 六角形(半径 20)から 外の 円(半径 48)へ
-    static func blade(_ i: Int, k: CGFloat) -> Path {
-        func pt(_ r: Double, _ deg: Double) -> CGPoint {
-            let a = deg * .pi / 180
-            return CGPoint(x: r * cos(a) * k, y: r * sin(a) * k)
-        }
-        let a0 = -90.0 + Double(i) * 60, a1 = a0 + 60
-        // 見本:M(内 a0) L(内 a1) L(外 a1+…) A(外 a0+…)
-        let outerEnd = a1 + 38, outerStart = a0 + 38
-        var p = Path()
-        p.move(to: pt(20, a0))
-        p.addLine(to: pt(20, a1))
-        p.addLine(to: pt(48, outerEnd))
-        p.addArc(center: .zero, radius: 48 * k, startAngle: .degrees(outerEnd), endAngle: .degrees(outerStart), clockwise: true)
-        p.closeSubpath()
-        return p
-    }
-}
-
-/// 3本の フィルムの 弧(のこり = 橙 + ほのかな 光 / 使った = うすい 灰)
-struct HomeOrbFilmArcs: View {
-    let used: Int
-
-    var body: some View {
-        Canvas { ctx, size in
-            let c = CGPoint(x: size.width / 2, y: size.height / 2)
-            let r = size.width / 2 * 46 / 50
-            let k = size.width / 100
-            for i in 0..<3 {
-                var p = Path()
-                let start = -132.0 + Double(i) * 120
-                p.addArc(center: c, radius: r, startAngle: .degrees(start), endAngle: .degrees(start + 104), clockwise: false)
-                let on = HomeOrbRules.arcIsRemaining(i, used: used)
-                let style = StrokeStyle(lineWidth: 1.9 * k, lineCap: .round)
-                if on {
-                    var glow = ctx
-                    glow.addFilter(.blur(radius: 3))
-                    glow.stroke(p, with: .color(Color(hex: "FF6A1A").opacity(0.6)), style: style)
-                    ctx.stroke(p, with: .color(Color(hex: "FF6A1A")), style: style)
-                } else {
-                    ctx.stroke(p, with: .color(Color(hex: "E4E1EA")), style: style)
-                }
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
-/// 球の中の ドット(世界の光)と「あなたの光」(半径 58 の 橙の点線の輪。撮った数だけ ともる)
-private struct HomeOrbDots: View {
-    let used: Int
-    let t: Double
-    let reveal: Double
-
-    private struct Dot { let r, a, w, s, tw, c: Double }
-
-    private static let dots: [Dot] = {
-        var rng = SeededRandom(seed: 22)
-        func rand() -> Double { Double(rng.next() % 10_000) / 10_000 }
-        let maxR = 86.0
-        var list: [Dot] = []
-        var ring = 0
-        for r in stride(from: 14.0, through: maxR, by: 7.2) {
-            let n = Int((2 * Double.pi * r / 7.6).rounded())
-            let dir: Double = ring % 2 == 1 ? 1 : -1
-            for i in 0..<n {
-                list.append(Dot(r: r, a: Double(i) / Double(n) * 2 * .pi, w: dir * (0.00005 + (maxR - r) * 0.0000016) * 1000,
-                                s: 0.5 + rand() * 0.9 + (r / maxR) * 0.5, tw: rand() * 6.3, c: rand()))
-            }
-            ring += 1
-        }
-        return list
-    }()
-
-    private static let palette: [Color] = [Color(red: 1, green: 0.54, blue: 0.16), Color(red: 1, green: 0.77, blue: 0.24), Color(red: 1, green: 0.47, blue: 0.63), Color(red: 0.43, green: 0.59, blue: 1), Color(red: 0.67, green: 0.51, blue: 1)]
-
-    var body: some View {
-        Canvas { ctx, size in
-            let c = CGPoint(x: size.width / 2, y: size.height / 2)
-            let maxR = 86.0
-            // 光の波は ひかえめ(橙が 帯にならないように)
-            let wave = (t.truncatingRemainder(dividingBy: 5.2) / 5.2) * (maxR + 30)
-            var gray = Path(), ink = Path(), warm = Path()
-            var colors = [Path](repeating: Path(), count: 5)
-            for d in Self.dots where d.r <= reveal * (maxR + 2) {
-                let an = d.a + t * d.w
-                let x = c.x + cos(an) * d.r, y = c.y + sin(an) * d.r * 0.96
-                let b = exp(-pow((d.r - wave) / 9, 2))
-                var s = d.s * (1 + 0.55 * b)
-                if used > 0 && d.c > 0.8 {
-                    s *= 1.2
-                    colors[Int(d.c * 50) % 5].addEllipse(in: CGRect(x: x - s, y: y - s, width: 2 * s, height: 2 * s))
-                } else if d.c > 0.95 {
-                    s *= 1.1
-                    ink.addEllipse(in: CGRect(x: x - s, y: y - s, width: 2 * s, height: 2 * s))
-                } else if b > 0.3 {
-                    warm.addEllipse(in: CGRect(x: x - s, y: y - s, width: 2 * s, height: 2 * s))
-                } else {
-                    gray.addEllipse(in: CGRect(x: x - s, y: y - s, width: 2 * s, height: 2 * s))
-                }
-            }
-            ctx.fill(gray, with: .color(Color(red: 0.55, green: 0.53, blue: 0.6).opacity(0.38)))
-            ctx.fill(ink, with: .color(Color(red: 0.07, green: 0.07, blue: 0.08).opacity(0.5)))
-            ctx.fill(warm, with: .color(Color(red: 1, green: 0.59, blue: 0.31).opacity(0.55)))
-            for (i, path) in colors.enumerated() { ctx.fill(path, with: .color(Self.palette[i].opacity(0.8))) }
-
-            // あなたの光
-            let R = 58.0, rot = t * 0.18
-            var ring = Path()
-            ring.addEllipse(in: CGRect(x: c.x - R, y: c.y - R, width: 2 * R, height: 2 * R))
-            ctx.stroke(ring, with: .color(Color(red: 1, green: 0.42, blue: 0.1).opacity(0.35 * reveal)), style: StrokeStyle(lineWidth: 1, dash: [2, 4]))
-            for i in 0..<3 {
-                let an = rot - .pi / 2 + Double(i) * 2.0944
-                let p = CGPoint(x: c.x + cos(an) * R, y: c.y + sin(an) * R)
-                if i < used {
-                    ctx.fill(Path(ellipseIn: CGRect(x: p.x - 12, y: p.y - 12, width: 24, height: 24)),
-                             with: .radialGradient(Gradient(stops: [
-                                .init(color: Color(red: 1, green: 0.59, blue: 0.24).opacity(0.95), location: 0),
-                                .init(color: Color(red: 1, green: 0.47, blue: 0.16).opacity(0.5), location: 0.35),
-                                .init(color: .clear, location: 1),
-                             ]), center: p, startRadius: 0, endRadius: 12))
-                    ctx.fill(Path(ellipseIn: CGRect(x: p.x - 2.2, y: p.y - 2.2, width: 4.4, height: 4.4)), with: .color(.white))
-                } else {
-                    let next = i == used
-                    let r = next ? 4.2 : 3.2
-                    let alpha = next ? 0.75 + 0.25 * sin(t * 4) : 0.4
-                    ctx.stroke(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r)),
-                               with: .color(Color(red: 1, green: 0.42, blue: 0.1).opacity(alpha * reveal)), lineWidth: 1.3)
-                }
-            }
-        }
-        .frame(width: 184, height: 184)
-        .clipShape(Circle())
-    }
-}
-
 /// 円に沿った文字(等幅 8pt・灰)
 struct HomeRingText: View {
     let text: String
@@ -752,6 +1045,8 @@ struct HomeRingText: View {
     var rotation: Double = 0
     /// 字を 消す 場所(中心から の 矩形)。ふちから 6pt で ふわっと 消える
     var holes: [CGRect] = []
+    var textColor: Color = Color(hex: "A9A6B0")
+    var fontSize: CGFloat = 8
 
     var body: some View {
         Canvas { ctx, size in
@@ -766,7 +1061,7 @@ struct HomeRingText: View {
                 inner.opacity = fade
                 inner.translateBy(x: c.x + cos(a) * radius, y: c.y + sin(a) * radius)
                 inner.rotate(by: .radians(a + .pi / 2))
-                inner.draw(Text(String(ch)).font(.system(size: 8, design: .monospaced)).foregroundColor(Color(hex: "A9A6B0")), at: .zero)
+                inner.draw(Text(String(ch)).font(.system(size: fontSize, design: .monospaced)).foregroundColor(textColor), at: .zero)
             }
         }
         .frame(width: radius * 2 + 20, height: radius * 2 + 20)

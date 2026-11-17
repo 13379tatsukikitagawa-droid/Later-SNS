@@ -81,4 +81,22 @@ enum UserDirectoryService {
         guard let record = try? await publicDatabase.record(for: recordID) else { return nil }
         return directoryProfile(from: record)
     }
+
+    /// v47:ともだちのQR/リンク(later://friend?u=<recordName>)から、名前を引く。
+    /// "cloudKitUserRecordName"にQUERYABLEのインデックスが必要(開発環境では初回save時に自動生成。
+    /// 本番デプロイ時は要確認)。相手が未publishなら nil(つながる処理自体は recordName だけで進められる)。
+    static func fetchProfile(cloudKitUserRecordName: String) async -> DirectoryProfile? {
+        let predicate = NSPredicate(format: "cloudKitUserRecordName == %@", cloudKitUserRecordName)
+        let query = CKQuery(recordType: AppRecordType.userDirectory, predicate: predicate)
+        do {
+            let (results, _) = try await publicDatabase.records(matching: query, resultsLimit: 1)
+            for (_, result) in results {
+                if case .success(let record) = result, let profile = directoryProfile(from: record) { return profile }
+            }
+            return nil
+        } catch {
+            print("UserDirectoryService: fetchProfile(cloudKitUserRecordName:) failed: \(error)")
+            return nil
+        }
+    }
 }

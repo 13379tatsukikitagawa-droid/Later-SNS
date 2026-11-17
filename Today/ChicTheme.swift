@@ -326,19 +326,3 @@ struct ChicRingArt: View {
         .accessibilityHidden(true)
     }
 }
-
-// MARK: - 月の色
-
-enum ChicMoon {
-    /// 夜の月(灰青)
-    static let nightGradient = LinearGradient(stops: [
-        .init(color: Color(hex: "F4F5FB"), location: 0),
-        .init(color: Color(hex: "DFE2F2"), location: 0.12),
-        .init(color: Color(hex: "B9BEDD"), location: 0.22),
-        .init(color: Color(hex: "8A90B8"), location: 0.38),
-        .init(color: Color(hex: "4A4F7A"), location: 0.62),
-        .init(color: Color(hex: "1E2040"), location: 1),
-    ], startPoint: .top, endPoint: .bottom)
-    static let glowLavender = Color(red: 150 / 255, green: 120 / 255, blue: 1).opacity(0.28)
-    static let glowPeach = Color(red: 1, green: 170 / 255, blue: 130 / 255).opacity(0.25)
-}

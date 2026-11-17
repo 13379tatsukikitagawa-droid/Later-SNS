@@ -1,0 +1,50 @@
+
+/* ================= v64 ・ Mondo ページ =================
+   ・宇宙の 黒の 上に、点で できた 地球(夜は 街の 灯り)。ゆっくり 回る
+   ・「9:00 の 線」= いま 朝 9:00 の 場所。ここを 通った 街から、きのうの 写真が ひらく
+   ・地球の 上に、世界の チェキが 浮かぶ(ひらく 前は ぼかし)
+   ・左に 人気の タグ 3つ(数は 出さない。光の 強さだけ) */
+#hpc3{background:radial-gradient(120% 90% at 78% 62%,#0C1F13 0%,#070B09 46%,#050506 100%)!important}
+#hpc3 .hpbg,#hpc3 .hpvg{display:none!important}
+#hpc3::after{content:'';position:absolute;inset:0;border-radius:40px;pointer-events:none;z-index:0;opacity:.7;
+  background:radial-gradient(1px 1px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 34% 8%,rgba(255,255,255,.7),transparent),radial-gradient(1.2px 1.2px at 58% 14%,#fff,transparent),radial-gradient(1px 1px at 86% 22%,rgba(255,255,255,.8),transparent),radial-gradient(1px 1px at 22% 46%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 8% 72%,rgba(255,255,255,.6),transparent),radial-gradient(1.2px 1.2px at 44% 88%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 70% 6%,rgba(255,255,255,.6),transparent);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);animation:mntw 6s ease-in-out infinite}
+@keyframes mntw{50%{opacity:.4}}
+#hpc3>*{z-index:1}
+#hpc3 .mnsub{margin-top:-6px;font:italic 400 20px/1 var(--serif);color:#7EE08F;letter-spacing:.005em}
+#hpc3 .mnsub b{font-style:normal;font-weight:400;color:#C8F25A}
+
+/* 地球 */
+.mng{position:absolute!important;left:112px;top:128px;width:310px;height:310px;z-index:0!important;-webkit-tap-highlight-color:transparent}
+.mng canvas{width:310px;height:310px;display:block}
+.mnp{position:absolute;left:0;top:0;width:34px;height:40px;margin:-20px 0 0 -17px;padding:3px 3px 8px;border-radius:3px;background:#F6F3EC;box-shadow:0 8px 14px -6px rgba(0,0,0,.7);transform-origin:50% 100%;pointer-events:none;will-change:transform,opacity}
+.mnp i{display:block;width:100%;height:100%;border-radius:1px;background:center/cover;filter:url(#chk)}
+.mnp::after{content:'';position:absolute;left:50%;bottom:-9px;width:1px;height:9px;background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,0))}
+.mng.lk .mnp i{filter:blur(3.5px) saturate(.6)}
+
+/* 人気の タグ 3つ */
+.mnr{display:flex;flex-direction:column;gap:8px;width:184px;margin-top:22px}
+.mnr .r{position:relative;display:flex;align-items:center;gap:10px;height:44px;padding:0 12px 0 10px;border-radius:16px;background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.18);overflow:hidden}
+.mnr .r:first-child{background:rgba(200,242,90,.16);box-shadow:inset 0 0 0 1px rgba(200,242,90,.45),inset 0 1px 0 rgba(255,255,255,.2)}
+.mnr .n{flex:none;width:26px;font:400 24px/1 var(--ttl);color:rgba(255,255,255,.55)}
+.mnr .r:first-child .n{color:#C8F25A}
+.mnr .t{flex:1;min-width:0;font:800 15px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mnr .l{display:flex;gap:2.5px;align-items:flex-end;height:14px}
+.mnr .l i{width:3px;border-radius:2px;background:#C8F25A;opacity:.25}
+.mnr .l i.on{opacity:1;box-shadow:0 0 6px rgba(200,242,90,.7)}
+.mnr .k{display:none;width:14px;height:14px;color:rgba(255,255,255,.75)}
+.mnr .k svg{width:14px;height:14px}
+.mnr.lk .t{filter:blur(5px);opacity:.85}
+.mnr.lk .l{display:none}.mnr.lk .k{display:block}
+.mnr .r::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.14) 48%,transparent 66%) no-repeat;background-size:260% 100%;background-position:140% 0;animation:mnsh 4.8s ease-in-out infinite;animation-delay:calc(var(--j) * .25s)}
+@keyframes mnsh{0%,70%{background-position:140% 0}100%{background-position:-60% 0}}
+
+/* いま 9:00 の 街 */
+.mnn{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;height:32px;margin-top:2px;padding:0 13px 0 11px;border-radius:16px;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px rgba(200,242,90,.35);font:700 10px var(--mono);letter-spacing:.12em;color:rgba(255,255,255,.75);white-space:nowrap}
+.mnn i{width:7px;height:7px;border-radius:50%;background:#C8F25A;animation:hxdot 2.2s ease-out infinite}
+.mnn b{color:#C8F25A;font-weight:700}
+.mnn em{font-style:normal;color:#fff;transition:opacity .25s}
+.mnn.ch em{animation:mnch .5s cubic-bezier(.3,1.4,.5,1)}
+@keyframes mnch{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
+#hpc3 .hpgo{z-index:2}
+@media (prefers-reduced-motion:reduce){#hpc3::after,.mnr .r::after,.mnn i{animation:none}}

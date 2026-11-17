@@ -210,6 +210,16 @@ enum GroupLeaveService {
         group.members.contains { $0.id != user.id } ? .member : .lastOne
     }
 
+    /// v58 §5:「Trip を おわる」を 出せるのは、作成者(= ゾーンの 実所有者)だけ。
+    /// 肩書き(ownerCloudKitUserRecordName。抜けるたびに 次の人へ 引き継がれる)だけでなく、
+    /// ゾーンの 本当の 持ち主(zoneID.ownerName。不変)とも 一致している ことを 確かめる
+    /// (endTrip は 私有DBの CKShare を 消すので、本当の 持ち主本人の 端末からしか 呼べない)。
+    static func isHost(_ group: LaterGroup, currentUserRecordName: String?) -> Bool {
+        guard let currentUserRecordName else { return false }
+        return group.ownerCloudKitUserRecordName == currentUserRecordName
+            && group.cachedZoneID?.ownerName == currentUserRecordName
+    }
+
     /// 抜ける。この順で実行し、途中で失敗したら PendingLeave を残して、次の起動で続きから実行する。
     /// 1 PendingLeave → 2 自分の投稿を消す → 3「抜けた」記録 → 4 自分のプロフィール(+ホスト役を渡す)
     /// → 5 共有から外れる → 6 端末の片づけ → 7 PendingLeave を消す
@@ -256,6 +266,19 @@ enum GroupLeaveService {
         context.delete(group)
         try? context.save()
         PendingLeaveStore.finish(group.id)
+    }
+
+    /// v58 §5:「Trip を おわる」(作成者だけ)。GroupSharingService.endTrip を 呼ぶだけ(写真は 消さない)。
+    static func endTrip(_ group: LaterGroup, user: UserProfile, context: ModelContext) async throws {
+        guard ConnectivityMonitor.shared.isOnline else { throw LeaveError.offline }
+        guard let cloudKitManager = CloudKitManager.current else { throw LeaveError.notReady }
+        let sharing = GroupSharingService(container: cloudKitManager.container, modelContext: context, cloudKitManager: cloudKitManager)
+        do {
+            try await sharing.endTrip(group, hostProfile: user)
+        } catch {
+            print("[GroupSync] endTrip 失敗: \(error)")
+            throw LeaveError.failed
+        }
     }
 
     /// 自分の投稿を、このグループの共有ゾーンから消す(7日で消すときと同じ範囲:写真本体・タグ・場所・参照)

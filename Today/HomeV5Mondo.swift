@@ -654,6 +654,276 @@ private struct OutlineNumber: View {
     }
 }
 
+// MARK: - v49 見出し(地球の o・1文字ずつ ブラーから・「yesterday.」は 光る・世界の いまの時計)
+
+/// 「MONDO · NOV 11」の 前の、脈打つ 点
+private struct MondoPulsingDot: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            Circle().fill(Darkroom.orange).opacity(pulse ? 0 : 0.55).scaleEffect(pulse ? 2.6 : 1)
+            Circle().fill(Darkroom.orange)
+        }
+        .frame(width: 7, height: 7)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeOut(duration: 1.8).repeatForever(autoreverses: false)) { pulse = true }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// 見出しの 文字を 1つずつ・ブラーから あらわれる(appeared が true に なるとき だけ)
+private struct MondoLetterRow: View {
+    let text: String
+    let startIndex: Int
+    let font: Font
+    let color: Color
+    let appeared: Bool
+    let reduceMotion: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(text.enumerated()), id: \.offset) { i, ch in
+                Text(verbatim: ch == " " ? "\u{00A0}" : String(ch))
+                    .font(font)
+                    .foregroundStyle(color)
+                    .opacity(appeared ? 1 : 0)
+                    .blur(radius: appeared ? 0 : 6)
+                    .offset(y: appeared ? 0 : 7)
+                    .rotationEffect(.degrees(appeared ? 0 : 8))
+                    .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.72).delay(Double(startIndex + i) * 0.045), value: appeared)
+            }
+        }
+        .fixedSize()
+    }
+}
+
+/// 「yesterday.」:1文字ずつ あらわれたあと、緑のグラデーションが やさしく 光りつづける
+private struct MondoShineRow: View {
+    let text: String
+    let startIndex: Int
+    let font: Font
+    let appeared: Bool
+    let reduceMotion: Bool
+
+    private static let shineColors = [Darkroom.orange, Darkroom.paleGreen, Darkroom.orange, Color(hex: "C8F25A"), Darkroom.orange]
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let phase = (t / 5).truncatingRemainder(dividingBy: 1)
+            let shift = CGFloat(phase) * 2.4 - 1.2
+            HStack(spacing: 0) {
+                ForEach(Array(text.enumerated()), id: \.offset) { i, ch in
+                    Text(verbatim: String(ch))
+                        .font(font)
+                        .foregroundStyle(LinearGradient(colors: Self.shineColors, startPoint: UnitPoint(x: shift, y: 0), endPoint: UnitPoint(x: shift + 1.3, y: 0)))
+                        .opacity(appeared ? 1 : 0)
+                        .blur(radius: appeared ? 0 : 6)
+                        .offset(y: appeared ? 0 : 7)
+                        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.72).delay(Double(startIndex + i) * 0.045), value: appeared)
+                }
+            }
+            .fixedSize()
+        }
+    }
+}
+
+/// 「w◯rld」の o が 地球:ゆっくり自転。押すと ぷにっと はやく回る(タップしても 画面は 動かない)
+private struct MondoGlobeGlyph: View {
+    let onTap: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var kickUntil: Date = .distantPast
+
+    var body: some View {
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let kicking = context.date < kickUntil
+            let duration = kicking ? 0.6 : 4.0
+            let angle = (t.truncatingRemainder(dividingBy: duration) / duration) * 360
+            ZStack {
+                Circle().fill(Darkroom.orange)
+                Image(systemName: "globe")
+                    .font(.system(size: 17, weight: .light))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .rotation3DEffect(.degrees(reduceMotion ? 0 : angle), axis: (x: 0, y: 1, z: 0))
+                Circle().fill(Darkroom.star).frame(width: 5, height: 5).offset(x: 7, y: -8)
+            }
+        }
+        .frame(width: 36, height: 36)
+        .contentShape(Circle())
+        .onTapGesture {
+            Haptics.play(.pop)
+            kickUntil = Date().addingTimeInterval(1.4)
+            onTap()
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// 手描き風の線(「yesterday.」の下に、1本だけ すっと引かれる)
+private struct HandDrawnUnderline: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let w = rect.width, h = rect.height
+        p.move(to: CGPoint(x: w * 0.013, y: h * 0.69))
+        p.addCurve(to: CGPoint(x: w * 0.667, y: h * 0.385),
+                   control1: CGPoint(x: w * 0.2, y: h * 0.23),
+                   control2: CGPoint(x: w * 0.433, y: h * 0.154))
+        p.addCurve(to: CGPoint(x: w * 0.98, y: h * 0.4615),
+                   control1: CGPoint(x: w * 0.9, y: h * 0.6154),
+                   control2: CGPoint(x: w * 0.9333, y: h * 0.6923))
+        return p
+    }
+}
+
+/// MONDO の 見出し全体(点・日付・「The w🌐rld, yesterday.」・下線)
+/// isActive が 変わった(タブを 切りかえて Mondo に 入った)ときだけ、もう一度 さいせい。タグの えらびなおしでは 動かない。
+private struct MondoHeading: View {
+    let dayKey: String
+    let isActive: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 既定で 見える(入場アニメが なにかの理由で 動かなくても、文字が 消えたままには ならない)
+    @State private var appeared = true
+    @State private var didPlayEntrance = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                MondoPulsingDot()
+                Text(verbatim: "MONDO · \(V5.monthDay(fromDayKey: dayKey).uppercased())")
+                    .font(Darkroom.mono(10)).tracking(0.26 * 10).foregroundStyle(Darkroom.weak)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                line1
+                ZStack(alignment: .bottomLeading) {
+                    line2
+                    HandDrawnUnderline()
+                        .trim(from: 0, to: appeared ? 1 : 0)
+                        .stroke(Color(hex: "C8F25A"), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .frame(width: 150, height: 14)
+                        .offset(y: 8)
+                        .opacity(reduceMotion ? 0 : 1)
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.9).delay(1.0), value: appeared)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("MONDO。The world, yesterday.")
+        .onAppear { playEntranceOnce() }
+        .onChange(of: isActive) { _, active in
+            guard active, didPlayEntrance, !reduceMotion else { return }
+            replay()
+        }
+    }
+
+    /// 最初の 1回だけ(見えている状態から、ふわっと あらわれる)。2回目以降は onChange の replay() だけが 動かす。
+    /// 消す→出すを 同じ 瞬間に 並べると、SwiftUI が 2つの 変化を 1つに まとめてしまい、
+    /// 文字が 消えた まま 戻らない ことが あった(実機で 確認ずみ)。すこし 間を あけて 確実に 別々の 更新に する。
+    private func playEntranceOnce() {
+        guard !didPlayEntrance else { return }
+        didPlayEntrance = true
+        guard !reduceMotion else { return }
+        appeared = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) { appeared = true }
+    }
+
+    private func replay() {
+        appeared = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) { appeared = true }
+    }
+
+    private var line1: some View {
+        HStack(spacing: 0) {
+            MondoLetterRow(text: "The w", startIndex: 0, font: .custom("InstrumentSerif-Regular", size: 58), color: .primary, appeared: appeared, reduceMotion: reduceMotion)
+            MondoGlobeGlyph {}
+                .opacity(appeared ? 1 : 0)
+                .scaleEffect(appeared ? 1 : 0.2)
+                .rotationEffect(.degrees(appeared ? 0 : -120))
+                .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.62).delay(0.38), value: appeared)
+            MondoLetterRow(text: "rld,", startIndex: 7, font: .custom("InstrumentSerif-Regular", size: 58), color: .primary, appeared: appeared, reduceMotion: reduceMotion)
+        }
+    }
+
+    private var line2: some View {
+        MondoShineRow(text: "yesterday.", startIndex: 12, font: .custom("InstrumentSerif-Italic", size: 64), appeared: appeared, reduceMotion: reduceMotion)
+    }
+}
+
+/// 世界の いまの時間の帯:TOKYO・SEOUL・BANGKOK・PARIS・LONDON・NEW YORK・L.A.・SYDNEY。
+/// 現地が 9〜21時なら 緑の点。26秒で 1周、つなぎ目なく 流れる。
+private struct MondoWorldClockBand: View {
+    let isActive: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var copyWidth: CGFloat = 0
+    @State private var visible = true
+    @State private var now = Date()
+
+    private static let cities: [(name: String, utcOffset: Double)] = [
+        ("TOKYO", 9), ("SEOUL", 9), ("BANGKOK", 7), ("PARIS", 1),
+        ("LONDON", 0), ("NEW YORK", -5), ("L.A.", -8), ("SYDNEY", 11),
+    ]
+    private static let period: Double = 26
+
+    private var line: Text {
+        let utc = Calendar(identifier: .gregorian).dateComponents(in: TimeZone(identifier: "UTC") ?? .gmt, from: now)
+        let hour = Double(utc.hour ?? 0) + Double(utc.minute ?? 0) / 60
+        return Self.cities.reduce(Text(verbatim: "")) { acc, city in
+            let local = ((hour + city.utcOffset).truncatingRemainder(dividingBy: 24) + 24).truncatingRemainder(dividingBy: 24)
+            let hh = Int(local)
+            let mm = Int((local - Double(hh)) * 60)
+            let on = hh >= 9 && hh < 21
+            let seg = Text(Image(systemName: "circle.fill")).font(.system(size: 5)).foregroundColor(on ? Darkroom.orange : Darkroom.faint)
+                + Text(verbatim: "  \(city.name) ")
+                + Text(verbatim: String(format: "%d:%02d", hh, mm)).fontWeight(.bold)
+                + Text(verbatim: "     ")
+            return acc + seg
+        }
+    }
+
+    private func lineView() -> some View {
+        line
+            .font(.system(size: 10, design: .monospaced))
+            .tracking(0.14 * 10)
+            .foregroundStyle(Darkroom.weak)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
+    var body: some View {
+        let running = isActive && visible && !reduceMotion
+        return TimelineView(.animation(paused: !running)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let phase = CGFloat(t.truncatingRemainder(dividingBy: Self.period) / Self.period)
+            let offset = copyWidth > 0 ? -phase * copyWidth : 0
+            HStack(spacing: 0) {
+                lineView().onGeometryChange(for: CGFloat.self) { $0.size.width } action: { copyWidth = $0 }
+                lineView()
+            }
+            .offset(x: offset)
+        }
+        .frame(height: 30)
+        .clipped()
+        .mask(LinearGradient(colors: [.clear, .black, .black, .clear], startPoint: .leading, endPoint: .trailing))
+        .overlay(alignment: .top) { Rectangle().fill(Darkroom.line).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Darkroom.line).frame(height: 1) }
+        .onScrollVisibilityChange(threshold: 0.01) { visible = $0 }
+        .task {
+            while !Task.isCancelled {
+                now = Date()
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
 // MARK: - MONDO 画面
 
 struct HomeV5MondoPage: View {
@@ -676,161 +946,345 @@ struct HomeV5MondoPage: View {
     /// 今日を撮る前に昨日のホームをひらいた:昨日のものはぼかして、ロックする(件数と地球は見える)
     var locked = false
 
-    @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// v19:さわれる地球儀
-    @State private var globe = GlobeController()
+    /// v54:ScrollView を GeometryReader で 包むと、中の TimelineView(世界時計の帯)が
+    /// 動くたびに スクロールの 位置計算が くずれ、見出しから 下が 見えなくなる ことが あった(実機で確認ずみ)。
+    /// GeometryReader は 使わず、大きさは onGeometryChange で 一度だけ 受けとる。
+    @State private var pageSize: CGSize = .zero
     /// v23:カギの 知らせ(0.6秒 ロックの ままなら 出す。解禁ずみで 一瞬 出ないように)
     @State private var showsLockNotice = false
     @State private var toast: String?
+    /// v37:WORDS で えらんだ タグ(nil = EVERYONE)
+    @State private var selectedTag: String?
+    /// v37:ダブルタップで ひかりを ともした 写真(数は 出ない。端末だけ)
+    @State private var lit: Set<String> = []
+    /// v37:長押しで えらんだ「あなたの 1枚」(1日 1枚・24:00まで かえられる。端末だけ)
+    @State private var yourOneID: String?
+    /// v47:「Your one」未選択で押したとき、写真の一覧へ スクロールして ゆらす
+    @State private var scrollToGridToken = 0
+    @State private var shakeGrid = false
 
     private var summaryEntries: [MondoEntry] {
         if case .ready(let s) = phase { return s.entries }
         return []
     }
 
-    var body: some View {
-        let globeTop = topInset + 48
-        return GeometryReader { geo in
-        ScrollViewReader { reader in
-        ZStack(alignment: .bottom) {
-        ScrollView(.vertical) {
-            VStack(spacing: 0) {
-                MondoGlobeStageV19(
-                    controller: globe,
-                    width: geo.size.width,
-                    diameter: V5Globe.pageDiameter(forWidth: geo.size.width),
-                    screenHeight: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom,
-                    locked: locked,
-                    isActive: isActive
-                )
-                .visualEffect { content, proxy in
-                    // スクロールで、上へ動きながら小さく(scale 1 → .78)・うすくなる(360ptで消える)
-                    let minY = proxy.frame(in: .scrollView).minY
-                    let progress = min(1, max(0, (globeTop - minY) / 360))
-                    return content
-                        .scaleEffect(1 - 0.22 * progress)
-                        .opacity(1 - progress)
-                }
-                .padding(.top, globeTop)
-
-                Group {
-                titleBlock
-                    .padding(.top, 10)
-                    .offset(y: globe.isZoomed ? 20 : 0)
-
-                MondoBand(
-                    width: geo.size.width,
-                    lights: bandLights,
-                    countries: bandCountries,
-                    dayLabel: V5.monthDay(fromDayKey: dayKey),
-                    isActive: isActive
-                )
-                .padding(.top, 8)
-
-                // v19:場所チップ(「どこかへ」+ 光が多い順)
-                if !globe.lights.isEmpty {
-                    MondoPlaceChips(controller: globe)
-                        .frame(height: 44)
-                        .padding(.top, 12)
-                }
-
-                // 昨日の一枚(幅 = 画面の幅 - 56)
-                if let announced {
-                    MondoBigPrint(pick: announced, width: max(0, geo.size.width - 56), locked: locked, onOpen: onOpenAnnounced)
-                        .padding(.top, 14)
-                } else if showsLockNotice {
-                    V5LockedNotice()
-                        .padding(.top, 14)
-                        .transition(.opacity)
-                }
-
-                Group {
-                    switch phase {
-                    case .ready(let summary):
-                        readyContent(summary)
-                            .padding(.top, 26)
-                    default:
-                        stateMessage
-                            .padding(.top, 30)
-                    }
-                }
-                }
-                // 跳んでいる間・着いたあとは、文字・帯・チップ・ボタンを消す
-                .task(id: locked) {
-                    guard locked else { showsLockNotice = false; return }
-                    try? await Task.sleep(for: .seconds(0.6))
-                    if !Task.isCancelled, locked { withAnimation(.easeOut(duration: 0.3)) { showsLockNotice = true } }
-                }
-                .opacity(globe.isZoomed ? 0 : 1)
-                .allowsHitTesting(!globe.isZoomed)
-            }
-            .padding(.bottom, 130)
-            // 中身の幅は、画面の幅と同じ1つだけ(中の写真・文字が広くても、横にずれない)
-            .containerRelativeFrame(.horizontal)
-            .id("v5top")
-        }
-        .scrollIndicators(.hidden)
-        .scrollDisabled(globe.isZoomed)
-        .onChange(of: scrollToTopToken) { _, _ in
-            withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5top", anchor: .top) }
-        }
-        .onChange(of: globe.isZoomed) { _, zoomed in
-            if zoomed { withAnimation(.easeInOut(duration: 0.35)) { reader.scrollTo("v5top", anchor: .top) } }
-        }
-
-        // 着いたら、下からカードがうかぶ
-        if globe.cardOpen, let light = globe.selected {
-            MondoPlaceCard(
-                light: light,
-                entries: light.entryIDs.compactMap { id in summaryEntries.first { $0.id == id } },
-                locked: locked,
-                onClose: { globe.close(quick: false) },
-                onNext: { globe.jumpNext() },
-                onOpenPhoto: { entry, point in
-                    let list = Array(summaryEntries.prefix(MondoConfig.maxCards))
-                    if let index = list.firstIndex(where: { $0.id == entry.id }) { onOpenAll(point, index) }
-                },
-                onToast: { show($0) }
-            )
-            .id(light.id)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 14)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-            .zIndex(2)
-        }
-
-        if let toast {
-            Text(toast)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(GlassCapsule())
-                .frame(maxHeight: .infinity, alignment: .top)
-                .padding(.top, topInset + 8)
-                .transition(.opacity.combined(with: .offset(y: -12)))
-                .allowsHitTesting(false)
-                .zIndex(3)
-        }
-        }
-        .animation(.spring(response: 0.55, dampingFraction: 0.82), value: globe.cardOpen)
-        .animation(.easeOut(duration: 0.3), value: toast)
-        }
-        }
-        // 跳んでいる間・着いたあとは、タブバーを下へ隠す
-        .toolbar(globe.isZoomed ? .hidden : .visible, for: .tabBar)
-        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: globe.isZoomed)
-        .onAppear { syncGlobe() }
-        .onChange(of: summaryEntries.map(\.id)) { _, _ in syncGlobe() }
-        .onChange(of: isActive) { _, active in if active { globe.start() } else { globe.stop() } }
-        .onDisappear { globe.stop() }
+    private var summary: MondoDaySummary? {
+        if case .ready(let s) = phase { return s }
+        return nil
     }
 
-    private func syncGlobe() {
-        globe.reduceMotion = reduceMotion
-        globe.lights = MondoGeo.lights(from: summaryEntries)
-        if isActive { globe.start() }
+    private var ranking: [RankedTag] {
+        guard let summary else { return [] }
+        return TagRanking.rank(summary.topTags, dayKey: summary.dayKey)
+    }
+
+    private var lights: [MondoLight] { MondoGeo.lights(from: summaryEntries) }
+
+    /// タグを えらんで いれば その タグの 写真、でなければ 「すべての 昨日」
+    private var gridEntries: [MondoEntry] {
+        guard let summary else { return [] }
+        if let tag = selectedTag { return TagRanking.photos(for: tag, in: summary.entries, dayKey: summary.dayKey) }
+        return Array(summary.entries.prefix(MondoConfig.maxCards))
+    }
+
+    private var yourOneEntry: MondoEntry? {
+        guard let yourOneID else { return nil }
+        return summaryEntries.first { $0.id == yourOneID }
+    }
+
+    var body: some View {
+        ScrollViewReader { reader in
+            ZStack(alignment: .top) {
+                Darkroom.bg.ignoresSafeArea()
+                ScrollView(.vertical) {
+                    page(width: pageSize.width, height: pageSize.height)
+                        .padding(.top, topInset + 8)
+                        .padding(.bottom, 130)
+                        .containerRelativeFrame(.horizontal)
+                        .id("v5top")
+                }
+                .scrollIndicators(.hidden)
+                .onChange(of: scrollToTopToken) { _, _ in
+                    withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5top", anchor: .top) }
+                }
+                .onChange(of: scrollToGridToken) { _, _ in
+                    withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5grid", anchor: .top) }
+                    guard !reduceMotion else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        withAnimation(.easeInOut(duration: 0.1).repeatCount(5, autoreverses: true)) { shakeGrid = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { shakeGrid = false }
+                    }
+                }
+
+                if showsLockNotice {
+                    Button {
+                        Haptics.play(.tick)
+                        CaptureRequestStore.shared.pendingRequestID = UUID()
+                    } label: {
+                        Label { Text(verbatim: "shoot today to open") } icon: { Image(systemName: "lock.fill") }
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16).frame(height: 38)
+                            .laterGlass(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, topInset + 160)
+                    .frame(maxWidth: .infinity, alignment: .top)
+                    .transition(.opacity)
+                    .animation(.easeOut(duration: 0.3), value: showsLockNotice)
+                }
+
+                if let toast {
+                    Text(verbatim: toast)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .laterGlass(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .top)
+                        .padding(.top, topInset + 8)
+                        .transition(.opacity.combined(with: .offset(y: -12)))
+                        .allowsHitTesting(false)
+                        .zIndex(3)
+                        .animation(.easeOut(duration: 0.3), value: toast)
+                }
+            }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { pageSize = $0 }
+        }
+        .environment(\.colorScheme, .dark)
+        .task(id: locked) {
+            guard locked else { showsLockNotice = false; return }
+            try? await Task.sleep(for: .seconds(0.6))
+            if !Task.isCancelled, locked { showsLockNotice = true }
+        }
+        .onAppear { yourOneID = MondoYourOneStore.get(day: dayKey) }
+        .onChange(of: dayKey) { _, day in yourOneID = MondoYourOneStore.get(day: day) }
+    }
+
+    // MARK: - 中身(1本の 長い スクロール)
+
+    private func page(width: CGFloat, height: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            Group {
+                switch phase {
+                case .ready(let summary):
+                    readyBody(summary, width: width)
+                default:
+                    // 世界の 集計が まだ(または おくれている)とき:小さな 文字だけで ぽつんと 浮かせない。
+                    // Home/Group の ロックと 同じく、ちゃんと 面を 持たせて、残りの 高さを うめる。
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 28, style: .continuous).fill(Darkroom.card)
+                        stateMessage
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: max(360, height - topInset - 360))
+                    .padding(.horizontal, 18)
+                    .padding(.top, 18)
+                }
+            }
+            .blur(radius: locked ? 16 : 0)
+            .saturation(locked ? 0.4 : 1)
+            .allowsHitTesting(!locked)
+            .animation(.easeInOut(duration: 1.4), value: locked)
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 8) {
+                MondoHeading(dayKey: dayKey, isActive: isActive)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                settingsButton
+            }
+            .padding(.top, 6)
+            .padding(.horizontal, 18)
+            MondoWorldClockBand(isActive: isActive)
+                .padding(.top, 20)
+        }
+        .padding(.bottom, 10)
+    }
+
+    // MARK: 中身(ひらいている とき)
+
+    private func readyBody(_ s: MondoDaySummary, width: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            todaysOneSection
+            wordsSection
+            morningNowSection
+            mapSection(s)
+            gridSection(s)
+                .id("v5grid")
+                .rotationEffect(.degrees(shakeGrid ? 1.2 : 0))
+            yourOneButton
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+        }
+    }
+
+    @ViewBuilder
+    private var todaysOneSection: some View {
+        if let announced {
+            MondoTodaysOne(pick: announced, onOpen: onOpenAnnounced)
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+        }
+    }
+
+    @ViewBuilder
+    private var wordsSection: some View {
+        let currentRanking = ranking
+        if !currentRanking.isEmpty {
+            wordsLabel
+            MondoWordsRow(ranking: currentRanking, selected: selectedTag, sample: wordSample, onSelect: selectTag)
+        }
+    }
+
+    @ViewBuilder
+    private var wordsLabel: some View {
+        if selectedTag != nil {
+            DarkLabel(text: "WORDS", trailing: "ALL ×", onTrailingTap: clearTag)
+        } else {
+            DarkLabel(text: "WORDS", trailing: "TOP 5")
+        }
+    }
+
+    @ViewBuilder
+    private var morningNowSection: some View {
+        if let best = bestMorningLight {
+            DarkLabel(text: "MORNING NOW", trailing: "9:00 →")
+            MondoMorningNowBand(light: best)
+                .padding(.horizontal, 18)
+        }
+    }
+
+    @ViewBuilder
+    private func mapSection(_ s: MondoDaySummary) -> some View {
+        if !lights.isEmpty {
+            DarkLabel(text: "MAP", trailing: "\(lights.count) PLACES")
+            MondoMapSection(lights: lights, entries: s.entries, onOpen: openLight)
+                .padding(.horizontal, 18)
+        }
+    }
+
+    @ViewBuilder
+    private func gridSection(_ s: MondoDaySummary) -> some View {
+        let headerText: String = selectedTag.map { "#\($0)" } ?? "EVERYONE"
+        DarkLabel(text: headerText, trailing: "TAP×2 LIGHT · HOLD ONE")
+        if gridEntries.isEmpty {
+            message("この タグの 写真は、まだ ありません", "")
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+        } else {
+            MondoPhotoGrid(
+                entries: gridEntries,
+                lit: lit,
+                yourOneID: yourOneID,
+                onOpen: { entry, point in openEntry(entry, point: point) },
+                onLight: { toggleLight($0) },
+                onPick: { pickYourOne($0) }
+            )
+            .padding(.horizontal, 18)
+            .padding(.top, 2)
+        }
+    }
+
+    private var yourOneButton: some View {
+        let entry = yourOneEntry
+        return GeometryReader { geo in
+            Button {
+                if let entry {
+                    openEntry(entry, point: CGPoint(x: geo.frame(in: .global).midX, y: geo.frame(in: .global).midY))
+                } else {
+                    Haptics.play(.tick)
+                    scrollToGridToken &+= 1
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: "Your one").font(.custom("InstrumentSerif-Regular", size: 22)).foregroundStyle(.white)
+                        Text(verbatim: entry.flatMap { ($0.place?.label).map { "\($0) · results at 9:00" } } ?? "hold a photo to choose · until 24:00")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color(hex: "8C8C93"))
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                    Text(verbatim: "›").font(.system(size: 22)).foregroundStyle(Color(hex: "8C8C93"))
+                }
+                .padding(.horizontal, 18)
+                .frame(height: 72)
+                .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Darkroom.card))
+            }
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.98))
+        }
+        .frame(height: 72)
+    }
+
+    // MARK: - データ
+
+    /// WORDS の タグの 見本写真(先頭2枚)
+    private func wordSample(_ tag: String) -> [MondoEntry] {
+        guard let summary else { return [] }
+        return Array(TagRanking.photos(for: tag, in: summary.entries, dayKey: summary.dayKey).prefix(2))
+    }
+
+    /// いま どこかで 9:00(昨日が ひらく 時刻)に いちばん 近い 場所
+    private var bestMorningLight: MondoLight? {
+        guard !lights.isEmpty else { return nil }
+        let utc = Calendar(identifier: .gregorian).dateComponents(in: TimeZone(identifier: "UTC") ?? .gmt, from: Date())
+        let hour = Double(utc.hour ?? 0) + Double(utc.minute ?? 0) / 60
+        func localHour(_ lon: Double) -> Double { ((hour + lon / 15).truncatingRemainder(dividingBy: 24) + 24).truncatingRemainder(dividingBy: 24) }
+        func distanceFromNine(_ lon: Double) -> Double {
+            let d = abs(localHour(lon) - 9)
+            return min(d, 24 - d)
+        }
+        return lights.min { distanceFromNine($0.point.lon) < distanceFromNine($1.point.lon) }
+    }
+
+    // MARK: - 操作
+
+    private func selectTag(_ tag: String) {
+        Haptics.play(.tick)
+        selectedTag = selectedTag == tag ? nil : tag
+    }
+
+    private func clearTag() {
+        Haptics.play(.tick)
+        selectedTag = nil
+    }
+
+    /// EVERYONE の とき:すべての昨日 と 同じ 並び。タグを えらんで いる とき:そのタグの フィード
+    private func openEntry(_ entry: MondoEntry, point: CGPoint) {
+        Haptics.play(.pop)
+        if let tag = selectedTag {
+            onOpenTag(point, tag, entry.id)
+        } else if let index = gridEntries.firstIndex(where: { $0.id == entry.id }) {
+            onOpenAll(point, index)
+        }
+    }
+
+    /// MAP の ピン:その場所の 1枚目から、すべての昨日の 並びで ひらく
+    private func openLight(_ light: MondoLight, point: CGPoint) {
+        Haptics.play(.pop)
+        let all = Array(summaryEntries.prefix(MondoConfig.maxCards))
+        if let index = all.firstIndex(where: { light.entryIDs.contains($0.id) }) {
+            onOpenAll(point, index)
+        } else if let tag = light.tags.first {
+            onOpenTag(point, tag, light.entryIDs.first)
+        }
+    }
+
+    /// ダブルタップ:ひかりを ともす(数は 出ない。端末だけ)
+    private func toggleLight(_ entry: MondoEntry) {
+        if lit.contains(entry.id) { lit.remove(entry.id) } else { lit.insert(entry.id) }
+    }
+
+    /// 長押し:あなたの 1枚(1日 1枚・24:00まで かえられる)
+    private func pickYourOne(_ entry: MondoEntry) {
+        yourOneID = entry.id
+        MondoYourOneStore.set(day: dayKey, entryID: entry.id)
+        show("あなたの 1枚に えらびました ・ 24:00 まで かえられる")
     }
 
     private func show(_ message: String) {
@@ -838,76 +1292,15 @@ struct HomeV5MondoPage: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.9) { if toast == message { toast = nil } }
     }
 
-    // MARK: 見出し
-
-    private var bandLights: Int? {
-        guard case .ready(let s) = phase else { return nil }
-        let world = WorldCountStore.shared
-        return (world.dayKey == s.dayKey ? world.count : nil) ?? s.lightCount
-    }
-
-    private var bandCountries: Int? {
-        guard case .ready(let s) = phase else { return nil }
-        return s.countryCount
-    }
-
-    /// Inter Black が入っていればそれ、なければ太い丸ゴシック
-    private var mondoFont: Font {
-        UIFont(name: "Inter-Black", size: 50) != nil
-            ? .custom("Inter-Black", fixedSize: 50)
-            : .system(size: 50, weight: .heavy, design: .rounded)
-    }
-
-    private var yesterdayFont: Font {
-        UIFont(name: "InstrumentSerif-Italic", size: 30) != nil
-            ? .custom("InstrumentSerif-Italic", fixedSize: 30)
-            : .system(size: 30, design: .serif).italic()
-    }
-
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("Mondo")
-                    .font(mondoFont)
-                    .tracking(-0.05 * 50)
-                    .foregroundStyle(palette.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text("yesterday")
-                    .font(yesterdayFont)
-                    .foregroundStyle(palette.sub)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            Text("昨日の世界 · \(V5.monthDay(fromDayKey: dayKey))")
-                .font(V5.mono(12, weight: .bold))
-                .tracking(0.12 * 12)
-                .foregroundStyle(palette.accentText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            if case .ready(let s) = phase {
-                let shown = bandLights ?? s.lightCount
-                Text("\(shown.formatted(.number.grouping(.automatic))) の光 · \(s.countryCount) の国と地域")
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(palette.sub)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-        }
-        .padding(.leading, 26)
-        .padding(.trailing, V5.edge)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// 設定の「…」(見出しの横から、ランキングの見出しの横へ移した)
+    /// 設定の「…」
     private var settingsButton: some View {
         Button(action: onSettings) {
             Image(systemName: "ellipsis")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(palette.ink)
+                .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
-                .background(Circle().fill(palette.fill))
-                .overlay(Circle().strokeBorder(palette.line, lineWidth: 1))
+                .background(Circle().fill(Darkroom.card))
+                .overlay(Circle().strokeBorder(Darkroom.line, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .consumesTap()
@@ -929,10 +1322,10 @@ struct HomeV5MondoPage: View {
                     message("いま、世界につながりません", "また あとで")
                     Button("もう一度", action: onRetry)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(palette.bg)
+                        .foregroundStyle(Darkroom.bg)
                         .padding(.horizontal, 22)
                         .padding(.vertical, 10)
-                        .background(Capsule().fill(palette.ink))
+                        .background(Capsule().fill(.white))
                         .consumesTap()
                 }
             case .ready:
@@ -944,209 +1337,391 @@ struct HomeV5MondoPage: View {
 
     private func message(_ title: String, _ body: String) -> some View {
         VStack(spacing: 8) {
-            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(palette.ink)
+            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
             if !body.isEmpty {
-                Text(body).font(.system(size: 12.5)).foregroundStyle(palette.sub)
+                Text(body).font(.system(size: 12.5)).foregroundStyle(Darkroom.weak)
             }
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, 24)
     }
+}
 
-    // MARK: 中身
+// MARK: - v37 TODAY'S ONE(世界が選んだ1枚・9:00発表)
 
-    private func readyContent(_ s: MondoDaySummary) -> some View {
-        let ranking = TagRanking.rank(s.topTags, dayKey: s.dayKey)
-        let cards = Array(s.entries.prefix(MondoConfig.maxCards))
-        return VStack(alignment: .leading, spacing: 18) {
-            if !ranking.isEmpty {
-                HStack(alignment: .center, spacing: 8) {
-                    Text("昨日多かったハッシュタグ")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                    Spacer()
-                    Text("TOP \(ranking.count)")
-                        .font(V5.mono(11))
-                        .tracking(1)
-                        .foregroundStyle(palette.sub)
-                    settingsButton
-                }
-                .padding(.horizontal, V5.edge)
+private struct MondoTodaysOne: View {
+    let pick: AnnouncedPick
+    let onOpen: (CGPoint) -> Void
 
-                ForEach(ranking) { ranked in
-                    RankRow(ranked: ranked, photos: Array(TagRanking.photos(for: ranked.tag, in: s.entries, dayKey: s.dayKey).prefix(TagRanking.photosPerRow)), locked: locked, onOpen: onOpenTag)
-                        .padding(.horizontal, V5.edge)
-                        .scrollTransition(.interactive) { content, phase in
-                            content
-                                .opacity(1 - abs(phase.value) * 0.5)
-                                .offset(y: phase.value > 0 ? 26 * phase.value : 0)
-                        }
-                }
-            } else {
-                HStack { Spacer(); settingsButton }
-                    .padding(.horizontal, V5.edge)
-            }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-            if !cards.isEmpty {
-                Text("すべての昨日")
-                    .font(V5.mono(9.5))
-                    .tracking(0.16 * 9.5)
-                    .foregroundStyle(palette.sub)
-                    .padding(.horizontal, V5.edge)
-                    .padding(.top, 14)
-
-                ForEach(Array(cards.enumerated()), id: \.element.id) { index, entry in
-                    AllCard(entry: entry, index: index, locked: locked, onOpen: { point in onOpenAll(point, index) })
-                        .padding(.horizontal, V5.edge)
-                        .scrollTransition(.interactive) { content, phase in
-                            content.opacity(1 - abs(phase.value) * 0.45)
-                        }
-                }
-            }
-
-            endBlock
-                .padding(.top, 16)
-        }
+    private var place: String {
+        if case .mondo(let entry) = pick.source { return entry.place?.label ?? "" }
+        return ""
     }
 
-    private var endBlock: some View {
-        VStack(spacing: 8) {
-            Circle().fill(palette.accent).frame(width: 8, height: 8)
-            Text("今日の Mondo は、ここまで。")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(palette.ink)
-            Text("あしたの朝、また新しい世界がひらきます")
-                .font(.system(size: 12.5))
-                .foregroundStyle(palette.sub)
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let breathe = reduceMotion ? 0.5 : (sin(t * 2 * .pi / 3.4) + 1) / 2
+            ZStack {
+                AnnouncedPhoto(pick: pick).clipped()
+                LinearGradient(stops: [
+                    .init(color: .black.opacity(0.35), location: 0),
+                    .init(color: .clear, location: 0.3),
+                    .init(color: .black.opacity(0.25), location: 0.55),
+                    .init(color: Darkroom.bg.opacity(0.95), location: 1),
+                ], startPoint: .top, endPoint: .bottom)
+                Circle()
+                    .fill(RadialGradient(colors: [Color(hex: "FFC878").opacity(0.5 * (0.6 + 0.4 * breathe)), .clear], center: .center, startRadius: 0, endRadius: 130))
+                    .frame(width: 260, height: 260)
+                    .blendMode(.screen)
+                    .allowsHitTesting(false)
+                Text(verbatim: "TODAY'S ONE · 9:00")
+                    .font(V5.mono(10)).tracking(0.26 * 10).foregroundStyle(Color(hex: "FFB27A"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 20)
+                if let tag = pick.tags.first {
+                    let c = Darkroom.stickerColors(tag)
+                    Text(verbatim: "#\(tag)").font(.system(size: 15, weight: .black)).foregroundStyle(c.1)
+                        .padding(.horizontal, 11).padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 11).fill(c.0))
+                        .rotationEffect(.degrees(7))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .padding(16)
+                }
+                VStack(spacing: 6) {
+                    Text(verbatim: place.isEmpty ? "—" : place)
+                        .font(.custom("InstrumentSerif-Regular", size: 34)).foregroundStyle(.white)
+                    Text(verbatim: "picked by the world · no numbers")
+                        .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, 28)
+            }
         }
-        .frame(maxWidth: .infinity)
+        .frame(height: 400)
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .onSpatialTap(perform: onOpen)
+        .accessibilityLabel("世界が選んだ1枚。\(place)")
     }
 }
 
-// MARK: - ランキングの行
+// MARK: - v37 WORDS(きのう多かったことば TOP5)
 
-private struct RankRow: View {
-    @Environment(\.palette) private var palette
-    let ranked: RankedTag
-    let photos: [MondoEntry]
-    let locked: Bool
-    let onOpen: (_ point: CGPoint, _ tag: String, _ entryID: String?) -> Void
-
-    private var isTop: Bool { ranked.rank == 1 }
+private struct MondoWordsRow: View {
+    let ranking: [RankedTag]
+    let selected: String?
+    let sample: (String) -> [MondoEntry]
+    let onSelect: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 14) {
-                OutlineNumber(text: "\(ranked.rank)", isTop: isTop)
-                    .frame(width: 52)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("#\(ranked.tag)")
-                        .font(.system(size: isTop ? 30 : 25, weight: .bold))
-                        .tracking(-0.03 * (isTop ? 30 : 25))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                    HStack(spacing: 10) {
-                        Text("\(ranked.count) の光")
-                            .font(V5.mono(11))
-                            .foregroundStyle(isTop ? palette.ink : palette.sub)
-                        // 棒:その日の1位の数に対する割合
-                        GeometryReader { proxy in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(palette.ink.opacity(0.08))
-                                Capsule()
-                                    .fill(isTop ? palette.accent : palette.ink)
-                                    .frame(width: max(6, proxy.size.width * ranked.ratio))
-                            }
-                        }
-                        .frame(height: 3)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(ranking.enumerated()), id: \.element.id) { index, ranked in
+                    pill(index: index, ranked: ranked)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 4)
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.viewAligned)
+    }
+
+    private func pill(index: Int, ranked: RankedTag) -> some View {
+        let on = selected == ranked.tag
+        return Button {
+            onSelect(ranked.tag)
+        } label: {
+            HStack(spacing: 10) {
+                Text(verbatim: String(format: "%02d", index + 1))
+                    .font(.custom("InstrumentSerif-Italic", size: 22))
+                    .foregroundStyle(on ? Darkroom.orange : Darkroom.weak)
+                Text(verbatim: ranked.tag)
+                    .font(Darkroom.title(ranked.tag, size: 16))
+                HStack(spacing: -12) {
+                    ForEach(Array(sample(ranked.tag).enumerated()), id: \.element.id) { i, entry in
+                        MondoTile(entry: entry, cornerRadius: 18)
+                            .frame(width: 36, height: 36)
+                            .overlay(Circle().strokeBorder(on ? .white : Darkroom.card, lineWidth: 2))
+                            .zIndex(Double(2 - i))
                     }
                 }
-                Spacer(minLength: 0)
             }
-            .onSpatialTap { onOpen($0, ranked.tag, nil) }
+            .foregroundStyle(on ? Color(hex: "111111") : .white)
+            .padding(.leading, 14).padding(.trailing, 10)
+            .frame(height: 56)
+            .background(Capsule().fill(on ? Color.white : Darkroom.card))
+            .overlay(alignment: .bottomLeading) {
+                Capsule()
+                    .fill(LinearGradient(colors: [Color(hex: "FFB27A"), Darkroom.orange], startPoint: .leading, endPoint: .trailing))
+                    .frame(width: max(4, 60 * ranked.ratio), height: 3)
+                    .padding(.leading, 14).padding(.bottom, 4)
+            }
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.96))
+        .clipShape(Capsule())
+        .accessibilityLabel("#\(ranked.tag)。\(on ? "えらんでいる" : "")")
+    }
+}
 
-            HStack(spacing: 8) {
-                ForEach(Array(photos.enumerated()), id: \.element.id) { index, entry in
-                    MondoTile(entry: entry, cornerRadius: 0)
-                        .aspectRatio(3 / 4, contentMode: .fit)
-                        .blur(radius: locked ? 18 : 0, opaque: true)
-                        .clipped()
-                        .chicPrint(side: 3, bottom: 10, rotation: index % 2 == 0 ? -2 : 1.6)
-                        .frame(maxWidth: .infinity)
-                        .onSpatialTap { onOpen($0, ranked.tag, entry.id) }
+// MARK: - v37 MORNING NOW(世界の9:00の帯)
+
+private struct MondoMorningNowBand: View {
+    let light: MondoLight
+
+    private var localHourFraction: Double {
+        let utc = Calendar(identifier: .gregorian).dateComponents(in: TimeZone(identifier: "UTC") ?? .gmt, from: Date())
+        let hour = Double(utc.hour ?? 0) + Double(utc.minute ?? 0) / 60
+        let local = ((hour + light.point.lon / 15).truncatingRemainder(dividingBy: 24) + 24).truncatingRemainder(dividingBy: 24)
+        return local / 24
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    LinearGradient(colors: [Color(hex: "0E0E18"), Color(hex: "2A2040"), Color(hex: "FF9A62"), Color(hex: "FFE7C8"), Color(hex: "C9D6F0")], startPoint: .leading, endPoint: .trailing)
+                    Rectangle().fill(.white).frame(width: 2)
+                        .shadow(color: .white, radius: 10)
+                        .offset(x: proxy.size.width * localHourFraction)
                 }
-                if photos.count < TagRanking.photosPerRow {
-                    Spacer(minLength: 0)
-                }
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(palette.ink)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(palette.bg))
-                    .overlay(Circle().strokeBorder(palette.line, lineWidth: 1))
-                    .onSpatialTap { onOpen($0, ranked.tag, nil) }
-                    .accessibilityLabel("#\(ranked.tag)の写真をぜんぶ見る")
+            }
+            .frame(height: 38)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: light.name).font(.custom("InstrumentSerif-Regular", size: 26)).foregroundStyle(.white)
+                Text(verbatim: "is opening yesterday").font(.system(size: 12, weight: .medium)).foregroundStyle(Darkroom.weak)
             }
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 32, style: .continuous).fill(palette.fill))
-        .overlay {
-            if isTop {
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .strokeBorder(palette.accent, lineWidth: 1.5)
-            }
-        }
-        .animation(.easeInOut(duration: 1.4), value: locked)
-        .allowsHitTesting(!locked)
-        .accessibilityElement(children: .contain)
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Darkroom.card))
+        .accessibilityElement(children: .combine)
     }
 }
 
-// MARK: - すべての昨日のカード
+// MARK: - v37 MAP(市区町村まで。点の地図 + 脈打つピン)
 
-private struct AllCard: View {
-    let entry: MondoEntry
-    var index = 0
-    var locked = false
-    let onOpen: (CGPoint) -> Void
+private struct MondoMapSection: View {
+    let lights: [MondoLight]
+    let entries: [MondoEntry]
+    let onOpen: (MondoLight, CGPoint) -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private func position(_ p: GeoPoint) -> CGPoint {
+        CGPoint(x: (p.lon + 180) / 360, y: (90 - p.lat) / 180)
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            MondoTile(entry: entry, cornerRadius: 0)
-                .frame(height: 360)
-                .blur(radius: locked ? 18 : 0, opaque: true)
-                .clipped()
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(Array(entry.tags.prefix(2).enumerated()), id: \.offset) { tagIndex, tag in
-                    Text("#\(tag)")
-                        .font(mondoHandFont(tagIndex == 0 ? 20 : 15))
-                        .foregroundStyle(tagIndex == 0 ? Color(hex: "2A2A2E") : ChicColor.sub)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+        GeometryReader { proxy in
+            ZStack(alignment: .bottomTrailing) {
+                Canvas { ctx, size in
+                    let spacing: CGFloat = 12
+                    var x: CGFloat = 6
+                    while x < size.width {
+                        var y: CGFloat = 6
+                        while y < size.height {
+                            ctx.fill(Path(ellipseIn: CGRect(x: x - 0.6, y: y - 0.6, width: 1.2, height: 1.2)), with: .color(Color(hex: "2C2C31")))
+                            y += spacing
+                        }
+                        x += spacing
+                    }
                 }
-                Text("昨日 · \(V5.monthDay(fromDayKey: entry.dayKey))")
-                    .font(V5.mono(11))
-                    .foregroundStyle(ChicColor.sub)
-                    .lineLimit(1)
+                RadialGradient(colors: [.clear, Darkroom.bg], center: .center, startRadius: proxy.size.width * 0.28, endRadius: proxy.size.width * 0.58)
+                    .allowsHitTesting(false)
+                ForEach(Array(lights.enumerated()), id: \.element.id) { index, light in
+                    let p = position(light.point)
+                    pin(light, index: index, entry: entries.first { light.entryIDs.contains($0.id) })
+                        .position(x: proxy.size.width * p.x, y: proxy.size.height * p.y)
+                }
+                Text(verbatim: "city-level only")
+                    .font(V5.mono(8.5)).tracking(0.2 * 8.5).foregroundStyle(Darkroom.faint)
+                    .padding(.trailing, 14).padding(.bottom, 10)
             }
-            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
-            .padding(.top, 6)
-            .blur(radius: locked ? 6 : 0)
-            .opacity(locked ? 0.6 : 1)
-            .allowsHitTesting(false)
         }
-        .chicPrint(side: 12, bottom: 0, rotation: ChicTilt.degrees(index))
-        .padding(.bottom, 4)
-        .animation(.easeInOut(duration: 1.4), value: locked)
-        .onSpatialTap(perform: onOpen)
-        .allowsHitTesting(!locked)
-        .accessibilityLabel("\(entry.tags.map { "#\($0)" }.joined(separator: " "))の昨日の1枚")
+        .frame(height: 230)
+        .background(Color(hex: "111113"))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Darkroom.line, lineWidth: 1))
+    }
+
+    private func pin(_ light: MondoLight, index: Int, entry: MondoEntry?) -> some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 15, paused: reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate - Double(index) * 0.3
+            let s = reduceMotion ? 0 : (sin(t * 2 * .pi / 2.4) + 1) / 2
+            ZStack {
+                Circle().fill(Darkroom.orange)
+                if let entry {
+                    MondoTile(entry: entry, cornerRadius: 13).padding(3)
+                }
+            }
+            .frame(width: 26, height: 26)
+            .overlay(Circle().strokeBorder(Darkroom.bg, lineWidth: 2))
+            .shadow(color: Darkroom.orange.opacity(0.7), radius: 8)
+            .scaleEffect(1 + 0.15 * s)
+        }
+        .onSpatialTap { onOpen(light, $0) }
+        .accessibilityLabel("\(light.name)。\(light.count)枚")
     }
 }
 
+// MARK: - v37 写真の一覧(EVERYONE / えらんだタグ)
+
+private struct MondoPhotoGrid: View {
+    let entries: [MondoEntry]
+    let lit: Set<String>
+    let yourOneID: String?
+    let onOpen: (MondoEntry, CGPoint) -> Void
+    let onLight: (MondoEntry) -> Void
+    let onPick: (MondoEntry) -> Void
+
+    private let columns = [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)]
+
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 9) {
+            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                MondoPhotoCell(
+                    entry: entry,
+                    height: (index % 4 == 1 || index % 4 == 2) ? 250 : 220,
+                    isLit: lit.contains(entry.id),
+                    isPicked: yourOneID == entry.id,
+                    onOpen: { point in onOpen(entry, point) },
+                    onLight: { onLight(entry) },
+                    onPick: { onPick(entry) }
+                )
+            }
+        }
+    }
+}
+
+private struct MondoPhotoCell: View {
+    let entry: MondoEntry
+    let height: CGFloat
+    let isLit: Bool
+    let isPicked: Bool
+    let onOpen: (CGPoint) -> Void
+    let onLight: () -> Void
+    let onPick: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var center: CGPoint = .zero
+    @State private var burst = 0
+    @State private var holding = false
+    @State private var ring: CGFloat = 0
+    @State private var holdTask: Task<Void, Never>?
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            MondoTile(entry: entry, cornerRadius: 20)
+            LinearGradient(stops: [.init(color: .clear, location: 0.58), .init(color: .black.opacity(0.6), location: 1)], startPoint: .top, endPoint: .bottom)
+            if let place = entry.place?.label, !place.isEmpty {
+                Text(verbatim: place)
+                    .font(.custom("InstrumentSerif-Italic", size: 17)).foregroundStyle(.white)
+                    .lineLimit(1)
+                    .padding(.leading, 12).padding(.bottom, 11)
+            }
+            if let tag = entry.tags.first {
+                let c = Darkroom.stickerColors(tag)
+                Text(verbatim: "#\(tag)").font(.system(size: 11.5, weight: .black)).foregroundStyle(c.1)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(c.0))
+                    .rotationEffect(.degrees(-6))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(10)
+            }
+            if holding {
+                RoundedRectangle(cornerRadius: 20, style: .continuous).trim(from: 0, to: ring)
+                    .stroke(Darkroom.star, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .padding(2)
+            }
+        }
+        .frame(height: height)
+        .frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            KeepStar()
+                .frame(width: 26, height: 26)
+                .rotationEffect(.degrees(-12))
+                .padding(8)
+                .scaleEffect(isPicked ? 1 : 0.01)
+                .opacity(isPicked ? 1 : 0)
+                .animation(.spring(response: 0.4, dampingFraction: 0.45), value: isPicked)
+        }
+        .overlay {
+            if isLit {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Color(hex: "FFBE78").opacity(0.8), lineWidth: 2)
+                    .shadow(color: Color(hex: "FFA050").opacity(0.7), radius: 14)
+            }
+        }
+        .overlay {
+            if burst > 0 {
+                Circle()
+                    .fill(RadialGradient(colors: [Color(hex: "FFDCA0").opacity(0.9), Color(hex: "FFA050").opacity(0)], center: .center, startRadius: 0, endRadius: 45))
+                    .frame(width: 90, height: 90)
+                    .keyframeAnimator(initialValue: 0.2, trigger: burst) { content, s in content.scaleEffect(s).opacity(s < 1.8 ? 1 : 0) } keyframes: { _ in
+                        CubicKeyframe(reduceMotion ? 0.2 : 2.4, duration: reduceMotion ? 0.01 : 0.7)
+                    }
+                    .allowsHitTesting(false)
+            }
+        }
+        .onGeometryChange(for: CGPoint.self) { proxy in
+            let f = proxy.frame(in: .global)
+            return CGPoint(x: f.midX, y: f.midY)
+        } action: { center = $0 }
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .onTapGesture(count: 2) {
+            Haptics.play(.soft)
+            burst += 1
+            onLight()
+        }
+        .onTapGesture(count: 1) {
+            onOpen(center)
+        }
+        .onLongPressGesture(minimumDuration: 0.68, maximumDistance: 9) {
+            finishHold()
+        } onPressingChanged: { pressing in
+            holdTask?.cancel()
+            if pressing {
+                holdTask = Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(0.16))
+                    guard !Task.isCancelled else { return }
+                    holding = true
+                    ring = 0
+                    Haptics.play(.tick)
+                    withAnimation(.linear(duration: 0.52)) { ring = 1 }
+                }
+            } else {
+                holding = false
+                ring = 0
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel((entry.place?.label ?? "") + (isPicked ? "。あなたの1枚" : ""))
+        .accessibilityAction(named: "ひかりを ともす", onLight)
+        .accessibilityAction(named: "あなたの 1枚に する", onPick)
+    }
+
+    private func finishHold() {
+        holdTask?.cancel()
+        holding = false
+        ring = 0
+        Haptics.play(.heart)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { Haptics.play(.success) }
+        onPick()
+    }
+}
+
+// MARK: - v37 あなたの1枚(1日1枚・24:00まで・端末だけ)
+
+enum MondoYourOneStore {
+    private static func key(_ day: String) -> String { "mondo.yourOne.\(day)" }
+    static func get(day: String) -> String? { UserDefaults.standard.string(forKey: key(day)) }
+    static func set(day: String, entryID: String) { UserDefaults.standard.set(entryID, forKey: key(day)) }
+}
 
 // MARK: - v19 の地球儀の舞台
 

@@ -106,6 +106,177 @@ enum GroupSections {
     }
 }
 
+// MARK: - v36 ヒーロー(Once ふう・見本:later_v36.html)
+
+/// 角丸32・高さ約470の 大きなカード。きのうの写真4枚のモザイクを背景に、グループ名と3つの数字、
+/// Create(白い丸)・参加する(ガラスの四角)。今日まだ撮っていないときは ぼかして ロックのピルを出す。
+struct YesterdayOnceHero: View {
+    let mosaic: [Data]
+    let groupName: String?
+    let dateLabel: String
+    let groupsCount: Int
+    let daysLeft: Int
+    let friendsCount: Int
+    let locked: Bool
+    let hoursToOpen: Int
+    let introToken: Int
+    let onCreate: () -> Void
+    let onJoin: () -> Void
+    let onFriends: () -> Void
+    var onOpenGroups: () -> Void = {}
+    var onOpenToOpen: () -> Void = {}
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            mosaicBackground
+            LinearGradient(colors: [.clear, .clear, .black.opacity(0.9)], startPoint: .top, endPoint: .bottom)
+            VStack(spacing: 16) {
+                Text(verbatim: "GROUPS · \(dateLabel)")
+                    .font(LF.mono(10, bold: true))
+                    .tracking(2.6)
+                    .foregroundStyle(.white.opacity(0.75))
+                if locked {
+                    Button {
+                        Haptics.play(.tick)
+                        CaptureRequestStore.shared.pendingRequestID = UUID()
+                    } label: {
+                        Label { Text(verbatim: "shoot today to open") } icon: { Image(systemName: "lock.fill") }
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16).frame(height: 38)
+                            .laterGlass(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                Text(verbatim: groupName ?? "Yesterday, together.")
+                    .font(LF.serif(46))
+                    .foregroundStyle(.white)
+                    .tracking(-0.6)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.6)
+                    .shadow(color: .black.opacity(0.4), radius: 10, y: 3)
+                stats
+                buttons
+            }
+            .padding(.horizontal, 22)
+            .padding(.bottom, 22)
+            .padding(.top, 150)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        }
+        .frame(height: 470)
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .shadow(color: .black.opacity(0.3), radius: 20, y: 16)
+        .scaleEffect(appeared || reduceMotion ? 1 : 0.96)
+        .opacity(appeared || reduceMotion ? 1 : 0)
+        .onAppear { reveal() }
+        .onChange(of: introToken) { _, _ in
+            var hide = Transaction(); hide.disablesAnimations = true
+            withTransaction(hide) { appeared = false }
+            DispatchQueue.main.async { reveal() }
+        }
+    }
+
+    private func reveal() {
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.5, dampingFraction: 0.78)) { appeared = true }
+    }
+
+    private var mosaicBackground: some View {
+        GeometryReader { proxy in
+            let w = proxy.size.width / 2, h = proxy.size.height / 2
+            Group {
+                if mosaic.isEmpty {
+                    LinearGradient(colors: [Color(hex: "2A2A2E"), Color(hex: "121214")], startPoint: .top, endPoint: .bottom)
+                } else {
+                    VStack(spacing: 3) {
+                        HStack(spacing: 3) { mosaicTile(0, w: w, h: h); mosaicTile(1, w: w, h: h) }
+                        HStack(spacing: 3) { mosaicTile(2, w: w, h: h); mosaicTile(3, w: w, h: h) }
+                    }
+                }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .scaleEffect(locked ? 1.12 : 1)
+            .blur(radius: locked ? 18 : 0)
+            .saturation(locked ? 0.45 : 1)
+            .brightness(locked ? 0.1 : 0)
+        }
+        .clipped()
+        .allowsHitTesting(false)
+    }
+
+    private func mosaicTile(_ i: Int, w: CGFloat, h: CGFloat) -> some View {
+        Group {
+            if i < mosaic.count, let image = UIImage(data: mosaic[i]) {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                Color(hex: "1C1C1F")
+            }
+        }
+        .frame(width: w, height: h)
+        .clipped()
+    }
+
+    private var stats: some View {
+        HStack(spacing: 0) {
+            Button(action: onOpenGroups) { stat(value: groupsCount, label: "Groups") }
+                .buttonStyle(.plain)
+                .accessibilityLabel("グループ、\(groupsCount)")
+            if locked {
+                Button(action: onOpenToOpen) { stat(value: hoursToOpen, label: "To open", suffix: "h") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("ひらくまで、\(hoursToOpen)時間")
+            } else {
+                stat(value: daysLeft, label: "Left", suffix: "d")
+            }
+            Button(action: onFriends) { stat(value: friendsCount, label: "Friends ›") }
+                .buttonStyle(.plain)
+                .accessibilityLabel("ともだち、\(friendsCount)人")
+        }
+    }
+
+    private func stat(value: Int, label: String, suffix: String = "") -> some View {
+        VStack(spacing: 3) {
+            Text(verbatim: "\(appeared ? value : 0)\(suffix)")
+                .font(LF.serif(31, italic: true))
+                .foregroundStyle(.white)
+                .contentTransition(.numericText())
+            Text(verbatim: label)
+                .font(LF.inter(500, 13))
+                .foregroundStyle(.white.opacity(0.62))
+        }
+        .frame(maxWidth: .infinity)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: appeared)
+    }
+
+    private var buttons: some View {
+        HStack(spacing: 10) {
+            Button(action: onCreate) {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus").font(.system(size: 18, weight: .bold))
+                    Text("Create").font(LF.inter(800, 16))
+                }
+                .foregroundStyle(Color(hex: "111111"))
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.white))
+            }
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            .accessibilityLabel("グループをつくる")
+            Button(action: onJoin) {
+                Image(systemName: "qrcode").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .laterGlass(Circle())
+            }
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.92))
+            .accessibilityLabel("グループに参加する")
+        }
+        .padding(.top, 4)
+    }
+}
+
 // MARK: - 画面
 
 struct HomeV5GroupPage: View {
@@ -127,6 +298,11 @@ struct HomeV5GroupPage: View {
     var userName: String = ""
     var onCreateGroup: (String?) -> Void = { _ in }
     var onJoinGroup: () -> Void = {}
+    /// v36:ヒーロー・ACTIVE(Home の暗室と同じたてカード)に使う
+    var now: Date = Date()
+    var sharedGroups: [LaterGroup] = []
+    var me: String? = nil
+    var blocked: Set<String> = []
     /// グループごとの、発表された一枚(なければタイルを出さない)
     var announced: [UUID: AnnouncedPick] = [:]
     /// 自分が灯をともしているタイルの id
@@ -143,6 +319,8 @@ struct HomeV5GroupPage: View {
     var onFriend: (HomeFriend) -> Void = { _ in }
     var onInviteFriend: () -> Void = {}
     var onOpenMe: () -> Void = {}
+    /// v47:「To open」の数 → ライブパネル
+    var onOpenToOpen: () -> Void = {}
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -155,17 +333,13 @@ struct HomeV5GroupPage: View {
     @State private var popGroups: [UUID: Date] = [:]
     @State private var previousShot: [UUID: Int] = [:]
     @State private var hasSeeded = false
-    /// カギの ピル(0.6秒 ロックの ままなら 出す)
-    @State private var showsLockPill = false
     @State private var played: Set<String> = []
     @State private var pendingIDs: [String] = []
     @State private var unlockTask: Task<Void, Never>?
     /// タブを開き直すたびに増やす(ブロックが、もう一度下から出てくる)
     @State private var revealToken = 0
     /// ヒーローの 出現の はじまり(タブを ひらくたび)
-    @State private var introStart: Date?
     @State private var introToken = 0
-    @State private var marker = 1.0
 
     private var targetIDs: [String] {
         sections.flatMap { section in section.tiles.map(\.id).filter(section.unlockedIDs.contains) }
@@ -174,67 +348,45 @@ struct HomeV5GroupPage: View {
     var body: some View {
         ScrollViewReader { reader in
         ScrollView(.vertical) {
-            // v14 ②:1本の縦並び(ZStack や .offset で重ねない)。
-            // ともだち → ME → グループ → つくる → 参加する。画面に入ったら下から出てくる(タブを開き直すたびに、もう一度)
-            // 昨日 → グループ(v22):[ヒーロー(グループが 0件のときだけ)]→ 見出し → サブ → つくる / 参加する
-            // → ME → ともだち → グループ。画面に入ったら下から出てくる(タブを開き直すたびに、もう一度)
+            // v36:ヒーロー(Once ふう)→ ACTIVE → ME → FRIENDS → グループ。
+            // 画面に入ったら下から出てくる(タブを開き直すたびに、もう一度)
             VStack(spacing: 12) {
-                if sections.isEmpty {
-                    GeometryReader { proxy in
-                        let scale = YesterdayHeroLayout.scale(forWidth: proxy.size.width + V5.edge * 2)
-                        YesterdayGroupHero(userName: userName, introStart: introStart, isActive: isActive,
-                                           onSeat: { if canCreate { onCreateGroup(nil) } else { Haptics.play(.warn) } })
-                            .scaleEffect(scale)
-                            .frame(width: proxy.size.width, height: proxy.size.height)
-                    }
-                    .frame(height: YesterdayHeroLayout.size.height * YesterdayHeroLayout.scale(forWidth: UIScreen.main.bounds.width))
-                    .padding(.top, 6)
-                }
-                // 見出し → サブ → ボタン → ME が、下から 26pt 浮いて 順に(0.07秒ずつ・バイブなし)
-                YesterdayGroupHeadline(marker: marker)
-                    .padding(.top, sections.isEmpty ? 4 : 0)
-                    .yesterdayRise(riseBase, token: introToken)
-                YesterdayGroupSub()
-                    .padding(.top, -4)
-                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep, token: introToken)
-                createJoinButtons
-                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep * 2, token: introToken)
+                YesterdayOnceHero(
+                    mosaic: heroMosaic,
+                    groupName: sections.first?.name,
+                    dateLabel: Darkroom.dayLabel(DailyWindow.yesterday(for: now).open).uppercased(),
+                    groupsCount: sections.count,
+                    daysLeft: max(1, MERules.days - 1),
+                    friendsCount: friendsData.friends.count,
+                    locked: locked,
+                    hoursToOpen: hoursToOpen,
+                    introToken: introToken,
+                    onCreate: { if canCreate { onCreateGroup(nil) } else { Haptics.play(.warn) } },
+                    onJoin: onJoinGroup,
+                    onFriends: onInviteFriend,
+                    onOpenGroups: {
+                        if sections.isEmpty {
+                            if canCreate { onCreateGroup(nil) } else { Haptics.play(.warn) }
+                        } else {
+                            Haptics.play(.tick)
+                            withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5active", anchor: .top) }
+                        }
+                    },
+                    onOpenToOpen: locked ? onOpenToOpen : {}
+                )
+                .padding(.top, 2)
+                activeRow
+                    .id("v5active")
+                    .padding(.horizontal, -V5.edge)
+                    .yesterdayRise(0.05, token: introToken)
                 MECard(caption: "きのうの まい ・ 7日で きえる", film: friendsData.film, isActive: isActive, onTap: onOpenMe)
-                    .padding(.top, 14)
-                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep * 3, token: introToken)
+                    .padding(.top, 2)
+                    .yesterdayRise(0.1, token: introToken)
                 TodayFriendsSection(state: friendsState, data: friendsData, actions: friendsActions, onFriend: onFriend, onInvite: onInviteFriend)
                     .padding(.horizontal, -V5.edge)
-                    .yesterdayRise(riseBase + YesterdayHeroTiming.riseStep * 4, token: introToken)
-                if !sections.isEmpty {
-                    Text("グループ")
-                        .font(.system(size: 28, weight: .heavy))
-                        .tracking(-0.05 * 28)
-                        .foregroundStyle(palette.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 12)
-                        .accessibilityAddTraits(.isHeader)
-                        .scrollReveal(4, token: revealToken)
-                }
-                ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                    GroupSectionView(
-                        section: section,
-                        levels: levels,
-                        scales: scales,
-                        bursts: bursts,
-                        shakes: shakes,
-                        glow: glowGroups[section.id],
-                        pop: popGroups[section.id],
-                        isActive: isActive,
-                        announced: announced[section.id],
-                        litTileIDs: litTileIDs,
-                        onOpenAnnounced: { point in onOpenAnnounced(point, section.id) },
-                        onOpenRoom: { onOpenRoom(section.id) },
-                        onOpenTile: { point, tileID in onOpenTile(point, section.id, tileID) },
-                        onCycleLocation: { onCycleLocation(section.id) }
-                    )
-                    .v5Locked(locked)
-                    .scrollReveal(5 + index, token: revealToken)
-                }
+                    .yesterdayRise(0.15, token: introToken)
+                // v54:ヒーロー → ACTIVE → ME → Friend で終わり。古い「グループ」見出し・縦の一覧・ピン・
+                // 1/1 の輪は、モックに無いので出さない(詳しくは SCREEN_MAP.md の Groups タブの項)。
             }
             .padding(.horizontal, V5.edge)
             .padding(.top, topInset + 52)
@@ -244,24 +396,8 @@ struct HomeV5GroupPage: View {
             .id("v5top")
         }
         .scrollIndicators(.hidden)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            // タブバーのすぐ上に、小さなガラスのピル
-            if showsLockPill {
-                V5LockedPill()
-                    .padding(.bottom, 8)
-                    .contentShape(Capsule())
-                    .onTapGesture { Haptics.play(.warn) }
-                    .transition(.opacity)
-            }
-        }
+        .scrollEdgeEffectStyle(.soft, for: .top)
         .animation(.easeInOut(duration: 1.4), value: locked)
-        .animation(.easeOut(duration: 0.3), value: showsLockPill)
-        // v23:解禁ずみの ときに カギが 一瞬 出ないよう、0.6秒 たっても ロックの ままの ときだけ 出す。外れるときは すぐ
-        .task(id: locked) {
-            guard locked else { showsLockPill = false; return }
-            try? await Task.sleep(for: .seconds(0.6))
-            if !Task.isCancelled, locked { showsLockPill = true }
-        }
         .onChange(of: scrollToTopToken) { _, _ in
             withAnimation(.easeInOut(duration: 0.45)) { reader.scrollTo("v5top", anchor: .top) }
         }
@@ -283,79 +419,54 @@ struct HomeV5GroupPage: View {
         }
     }
 
-    // MARK: ヒーローの 出現
+    // MARK: v36 ヒーロー・ACTIVE
 
-    /// 見出しなどが 浮きはじめる 時刻(ヒーローが あれば そのあと)
-    private var riseBase: Double { sections.isEmpty ? YesterdayHeroTiming.riseStart : 0 }
-
-    /// 開いた 瞬間の 出現(約1.6秒)。開きなおすたびに はじめから(のこったバイブは token で 止まる)。
-    /// バイブは 最大5回:soft(まんなか)→ tick ×3(席)→ light(さいごの シールが 止まる)
+    /// 開いた 瞬間の 出現:ヒーローが 0.96 → 1(onAppear 側)、ここでは バイブだけ
     private func startIntro() {
         introToken += 1
         let token = introToken
-        let hero = sections.isEmpty
-        introStart = hero ? Date() : nil
         func after(_ seconds: Double, _ work: @escaping () -> Void) {
             DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { if introToken == token { work() } }
         }
-        // マーカーは 見出しが 出たあと、左から右へ 0.5秒
-        marker = reduceMotion ? 1 : 0
-        if !reduceMotion {
-            after(riseBase + 0.35) { withAnimation(.timingCurve(0.3, 0.9, 0.3, 1, duration: 0.5)) { marker = 1 } }
-        }
-        guard hero else { return }
-        let t = YesterdayHeroTiming.self
+        guard !reduceMotion else { return }
         after(0.15) { Haptics.play(.soft) }
-        for i in [0, 3, 6] { after(t.seatStart + Double(i) * t.seatStep) { Haptics.play(.tick, gap: 0) } }
-        after(t.lastStickerLanded) { YesterdayHeroHaptics.light() }
     }
 
-    // MARK: 空・追加
-
-    private var emptyState: some View {
-        VStack(spacing: 8) {
-            Text("まだグループがありません")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(ChicColor.ink)
-            Text("つくるか、入ると、ここに昨日の写真が届きます")
-                .font(.system(size: 12.5))
-                .foregroundStyle(ChicColor.sub)
+    /// ヒーローの モザイク:ひらいている タイルの 写真を 4枚まで
+    private var heroMosaic: [Data] {
+        var result: [Data] = []
+        for section in sections {
+            for tile in section.tiles where section.unlockedIDs.contains(tile.id) {
+                guard let data = tile.imageData else { continue }
+                result.append(data)
+                if result.count >= 4 { return result }
+            }
         }
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 30)
+        return result
     }
 
-    /// 「つくる」「参加する」(横に2つ・高さ 62・まるい)。昼は つくる = 黒地・白字、夜は 白地・黒字
-    private var createJoinButtons: some View {
-        HStack(spacing: 12) {
-            Button {
-                TapConsumption.mark()
-                if canCreate {
-                    YesterdayHeroHaptics.rigid()
-                    onCreateGroup(nil)
-                } else {
-                    Haptics.play(.warn)
+    /// ロック中の「あと何時間」(今日の 消灯まで)
+    private var hoursToOpen: Int {
+        let close = DailyExposureRules.window(for: now).close
+        return max(0, Int((close.timeIntervalSince(now) / 3600).rounded(.up)))
+    }
+
+    /// ACTIVE:Home の暗室と同じ たてカードを 横に(写真・グループ名・「あと2人」・吹き出し)
+    private var activeRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(sharedGroups) { group in
+                    ActiveGroupCard(group: group, hasUnread: GroupChatStore.shared.hasUnread(group.id, me: me, blocked: blocked),
+                                     locked: locked, me: me, now: now, onOpenChat: onOpenRoom)
                 }
-            } label: {
-                EmptyView()
+                ActiveNewGroupCard(onCreateGroup: { onCreateGroup(nil) })
             }
-            .buttonStyle(YesterdayPillButtonStyle(icon: .plus, title: "つくる", primary: true, night: palette.isNight))
-            .opacity(canCreate ? 1 : 0.45)
-            .accessibilityLabel(canCreate ? "グループをつくる" : "グループは \(GroupMembershipPolicy.maxGroupsPerUser)個まで")
-            Button {
-                TapConsumption.mark()
-                Haptics.play(.soft)
-                onJoinGroup()
-            } label: {
-                EmptyView()
-            }
-            .buttonStyle(YesterdayPillButtonStyle(icon: .qr, title: "参加する", primary: false, night: palette.isNight))
-            .accessibilityLabel("グループに参加する")
+            .padding(.horizontal, V5.edge)
+            .padding(.bottom, 4)
+            .scrollTargetLayout()
         }
-        .padding(.top, 8)
+        .scrollTargetBehavior(.viewAligned)
     }
-
 
     // MARK: 解禁の動き
 
@@ -904,22 +1015,52 @@ struct TodayFriendsSection: View {
     /// つよく つついた相手(リングがぐらっと揺れる)
     @State private var shaken: String?
 
+    private var shotCount: Int { data.friends.filter { $0.hasShot }.count }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("今日のみんな")
-                    .font(.system(size: 22, weight: .heavy))
-                    .tracking(-0.03 * 22)
-                    .foregroundStyle(palette.ink)
-                    .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Friend").font(.custom("InstrumentSerif-Regular", size: 34)).foregroundStyle(palette.ink)
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text(verbatim: "\(data.friends.count)").font(.custom("InstrumentSerif-Regular", size: 20)).foregroundStyle(palette.ink)
+                    Text(verbatim: "/\(FriendRules.maxFriends)").font(.custom("InstrumentSerif-Italic", size: 14)).foregroundStyle(palette.sub)
+                }
+                if shotCount > 0 {
+                    HStack(spacing: 4) {
+                        Circle().fill(Darkroom.orange).frame(width: 5, height: 5)
+                        Text(verbatim: "\(shotCount)").font(.system(size: 11, weight: .bold, design: .monospaced))
+                    }
+                    .foregroundStyle(Darkroom.orange)
+                    .padding(.horizontal, 8).frame(height: 20)
+                    .background(Capsule().fill(Darkroom.orange.opacity(0.14)))
+                }
                 Spacer()
-                Text("\(data.friends.count) / \(FriendRules.maxFriends)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(palette.groupAdd.note)
+                Button(action: onInvite) {
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(palette.ink)
+                        .frame(width: 30, height: 30).background(Circle().fill(palette.fill))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Friend 画面を ひらく")
             }
             .padding(.horizontal, 22)
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 14) {
+                    Button {
+                        Haptics.play(.pop)
+                        onInvite()
+                    } label: {
+                        VStack(spacing: 6) {
+                            Circle()
+                                .fill(Darkroom.orange)
+                                .overlay(Image(systemName: "plus").font(.system(size: 22, weight: .semibold)).foregroundStyle(.white))
+                                .frame(width: 64, height: 64)
+                            Text(verbatim: "Add").font(.custom("InstrumentSerif-Italic", size: 14)).foregroundStyle(palette.ink)
+                            Color.clear.frame(height: 24)
+                        }
+                        .frame(width: 76)
+                    }
+                    .buttonStyle(SquishButtonStyle())
+                    .accessibilityLabel("ともだちを呼ぶ")
                     ForEach(data.friends) { friend in
                         TodayFriendRing(
                             friend: friend,
@@ -936,22 +1077,6 @@ struct TodayFriendsSection: View {
                         )
                         .id(friend.id)
                     }
-                    Button {
-                        Haptics.play(.pop)
-                        onInvite()
-                    } label: {
-                        VStack(spacing: 6) {
-                            Circle()
-                                .fill(LinearGradient(colors: GroupAddColors.sunset, startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .overlay(Image(systemName: "plus").font(.system(size: 26, weight: .light)).foregroundStyle(.white))
-                                .frame(width: 70, height: 70)
-                            Text("呼ぶ").font(.system(size: 12.5, weight: .bold)).foregroundStyle(palette.ink)
-                            Text("つながる").font(.system(size: 10.5, weight: .bold)).foregroundStyle(palette.groupAdd.note).frame(height: 24)
-                        }
-                        .frame(width: 76)
-                    }
-                    .buttonStyle(SquishButtonStyle())
-                    .accessibilityLabel("ともだちを呼ぶ")
                 }
                 .scrollTargetLayout()
                 .padding(.horizontal, 22)
@@ -963,6 +1088,18 @@ struct TodayFriendsSection: View {
             .scrollPosition(id: $focusedID, anchor: .leading)
             .padding(.vertical, -12)
             .onChange(of: focusedID) { _, id in tick.step(id) }
+        }
+        .padding(.vertical, 16)
+        .background(RoundedRectangle(cornerRadius: 30, style: .continuous).fill(palette.fill))
+        // mock .yf0:まだ ともだちが いない とき、カードの 右上に 1人の キャラ(浮かせず・はみ出し気味に 重ねる)
+        .overlay(alignment: .topTrailing) {
+            if data.friends.isEmpty {
+                FriendMascot(color: LayerAvatar.colors(UUID()).first ?? Darkroom.orange, armsUp: true, size: 92)
+                    .rotationEffect(.degrees(8))
+                    .offset(x: 14, y: -10)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
         }
     }
 }
@@ -988,11 +1125,18 @@ private struct TodayFriendRing: View {
                         Circle().strokeBorder(Color(hex: "A9A9B3"), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
                     }
                     LayerAvatar(data: friend.avatarData, seed: friend.seed, name: friend.name)
-                        .frame(width: 60, height: 60)
+                        .frame(width: 56, height: 56)
                         .saturation(status == .shot ? 1 : 0.55)
                         .overlay(Circle().strokeBorder(palette.bg, lineWidth: 3))
                 }
-                .frame(width: 70, height: 70)
+                .frame(width: 64, height: 64)
+                .overlay(alignment: .topTrailing) {
+                    if status == .shot {
+                        Circle().fill(Color(hex: "FF6A1A")).frame(width: 12, height: 12)
+                            .overlay(Circle().strokeBorder(palette.bg, lineWidth: 2))
+                            .offset(x: 2, y: -2)
+                    }
+                }
                 .keyframeAnimator(initialValue: 0.0, trigger: shaking) { content, angle in
                     content.rotationEffect(.degrees(angle))
                 } keyframes: { _ in
@@ -1013,7 +1157,7 @@ private struct TodayFriendRing: View {
             .accessibilityLabel(friend.name + (status == .shot ? "、撮った" : "、まだ"))
 
             Text(friend.name)
-                .font(.system(size: 12.5, weight: .bold))
+                .font(.custom("InstrumentSerif-Italic", size: 15))
                 .foregroundStyle(palette.ink)
                 .lineLimit(1)
             Group {

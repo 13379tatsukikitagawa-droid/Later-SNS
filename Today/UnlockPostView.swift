@@ -1,8 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// 「撮る → 昨日の1枚が解禁 → 投稿するか選ぶ」の2つの画面。
-/// 画面①(解禁・約4.2秒)のあと、同じ画面の上で画面②(投稿するか選ぶシート)が続く(画面遷移はしない)。
+/// v34「現像の瞬間」(翌日、撮ったあとにきのうの1枚がひらく)。見本:later_v34.html の「現像(チェキ)」「現像(レアフィルム)」。
+/// テーマは暗室:赤いセーフライトの部屋でチェキが排出口から出てきて、ふって(こすって)現像する。
+/// 色が出るほど部屋の光も赤→あたたかい色へ。解禁の決まり・投稿する/しないの処理は今のまま
+/// (Outcome・onDecide・onFinished の呼び方は変えない)。変えるのは画面・アニメーション・バイブだけ。
 /// 閉じる・戻る操作は置かない(選ばないと進めない。アプリを閉じるのは自由)。
 struct UnlockPostView: View {
     enum Outcome { case posted, skipped }
@@ -14,14 +16,17 @@ struct UnlockPostView: View {
     let groups: [ProfileShareGroup]
     /// アカウントの「Mondo に出す」がオンか
     let showsMondo: Bool
-    /// falseなら解禁のアニメーションをせず、画面②(選ぶ)から始める
+    /// 昨日ぜんぶで何こま(「YESTERDAY · 1 / 3」の表示だけ。決めるのは今まで通りまとめて)
+    let totalCount: Int
+    /// タグの1つめ(右上のステッカー)
+    let tag: String?
+    /// falseなら現像のアニメーションをせず、ひらいたところから始める
     let playsUnlock: Bool
     let haptics: ExposureHaptics
     /// 選んだ瞬間に呼ぶ(データの処理)
     let onDecide: (Outcome) -> Void
-    /// 結果を見せ終えた(約1.7秒後)。Homeへもどす
+    /// 結果を見せ終えた。Homeへもどす
     let onFinished: (Outcome) -> Void
-    /// 見た目の確認用:解禁の進み具合をこの値で止める(0〜1)
     private let frozenProgress: Double?
 
     init(
@@ -29,6 +34,8 @@ struct UnlockPostView: View {
         capturedAt: Date,
         groups: [ProfileShareGroup],
         showsMondo: Bool,
+        totalCount: Int = 1,
+        tag: String? = nil,
         playsUnlock: Bool,
         haptics: ExposureHaptics,
         onDecide: @escaping (Outcome) -> Void,
@@ -39,558 +46,502 @@ struct UnlockPostView: View {
         self.capturedAt = capturedAt
         self.groups = groups
         self.showsMondo = showsMondo
+        self.totalCount = totalCount
+        self.tag = tag
         self.playsUnlock = playsUnlock
         self.haptics = haptics
         self.onDecide = onDecide
         self.onFinished = onFinished
         self.frozenProgress = frozenProgress
-        _phase = State(initialValue: playsUnlock ? .unlocking : .choosing)
-        _isPrintShown = State(initialValue: !playsUnlock || frozenProgress != nil)
+        let initial: Phase = frozenProgress != nil ? .developing : (playsUnlock ? .intro : .opened)
+        _phase = State(initialValue: initial)
+        _developProgress = State(initialValue: frozenProgress ?? (initial == .opened ? 1 : 0))
+        _clockLit = State(initialValue: initial == .opened)
+        _stickerShown = State(initialValue: initial == .opened)
+        _rareStampShown = State(initialValue: initial == .opened && Self.rareFilm(for: capturedAt))
+        _buttonsShown = State(initialValue: initial == .opened)
     }
 
-    private enum Phase: Equatable {
-        case unlocking
-        case unlocked
-        case choosing
-        case confirming
-        case result(Outcome)
-    }
-
-    private enum Timing {
-        static let delay: TimeInterval = 0.55
-        static let duration: TimeInterval = 4.2
-        static let reducedDuration: TimeInterval = 1.0
-        static let resultHold: TimeInterval = 1.7
-    }
+    private enum Phase { case intro, developing, opened }
 
     private enum Layout {
-        static let block = DevelopSheet.Layout.block
-        static let dotFrame = DevelopSheet.Layout.dotFrame
         static let print = DevelopSheet.Layout.print
-        static let printOrigin = DevelopSheet.Layout.printOrigin
         static let window = DevelopSheet.Layout.window
         static let windowOrigin = DevelopSheet.Layout.windowOrigin
+        static let slotWidth: CGFloat = 196
     }
 
-    private static let ease = Animation.timingCurve(0.22, 0.8, 0.24, 1, duration: 0.6)
-    private static let sheetEase = Animation.timingCurve(0.22, 0.8, 0.24, 1, duration: 0.55)
+    /// 実機で調整する前提の初期値
+    private enum Timing {
+        static let slotAt: TimeInterval = 0.25
+        static let ejectStart: TimeInterval = 0.6
+        static let ejectEnd: TimeInterval = 2.0
+        static let developDuration: TimeInterval = 6.4
+        static let reducedDevelopDuration: TimeInterval = 1.5
+        /// 向きが変わるたびに足す加速(レート倍率)。すぐ減衰する(時定数)
+        static let shakeBoost: Double = 2.6
+        static let shakeDecay: TimeInterval = 0.09
+    }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @AccessibilityFocusState private var isButtonFocused: Bool
-    @State private var phase: Phase = .unlocking
-    @State private var start: Date?
-    @State private var isPrintShown = false
-    @State private var flashStart: Date?
-    @State private var resultBrightness: Double = 0
-    @State private var fadeOut = false
+
+    @State private var phase: Phase
+    @State private var start = Date()
+    @State private var developProgress: Double
+    @State private var virtualElapsed: Double = 0
+    @State private var rateBoost: Double = 0
+    @State private var dragX: CGFloat = 0
+    @State private var lastDragX: CGFloat = 0
+    @State private var dragDirection: Int = 0
+    @State private var hasShaken = false
+    @State private var clockLit: Bool
+    @State private var stickerShown: Bool
+    @State private var rareStampShown: Bool
+    @State private var buttonsShown: Bool
+    @State private var wobbleTrigger = 0
+    @State private var shineProgress: CGFloat = -1
     @State private var scheduled: [DispatchWorkItem] = []
+    @State private var developTask: Task<Void, Never>?
+
+    private var developDuration: TimeInterval { reduceMotion ? Timing.reducedDevelopDuration : Timing.developDuration }
+    private var isOpen: Bool { phase == .opened }
+
+    /// 7回に1回くらい(写真の撮影時刻から決める。同じ1枚はいつも同じ結果)
+    private var isRareFilm: Bool { Self.rareFilm(for: capturedAt) }
+
+    private static func rareFilm(for date: Date) -> Bool {
+        let seed = Int(date.timeIntervalSince1970.rounded())
+        return ((seed &* 2_654_435_761) & 0x7FFF_FFFF) % 7 == 0
+    }
+
+    private var headline: String {
+        guard isOpen else { return "Developing" }
+        return isRareFilm ? "Rare film" : "Opened"
+    }
 
     var body: some View {
         GeometryReader { proxy in
-            let size = proxy.size
-            let extra = size.height - 844
-            let blockScale = max(0.6, min(1, (Layout.block.height + extra) / Layout.block.height))
-            let blockHeight = Layout.block.height * blockScale
-            let titleTop = 96 + blockHeight + 24
-            TimelineView(.animation(paused: !isAnimating)) { context in
-                let p = progress(at: context.date)
-                ZStack(alignment: .top) {
-                    background(open: developAmount(p))
-
-                    smallHeading(isOpen: isOpenText(p))
-                        .padding(.top, 66)
-
-                    printBlock(p: p, now: context.date)
-                        .scaleEffect(blockScale, anchor: .top)
-                        .frame(width: Layout.block.width * blockScale, height: blockHeight, alignment: .top)
-                        .scaleEffect(isSheetShown ? 0.8 : 1, anchor: .top)
-                        .offset(y: isSheetShown ? -6 : 0)
-                        .padding(.top, 96)
-                        .frame(maxWidth: .infinity)
-
-                    if !isSheetShown {
-                        headline(isOpen: isOpenText(p))
-                            .padding(.top, titleTop)
-                            .transition(.opacity)
-
-                        if showsButton(p) {
-                            decideButton
-                                .frame(maxHeight: .infinity, alignment: .bottom)
-                                .padding(.horizontal, 28)
-                                .padding(.bottom, 44)
-                                .transition(.opacity.combined(with: .offset(y: 10)))
-                        }
-                    }
-
-                    if isSheetShown {
-                        sheet
-                            .frame(maxHeight: .infinity, alignment: .bottom)
-                            .transition(.move(edge: .bottom))
-                    }
+            ZStack {
+                room
+                VStack(spacing: 0) {
+                    header
+                    Spacer(minLength: 8)
+                    cheki
+                    Spacer(minLength: 8)
+                    bottomArea
+                        .padding(.horizontal, 26)
+                        .padding(.bottom, max(22, proxy.safeAreaInsets.bottom + 14))
                 }
-                .frame(width: size.width, height: size.height)
-                .animation(.easeInOut(duration: 0.42), value: isOpenText(p))
-                .animation(.easeOut(duration: 0.5), value: showsButton(p))
+                .padding(.top, proxy.safeAreaInsets.top + 14)
             }
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
         .onAppear(perform: begin)
-        .onDisappear { scheduled.forEach { $0.cancel() } }
-    }
-
-    // MARK: - 進み具合
-
-    private var isSheetShown: Bool {
-        switch phase {
-        case .choosing, .confirming, .result: return true
-        default: return false
+        .onDisappear {
+            scheduled.forEach { $0.cancel() }
+            developTask?.cancel()
         }
     }
 
-    private var isAnimating: Bool {
-        phase == .unlocking || flashStart != nil
-    }
+    // MARK: - 暗室の 部屋(赤いセーフライト → あたたかい色)
 
-    /// 0〜1(解禁が終わったあとは1)
-    private func progress(at date: Date) -> Double {
-        if let frozenProgress { return frozenProgress }
-        guard phase == .unlocking else { return 1 }
-        guard let start else { return 0 }
-        let duration = reduceMotion ? Timing.reducedDuration : Timing.duration
-        return min(1, max(0, (date.timeIntervalSince(start) - Timing.delay) / duration))
-    }
-
-    private static func segment(_ p: Double, _ from: Double, _ to: Double) -> Double {
-        min(1, max(0, (p - from) / (to - from)))
-    }
-
-    private static func easeOut(_ u: Double) -> Double { 1 - pow(1 - u, 2.2) }
-
-    /// 乳白色 → 色(0〜1)。背景の夜 → 朝もこれにそろえる
-    private func developAmount(_ p: Double) -> Double {
-        reduceMotion ? p : Self.easeOut(Self.segment(p, 0.58, 0.96))
-    }
-
-    private func isOpenText(_ p: Double) -> Bool {
-        reduceMotion || p >= 0.66
-    }
-
-    private func showsButton(_ p: Double) -> Bool {
-        phase == .unlocked || (phase == .unlocking && p >= 0.97)
-    }
-
-    // MARK: - 背景
-
-    private func background(open: Double) -> some View {
+    private var room: some View {
         ZStack {
             Color.black
-            LinearGradient(colors: [.clear, Color(red: 70 / 255, green: 80 / 255, blue: 170 / 255).opacity(0.34)], startPoint: .top, endPoint: .bottom)
-                .opacity(1 - open)
-            LinearGradient(
-                colors: [Color(red: 1, green: 190 / 255, blue: 130 / 255).opacity(0.24), .clear, Color(red: 1, green: 130 / 255, blue: 150 / 255).opacity(0.4)],
-                startPoint: .top, endPoint: .bottom
+            RadialGradient(
+                colors: [Color(hex: "4A0E0A").opacity(0.5 * (1 - developProgress) + 0.07), .clear],
+                center: UnitPoint(x: 0.5, y: 0.4), startRadius: 10, endRadius: 420
             )
-            .opacity(open)
+            RadialGradient(
+                colors: [Color(hex: "7A3A12").opacity(0.4 * developProgress), .clear],
+                center: UnitPoint(x: 0.5, y: 0.44), startRadius: 10, endRadius: 440
+            )
+            GrainView(seed: 11).opacity(0.045).blendMode(.overlay)
         }
         .allowsHitTesting(false)
     }
 
-    // MARK: - 文字
+    // MARK: - 上(YESTERDAY · 1/3・見出し・区切り線)
 
-    private var yesterdayLabel: String {
-        "YESTERDAY ・ \(Self.dotDate.string(from: capturedAt))"
-    }
-
-    private func smallHeading(isOpen: Bool) -> some View {
-        Text(yesterdayLabel)
-            .font(.system(size: 10.5, design: .monospaced))
-            .tracking(0.22 * 10.5)
-            .foregroundStyle(isOpen ? Color(hex: "FF9E5E") : Color(hex: "8E8E93"))
-            .dynamicTypeSize(...DynamicTypeSize.xLarge)
-            .accessibilityHidden(true)
-    }
-
-    private func headline(isOpen: Bool) -> some View {
-        VStack(spacing: 0) {
-            Text(isOpen ? "昨日の1枚が、\nひらきました。" : "昨日が、\nひらきます。")
-                .font(.system(size: 28, weight: .bold))
-                .tracking(-0.05 * 28)
-                .lineSpacing(28 * 0.3)
-                .multilineTextAlignment(.center)
+    private var header: some View {
+        VStack(spacing: 8) {
+            Text(verbatim: "YESTERDAY · 1 / \(max(1, totalCount))")
+                .font(.system(size: 10.5, design: .monospaced))
+                .tracking(0.22 * 10.5)
+                .foregroundStyle(isOpen ? Darkroom.orange : Color(hex: "8E8E93"))
+                .dynamicTypeSize(...DynamicTypeSize.xLarge)
+            Text(verbatim: headline)
+                .font(Darkroom.title(headline, size: 32))
                 .foregroundStyle(.white)
-                .id(isOpen)
+                .id(headline)
                 .transition(.opacity)
-            Text("\(Self.jaDate.string(from: capturedAt)) ・ \(isOpen ? "あなたの1枚" : "現像ずみの1枚")")
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: "BCBBC0"))
-                .padding(.top, 14)
-                .id("sub-\(isOpen)")
-                .transition(.opacity)
+            Rectangle().fill(.white.opacity(0.12)).frame(height: 1)
+                .padding(.horizontal, 26)
+                .padding(.top, 8)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 24)
+        .animation(.easeOut(duration: 0.3), value: headline)
         .accessibilityElement(children: .combine)
     }
 
-    private var decideButton: some View {
-        Button(action: openSheet) {
-            Text("この1枚を、どうする?")
-                .font(.system(size: 16.5, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(GlassFill(shape: Capsule(), opaque: reduceTransparency))
-        }
-        .buttonStyle(.plain)
-        .accessibilityFocused($isButtonFocused)
-    }
+    // MARK: - チェキ(排出口・本体)
 
-    // MARK: - 光の輪 + チェキ(現像シートと同じ部品)
-
-    private func printBlock(p: Double, now: Date) -> some View {
-        let lit = reduceMotion ? DevelopDensity.dotCount : Int((Self.easeOut(Self.segment(p, 0.06, 0.46)) * Double(DevelopDensity.dotCount)).rounded())
-        let allLit = reduceMotion || p >= 0.5
-        let flashes = ringFlashes(p: p, now: now)
-        return ZStack(alignment: .topLeading) {
-            SealDotFrame(lit: lit, isDeveloped: allLit, isAnimating: !reduceMotion && phase == .unlocking)
-                .frame(width: Layout.dotFrame.width, height: Layout.dotFrame.height)
-                .offset(x: (Layout.block.width - Layout.dotFrame.width) / 2, y: (Layout.block.height - Layout.dotFrame.height) / 2)
-
-            ForEach(Array(flashes.enumerated()), id: \.offset) { _, b in
-                RoundedRectangle(cornerRadius: 30, style: .continuous)
-                    .stroke(Color(red: 1, green: 206 / 255, blue: 160 / 255).opacity(0.95), lineWidth: 2)
-                    .shadow(color: HomePalette.orange.opacity(0.8), radius: 8)
-                    .frame(width: Layout.dotFrame.width, height: Layout.dotFrame.height)
-                    .scaleEffect(1 + b.scale * b.amount)
-                    .opacity((1 - b.amount) * 0.9)
-                    .offset(x: (Layout.block.width - Layout.dotFrame.width) / 2, y: (Layout.block.height - Layout.dotFrame.height) / 2)
+    @ViewBuilder
+    private var cheki: some View {
+        if phase == .intro, !reduceMotion {
+            TimelineView(.animation) { context in
+                let elapsed = context.date.timeIntervalSince(start)
+                chekiBody(travel: Self.ejectTravel(elapsed), slotProgress: Self.smooth(min(1, max(0, (elapsed - Timing.slotAt) / 0.25))))
             }
-
-            cheki(p: p)
-                .frame(width: Layout.print.width, height: Layout.print.height)
-                .rotationEffect(.degrees(-2.2), anchor: .bottom)
-                .offset(x: Layout.printOrigin.x, y: Layout.printOrigin.y)
-                .offset(y: isPrintShown || reduceMotion ? 0 : -70)
-                .opacity(isPrintShown || reduceMotion ? 1 : 0)
+        } else {
+            chekiBody(travel: 1, slotProgress: 1)
         }
-        .frame(width: Layout.block.width, height: Layout.block.height, alignment: .topLeading)
-        .brightness(resultBrightness)
-        .blur(radius: fadeOut ? 14 : 0)
-        .opacity(fadeOut ? 0 : 1)
-        .accessibilityHidden(true)
     }
 
-    /// ふちの光(解禁の .50–.76 と、投稿したときの 0.9秒)。amount 0〜1、scale はひろがる量
-    private func ringFlashes(p: Double, now: Date) -> [(amount: Double, scale: Double)] {
-        var result: [(Double, Double)] = []
-        if !reduceMotion, phase == .unlocking, p > 0.5, p < 0.76 {
-            result.append((Self.segment(p, 0.5, 0.76), 0.12))
+    private func chekiBody(travel: Double, slotProgress: Double) -> some View {
+        ZStack(alignment: .top) {
+            Capsule()
+                .fill(Color.black)
+                .frame(width: Layout.slotWidth * (0.14 + 0.86 * slotProgress), height: 9)
+                .overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1))
+                .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                .opacity(slotProgress)
+
+            chekiCard
+                .padding(.top, 16)
+                .mask(alignment: .top) {
+                    Rectangle().frame(height: max(2, (Layout.print.height + 60) * travel))
+                }
+                .offset(y: -26 * (1 - travel))
+                .opacity(travel > 0.02 ? 1 : 0)
         }
-        if let flashStart {
-            let b = now.timeIntervalSince(flashStart) / 0.9
-            if b >= 0, b < 1 { result.append((b, 0.16)) }
-        }
-        return result
     }
 
-    private func cheki(p: Double) -> some View {
+    private var chekiCard: some View {
         let paper = RoundedRectangle(cornerRadius: 6, style: .continuous)
-        let e = developAmount(p)
-        let isOpen = isOpenText(p)
+        let tiltX = min(70, max(-70, dragX))
         return ZStack(alignment: .topLeading) {
             paper.fill(LinearGradient(colors: [Color(hex: "F7F4EE"), Color(hex: "ECE8DF")], startPoint: .top, endPoint: .bottom))
 
-            ZStack {
+            photoWindow
+                .frame(width: Layout.window.width, height: Layout.window.height)
+                .clipped()
+                .offset(x: Layout.windowOrigin.x, y: Layout.windowOrigin.y)
+
+            if stickerShown, let tag {
+                let c = Darkroom.stickerColors(tag)
+                Text(verbatim: "#\(tag)")
+                    .font(.system(size: 15, weight: .black))
+                    .foregroundStyle(c.1)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(c.0))
+                    .rotationEffect(.degrees(8))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 10).padding(.top, 10)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.2, anchor: .topTrailing).combined(with: .opacity))
+            }
+
+            if rareStampShown {
+                rareStamp
+                    .padding(.leading, 18)
+                    .padding(.top, Layout.windowOrigin.y + Layout.window.height - 28)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 2.2).combined(with: .opacity))
+            }
+
+            caption
+                .padding(.horizontal, 17)
+                .padding(.bottom, 13)
+                .frame(width: Layout.print.width, height: Layout.print.height, alignment: .bottom)
+        }
+        .frame(width: Layout.print.width, height: Layout.print.height)
+        .clipShape(paper)
+        .shadow(color: .black.opacity(0.65), radius: 22, y: 22)
+        .shadow(color: Darkroom.orange.opacity(0.12 * developProgress), radius: 28)
+        .rotation3DEffect(.degrees(reduceMotion ? 0 : Double(tiltX) * 0.1), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+        .rotationEffect(.degrees(-2.2 + (reduceMotion ? 0 : Double(tiltX) * 0.02)))
+        .keyframeAnimator(initialValue: 0.0, trigger: wobbleTrigger) { content, angle in
+            content.rotationEffect(.degrees(angle))
+        } keyframes: { _ in
+            KeyframeTrack { CubicKeyframe(reduceMotion ? 0 : 5, duration: 0.12); SpringKeyframe(0, duration: 0.34) }
+        }
+        .animation(.easeOut(duration: 0.18), value: dragX)
+        .contentShape(paper)
+        .gesture(shakeGesture)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
+        .accessibilityAdjustableAction { direction in
+            guard phase == .developing, direction == .increment else { return }
+            bumpShake()
+        }
+    }
+
+    // MARK: - 写真(ミルク色の膜・ぼかし・彩度・青緑・あたたかい色)
+
+    private var photoWindow: some View {
+        let look = DevelopLook.values(progress: developProgress)
+        return ZStack {
+            Color(hex: "E9EEEA")
+            Color.clear.overlay {
                 Group {
                     if let image {
-                        Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
+                        ZStack {
+                            Image(uiImage: image).resizable().scaledToFill()
+                            Image(uiImage: image).resizable().scaledToFill()
+                                .opacity(max(0, look.brightness - 1)).blendMode(.plusLighter)
+                        }
+                        .compositingGroup()
                     } else {
                         Color(hex: "B9B3A8")
                     }
                 }
-                .frame(width: Layout.window.width, height: Layout.window.height)
-                .scaleEffect(1.12 - 0.12 * e)
-                .blur(radius: 26 * (1 - e))
-                .saturation(0.15 + 0.9 * e)
-                .brightness(-0.45 * (1 - e))
-
-                // 乳白色のもや
-                Color(hex: "EDE8DE").opacity(0.92 * (1 - e))
-
-                if !reduceMotion {
-                    lock(p: p)
-                }
+                .saturation(look.saturation)
+                .contrast(0.9)
+                .blur(radius: look.blur)
+                .scaleEffect(1.06)
             }
-            .frame(width: Layout.window.width, height: Layout.window.height)
             .clipped()
-            .offset(x: Layout.windowOrigin.x, y: Layout.windowOrigin.y)
-
-            VStack(alignment: .leading, spacing: 7) {
-                HStack(alignment: .lastTextBaseline) {
-                    Text(isOpen ? "OPEN" : "SEALED")
-                        .font(.system(size: 27, design: .monospaced))
-                        .tracking(0.06 * 27)
-                        .foregroundStyle(isOpen ? Color(hex: "C8742F") : Color(hex: "A09C91"))
-                    Spacer(minLength: 0)
-                    Text("きのう")
-                        .font(.system(size: 15).italic())
-                        .foregroundStyle(Color(hex: "8A867B"))
-                }
-                Text("\(Self.filmDate(capturedAt)) ・ あなたの1枚")
-                    .font(.system(size: 9, design: .monospaced))
-                    .tracking(0.14 * 9)
-                    .foregroundStyle(Color(hex: "A09C91"))
-            }
-            .dynamicTypeSize(.large)
-            .padding(.horizontal, 17)
-            .padding(.bottom, 13)
-            .frame(width: Layout.print.width, height: Layout.print.height, alignment: .bottom)
+            DevelopLook.teal.blendMode(.multiply).opacity(look.tealTint)
+            LinearGradient(stops: [
+                .init(color: Color(hex: "EEF3EE"), location: 0),
+                .init(color: Color(hex: "DCE6E3"), location: 0.6),
+                .init(color: Color(hex: "E4E9E6"), location: 1),
+            ], startPoint: UnitPoint(x: 0.37, y: 0), endPoint: UnitPoint(x: 0.63, y: 1))
+            .opacity(look.film)
+            if isRareFilm { lightLeak }
+            if !reduceMotion { shineSweep }
         }
-        .clipShape(paper)
-        .shadow(color: .black.opacity(0.65), radius: 22, y: 22)
-        .shadow(color: HomePalette.orange.opacity(0.14), radius: 28)
+        .clipped()
     }
 
-    /// 鍵:輪っかが上がって開き(.46–.60)、消える(.58–.72)
-    private func lock(p: Double) -> some View {
-        let open = Self.segment(p, 0.46, 0.60)
-        let fade = Self.segment(p, 0.58, 0.72)
+    /// レアフィルム:45%をすぎたら、左からオレンジ・右下からピンクの光もれ
+    private var lightLeak: some View {
+        let leak = max(0, min(1, (developProgress - 0.45) / 0.55))
         return ZStack {
-            Circle()
-                .fill(.ultraThinMaterial)
-                .overlay(Circle().fill(.white.opacity(0.12)))
-                .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
-                .frame(width: 68, height: 68)
-            ZStack {
-                // 輪っか(右の脚を軸に、上がって開く)
-                ShackleShape()
-                    .stroke(.white, style: StrokeStyle(lineWidth: 2.6, lineCap: .round))
-                    .frame(width: 16, height: 12)
-                    .rotationEffect(.degrees(-30 * open), anchor: .bottomTrailing)
-                    .offset(y: -9 - 5 * open)
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .fill(.white)
-                    .frame(width: 22, height: 17)
-                    .offset(y: 5)
-            }
+            LinearGradient(colors: [Color(hex: "FF8A3D").opacity(0.55 * leak), .clear], startPoint: .leading, endPoint: .trailing)
+                .blendMode(.screen)
+            RadialGradient(colors: [Color(hex: "FF5FA8").opacity(0.5 * leak), .clear], center: .bottomTrailing, startRadius: 0, endRadius: 220)
+                .blendMode(.screen)
         }
-        .scaleEffect(1 + 0.3 * fade)
-        .opacity(1 - fade)
+        .allowsHitTesting(false)
     }
 
-    // MARK: - 画面② シート
-
-    private var sheet: some View {
-        VStack(spacing: 0) {
-            Capsule()
-                .fill(.white.opacity(0.2))
-                .frame(width: 40, height: 5)
-                .padding(.bottom, 18)
-
-            // 文字を大きくして入りきらない時だけ、スクロールできるようにする
-            ViewThatFits(in: .vertical) {
-                sheetContent
-                ScrollView { sheetContent }
-            }
+    /// つや:100%になった瞬間、光のすじが一度だけ横切る
+    private var shineSweep: some View {
+        GeometryReader { proxy in
+            LinearGradient(stops: [
+                .init(color: .white.opacity(0), location: 0.3),
+                .init(color: .white.opacity(0.55), location: 0.5),
+                .init(color: .white.opacity(0), location: 0.7),
+            ], startPoint: .top, endPoint: .bottom)
+            .frame(width: proxy.size.width * 0.55)
+            .rotationEffect(.degrees(18))
+            .offset(x: shineProgress * proxy.size.width * 1.3)
         }
-        .padding(.top, 12)
-        .padding(.horizontal, 22)
-        .padding(.bottom, 22)
-        .background(
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(LinearGradient(colors: [Color(hex: "1D1D21"), Color(hex: "101012")], startPoint: .top, endPoint: .bottom))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 36, style: .continuous).strokeBorder(.white.opacity(0.1), lineWidth: 1))
-        .padding(.horizontal, 10)
-        .padding(.bottom, 10)
-        .accessibilityAddTraits(.isModal)
+        .allowsHitTesting(false)
     }
 
-    private var sheetContent: some View {
-        Group {
-            switch phase {
-            case .confirming: confirmContent
-            case .result(let outcome): resultContent(outcome)
-            default: chooseContent
-            }
-        }
-        .transition(.opacity)
-        .animation(.easeOut(duration: 0.25), value: phase)
+    private var rareStamp: some View {
+        Text(verbatim: "RARE")
+            .font(.system(size: 13, weight: .black, design: .monospaced))
+            .tracking(2)
+            .foregroundStyle(Color(hex: "FF3B30"))
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color(hex: "FF3B30"), lineWidth: 2))
+            .rotationEffect(.degrees(-14))
+            .opacity(0.92)
     }
 
-    private var shareText: String {
-        let summary = ProfileShot.shareSummary(groups: groups, isOnMondo: showsMondo)
-        return summary.isEmpty ? "グループに入ると、届けられます" : "\(summary) に届きます"
-    }
-
-    private var shareRow: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: -6) {
-                if !groups.isEmpty { targetDot(DayFullScreenViewer.groupGradient) }
-                if showsMondo { targetDot(DayFullScreenViewer.mondoGradient) }
-            }
-            Text(shareText)
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: "BCBBC0"))
-                .lineLimit(2)
+    /// チェキの白い部分:日付スタンプ・7セグふうの時刻(ひらく前は 88:88)
+    private var caption: some View {
+        HStack(alignment: .lastTextBaseline) {
+            Text(verbatim: Self.filmDate(capturedAt))
+                .font(.system(size: 9, design: .monospaced))
+                .tracking(0.14 * 9)
+                .foregroundStyle(Color(hex: "A09C91"))
+            Spacer(minLength: 8)
+            Text(verbatim: clockLit ? Darkroom.time(capturedAt) : "88:88")
+                .font(.system(size: 22, weight: .bold, design: .monospaced))
+                .monospacedDigit()
+                .foregroundStyle(clockLit ? Darkroom.stamp : Color(hex: "C7C2B6"))
+                .opacity(clockLit ? 1 : 0.5)
+                .shadow(color: clockLit ? Darkroom.stamp.opacity(0.55) : .clear, radius: 4)
+                .scaleEffect(clockLit ? 1 : 0.94)
         }
     }
 
-    private func targetDot(_ colors: [Color]) -> some View {
-        Circle()
-            .fill(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
-            .frame(width: 18, height: 18)
-            .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1.2))
-            .accessibilityHidden(true)
+    // MARK: - 下(進み線 / ボタン)
+
+    @ViewBuilder
+    private var bottomArea: some View {
+        if isOpen {
+            buttons
+                .opacity(buttonsShown ? 1 : 0)
+                .offset(y: buttonsShown ? 0 : 20)
+        } else {
+            progressRow
+        }
     }
 
-    private var chooseContent: some View {
-        VStack(spacing: 0) {
-            Text("この1枚を、投稿する?")
-                .font(.system(size: 20, weight: .bold))
-                .tracking(-0.04 * 20)
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-            shareRow
-                .padding(.top, 10)
+    private var progressRow: some View {
+        VStack(spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(verbatim: hasShaken ? "KEEP SHAKING" : "SHAKE TO DEVELOP")
+                    .font(Darkroom.mono(10.5)).tracking(0.18 * 10.5)
+                    .foregroundStyle(Darkroom.weak)
+                Spacer()
+                (Text(verbatim: "\(Int((developProgress * 100).rounded()))").font(.custom("InstrumentSerif-Italic", size: 21))
+                 + Text(verbatim: "%").font(.custom("InstrumentSerif-Italic", size: 15)).foregroundColor(Darkroom.weak))
+                    .foregroundStyle(.white)
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.1)).frame(height: 2)
+                    Capsule()
+                        .fill(LinearGradient(colors: [Color(hex: "FF3B30"), Darkroom.orange, Color(hex: "FFE3BE")], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: max(2, proxy.size.width * developProgress), height: 2)
+                }
+            }
+            .frame(height: 2)
+        }
+        .accessibilityHidden(true)
+    }
 
+    private var buttons: some View {
+        VStack(spacing: 10) {
             Button(action: post) {
-                Text("投稿する")
-                    .font(.system(size: 17, weight: .bold))
+                Text(verbatim: "Post to group")
+                    .font(.system(size: 16.5, weight: .bold))
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: 54)
+                    .frame(height: 56)
                     .background(Capsule().fill(.white))
-                    .shadow(color: .white.opacity(0.35), radius: 16)
+                    .shadow(color: .white.opacity(0.3), radius: 14)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 22)
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            .accessibilityFocused($isButtonFocused)
+            .accessibilityLabel(Text("darkroom.post.a11y"))
 
-            Button(action: askSkip) {
-                Text("投稿しない")
+            Button(action: keepPrivate) {
+                Text(verbatim: "Keep it to me")
                     .font(.system(size: 15.5, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.white.opacity(0.85))
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: 48)
-                    .background(GlassFill(shape: Capsule(), opaque: reduceTransparency, tint: 0.09))
+                    .frame(height: 50)
+                    .background(GlassFill(shape: Capsule(), opaque: reduceTransparency, tint: 0.08))
             }
-            .buttonStyle(.plain)
-            .padding(.top, 10)
-
-            VStack(spacing: 0) {
-                Text("投稿しない写真は、消えます。")
-                Text("みんなの昨日は、このあとひらけます。")
-            }
-            .font(.system(size: 11.5))
-            .lineSpacing(11.5 * 0.75)
-            .foregroundStyle(Color(hex: "8E8E93"))
-            .multilineTextAlignment(.center)
-            .padding(.top, 13)
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+            .accessibilityLabel(Text("darkroom.keep.a11y"))
         }
-        .frame(maxWidth: .infinity)
     }
 
-    private var confirmContent: some View {
-        VStack(spacing: 0) {
-            Text("この写真を、消しますか?")
-                .font(.system(size: 20, weight: .bold))
-                .tracking(-0.04 * 20)
-                .foregroundStyle(.white)
-            Text("投稿せずに消えます。もとにもどせません。")
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: "BCBBC0"))
-                .multilineTextAlignment(.center)
-                .padding(.top, 10)
+    // MARK: - ふる / こする(DragGestureの横方向の向きが変わった回数で加速)
 
-            Button(action: skip) {
-                Text("消す")
-                    .font(.system(size: 15.5, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 48)
-                    .background(Capsule().fill(Color(hex: "FF6B5E")))
+    private var shakeGesture: some Gesture {
+        DragGesture(minimumDistance: 2)
+            .onChanged { value in
+                guard phase == .developing, developProgress < 1 else { return }
+                let dx = value.translation.width
+                dragX = dx
+                let delta = dx - lastDragX
+                if abs(delta) > 1.2 {
+                    let dir = delta > 0 ? 1 : -1
+                    if dragDirection != 0, dir != dragDirection { bumpShake() }
+                    dragDirection = dir
+                }
+                lastDragX = dx
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("消す。もとにもどせません")
-            .padding(.top, 22)
-
-            Button {
-                withAnimation(.easeOut(duration: 0.25)) { phase = .choosing }
-            } label: {
-                Text("やめる")
-                    .font(.system(size: 15.5, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 48)
-                    .background(GlassFill(shape: Capsule(), opaque: reduceTransparency, tint: 0.09))
+            .onEnded { _ in
+                dragDirection = 0
+                lastDragX = 0
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) { dragX = 0 }
             }
-            .buttonStyle(.plain)
-            .padding(.top, 10)
-        }
-        .frame(maxWidth: .infinity)
     }
 
-    private func resultContent(_ outcome: Outcome) -> some View {
-        VStack(spacing: 0) {
-            Circle()
-                .fill(.white.opacity(0.1))
-                .frame(width: 56, height: 56)
-                .overlay(
-                    Image(systemName: outcome == .posted ? "checkmark" : "minus")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(.white)
-                )
-            Text(outcome == .posted ? "投稿しました" : "消しました")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(.top, 14)
-            Text(outcome == .posted ? shareText : "昨日の1枚は、もうありません")
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: "BCBBC0"))
-                .multilineTextAlignment(.center)
-                .padding(.top, 8)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 18)
-        .accessibilityElement(children: .combine)
+    private func bumpShake() {
+        rateBoost = min(6, rateBoost + Timing.shakeBoost)
+        hasShaken = true
+        Haptics.play(.tick, gap: 0.04)
     }
 
     // MARK: - 動き
 
     private func begin() {
-        guard frozenProgress == nil else { return }
-        guard playsUnlock else {
-            phase = .choosing
-            isPrintShown = true
-            return
-        }
-        UIAccessibility.post(notification: .announcement, argument: "昨日の1枚が、ひらきます")
-        let now = Date()
-        start = now
-        if reduceMotion {
-            isPrintShown = true
-        } else {
-            after(Timing.delay) {
-                withAnimation(.timingCurve(0.22, 0.8, 0.24, 1, duration: 0.8)) { isPrintShown = true }
+        start = Date()
+        switch phase {
+        case .intro:
+            Haptics.play(.soft)
+            UIAccessibility.post(notification: .announcement, argument: "きのうの1枚を、現像しています")
+            if reduceMotion {
+                phase = .developing
+                developTask = Task { await runDevelopLoop() }
+            } else {
+                after(Timing.ejectStart) { Haptics.play(.rattle) }
+                after(Timing.ejectEnd) {
+                    Haptics.play(.land)
+                    phase = .developing
+                    developTask = Task { await runDevelopLoop() }
+                }
             }
+        case .developing:
+            break // frozenProgress(見た目の確認用)はそのまま静止
+        case .opened:
+            isButtonFocused = true
         }
-        let duration = reduceMotion ? Timing.reducedDuration : Timing.duration
+    }
+
+    /// 0 → 1。ふる/こすると(向きが変わるたびに)レートが一時的に上がる
+    private func runDevelopLoop() async {
+        var last = Date()
+        var lastTen = Int(developProgress * 10)
+        while !Task.isCancelled {
+            let now = Date()
+            let dt = min(0.05, now.timeIntervalSince(last))
+            last = now
+            let rate = 1 + rateBoost
+            virtualElapsed += dt * rate
+            rateBoost *= exp(-dt / Timing.shakeDecay)
+            developProgress = min(1, virtualElapsed / developDuration)
+            let ten = Int(developProgress * 10)
+            if ten != lastTen, ten > 0 {
+                lastTen = ten
+                haptics.playTransient(intensity: 0.12, sharpness: 0.25)
+            }
+            if developProgress >= 1 { break }
+            try? await Task.sleep(for: .milliseconds(16))
+        }
+        guard !Task.isCancelled, phase == .developing else { return }
+        openFinishedSequence()
+    }
+
+    /// 100%:つや → ぽよん → 見出し「Opened」/「Rare film」→ 時刻 → ステッカー(・RARE)→ ボタン
+    private func openFinishedSequence() {
+        phase = .opened
+        developProgress = 1
         if !reduceMotion {
-            // 点が灯っていく(p .06 → .5):じわっと強くなる
-            after(Timing.delay + 0.06 * duration) {
-                haptics.playRamp(from: 0.15, to: 0.85, sharpness: 0.3, sharpnessTo: 0.6, duration: 0.44 * duration)
+            wobbleTrigger += 1
+            withAnimation(.easeInOut(duration: 0.7)) { shineProgress = 1 }
+        }
+        Haptics.play(.heart)
+        after(0.14) { Haptics.play(.success) }
+        UIAccessibility.post(notification: .announcement, argument: isRareFilm ? "レアフィルムです。ひらきました" : "昨日の1枚が、ひらきました")
+        after(0.35) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { clockLit = true }
+            Haptics.play(.click)
+        }
+        after(0.5) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.55)) { stickerShown = true }
+            Haptics.play(.pop)
+            if isRareFilm {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.5)) { rareStampShown = true }
+                Haptics.play(.thud)
             }
         }
-        // 鍵が開く(p .5):強く1回(「視差効果を減らす」でも残す)
-        after(Timing.delay + (reduceMotion ? 0.5 : 0.5 * duration)) {
-            haptics.playTransient(intensity: 1.0, sharpness: 0.7)
-        }
-        after(Timing.delay + duration) {
-            phase = .unlocked
-            UIAccessibility.post(notification: .announcement, argument: "ひらきました。この1枚を、どうする?")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { isButtonFocused = true }
+        after(1.0) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) { buttonsShown = true }
+            isButtonFocused = true
         }
     }
 
@@ -600,71 +551,50 @@ struct UnlockPostView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
     }
 
-    private func openSheet() {
-        withAnimation(Self.sheetEase) { phase = .choosing }
-    }
-
     private func post() {
-        guard phase == .choosing else { return }
+        guard isOpen else { return }
         haptics.playTransient(intensity: 1.0, sharpness: 0.7)
         onDecide(.posted)
-        withAnimation(.easeOut(duration: 0.25)) { phase = .result(.posted) }
-        flashStart = Date()
-        withAnimation(.easeOut(duration: 0.3)) { resultBrightness = 0.4 }
-        after(0.3) { withAnimation(.easeIn(duration: 0.5)) { resultBrightness = 0 } }
-        after(0.95) { flashStart = nil }
         finish(.posted)
     }
 
-    private func askSkip() {
-        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-        withAnimation(.easeOut(duration: 0.25)) { phase = .confirming }
-    }
-
-    private func skip() {
-        guard phase == .confirming else { return }
-        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
+    private func keepPrivate() {
+        guard isOpen else { return }
+        haptics.playTransient(intensity: 0.3, sharpness: 0.35)
         onDecide(.skipped)
-        withAnimation(.easeOut(duration: 0.25)) { phase = .result(.skipped) }
-        withAnimation(.easeIn(duration: 1.0)) { fadeOut = true }
         finish(.skipped)
     }
 
     private func finish(_ outcome: Outcome) {
-        after(Timing.resultHold) { onFinished(outcome) }
+        withAnimation(.easeOut(duration: 0.25)) { buttonsShown = false }
+        after(0.4) { onFinished(outcome) }
     }
 
-    // MARK: - 書式
+    // MARK: - 進み(排出口から出てくる動き)
 
-    private static let dotDate: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.calendar = Calendar(identifier: .gregorian)
-        f.dateFormat = "MM.dd"
-        return f
-    }()
+    private static func ejectTravel(_ elapsed: TimeInterval) -> Double {
+        guard elapsed > Timing.ejectStart else { return 0 }
+        let total = Timing.ejectEnd - Timing.ejectStart
+        let u = min(1, (elapsed - Timing.ejectStart) / total)
+        if u < 0.5 { return 0.58 * smooth(u / 0.5) }
+        if u < 0.64 { return 0.58 }
+        return 0.58 + 0.42 * smooth((u - 0.64) / 0.36)
+    }
 
-    private static let jaDate: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "ja_JP")
-        f.dateFormat = "M月d日"
-        return f
-    }()
+    private static func smooth(_ t: Double) -> Double {
+        let c = min(1, max(0, t))
+        return c * c * (3 - 2 * c)
+    }
+
+    // MARK: - 表記・読み上げ
+
+    private var accessibilityText: String {
+        if isOpen { return isRareFilm ? "レアフィルム。ひらきました" : "昨日の1枚、ひらきました" }
+        return "現像中、\(Int((developProgress * 100).rounded()))パーセント。指でふると早まります"
+    }
 
     private static func filmDate(_ date: Date) -> String {
         ProfileShot.filmStamp(for: date)
-    }
-}
-
-/// 鍵の輪っか(下がひらいたU字)
-private struct ShackleShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
-        p.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width / 2, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        return p
     }
 }
 

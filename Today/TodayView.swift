@@ -10,6 +10,8 @@ import SwiftData
 struct TodayView: View {
     /// 右上のアバター・左スワイプでProfileへ(MainNavigationViewが切り替える)
     var onOpenProfile: () -> Void = {}
+    /// v54:ME 画面(Recap)の 別の 入口(ME カード・ALBUMS 見出し)。右上の 丸(onOpenProfile)とは ちがう
+    var onOpenMe: () -> Void = {}
     /// 現在時刻(テスト・プレビューでは任意の時刻を返す)
     var clock: () -> Date = Date.init
 
@@ -59,8 +61,10 @@ struct TodayView: View {
     @State private var firstLightOpacity = 0.0
     /// 光の下で、2画面(v5)をフェードインさせるための不透明度
     @State private var v5Opacity = 1.0
-    /// ロック中の月を押した時に、2.3秒だけ出す小さなお知らせ。
+    /// ロック中の月を押した時に、3.4秒だけ出す小さなお知らせ。
     @State private var lockedToast: String?
+    /// v47:トーストの右のボタン(行けるところが あるときだけ)
+    @State private var lockedToastAction: (label: String, action: () -> Void)?
     /// 「追加」タイルから出す、参加する / つくる のシート
     @State private var showingAddGroupSheet = false
     @State private var addSheetHeight: CGFloat = 300
@@ -77,11 +81,13 @@ struct TodayView: View {
     @State private var chatReply: LaterPhoto?
     /// いま入ったグループ(Home の列に「ぽんと入る」)
     @State private var arrivingGroupID: UUID?
-    /// グループの招待の QR(画面いっぱいに重ねる)
-    @State private var inviteQR: (url: URL, aura: Int)?
+    /// グループの招待の QR(画面いっぱいに重ねる)。v58:Trip パス(チケット)の 形で 出す。
+    @State private var inviteQR: (group: LaterGroup, url: URL, aura: Int, memberCount: Int)?
     @State private var showingDevelopSheet = false
     /// v14 ⑤:ともだち(呼ぶ / グループに えらぶ / とどいた)
     @State private var showingFriendsHub = false
+    /// v48:ともだち画面の中から「とどいた」を見るときだけの、今の画面
+    @State private var showingFriendsHubInbox = false
     /// v18.2:撮ったチェキが、物干しへ とんでいる間
     @State private var shotFlight: (handOff: ShotHandOff, start: Date)?
     /// v21 E:オープニング(ゼロから起動した時だけ)
@@ -98,6 +104,8 @@ struct TodayView: View {
     /// 抜ける(確認 → 長押し → 抜ける動き)
     @State private var leaveSnapshot: LeaveSnapshot?
     @State private var leavingGroup: LaterGroup?
+    /// v58 §5:leaveSnapshot の 演出を「Trip を おわる」でも 再利用する ときに true(perform が endTrip を呼ぶ)
+    @State private var isEndingTrip = false
     /// 参加していたグループが終わった(その1回だけ)
     @State private var endedGroup: EndedGroupsStore.Ended?
     /// 昨日を見る画面の範囲
@@ -177,6 +185,9 @@ struct TodayView: View {
         let capturedAt: Date
         let groups: [ProfileShareGroup]
         let showsMondo: Bool
+        /// 昨日ぜんぶで何こま(v34:「YESTERDAY · 1 / 3」の表示だけに使う)
+        let totalCount: Int
+        let tag: String?
     }
     @AppStorage(AvatarBadge.pendingKey) private var avatarBadgePending: String = ""
     @AppStorage(AvatarBadge.acknowledgedKey) private var avatarBadgeAcknowledged: String = ""
@@ -186,6 +197,7 @@ struct TodayView: View {
     @Query(sort: \ExposureDay.captureDate, order: .reverse) private var exposureDays: [ExposureDay]
     @Query private var blockedUsers: [BlockedUser]
     @Bindable private var captureRequest = CaptureRequestStore.shared
+    @Bindable private var developRequest = DevelopRequestStore.shared
 
     private var currentUser: UserProfile? {
         UserProfile.current(from: profiles)
@@ -498,6 +510,7 @@ struct TodayView: View {
                 avatarSeed: currentUser?.id,
                 showsAvatarBadge: !avatarBadgePending.isEmpty,
                 onOpenProfile: onOpenProfile,
+                onOpenMe: onOpenMe,
                 avatarSwitch: avatarSwitch,
                 avatarName: currentUser?.name ?? "",
                 onDevelopTap: { developPage = 0; showingDevelopSheet = true },
@@ -511,6 +524,7 @@ struct TodayView: View {
                 launch: launchFrame(at: context.date),
                 sparkle: sparkle(at: context.date),
                 onOrbTap: tapOrb,
+                onOpenYesterday: { openYesterday(scope: .mine) },
                 isDiving: isDivingToMondo,
                 layerData: layerData(sharedGroups: sharedGroups),
                 layerActions: layerActions(sharedGroups: sharedGroups),
@@ -551,6 +565,7 @@ struct TodayView: View {
                     isCovered: isHomeCovered,
                     shotEvent: shotEvent,
                     onOpenProfile: onOpenProfile,
+                    onOpenMe: onOpenMe,
                     onOpenGroupSheet: { id in openChat(id) },
                     onAddGroup: { showingAddGroupSheet = true },
                     onCreateGroup: { prefill in
@@ -769,8 +784,10 @@ struct TodayView: View {
 
             if let lockedToast {
                 toast(lockedToast)
-                    .allowsHitTesting(false)
+                    .allowsHitTesting(lockedToastAction != nil)
                     .transition(.opacity)
+                    // v47:部屋・グループ作成の上でも かくれない
+                    .zIndex(100)
             }
 
             if let group = chatGroup {
@@ -799,8 +816,8 @@ struct TodayView: View {
                         onView: { viewYesterday(scope: .group(group.id)) },
                         onSettings: { settingsGroup = group },
                         onShowQR: { url in
-                            let aura = groupSummaries.first { $0.id == group.id }?.auraIndex ?? 0
-                            withAnimation(.easeOut(duration: 0.25)) { inviteQR = (url, aura) }
+                            let s = groupSummaries.first { $0.id == group.id }
+                            withAnimation(.easeOut(duration: 0.25)) { inviteQR = (group, url, s?.auraIndex ?? 0, s?.memberCount ?? 1) }
                         }
                     )
                 }
@@ -808,37 +825,60 @@ struct TodayView: View {
                 .zIndex(10)
             }
 
-            if let group = settingsGroup {
-                BottomSheetContainer(
-                    topInset: 70,
-                    fill: AnyShapeStyle(LinearGradient(colors: [Color(hex: "1B1B1F"), Color(hex: "0C0C0E")], startPoint: .top, endPoint: .bottom)),
-                    onClose: { settingsGroup = nil }
-                ) {
-                    GroupSettingsView(group: group, haptics: haptics, onBack: { settingsGroup = nil }, onLeave: {
-                        guard let user = currentUser else { return }
-                        leavingGroup = group
-                        withAnimation(.easeOut(duration: 0.25)) { leaveSnapshot = LeaveSnapshot(group: group, user: user) }
-                    })
+            Color.clear
+                .fullScreenCover(isPresented: Binding(get: { settingsGroup != nil }, set: { if !$0 { settingsGroup = nil } })) {
+                    // v58 §5:TRIP SETTINGS。見た目は New trip と 同じ ウィザード。
+                    // 保存(なまえ・表紙)・ぬける・おわるの 本物の 処理は、今までと 同じ 呼び出しに まかせる(ここでは 新しく 作らない)。
+                    if let group = settingsGroup {
+                        NewGroupFlowView(
+                            friends: layerData(sharedGroups: sharedGroups).friends.filter { !$0.isMe }.map {
+                                GroupCreateFriend(id: $0.id, name: $0.name, avatarData: $0.avatarData, seed: $0.seed)
+                            },
+                            onCreated: { _ in },
+                            onClose: { settingsGroup = nil },
+                            existingGroup: group,
+                            onLeaveRequested: {
+                                guard let user = currentUser else { return }
+                                settingsGroup = nil
+                                leavingGroup = group
+                                withAnimation(.easeOut(duration: 0.25)) { leaveSnapshot = LeaveSnapshot(group: group, user: user) }
+                            },
+                            onEndTripRequested: {
+                                // v58 §5:「Trip をおわる」。GroupLeaveOverlay の 演出を 再利用し、
+                                // 実際の 処理は GroupLeaveService.endTrip(CKShare + 合言葉レコードの 削除。
+                                // 写真/ゾーン自体は 消さない。7日の 自然消滅に まかせる)。
+                                guard let user = currentUser else { return }
+                                settingsGroup = nil
+                                leavingGroup = group
+                                isEndingTrip = true
+                                withAnimation(.easeOut(duration: 0.25)) { leaveSnapshot = LeaveSnapshot(group: group, user: user) }
+                            }
+                        )
+                    }
                 }
-                .id("settings-\(group.id)")
-                .zIndex(12)
-            }
 
             if let snapshot = leaveSnapshot {
                 GroupLeaveOverlay(snapshot: snapshot, haptics: haptics, perform: {
                     guard let group = leavingGroup, let user = currentUser else { throw GroupLeaveService.LeaveError.notReady }
-                    try await GroupLeaveService.leave(group, user: user, context: context)
+                    if isEndingTrip {
+                        try await GroupLeaveService.endTrip(group, user: user, context: context)
+                    } else {
+                        try await GroupLeaveService.leave(group, user: user, context: context)
+                    }
                 }, onCancel: {
                     withAnimation(.easeOut(duration: 0.25)) { leaveSnapshot = nil }
                     leavingGroup = nil
+                    isEndingTrip = false
                 }, onHome: {
                     // Home へ:そのグループは列から小さくなって消え、右のグループが左へ寄る
                     settingsGroup = nil
                     sheetGroup = nil
                     leavingGroup = nil
+                    let wasEnding = isEndingTrip
+                    isEndingTrip = false
                     withAnimation(.easeOut(duration: 0.3)) { leaveSnapshot = nil }
-                    presentToast("『\(snapshot.name)』から抜けました")
-                })
+                    presentToast(wasEnding ? "『\(snapshot.name)』を おわりました" : "『\(snapshot.name)』から抜けました")
+                }, isEndingTrip: isEndingTrip)
                 .transition(.opacity)
                 .zIndex(40)
             }
@@ -853,7 +893,7 @@ struct TodayView: View {
             }
 
             if let inviteQR {
-                InviteQROverlay(url: inviteQR.url, auraIndex: inviteQR.aura) {
+                InviteQROverlay(group: inviteQR.group, url: inviteQR.url, auraIndex: inviteQR.aura, memberCount: inviteQR.memberCount) {
                     withAnimation(.easeOut(duration: 0.25)) { self.inviteQR = nil }
                 }
                 .transition(.opacity)
@@ -1037,11 +1077,29 @@ struct TodayView: View {
             .environment(\.colorScheme, palette.isNight ? .dark : .light)
         }
         .fullScreenCover(isPresented: $showingFriendsHub) {
+            FriendScreenV48(
+                myName: currentUser?.name ?? "",
+                myColorIndex: currentUser?.avatarColorIndex,
+                myAvatarData: currentUser?.profileImageData,
+                friends: layerData(sharedGroups: sharedGroups).friends,
+                groups: sharedGroups,
+                onClose: { showingFriendsHub = false },
+                onOpenInbox: { showingFriendsHubInbox = true },
+                onOpenInviteToGroup: {
+                    showingFriendsHub = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { newGroupPrefill = nil; showingNewGroup = true }
+                },
+                onEditProfile: onOpenProfile
+            )
+        }
+        // v48:「とどいた」(ともだち申請)・「グループに えらぶ」は、今の 画面を そのまま 呼ぶ
+        .fullScreenCover(isPresented: $showingFriendsHubInbox) {
             FriendsHubView(
                 myName: currentUser?.name ?? "",
                 friends: layerData(sharedGroups: sharedGroups).friends,
                 groups: sharedGroups,
-                onClose: { showingFriendsHub = false }
+                startTab: 2,
+                onClose: { showingFriendsHubInbox = false }
             )
             .environment(\.palette, palette)
         }
@@ -1092,6 +1150,13 @@ struct TodayView: View {
                 // もう撮れない・時間外:カードで知らせる
                 showCameraDenied(deniedDecision(for: homeState(at: clock())), feedback: true)
             }
+        }
+        // v47:ライブパネルの「develop」から、今日撮ったこまの現像シートを開く
+        .onChange(of: developRequest.pendingRequestID) { _, newValue in
+            guard newValue != nil else { return }
+            developRequest.pendingRequestID = nil
+            developPage = developRequest.startIndex
+            showingDevelopSheet = true
         }
     }
 
@@ -1912,7 +1977,9 @@ struct TodayView: View {
             image: UIImage(data: first.imageData),
             capturedAt: first.captureDate,
             groups: shareGroups(of: photos),
-            showsMondo: MondoService.isPublic
+            showsMondo: MondoService.isPublic,
+            totalCount: photos.count,
+            tag: first.tags.first
         )
         var transaction = Transaction()
         transaction.disablesAnimations = true
@@ -1932,6 +1999,8 @@ struct TodayView: View {
                 capturedAt: snapshot.capturedAt,
                 groups: snapshot.groups,
                 showsMondo: snapshot.showsMondo,
+                totalCount: snapshot.totalCount,
+                tag: snapshot.tag,
                 playsUnlock: decidePlaysUnlock,
                 haptics: haptics,
                 onDecide: decide,
@@ -2099,7 +2168,9 @@ struct TodayView: View {
             diveIntoMondo()
         case .locked(let title, let message):
             Haptics.play(.double)  // v17:まだできないこと
-            presentToast(title + "\n" + message)
+            presentToast(title + "\n" + message, actionLabel: "撮る →") {
+                CaptureRequestStore.shared.pendingRequestID = UUID()
+            }
         }
     }
 
@@ -2198,11 +2269,13 @@ struct TodayView: View {
                 expandMoon(to: .shoot)
             },
             openMondo: {
-                // アイコン2回タップと同じ開き方(昨日のホームへ)
+                // v47:Mondo の タブを 強制して、昨日のホームへ(前回 Groups を 見ていても Mondo が ひらく)
+                UserDefaults.standard.set("mondo", forKey: "homeV5LastTab")
                 switchHome(to: .yesterday)
             },
             knock: layer.knock,
-            openFriends: { showingFriendsHub = true }
+            openFriends: { showingFriendsHub = true },
+            openWord: { openMondoWord($0) }
         )
     }
 
@@ -2306,25 +2379,47 @@ struct TodayView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: open)
     }
 
-    private func presentToast(_ text: String) {
-        withAnimation(.easeOut(duration: 0.2)) { lockedToast = text }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.3) {
-            withAnimation(.easeOut(duration: 0.2)) { if lockedToast == text { lockedToast = nil } }
+    private func presentToast(_ text: String, actionLabel: String? = nil, action: (() -> Void)? = nil) {
+        withAnimation(.easeOut(duration: 0.2)) {
+            lockedToast = text
+            lockedToastAction = actionLabel.map { label in (label, action ?? {}) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                if lockedToast == text { lockedToast = nil; lockedToastAction = nil }
+            }
         }
     }
 
     private func toast(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 14, weight: .semibold))
-            .multilineTextAlignment(.center)
-            .lineSpacing(3)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(Capsule().fill(.ultraThinMaterial))
-            .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
-            .frame(maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, MoonLayout.visibleHeight + 36)
+        HStack(spacing: 10) {
+            Text(text)
+                .font(.system(size: 14, weight: .semibold))
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .foregroundStyle(.white)
+            if let lockedToastAction {
+                Button {
+                    let action = lockedToastAction.action
+                    withAnimation(.easeOut(duration: 0.2)) { lockedToast = nil; self.lockedToastAction = nil }
+                    action()
+                } label: {
+                    Text(lockedToastAction.label)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 12)
+                        .frame(height: 28)
+                        .background(Capsule().fill(Darkroom.orange))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Capsule().fill(.ultraThinMaterial))
+        .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, MoonLayout.visibleHeight + 36)
     }
 }
 

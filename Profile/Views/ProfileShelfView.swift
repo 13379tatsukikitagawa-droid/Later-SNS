@@ -102,6 +102,11 @@ enum ProfileShelfSheet: Equatable {
     case settings, edit
 }
 
+/// v52:インライン編集で、いまフォーカスしている場所
+enum ProfileShelfInlineField: Hashable {
+    case name, tag
+}
+
 /// プロフィール:自分の「フィルムの棚」。昼(9:00〜)は白、夜(0:00〜)は黒。Home と同じ、白い面・太い文字・落書き・チェキ。
 /// 主役は、選んだ日の1枚(チェキ)。自分だけが見る画面で、ランキング・他の人との比較は出さない。場所も出さない。
 struct ProfileShelfView: View {
@@ -137,10 +142,20 @@ struct ProfileShelfView: View {
     @State private var isShowingDeletion = false
     @State private var toastMessage: String?
     @State private var toastToken = 0
-
-    private static let frameWidth: CGFloat = 92
-    private static let frameSpacing: CGFloat = 10
-    private static let stripInset: CGFloat = 16
+    /// v51 やりなおし:自分の チェキ(タップで QR)・むかしの 日めくりは たたんで おく
+    @State private var chekiFlipped = false
+    /// v52:インラインの編集(シートではなく、この画面の中で直接)
+    @State private var isEditingInline = false
+    @State private var editName = ""
+    @State private var editTags: [String] = []
+    @State private var editTagInput = ""
+    @FocusState private var editFocus: ProfileShelfInlineField?
+    /// v51:QR・共有・スキャン・Recap・1年のカレンダー
+    @State private var showsQR = false
+    @State private var showsScan = false
+    @State private var showsRecap = false
+    @State private var showsStarCalendar = false
+    @State private var shareItems: [Any]?
 
     // MARK: 色(昼 / 夜)
 
@@ -154,8 +169,6 @@ struct ProfileShelfView: View {
     /// 丸いボタンの面と線(昼は黒 6% + 10%、夜は白 12% + 16%)
     private var glassFill: Color { night ? Color.white.opacity(0.12) : Color.black.opacity(0.06) }
     private var glassLine: Color { night ? Color.white.opacity(0.16) : Color.black.opacity(0.10) }
-    /// フィルムの穴
-    private var perfColor: Color { night ? Color(hex: "34343A") : Color(hex: "D1D1D6") }
 
     private var profile: UserProfile? { UserProfile.current(from: profiles) }
     /// 「光もれと揺れを止める」か、システムの「視差効果を減らす」のどちらかがオン
@@ -169,10 +182,6 @@ struct ProfileShelfView: View {
         return name
     }
 
-    private var personaText: String {
-        guard let id = profile?.id else { return "PERSONA · —" }
-        return "PERSONA · " + ProfilePersonaName.name(for: id)
-    }
 
     private var takenKeys: Set<String> { Set(exposureDays.map(\.dayKey)) }
 
@@ -190,6 +199,16 @@ struct ProfileShelfView: View {
             if taken.contains(day.key) { count += 1 } else if index == 0 { continue } else { break }
         }
         return count
+    }
+
+    private var myRecordName: String? { CloudKitManager.current?.currentUserRecordName }
+
+    /// v50/v51:Recap・1年カレンダーは、MEScreenV19 と同じ元データ(1日3枚まで・自分の写真だけ)を使う
+    private var meDays: [MEDay] { MERules.days(photos: profile?.photos ?? [], now: Date()) }
+
+    private func recapImage(for shot: MEShot) -> UIImage? {
+        guard let data = profile?.photos.first(where: { $0.id == shot.photoID })?.imageData else { return nil }
+        return UIImage(data: data)
     }
 
     // MARK: 本体
@@ -229,55 +248,108 @@ struct ProfileShelfView: View {
             }
             .environment(\.colorScheme, .dark)
         }
+        // v51:QR・共有・スキャン・Recap・1年のカレンダー(どれも既存の処理をそのまま呼ぶだけ)
+        .sheet(isPresented: $showsQR) {
+            ProfileSelfQRSheet(name: displayName, recordName: myRecordName)
+                .environment(\.colorScheme, .dark)
+        }
+        .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
+            ShareSheet(activityItems: shareItems ?? []) { _ in shareItems = nil }
+        }
+        .fullScreenCover(isPresented: $showsScan) {
+            // friendCount は上限の目安表示にだけ使う。ここでは数えていないので 0(満杯扱いにしない)。
+            FriendQRScanView(myName: displayName, friendCount: 0) { showToast($0) }
+        }
+        .fullScreenCover(isPresented: $showsRecap) {
+            RecapPlayerView(days: meDays, images: recapImage(for:), onClose: { showsRecap = false })
+        }
+        .sheet(isPresented: $showsStarCalendar) {
+            MECalendarSheet(
+                exposureDays: Array(exposureDays),
+                picks: MEPickStore.picks,
+                recentKeys: days.map(\.key),
+                onJump: { index in
+                    let keys = days.map(\.key)
+                    if keys.indices.contains(index) { selectedKey = keys[index] }
+                },
+                onToast: showToast,
+                onClose: { showsStarCalendar = false }
+            )
+            .environment(\.colorScheme, .dark)
+        }
     }
 
+    // MARK: v52:インライン編集
+
+    private func beginInlineEdit() {
+        haptics.play(.light)
+        editName = ProfileShelfEditRules.clampName(displayName)
+        editTags = Array((profile?.selfTags ?? []).prefix(ProfileShelfEditRules.maxTags))
+        editTagInput = ""
+        isEditingInline = true
+        DispatchQueue.main.async { editFocus = .name }
+    }
+
+    private func cancelInlineEdit() {
+        haptics.play(.light)
+        editFocus = nil
+        isEditingInline = false
+    }
+
+    private func saveInlineEdit() {
+        editFocus = nil
+        saveProfile(name: editName, tags: editTags)
+        isEditingInline = false
+    }
+
+    /// v51 やりなおし:自分の チェキ + QR/編集/共有/スキャン + 1週間を 主役にしたので、
+    /// 画面の 高さに むりに 合わせる(heroHeight を 縮める)仕組みは やめて、ふつうに 縦に スクロールする。
     private var shelf: some View {
         GeometryReader { proxy in
-            let points = self.points
-            let taken = takenKeys
             let safeTop = proxy.safeAreaInsets.top
             let safeBottom = proxy.safeAreaInsets.bottom
-            let fullHeight = proxy.size.height + safeTop + safeBottom
-            // 画面が低いとき(SE など)は、チェキの領域だけを縮めて、すべての部品を入れる
-            let fixedBelow: CGFloat = 8 + 44 + 16 + 84 + 48 + 84 + 120 + 26 + 14
-            let heroHeight = min(330, max(170, fullHeight - safeTop - max(safeBottom, 10) - fixedBelow))
-            let heroScale = heroHeight / 330
-            let isLocked = activeDay?.isToday == true && !taken.contains(todayKey)
 
             ZStack(alignment: .top) {
-                background
+                background.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    topButtons
-                        .padding(.top, safeTop + 8)
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        topButtons
+                            .padding(.top, safeTop + 8)
 
-                    hero(points: points, taken: taken, isLocked: isLocked, width: proxy.size.width)
-                        .scaleEffect(heroScale, anchor: .top)
-                        .frame(height: heroHeight, alignment: .top)
+                        ZStack {
+                            selfChekiHero
+                            if !isEditingInline { stickerScatter }
+                        }
+                        .padding(.top, 18)
 
-                    caption
-                        .padding(.top, 2)
+                        who
+                            .padding(.top, 10)
 
-                    who
-                        .padding(.top, 6)
+                        if isEditingInline {
+                            inlineTagEditor
+                                .padding(.top, 14)
+                        }
 
-                    tagRow
-                        .padding(.top, 14)
+                        profileActionRow
+                            .padding(.top, 14)
 
-                    stats
-                        .padding(.top, 14)
+                        stats
+                            .padding(.top, 14)
 
-                    Spacer(minLength: 0)
+                        meStripHeader
+                            .padding(.top, 18)
 
-                    filmStrip(points: points, taken: taken, width: proxy.size.width)
+                        starCalendarRow
+                            .padding(.top, 10)
 
-                    footer
-                        .padding(.top, 12)
-                        .padding(.bottom, max(safeBottom, 10) + 4)
+                        footer
+                            .padding(.top, 12)
+                            .padding(.bottom, max(safeBottom, 10) + 24)
+                    }
                 }
+                .ignoresSafeArea(.container, edges: .top)
             }
-            .frame(width: proxy.size.width, height: fullHeight)
-            .ignoresSafeArea()
         }
     }
 
@@ -300,7 +372,11 @@ struct ProfileShelfView: View {
                 ProfileShelfSettingsSheet(
                     colors: sheetColors,
                     nameLine: "\(displayName) · \(profile.map { ProfilePersonaName.name(for: $0.id) } ?? "—")",
-                    onEdit: { openSheet(.edit) },
+                    // v52:編集は、別のシートではなく、この画面の中でそのまま(インライン)
+                    onEdit: {
+                        openSheet(nil)
+                        beginInlineEdit()
+                    },
                     onReport: { isShowingReport = true },
                     onDelete: { isShowingDeletion = true },
                     onToast: showToast,
@@ -417,14 +493,28 @@ struct ProfileShelfView: View {
 
     // MARK: 上のボタン
 
+    /// v52:編集中は「やめる / 保存する」。ふだんは「戻る / 設定」。
     private var topButtons: some View {
         HStack {
-            glassButton(systemName: "chevron.left", label: "戻る") { onBack?() }
-            Spacer()
-            glassButton(systemName: "gearshape.fill", label: "設定") { openSheet(.settings) }
+            if isEditingInline {
+                Button("やめる") { cancelInlineEdit() }
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(palette.sub)
+                Spacer()
+                Text("Edit").font(.system(size: 13, weight: .heavy)).foregroundStyle(palette.ink)
+                Spacer()
+                Button("保存する") { saveInlineEdit() }
+                    .font(.system(size: 15, weight: .heavy))
+                    .foregroundStyle(emberText)
+            } else {
+                glassButton(systemName: "chevron.left", label: "戻る") { onBack?() }
+                Spacer()
+                glassButton(systemName: "gearshape.fill", label: "設定") { openSheet(.settings) }
+            }
         }
         .padding(.horizontal, 20)
         .frame(height: 44)
+        .animation(.easeOut(duration: 0.2), value: isEditingInline)
     }
 
     private func glassButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
@@ -440,278 +530,314 @@ struct ProfileShelfView: View {
         .accessibilityLabel(label)
     }
 
-    // MARK: 主役:チェキと落書き
+    // MARK: 主役:自分の チェキ(mock .pck:226×288・角丸6・タップで QR)
+    // FriendScreenV48 の selfCheki と 同じ組み方(写真 or グラデーション+イニシャル・下の白い帯に 名前)。
 
-    private func hero(points: [String: WeekDayPoint], taken: Set<String>, isLocked: Bool, width: CGFloat) -> some View {
-        ZStack(alignment: .top) {
-            if !night { doodles(locked: isLocked, width: width) }
-            if let day = activeDay {
-                if let point = points[day.key], !day.isGone {
-                    chekiView(day: day, point: point)
-                        .id(day.key)
-                } else if day.isToday && !taken.contains(day.key) {
-                    emptyFrame(
-                        title: "今日の1枚を、\nまだ撮っていません",
-                        note: "長押しで撮ると、ここで\n現像が始まります",
-                        showsShoot: true
-                    )
-                } else if day.isGone {
-                    emptyFrame(title: "この写真は\n消えました", note: "写真は撮ってから\n7日で消えます")
-                } else if taken.contains(day.key) {
-                    emptyFrame(title: "この写真は、\nここには出ません", note: "写真は撮ってから\n7日で消えます")
+    private var selfChekiHero: some View {
+        let initial = String(displayName.prefix(1))
+        return Button {
+            haptics.play(.light)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) { chekiFlipped.toggle() }
+        } label: {
+            ZStack {
+                if chekiFlipped {
+                    selfChekiQRBack.rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
                 } else {
-                    emptyFrame(title: "この日は\n撮っていません", note: "写真は撮ってから\n7日で消えます")
+                    selfChekiFront(initial)
                 }
             }
+            .frame(width: 226, height: 288)
+            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(.white))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .rotationEffect(.degrees(-2))
+            .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
+            .rotation3DEffect(.degrees(chekiFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
         }
+        .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-        .frame(height: 330, alignment: .top)
+        .accessibilityLabel("自分の チェキ。タップで QR")
     }
 
-    /// チェキのまわりの落書き(昼だけ。チェキと重ならない位置)。3.2秒でゆっくり上下(±3pt・±6°)。
-    /// 今日がまだ撮れていないとき(ロック中)は、濃さ 50%。
-    private func doodles(locked: Bool, width: CGFloat) -> some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: calm)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let phase = calm ? 0 : sin(t / 3.2 * 2 * .pi)   // -1 → 1
-            ZStack(alignment: .topLeading) {
-                doodle(.star, size: 34, x: 24, y: 40, rotation: -12, phase: phase)
-                doodle(.wave, size: 46, x: width - 58, y: 74, rotation: 18, phase: phase)
-                doodle(.dots, size: 26, x: 26, y: 262, rotation: 0, phase: phase)
-                doodle(.flower, size: 30, x: width - 62, y: 262, rotation: 10, phase: phase)
+    private func selfChekiFront(_ initial: String) -> some View {
+        ZStack(alignment: .bottom) {
+            if let data = profile?.profileImageData, let image = UIImage(data: data) {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                LinearGradient(colors: LayerAvatar.colors(profile?.id ?? UUID(), override: profile?.avatarColorIndex), startPoint: .top, endPoint: .bottom)
+                Text(initial).font(.system(size: 60, weight: .heavy)).foregroundStyle(.white.opacity(0.9))
             }
-            .frame(width: width, height: 330, alignment: .topLeading)
+            Rectangle().fill(.white).frame(height: 46)
+                .overlay(
+                    VStack(spacing: 2) {
+                        Text(displayName).font(.custom("InstrumentSerif-Italic", size: 17)).foregroundStyle(.black)
+                        Text(Self.stampFormatter.string(from: Date())).font(.system(size: 9, design: .monospaced)).foregroundStyle(.black.opacity(0.5))
+                    }
+                )
         }
-        .frame(width: width, height: 330)
-        .opacity(locked ? 0.5 : 1)
-        .accessibilityHidden(true)
-        .allowsHitTesting(false)
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 
-    private func doodle(_ kind: ChicDoodleKind, size: CGFloat, x: CGFloat, y: CGFloat, rotation: Double, phase: Double) -> some View {
-        ChicDoodle(kind: kind, width: size)
-            .rotationEffect(.degrees(rotation + 6 * phase))
-            .offset(x: x, y: y - 3 * phase)
-    }
-
-    private func chekiView(day: ProfileShelfDay, point: WeekDayPoint) -> some View {
-        TimelineView(.animation(paused: false)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            // 7秒の往復:-2.2° ↔ -1.4°、6pt 上下(視差効果を減らすときは止める)
-            let p = calm ? 0 : (1 - cos(t * 2 * .pi / 7)) / 2
-            // 暗い・色がない・ぼかした状態から、2.6秒かけて色づく(視差効果を減らすときは、すぐ色を出す)
-            let linear = calm ? 1 : min(1, max(0, context.date.timeIntervalSince(developStart) / 2.6))
-            let develop = 1 - pow(1 - linear, 3)
-            cheki(day: day, point: point, develop: point.opened ? develop : 1)
-                .rotationEffect(.degrees(-2.2 + 0.8 * p))
-                .offset(y: -6 * p)
-        }
-        .padding(.top, 14)
-        // 仕上がる前は、押しても中は開かない(短く知らせるだけ)
-        .onTapGesture {
-            guard !point.opened else { return }
-            LayerHaptics.softDouble()
-            showToast(OwnReveal.status(takenAt: point.date, now: Date()).lockedText.map { $0.hasPrefix("あと") ? "今日 \($0) 撮ると、ひらきます" : PhotoDevelop.lockedNote } ?? PhotoDevelop.lockedNote)
-        }
-    }
-
-    private func cheki(day: ProfileShelfDay, point: WeekDayPoint, develop: Double) -> some View {
-        let width: CGFloat = 214
-        let photoWidth = width - 20
-        let photoHeight = photoWidth * 4 / 3
-        return VStack(spacing: 0) {
-            photoView(day: day, point: point, develop: develop)
-                .frame(width: photoWidth, height: photoHeight)
-                .overlay(alignment: .bottomTrailing) {
-                    // 日付スタンプ(オレンジ・Space Mono Bold 12pt・光)
-                    Text(ProfileShot.filmStamp(for: point.date))
-                        .font(ShelfFont.mono(12, bold: true))
-                        .foregroundStyle(palette.stamp)
-                        .shadow(color: palette.stamp.opacity(0.8), radius: 4)
-                        .padding(.trailing, 9)
-                        .padding(.bottom, 8)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
-                .padding(.top, 10)
-                .padding(.horizontal, 10)
-
-            HStack {
-                Text(point.tags.first.map { "#\($0)" } ?? "")
-                    .font(.system(size: 19, weight: .heavy))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Spacer(minLength: 6)
-                Text("PRINT")
-                    .font(ShelfFont.mono(10))
-                    .foregroundStyle(Color(hex: "7A726A"))
+    private var selfChekiQRBack: some View {
+        VStack(spacing: 10) {
+            if let recordName = myRecordName, let qr = QRImage.make(FriendRules.link(recordName: recordName).absoluteString) {
+                Image(uiImage: qr).resizable().frame(width: 140, height: 140)
             }
-            .foregroundStyle(Color(hex: "2A2A2E"))
-            .padding(.horizontal, 14)
-            .frame(height: 42)
+            Text("SCAN TO ADD").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(.black.opacity(0.6))
         }
-        .frame(width: width)
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(palette.paper))
-        .overlay(alignment: .top) { tape.offset(y: -14) }
-        // 紙の影:昼はうすい茶色(Home と同じ)、夜はもっと深く
-        .shadow(color: night ? .black.opacity(0.6) : ChicColor.instaxShadow.opacity(0.38), radius: 20, x: 0, y: 30)
-        .shadow(color: .black.opacity(night ? 0.4 : 0.12), radius: 10, x: 0, y: 6)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(day.isToday ? "今日" : "\(day.dayNumber)日")の1枚")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.white)
     }
 
-    /// 上のマスキングテープ(黄色のしま・96×28pt・+4°。Home と同じ色)
-    private var tape: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<5, id: \.self) { index in
-                (index % 2 == 0 ? ChicColor.tape : ChicColor.tapeLight)
-                    .opacity(0.85)
-                    .frame(width: 20)
-            }
-        }
-        .frame(width: 96, height: 28)
-        .clipped()
-        .rotationEffect(.degrees(4))
-        .opacity(0.9)
-        .accessibilityHidden(true)
-    }
-
-    /// 写真(ひらいていれば本物、なければ色のグラデ)。暗い中から、2.6秒かけて色づく。
-    private func photoView(day: ProfileShelfDay, point: WeekDayPoint, develop: Double) -> some View {
-        let fallback = point.color ?? Color(hex: "B9B8F5")
-        return Color.clear
-            .overlay {
-                if !point.opened {
-                    // 仕上がるまで(撮ったあとの最初の 9:00 まで)は、自分にも見せない
-                    DevelopingFrame()
-                } else if let image = fullImage(for: day, point: point) {
-                    Image(uiImage: image).resizable().scaledToFill()
-                } else {
-                    LinearGradient(colors: [fallback.opacity(0.55), fallback, fallback.opacity(0.7)], startPoint: .top, endPoint: .bottom)
-                }
-            }
-            .colorMultiply(Color(white: 0.25 + 0.75 * develop))
-            .saturation(0.2 + 0.8 * develop)
-            .blur(radius: 2 * (1 - develop))
-            .background(Color(hex: "222222"))
-    }
-
-    /// 7日をすぎた日は、写真を読みこまない。
-    private func fullImage(for day: ProfileShelfDay, point: WeekDayPoint) -> UIImage? {
-        // 仕上がる前の写真は、読みこまない(今日の分も例外にしない)
-        guard !day.isGone, point.opened, point.showsPhoto else { return nil }
-        let data = profile?.photos.first(where: { ExposureDayStore.dayKey(for: $0.captureDate) == day.key })?.imageData
-        return ProfileFilmImages.image(key: "full_\(day.key)", data: data)
-    }
-
-    /// 点線の枠(今日がまだ・消えた日・撮っていない日)。角丸 22pt、左右 62pt(落書きとぶつからない幅)。
-    private func emptyFrame(title: String, note: String, showsShoot: Bool = false) -> some View {
-        VStack(spacing: 14) {
-            Text(title)
-                .font(.system(size: 20, weight: .heavy))
-                .multilineTextAlignment(.center)
-                .lineSpacing(3)
-                .foregroundStyle(palette.ink)
-            Text(note)
-                .font(ShelfFont.mono(10.5))
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-                .foregroundStyle(palette.dim)
-            if showsShoot {
-                // 黒い丸薬(夜は白い丸薬)。Home の「つくる」ボタンと同じ
-                Button {
-                    onShoot?()
-                } label: {
-                    Text("撮る")
-                        .font(.system(size: 16, weight: .heavy))
-                        .foregroundStyle(palette.bg)
-                        .padding(.horizontal, 30)
-                        .padding(.vertical, 12)
-                        .background(Capsule().fill(palette.ink))
-                }
-                .buttonStyle(ShelfPressStyle(scale: 0.96))
-                .padding(.top, 4)
-            }
-        }
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity)
-        .frame(height: 280)
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(night ? Color.white.opacity(0.26) : Color.black.opacity(0.22),
-                              style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
-        )
-        .padding(.horizontal, 62)
-        .padding(.top, 30)
-    }
+    private static let stampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "''yy MM dd"
+        return formatter
+    }()
 
     // MARK: 小さな文字・名前・タグ・数字
 
-    private var caption: some View {
-        Text(activeDay?.isToday == false ? "— 現像された日 —" : "— いま、現像中 —")
-            .font(ShelfFont.mono(10))
-            .tracking(2)
-            .foregroundStyle(palette.dim)
-    }
-
-    /// 名前:Inter Black 44pt・字間 -5%。右上に小さな `you`(Instrument Serif の斜体 18pt)。下にオレンジの手描きの線。
+    /// 名前は もう 自分の チェキ(selfChekiHero)に 出ている。ここは 編集中の 名前フィールドだけ(v54:PERSONA 行は出さない)。
     private var who: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .top, spacing: 4) {
-                    Text(displayName)
-                        .font(ShelfFont.black(44))
-                        .tracking(-0.05 * 44)
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                    Text("you")
-                        .font(ShelfFont.serifItalic(18))
-                        .foregroundStyle(palette.sub)
-                        .padding(.top, 2)
-                        .accessibilityHidden(true)
-                }
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 6) {
+            if isEditingInline {
+                TextField("名前を入れてください", text: $editName)
+                    .focused($editFocus, equals: .name)
+                    .font(ShelfFont.black(28))
+                    .foregroundStyle(palette.ink)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .onChange(of: editName) { _, value in
+                        let clamped = ProfileShelfEditRules.clampName(value)
+                        if clamped != value { editName = clamped }
+                    }
                 ShelfScribble()
                     .stroke(emberFill, style: StrokeStyle(lineWidth: 3.6, lineCap: .round, lineJoin: .round))
                     .frame(width: 118, height: 8)
                     .accessibilityHidden(true)
-                Text(personaText.uppercased())
-                    .font(ShelfFont.mono(10.5))
-                    .tracking(1.4)
-                    .foregroundStyle(palette.sub)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
             }
-            Spacer(minLength: 12)
-            glassButton(systemName: "pencil", label: "編集") { openSheet(.edit) }
         }
         .padding(.horizontal, 24)
     }
 
-    private var tagRow: some View {
-        let tags = profile?.selfTags ?? []
-        return ScrollView(.horizontal, showsIndicators: false) {
+    /// v54:見本 D01 の `.pst`(6つの ハッシュタグの シール)。チェキの まわりに 散らして、少し かたむける。
+    private struct StickerSlot {
+        let dx, dy: CGFloat
+        let rotation: Double
+        let bg: Color
+        let ink: Color
+        let opacity: Double
+    }
+
+    private static let stickerSlots: [StickerSlot] = [
+        StickerSlot(dx: -113, dy: -112, rotation: -9, bg: Color(hex: "C8F25A"), ink: .black, opacity: 1),
+        StickerSlot(dx: 113, dy: -85, rotation: 8, bg: Color(hex: "EE5E9C"), ink: .white, opacity: 1),
+        StickerSlot(dx: -127, dy: 43, rotation: 6, bg: Color(hex: "9ED8FF"), ink: .black, opacity: 1),
+        StickerSlot(dx: 122, dy: 61, rotation: -7, bg: Color(hex: "FFD60A"), ink: .black, opacity: 0.92),
+        StickerSlot(dx: -94, dy: 159, rotation: -4, bg: Color(hex: "9B8CFF"), ink: .white, opacity: 0.92),
+        StickerSlot(dx: 88, dy: 175, rotation: 10, bg: Color(hex: "61D278"), ink: .black, opacity: 0.92),
+    ]
+
+    /// タップで、その言葉の日を探す(今は仮:トーストだけ)。編集中は 出さない(inlineTagEditor が 代わり)。
+    private var stickerScatter: some View {
+        let tags = Array((profile?.selfTags ?? []).prefix(Self.stickerSlots.count))
+        return ZStack {
+            ForEach(Array(tags.enumerated()), id: \.offset) { index, tag in
+                let slot = Self.stickerSlots[index]
+                Button {
+                    haptics.play(.light)
+                    showToast("#\(tag) の日を探す(仮)")
+                } label: {
+                    Text("#\(tag)")
+                        .font(LF.inter(900, 15))
+                        .tracking(-0.3)
+                        .foregroundStyle(slot.ink)
+                        .padding(.horizontal, 10).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(slot.bg))
+                        .shadow(color: .black.opacity(0.5), radius: 0, x: 3, y: 4)
+                }
+                .buttonStyle(ShelfPressStyle(scale: 0.92))
+                .opacity(slot.opacity)
+                .rotationEffect(.degrees(slot.rotation))
+                .offset(x: slot.dx, y: slot.dy)
+            }
+        }
+        .allowsHitTesting(true)
+    }
+
+    /// v52:タグの インライン編集(追加の入力欄 + 外せるチップ)
+    private var inlineTagEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                ForEach(Array(tags.enumerated()), id: \.offset) { index, tag in
-                    // タップで、その言葉の日を探す(今は仮:トーストだけ)
-                    Button {
-                        haptics.play(.light)
-                        showToast("#\(tag) の日を探す(仮)")
-                    } label: {
-                        Text("#\(tag)")
-                            .font(.system(size: 12.5, weight: .bold))
-                            .foregroundStyle(index == 0 ? emberText : palette.ink)
-                            .padding(.horizontal, 13)
-                            .frame(height: 34)
-                            .background(Capsule().fill(card))
+                HStack(spacing: 2) {
+                    Text("#").foregroundStyle(palette.dim)
+                    TextField("言葉を入れて追加", text: $editTagInput)
+                        .focused($editFocus, equals: .tag)
+                        .submitLabel(.next)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .onSubmit(addInlineTag)
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 38)
+                .background(Capsule().fill(glassFill))
+                Button(action: addInlineTag) {
+                    Text("追加").font(.system(size: 13, weight: .bold)).foregroundStyle(palette.ink)
+                        .padding(.horizontal, 14).frame(height: 38)
+                        .background(Capsule().fill(card))
+                }
+                .buttonStyle(.plain)
+            }
+            HStack(spacing: 8) {
+                ForEach(Array(editTags.enumerated()), id: \.offset) { index, tag in
+                    let sticker = Darkroom.stickerColors(tag)
+                    HStack(spacing: 6) {
+                        Text("#\(tag)").font(.system(size: 12.5, weight: .black)).foregroundStyle(sticker.1)
+                        Button { editTags.remove(at: index) } label: {
+                            Image(systemName: "xmark").font(.system(size: 8, weight: .bold)).foregroundStyle(sticker.1.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(ShelfPressStyle(scale: 0.94))
+                    .padding(.horizontal, 12)
+                    .frame(height: 30)
+                    .background(Capsule().fill(sticker.0))
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+
+    private func addInlineTag() {
+        let result = ProfileShelfEditRules.add(editTagInput, to: editTags)
+        if case .added(let tags) = result {
+            haptics.play(.light)
+            editTags = tags
+            editTagInput = ""
+        }
+    }
+
+    /// v51:QR・編集・共有・スキャンの4つ(編集中は出さない。トップバーが Cancel/Done になる)
+    @ViewBuilder
+    private var profileActionRow: some View {
+        if !isEditingInline {
+            HStack(spacing: 8) {
+                actionButton("qrcode", "QR") {
+                    haptics.play(.light)
+                    showsQR = true
+                }
+                actionButton("pencil", "Edit") { beginInlineEdit() }
+                actionButton("square.and.arrow.up", "Share") {
+                    haptics.play(.light)
+                    if let recordName = myRecordName {
+                        shareItems = ["\(displayName) と Lattag で つながろう\n\(FriendRules.link(recordName: recordName).absoluteString)"]
+                    }
+                }
+                actionButton("qrcode.viewfinder", "Scan") {
+                    haptics.play(.light)
+                    showsScan = true
                 }
             }
             .padding(.horizontal, 24)
         }
-        .frame(height: 34)
-        .opacity(tags.isEmpty ? 0 : 1)
+    }
+
+    /// mock .pact button:82pt 高さ・22pt 角丸・アイコン24pt・文字は Instrument Serif 17pt
+    private func actionButton(_ systemName: String, _ label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: systemName).font(.system(size: 24, weight: .regular)).foregroundStyle(palette.ink)
+                Text(label).font(.custom("InstrumentSerif-Regular", size: 17)).foregroundStyle(palette.ink)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 82)
+            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(glassFill))
+            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(glassLine, lineWidth: 1))
+        }
+        .buttonStyle(ShelfPressStyle(scale: 0.95))
+        .accessibilityLabel(label)
+    }
+
+    /// v51:「ME · 7 DAYS」のカード(mock .pme:幅いっぱい・高さ118・角丸24)+ Recap(v50)への入口
+    @ViewBuilder
+    private var meStripHeader: some View {
+        if RecapSequence.hasAnyOpenShot(days: meDays) {
+            Button {
+                haptics.play(.light)
+                showsRecap = true
+            } label: {
+                ZStack(alignment: .bottomTrailing) {
+                    Color(hex: "0D0D0E")
+                    Text("ME · 7 DAYS")
+                        .font(.system(size: 9.5, weight: .bold, design: .monospaced)).tracking(1.6)
+                        .foregroundStyle(Color(hex: "FF9A3C"))
+                        .padding(.leading, 16).padding(.top, 13)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    meStrip
+                        .padding(.leading, 12).padding(.bottom, 12)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    HStack(spacing: 7) {
+                        Text("Recap").font(.system(size: 14, weight: .heavy))
+                        Image(systemName: "play.fill").font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 16)
+                    .frame(height: 44)
+                    .background(Capsule().fill(.white))
+                    .padding(.trailing, 14).padding(.bottom, 14)
+                }
+            }
+            .buttonStyle(ShelfPressStyle(scale: 0.98))
+            .frame(height: 118)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.07), lineWidth: 1))
+            .padding(.horizontal, 16)
+        }
+    }
+
+    /// `.pme .pmf`:62pt 高さの 写真の帯(右の Recap ボタンぶん 右を あける)
+    private var meStrip: some View {
+        let shots = meDays.sorted { $0.ago > $1.ago }.flatMap { day in day.shots.filter(\.reveal.isOpen).map { ($0, day) } }
+        return HStack(spacing: 3) {
+            ForEach(Array(shots.suffix(7).enumerated()), id: \.offset) { _, pair in
+                let image = recapImage(for: pair.0)
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(Color.white.opacity(0.08))
+                    .overlay {
+                        if let image { Image(uiImage: image).resizable().scaledToFill() }
+                    }
+                    .frame(width: 20, height: 62)
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+            }
+        }
+        .frame(height: 62)
+        .frame(maxWidth: 190, alignment: .leading)
+    }
+
+    /// v51:1年ぶんの「色だけ ずっと のこる」ドット(mock .pyr:パディング16・角丸24・帯の高さ62)
+    /// MEScreenV19 と同じ MEMiniGrid / MECalendarSheet を 再利用する。
+    private var starCalendarRow: some View {
+        let keptCount = MEPickStore.picks.count
+        return Button {
+            haptics.play(.light)
+            showsStarCalendar = true
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("1 YEAR · KEPT").font(.system(size: 9.5, weight: .bold, design: .monospaced)).tracking(1.6).foregroundStyle(palette.dim)
+                    Spacer()
+                    Text("\(keptCount) KEPT").font(.system(size: 9.5, weight: .bold, design: .monospaced)).tracking(1.1).foregroundStyle(Color(hex: "FFD60A"))
+                }
+                MEMiniGrid(exposureDays: exposureDays, picks: MEPickStore.picks)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 62)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(glassFill))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(glassLine, lineWidth: 1))
+        }
+        .buttonStyle(ShelfPressStyle(scale: 0.97))
+        .padding(.horizontal, 16)
     }
 
     /// 角丸 22pt の `card` の面。数字は Instrument Serif の斜体 30pt、3つのあいだに縦線。
@@ -741,126 +867,6 @@ struct ProfileShelfView: View {
         .overlay(alignment: .leading) {
             if divider { palette.line.frame(width: 1).padding(.vertical, 4) }
         }
-    }
-
-    // MARK: フィルムの帯
-
-    /// 角丸 26pt の `card` の面の中に入れる(左右 16pt の余白)
-    private func filmStrip(points: [String: WeekDayPoint], taken: Set<String>, width: CGFloat) -> some View {
-        let stripWidth = width - Self.stripInset * 2
-        let margin = max(0, (stripWidth - Self.frameWidth) / 2)
-        return ZStack {
-            VStack {
-                perforations(width: stripWidth)
-                Spacer()
-                perforations(width: stripWidth)
-            }
-            .padding(.vertical, 8)
-            .allowsHitTesting(false)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                // 見えている分だけ描く(31コマぜんぶを一度に作らない)
-                LazyHStack(spacing: Self.frameSpacing) {
-                    ForEach(days) { day in
-                        frameView(day: day, point: points[day.key], isTaken: taken.contains(day.key))
-                            .id(day.key)
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .contentMargins(.horizontal, margin, for: .scrollContent)
-            .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $selectedKey, anchor: .center)
-            .padding(.vertical, 22)
-        }
-        .frame(width: stripWidth, height: 120)
-        .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(card))
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .frame(maxWidth: .infinity)
-    }
-
-    private func perforations(width: CGFloat) -> some View {
-        HStack(spacing: 14) {
-            ForEach(0..<Int(width / 24) + 1, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 2).fill(perfColor).frame(width: 10, height: 6)
-            }
-        }
-        .padding(.leading, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 8)
-        .clipped()
-    }
-
-    private func frameView(day: ProfileShelfDay, point: WeekDayPoint?, isTaken: Bool) -> some View {
-        let isSelected = day.key == activeKey
-        return Button {
-            withAnimation(.easeInOut(duration: calm ? 0.01 : 0.3)) { selectedKey = day.key }
-        } label: {
-            ZStack(alignment: .topLeading) {
-                // コマ:昼は白、夜は暗い面
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(night ? Color.white.opacity(0.06) : palette.bg)
-
-                if let thumb = thumbnail(for: day, point: point) {
-                    Image(uiImage: thumb)
-                        .resizable().scaledToFill()
-                        .frame(width: Self.frameWidth - 16, height: 36)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
-                        .padding(.leading, 8).padding(.top, 18)
-                } else if point != nil, point?.opened == false, !day.isGone {
-                    // まだひらいていない今日の1枚:暗い面(現像中)
-                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "222222"))
-                        .frame(width: Self.frameWidth - 16, height: 36)
-                        .padding(.leading, 8).padding(.top, 18)
-                } else if let color = point?.color, !day.isGone {
-                    RoundedRectangle(cornerRadius: 3).fill(color)
-                        .frame(width: Self.frameWidth - 16, height: 36)
-                        .padding(.leading, 8).padding(.top, 18)
-                }
-
-                Text(day.label)
-                    .font(ShelfFont.mono(8.5))
-                    .foregroundStyle(isSelected ? emberText : palette.dim)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.top, 5).padding(.trailing, 8)
-
-                Text("\(day.dayNumber)")
-                    .font(ShelfFont.mono(11, bold: isSelected))
-                    .foregroundStyle(isSelected ? emberText : palette.dim)
-                    .frame(maxHeight: .infinity, alignment: .bottomLeading)
-                    .padding(.leading, 8).padding(.bottom, 6)
-            }
-            .frame(width: Self.frameWidth, height: 76)
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(
-                        isSelected ? emberFill : palette.line,
-                        style: isSelected ? StrokeStyle(lineWidth: 1.5) : StrokeStyle(lineWidth: 1, dash: [4, 3])
-                    )
-            )
-            // 選んだコマ:オレンジの枠 + やわらかい光(外側の薄い輪と、下の影)
-            .background {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(emberFill.opacity(0.14))
-                        .padding(-3)
-                        .shadow(color: emberFill.opacity(0.35), radius: 8, y: 4)
-                }
-            }
-            .scaleEffect(isSelected ? 1.04 : 1)
-            .opacity(day.isGone ? 0.45 : 1)
-            .animation(calm ? nil : .easeInOut(duration: 0.35), value: isSelected)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(day.dayNumber)日、\(day.label)\(isTaken ? "、撮った日" : "")")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    /// 7日をすぎたコマは、写真を読みこまない。
-    private func thumbnail(for day: ProfileShelfDay, point: WeekDayPoint?) -> UIImage? {
-        guard !day.isGone, point?.opened == true else { return nil }
-        let data = exposureDays.first(where: { $0.dayKey == day.key })?.thumbnailData
-        return ProfileFilmImages.image(key: "thumb_\(day.key)", data: data)
     }
 
     // MARK: 下の一行
@@ -914,5 +920,34 @@ struct ShelfPressStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? scale : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+/// v51:自分の QR(ともだち追加と同じ、FriendRules.link を そのまま使う)
+struct ProfileSelfQRSheet: View {
+    let name: String
+    let recordName: String?
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Capsule().fill(.white.opacity(0.25)).frame(width: 36, height: 5).padding(.top, 10)
+            Text(name).font(.system(size: 18, weight: .heavy)).foregroundStyle(.white)
+            if let recordName, let qr = QRImage.make(FriendRules.link(recordName: recordName).absoluteString) {
+                Image(uiImage: qr)
+                    .interpolation(.none)
+                    .resizable()
+                    .frame(width: 220, height: 220)
+                    .padding(16)
+                    .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
+            } else {
+                Text("QR を作れませんでした").foregroundStyle(.white.opacity(0.6))
+            }
+            Text("この QR を 読みとると、ともだちに なれます").font(.system(size: 12.5)).foregroundStyle(.white.opacity(0.55))
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.black.ignoresSafeArea())
+        .presentationDetents([.medium])
     }
 }

@@ -1,142 +1,161 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "CFBundleDisplayName": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag"
           }
         }
       }
     },
-    "NSAppleMusicUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag searches Apple Music so you can add a song to your shot."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "撮った1枚に、その日の1曲をつけるために Apple Music の曲を検索します。"
+    "CFBundleSpokenName" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lattag" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイタグ" } }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Later 再度"
           }
         }
       }
     },
-    "NSCameraUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag uses the camera to shoot your photo of the day."
+    "NSAppleMusicUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag searches Apple Music so you can add a song to your shot."
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "思い出を記録し、グループで共有するためにカメラを使用します。"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撮った1枚に、その日の1曲をつけるために Apple Music の曲を検索します。"
           }
         }
       }
     },
-    "NSLocalNetworkUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag looks for friends' phones nearby when you shake to connect."
+    "NSCameraUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag uses the camera to shoot your photo of the day."
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「ふって つながる」で、すぐ近くにいる ともだちの端末を さがすために使います。"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "思い出を記録し、グループで共有するためにカメラを使用します。"
           }
         }
       }
     },
-    "NSLocationWhenInUseUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag adds the name of your city to the photo you shoot."
+    "NSLocalNetworkUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag looks for friends' phones nearby when you shake to connect."
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "撮影した場所の地名を写真に添えるために位置情報を使用します。"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「ふって つながる」で、すぐ近くにいる ともだちの端末を さがすために使います。"
           }
         }
       }
     },
-    "NSMicrophoneUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag records sound for your videos."
+    "NSLocationWhenInUseUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag adds the name of your city to the photo you shoot."
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "動画に音声を記録するためにマイクを使用します。"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撮影した場所の地名を写真に添えるために位置情報を使用します。"
           }
         }
       }
     },
-    "NSPhotoLibraryAddUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag saves your instant-film photos to Photos."
+    "NSMicrophoneUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag records sound for your videos."
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "チェキ風の写真を写真アプリに保存するために使用します。"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画に音声を記録するためにマイクを使用します。"
           }
         }
       }
     },
-    "NSPhotoLibraryUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lattag lets you pick a recent photo as your group's face."
+    "NSPhotoLibraryAddUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag saves your instant-film photos to Photos."
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "グループの顔にする写真を、最近の写真から選ぶために使用します。"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チェキ風の写真を写真アプリに保存するために使用します。"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lattag lets you pick a recent photo as your group's face."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グループの顔にする写真を、最近の写真から選ぶために使用します。"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

@@ -399,6 +399,8 @@ struct FriendsHubView: View {
     @State private var toast: String?
     @State private var shake = ShakeConnect()
     @State private var showsShake = false
+    /// v47:ともだちのQRをカメラで読む
+    @State private var showsFriendScan = false
     @State private var shareItems: [Any]?
     @State private var targetGroup: UUID?
 
@@ -465,6 +467,9 @@ struct FriendsHubView: View {
             ShakeConnectSheet(shake: shake, isFull: isFull, myName: myName, friendCount: friends.count) { message in show(message) }
                 .environment(\.palette, palette)
         }
+        .fullScreenCover(isPresented: $showsFriendScan) {
+            FriendQRScanView(myName: myName, friendCount: friends.count) { message in show(message) }
+        }
         .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
             ShareSheet(activityItems: shareItems ?? []) { done in
                 shareItems = nil
@@ -520,7 +525,8 @@ struct FriendsHubView: View {
             }
             rowButton(icon: "qrcode.viewfinder", title: "QRを よみとる", note: "ともだちの カードを カメラで") {
                 guard !isFull else { refuseFull(); return }
-                NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.scan)
+                Haptics.play(.tick)
+                showsFriendScan = true
             }
             Text("12人まで ・ 数は 出ません").font(.system(size: 12, weight: .semibold)).foregroundStyle(palette.ink.opacity(0.55)).frame(maxWidth: .infinity)
         }
@@ -732,7 +738,7 @@ struct FriendsHubView: View {
 }
 
 /// ふって つながる の画面:画面がだんだん強く揺れる → BUMP! → 輪が3重に広がる → 両方で「つながる?」
-private struct ShakeConnectSheet: View {
+struct ShakeConnectSheet: View {
     let shake: ShakeConnect
     let isFull: Bool
     let myName: String

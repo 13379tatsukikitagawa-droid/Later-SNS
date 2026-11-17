@@ -62,7 +62,13 @@ struct HomeV5OverflowTests {
             let scrolls = scrollViews(in: root)
             #expect(!scrolls.isEmpty)
             for scroll in scrolls {
-                #expect(scroll.contentSize.width <= device.size.width + 0.5, "\(device.name) \(typeSize): contentSize.width=\(scroll.contentSize.width)")
+                // v37:WORDS の横スクロール(ピル)は、画面より広い中身を持ってよい(見るのは、はみ出していないこと)
+                let frame = scroll.convert(scroll.bounds, to: nil)
+                #expect(frame.width <= device.size.width + 0.5, "\(device.name) \(typeSize): frame.width=\(frame.width)")
+                let isHorizontalScroll = scroll.contentSize.width > scroll.bounds.width + 0.5 && scroll.contentSize.height <= scroll.bounds.height + 0.5
+                if !isHorizontalScroll {
+                    #expect(scroll.contentSize.width <= device.size.width + 0.5, "\(device.name) \(typeSize): contentSize.width=\(scroll.contentSize.width)")
+                }
             }
             if typeSize == .large, let dir = HomeSnapshotTests.outputDirectory {
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

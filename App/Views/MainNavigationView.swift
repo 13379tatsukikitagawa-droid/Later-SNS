@@ -6,7 +6,8 @@ import SwiftUI
 /// 戻るのは、Profileの左上の「<」か、右へのスワイプ。切り替えで振動はしない。
 struct MainNavigationView: View {
     private enum Screen {
-        case home, profile
+        /// v54:Profile(あなた)と ME(Recap・7日)は 別の 画面。右上の 丸は Profile だけ ひらく
+        case home, profile, me
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -30,16 +31,34 @@ struct MainNavigationView: View {
                 Color.black.ignoresSafeArea()
 
                 // 幅は、ここで決めた width の1つだけ。中の画面が横に広くなっても、Home を右へずらさない
-                TodayView(onOpenProfile: { show(.profile) })
+                TodayView(onOpenProfile: { show(.profile) }, onOpenMe: { show(.me) })
                     .frame(width: width)
-                    .offset(x: screen == .profile && !reduceMotion ? -width * 0.3 : 0)
+                    .offset(x: screen != .home && !reduceMotion ? -width * 0.3 : 0)
                     .opacity(screen == .home ? 1 : 0)
                     .allowsHitTesting(screen == .home)
                     .simultaneousGesture(openProfileSwipe(width: width))
                     .onPreferenceChange(HomeNoSwipeRegionKey.self) { homeNoSwipeRegions = $0 }
 
-                // v14 ③:ME 画面。タップした位置(ME カード・アバター)から円形に広がって出る(0.7秒)。
-                // 戻るときは、薄くなりながら縮む(0.4秒)。プロフィールの編集・設定は ME の「プロフィール」から
+                // v54:Profile(あなた)。右上の 丸・端スワイプから。右から 横に すべって 出る
+                ProfileShelfView(
+                    onBack: { show(.home) },
+                    onShoot: {
+                        show(.home)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            CaptureRequestStore.shared.pendingRequestID = UUID()
+                        }
+                    }
+                )
+                    .frame(width: width)
+                    .offset(x: screen == .profile ? 0 : width)
+                    .opacity(screen == .profile ? 1 : 0)
+                    .allowsHitTesting(screen == .profile)
+                    .simultaneousGesture(swipe(toward: .home))
+                    .accessibilityHidden(screen != .profile)
+                    .onPreferenceChange(ProfileViewerOpenKey.self) { isProfileViewerOpen = $0 }
+
+                // v14 ③:ME 画面(Recap・7日)。タップした位置(ME カード・ALBUMS 見出し)から円形に広がって出る(0.7秒)。
+                // 戻るときは、薄くなりながら縮む(0.4秒)。右上の 丸(アバター)は Profile を ひらく(ME とは 別)
                 MEScreenV19(
                     onBack: { show(.home) },
                     onShoot: {
@@ -51,11 +70,10 @@ struct MainNavigationView: View {
                     }
                 )
                     .frame(width: width)
-                    .modifier(CircleReveal(isOpen: screen == .profile, origin: MERevealOrigin.point ?? CGPoint(x: width - 44, y: 90)))
-                    .allowsHitTesting(screen == .profile)
+                    .modifier(CircleReveal(isOpen: screen == .me, origin: MERevealOrigin.point ?? CGPoint(x: width - 44, y: 90)))
+                    .allowsHitTesting(screen == .me)
                     .simultaneousGesture(swipe(toward: .home))
-                    .accessibilityHidden(screen != .profile)
-                    .onPreferenceChange(ProfileViewerOpenKey.self) { isProfileViewerOpen = $0 }
+                    .accessibilityHidden(screen != .me)
             }
         }
         // HomeView・ProfileFilmViewは、見えている時だけアニメーションや同期を動かす。
@@ -107,7 +125,7 @@ struct MainNavigationView: View {
         return abs(dy) <= -dx * tan(maxAngleDegrees * .pi / 180)
     }
 
-    /// Profileでは右へのスワイプでHomeへ戻る(横の動きが縦より大きい時だけ)。
+    /// Profile・ME では 右への スワイプで Home へ戻る(横の動きが 縦より 大きい時だけ)。
     private func swipe(toward target: Screen) -> some Gesture {
         DragGesture(minimumDistance: 24)
             .onEnded { value in
@@ -115,7 +133,7 @@ struct MainNavigationView: View {
                 guard !isProfileViewerOpen, abs(dx) > abs(dy) * 1.5, abs(dx) > Self.swipeThreshold else { return }
                 switch target {
                 case .profile where dx < 0 && screen == .home: show(.profile)
-                case .home where dx > 0 && screen == .profile: show(.home)
+                case .home where dx > 0 && screen != .home: show(.home)
                 default: break
                 }
             }

@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// 画面の下の「月」。Homeの唯一の大きな操作(撮る・昨日をひらく・待つ)。
-/// 幅330/390の円の、上の84ptだけが画面に見える。押すと、月がふくらんで次の画面になる。
+/// 画面の下の「地球」。Homeの唯一の大きな操作(撮る・昨日をひらく・待つ)。
+/// v54:見本 #hmoon(幅600・直径の上の方だけ 画面に見える、黒い 地球)。
 enum MoonLayout {
-    /// 見えている円弧の高さ(画面の下端から)
-    /// v22:上のふちは 742pt(844 の画面)= 下から 102
-    static let visibleHeight: CGFloat = 102
+    /// 見えている円弧の高さ(画面の下端から)。見本:844 − 712 = 132
+    static let visibleHeight: CGFloat = 132
     /// ホームインジケーターとの重なりが気になる時に、月を上げる量(12〜20ptで調整)
     static let lift: CGFloat = 0
 
-    static func diameter(screenWidth: CGFloat) -> CGFloat { screenWidth * 330 / 390 }
+    /// 見本:幅390で 直径600
+    static func diameter(screenWidth: CGFloat) -> CGFloat { screenWidth * 600 / 390 }
 
     /// 月の中心(画面の座標、セーフエリアを含む全画面)
     static func center(in size: CGSize) -> CGPoint {
@@ -26,52 +26,28 @@ enum MoonLayout {
         return farthest / radius * 1.04
     }
 
-    /// dawn・first:白 → 桃 → 薄い紫 → 青(見えるのは上の約25%。ふくらむと藍まで)
-    static let gradient = LinearGradient(stops: [
-        .init(color: Color(hex: "FFFFFF"), location: 0),
-        .init(color: Color(hex: "FFE6D3"), location: 0.07),
-        .init(color: Color(hex: "FFC0A2"), location: 0.13),
-        .init(color: Color(hex: "E3B9FF"), location: 0.20),
-        .init(color: Color(hex: "93A7FF"), location: 0.27),
-        .init(color: Color(hex: "4B60D4"), location: 0.42),
-        .init(color: Color(hex: "2A2F78"), location: 1),
-    ], startPoint: .top, endPoint: .bottom)
-
-    /// ready:白 → 黄 → オレンジ → 紫(あたたかい)
-    static let readyGradient = LinearGradient(stops: [
-        .init(color: Color(hex: "FFFFFF"), location: 0),
-        .init(color: Color(hex: "FFF3C4"), location: 0.07),
-        .init(color: Color(hex: "FFC56B"), location: 0.14),
-        .init(color: Color(hex: "FF9A4D"), location: 0.22),
-        .init(color: Color(hex: "C97BE0"), location: 0.32),
-        .init(color: Color(hex: "6B4BA8"), location: 0.5),
-        .init(color: Color(hex: "241A3D"), location: 1),
-    ], startPoint: .top, endPoint: .bottom)
-
-    /// opened:白 → 青白 → 青
-    static let openedGradient = LinearGradient(stops: [
-        .init(color: Color(hex: "FFFFFF"), location: 0),
-        .init(color: Color(hex: "E3EEFF"), location: 0.09),
-        .init(color: Color(hex: "AEC9FF"), location: 0.18),
-        .init(color: Color(hex: "6E8FE0"), location: 0.3),
-        .init(color: Color(hex: "3D59B0"), location: 0.48),
-        .init(color: Color(hex: "1C2654"), location: 1),
-    ], startPoint: .top, endPoint: .bottom)
-
-    static let ink = Color(hex: "1A1A22")
+    /// v54:黒い 地球(見本:radial-gradient(circle at 50% 30%, #1C1C1C 0%, #0D0D0D 60%, #050505 100%))。
+    /// 昼夜・状態に かかわらず 同じ(撮る・きのう・長押しは 文字と 上に のる 色だけで 伝える)。
+    static func earthGradient(diameter: CGFloat) -> RadialGradient {
+        RadialGradient(stops: [
+            .init(color: Color(hex: "1C1C1C"), location: 0),
+            .init(color: Color(hex: "0D0D0D"), location: 0.6),
+            .init(color: Color(hex: "050505"), location: 1),
+        ], center: UnitPoint(x: 0.5, y: 0.3), startRadius: 0, endRadius: diameter / 2)
+    }
 }
 
 struct HomeMoon: View {
     enum Mode: Equatable {
-        /// night・rest:暗い月。押すとやわらかい触覚2回+お知らせ(タップでは何も進まない)
+        /// night・rest:暗い地球。押すとやわらかい触覚2回+お知らせ(タップでは何も進まない)
         case dim(title: String, subtitle: String)
-        /// dawn・first・opened:グラデーションの月。タップ
+        /// dawn・first・opened:タップ
         case tap(title: String, subtitle: String, tone: Tone)
-        /// ready:やや暗いグラデーション+長押しのゲージ
+        /// ready:長押しのゲージ
         case hold
 
-        /// dawn/first(warm)とopened(cool)で、月の色を変える。
-        /// deciding(decide)は warm と同じ月で、光だけ少しあたたかく・脈動3.2秒。
+        /// dawn/first(warm)とopened(cool)で、光の あたたかさを 変える。
+        /// deciding(decide)は warm と同じで、光だけ 少し あたたかく・脈動3.2秒。
         enum Tone: Equatable { case warm, decide, cool }
     }
 
@@ -89,12 +65,10 @@ struct HomeMoon: View {
     /// 起動アニメーション中の、にじみの不透明度(nilなら通常の呼吸)と拡大
     var launchGlowOpacity: Double?
     var launchGlowScale: Double = 1
-    /// 白 × シックのホーム(白い背景の上:夜の月は灰青、にじみは上向きのラベンダー+ピーチ、文字はインク)
+    /// v54:地球は いつも 同じ見た目なので 使わない(呼び出し側との互換のために 残す)
     var chic = false
-    /// v22:3こま撮った昼。藤いろに落ちつく(光の なでるは止まる)
     var restful = false
 
-    @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isBreathing = false
@@ -142,7 +116,7 @@ struct HomeMoon: View {
     private func moon(progress p: Double) -> some View {
         let shape = Circle()
         return ZStack(alignment: .top) {
-            // にじみ(横長のやわらかい光)。box-shadowではなく別のViewで、呼吸のように不透明度が変わる。
+            // にじみ(横長のやわらかい光)。呼吸のように不透明度が変わる。
             glowLayer
                 .scaleEffect(launchGlowScale)
                 .offset(y: -40)
@@ -150,10 +124,10 @@ struct HomeMoon: View {
                 .animation(reduceMotion ? nil : .easeInOut(duration: breathPeriod / 2).repeatForever(autoreverses: true), value: isBreathing)
                 .allowsHitTesting(false)
 
-            // 長押し:月の中心から、オレンジの光がひろがる
+            // 長押し:地球の中心から、緑の光がひろがる
             if mode == .hold, p > 0 {
                 Circle()
-                    .fill(RadialGradient(colors: [HomePalette.orange.opacity(0.85), HomePalette.orange.opacity(0.25), .clear], center: .center, startRadius: 0, endRadius: diameter * 1.4 * CGFloat(p)))
+                    .fill(RadialGradient(colors: [LaterColor.film.opacity(0.85), LaterColor.film.opacity(0.25), .clear], center: .center, startRadius: 0, endRadius: diameter * 1.4 * CGFloat(p)))
                     .frame(width: diameter * 2.8 * CGFloat(p), height: diameter * 2.8 * CGFloat(p))
                     .offset(y: diameter / 2 - diameter * 1.4 * CGFloat(p))
                     .blendMode(.screen)
@@ -161,53 +135,22 @@ struct HomeMoon: View {
             }
 
             ZStack(alignment: .top) {
-                switch mode {
-                case .dim where restful:
-                    shape.fill(LinearGradient(stops: [
-                        .init(color: Color(hex: "FBFBFE"), location: 0),
-                        .init(color: Color(hex: "EEEDF8"), location: 0.1),
-                        .init(color: Color(hex: "CFCBEE"), location: 0.24),
-                        .init(color: Color(hex: "B4AEE6"), location: 0.4),
-                    ], startPoint: .top, endPoint: .bottom))
-                    shape.strokeBorder(.white.opacity(0.7), lineWidth: 1.2)
-                case .dim where chic:
-                    shape.fill(ChicMoon.nightGradient)
-                    shape.strokeBorder(.black.opacity(0.06), lineWidth: 1)
-                case .dim:
-                    shape.fill(LinearGradient(stops: [
-                        .init(color: Color(hex: "6E7896"), location: 0),
-                        .init(color: Color(hex: "3A4462"), location: 0.12),
-                        .init(color: Color(hex: "1A2038"), location: 0.3),
-                        .init(color: Color(hex: "080A14"), location: 1),
-                    ], startPoint: .top, endPoint: .bottom))
-                    shape.strokeBorder(.white.opacity(0.14), lineWidth: 1)
-                case .tap(_, _, let tone):
-                    shape.fill(tone == .cool ? MoonLayout.openedGradient : MoonLayout.gradient)
-                        .brightness(isPressed ? 0.06 : 0)
-                    shape.strokeBorder(chic ? (palette.isNight ? palette.line : Color.black.opacity(0.06)) : .white.opacity(0.75), lineWidth: chic ? 1 : 1.5)
-                    if chic && palette.isNight {
-                        // 夜:朝焼けの下の方は、暗い地にとける
-                        shape.fill(LinearGradient(stops: [
-                            .init(color: palette.bg.opacity(0), location: 0.16),
-                            .init(color: palette.bg.opacity(0.55), location: 0.3),
-                            .init(color: palette.bg, location: 0.5),
-                        ], startPoint: .top, endPoint: .bottom))
-                            .allowsHitTesting(false)
-                    }
-                case .hold:
-                    shape.fill(MoonLayout.readyGradient)
-                    shape.strokeBorder(.white.opacity(0.6), lineWidth: 1.5)
+                shape.fill(MoonLayout.earthGradient(diameter: diameter))
+                EarthDots(diameter: diameter)
+                shape.strokeBorder(.white.opacity(0.14), lineWidth: 1)
+                // v54:見本の 3本線(白・赤・金)と 緑の 輪(上のほう、i.mat / i.r2)
+                rim
+                if mode == .hold, p > 0 {
+                    // 長押し中は 進んだ分だけ 緑が 強くなる
+                    shape.fill(LaterColor.film.opacity(0.18 * p))
                 }
-                // v22:7秒ごとに、光が一度だけ なでる(左 → 右・ななめの白い帯)
-                if case .tap = mode, !reduceMotion {
-                    MoonGlint(diameter: diameter)
-                }
-                label(color: restful ? MoonLayout.ink : textColor)
+                if isPressed { shape.fill(.white.opacity(0.06)) }
+                label(color: .white)
             }
             .frame(width: diameter, height: diameter)
             .clipShape(shape)
 
-            // 長押し:月の縁を、白い線が左から右へたどる
+            // 長押し:地球の縁を、白い線が左から右へたどる
             if mode == .hold, p > 0 {
                 let arc = visibleArc
                 shape
@@ -223,27 +166,31 @@ struct HomeMoon: View {
         .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
     }
 
-    /// にじみ(横長のやわらかい光)。box-shadowではなく別のViewで、呼吸のように不透明度が変わる。
-    @ViewBuilder
-    private var glowLayer: some View {
-        if chic {
-            ZStack {
-                Ellipse()
-                    .fill(ChicMoon.glowLavender)
-                    .frame(width: diameter * 1.1, height: 150)
-                    .blur(radius: 44)
-                Ellipse()
-                    .fill(ChicMoon.glowPeach)
-                    .frame(width: diameter * 0.9, height: 100)
-                    .blur(radius: 32)
-                    .offset(y: 14)
+    private static let rimColors: [Color] = [.white, LaterColor.red, LaterColor.gold]
+
+    /// v54:見本 i.r2(緑のふち)と i.mat(白・赤・金の 3本線)を、見えている 弧の あたりに
+    private var rim: some View {
+        let r = diameter / 2
+        let arc = visibleArc
+        return ZStack {
+            Circle().inset(by: 14).strokeBorder(Color(hex: "96E8A7").opacity(0.25), lineWidth: 1)
+            ForEach(0..<Self.rimColors.count, id: \.self) { i in
+                Circle()
+                    .trim(from: arc.from, to: arc.to)
+                    .stroke(Self.rimColors[i], lineWidth: 2.2)
+                    .frame(width: r * 2 - CGFloat(i) * 7, height: r * 2 - CGFloat(i) * 7)
+                    .position(x: r, y: r)
             }
-        } else {
-            Ellipse()
-                .fill(glowColor)
-                .frame(width: diameter * 1.15, height: 130)
-                .blur(radius: 42)
         }
+        .allowsHitTesting(false)
+    }
+
+    /// にじみ(横長のやわらかい光)。呼吸のように不透明度が変わる。
+    private var glowLayer: some View {
+        Ellipse()
+            .fill(glowColor)
+            .frame(width: diameter * 1.15, height: 130)
+            .blur(radius: 42)
     }
 
     private var breathPeriod: Double {
@@ -259,19 +206,11 @@ struct HomeMoon: View {
         case .dim: return Color(hex: "5A6A9A").opacity(0.22)
         case .tap(_, _, let tone):
             switch tone {
-            case .warm: return Color(red: 1, green: 200 / 255, blue: 170 / 255).opacity(0.45)
-            case .decide: return Color(red: 1, green: 190 / 255, blue: 150 / 255).opacity(0.5)
+            case .warm: return LaterColor.filmPale.opacity(0.4)
+            case .decide: return LaterColor.filmLight.opacity(0.4)
             case .cool: return Color(hex: "BFD6FF").opacity(0.42)
             }
-        case .hold: return Color(hex: "FFB070").opacity(0.5)
-        }
-    }
-
-    private var textColor: Color {
-        switch mode {
-        case .dim: return chic ? MoonLayout.ink : Color(hex: "B4BCD2")
-        case .tap: return MoonLayout.ink
-        case .hold: return MoonLayout.ink
+        case .hold: return LaterColor.film.opacity(0.5)
         }
     }
 
@@ -291,29 +230,26 @@ struct HomeMoon: View {
         }
     }
 
-    /// 月の文字(弧の幅が決まっているため固定の大きさ。長い文言は16pt)
+    /// 地球の中の 文字(見本 #hmt:Inter 900 25px / #hms:Space Mono 700 10.5px 緑)
     private func label(color: Color) -> some View {
         TimelineView(.animation(paused: !holdModel.isMoving)) { context in
             let p = mode == .hold ? holdModel.progress(at: context.date) : 0
             let title = titleText
-            let titleSize: CGFloat = title.count >= 9 ? 16 : 17
-            VStack(spacing: 0) {
+            VStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: titleSize, weight: chic ? .heavy : .bold))
-                    .tracking(-0.03 * titleSize)
+                    .font(LF.inter(900, 25))
+                    .tracking(-0.5)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .minimumScaleFactor(0.7)
                     .frame(width: diameter * 0.58)
-                    .frame(height: 22)
+                    .frame(height: 30)
                     .padding(.top, 28 - 11)
                 if let subtitle = subtitleText(progress: p), !dynamicTypeSize.isAccessibilitySize {
                     MoonSubtitle(text: subtitle)
-                        .font(.system(size: 9.5, design: .monospaced))
-                        .tracking(0.14 * 9.5)
-                        .monospacedDigit()
+                        .font(LF.mono(10.5, bold: true))
+                        .tracking(1.47)
                         .lineLimit(1)
-                        .opacity(0.5)
-                        .padding(.top, 54 - 28 - 11 - 6)
+                        .padding(.top, 2)
                 }
             }
             .foregroundStyle(color)
@@ -391,39 +327,45 @@ private struct DisabledWhenDim: ViewModifier {
     }
 }
 
-
-/// v22:月の下の字。先頭の「●」(のこり)は橙、「○」(使った)は そのまま
+/// v54:月の下の字。先頭の「●」(のこり)は 緑(LaterColor.film)、「○」(使った)は そのまま
 private struct MoonSubtitle: View {
     let text: String
 
     var body: some View {
         let dots = text.prefix { $0 == "●" }
         let rest = text.dropFirst(dots.count)
-        return (Text(String(dots)).foregroundColor(Color(hex: "FF5A1A")) + Text(String(rest)))
+        return (Text(String(dots)).foregroundColor(LaterColor.film) + Text(String(rest)).foregroundColor(LaterColor.filmPale))
     }
 }
 
-/// v22:7秒ごとに一度だけ、ななめの白い帯が 月を なでる(soft-light)
-private struct MoonGlint: View {
+/// v54:見本 canvas#mgl の かわり。フィボナッチ球(約260点)を 正面から見た ドットの 世界地図ふう。回らない(静か)。
+private struct EarthDots: View {
     let diameter: CGFloat
 
+    private struct Dot { let x, y, z: Double }
+    private static let count = 260
+    private static let points: [Dot] = {
+        let golden = Double.pi * (3 - 5.0.squareRoot())
+        return (0..<count).map { i in
+            let y = 1 - (Double(i) + 0.5) / Double(count) * 2
+            let r = (1 - y * y).squareRoot()
+            let theta = golden * Double(i)
+            return Dot(x: cos(theta) * r, y: y, z: sin(theta) * r)
+        }
+    }()
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
-            let p = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 7) / 7
-            // 0〜55% は休み、55〜100% で 左 → 右
-            let k = max(0, (p - 0.55) / 0.45)
-            LinearGradient(stops: [
-                .init(color: .clear, location: 0.42),
-                .init(color: .white.opacity(0.55), location: 0.5),
-                .init(color: .clear, location: 0.58),
-            ], startPoint: UnitPoint(x: 0, y: 0.35), endPoint: UnitPoint(x: 1, y: 0.65))
-            .frame(width: diameter * 2.6, height: diameter)
-            .offset(x: diameter * (1.3 - 1.6 * k))
-            .blendMode(.softLight)
-            .opacity(k > 0 && k < 1 ? 1 : 0)
+        Canvas { ctx, size in
+            let c = CGPoint(x: size.width / 2, y: size.height / 2)
+            let r = size.width / 2
+            for d in Self.points where d.z > -0.1 {
+                let x = c.x + d.x * r, y = c.y + d.y * r
+                let s = 1.1 + 0.9 * max(0, d.z)
+                let a = 0.10 + 0.22 * max(0, d.z)
+                ctx.fill(Path(ellipseIn: CGRect(x: x - s, y: y - s, width: 2 * s, height: 2 * s)), with: .color(.white.opacity(a)))
+            }
         }
         .frame(width: diameter, height: diameter)
-        .clipped()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

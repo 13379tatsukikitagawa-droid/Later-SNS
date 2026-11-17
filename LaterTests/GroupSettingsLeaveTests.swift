@@ -73,4 +73,29 @@ struct GroupSettingsLeaveTests {
         while let next = EndedGroupsStore.popFirst() { if next.groupID == ended.groupID { break } }
         #expect(!EndedGroupsStore.pending.contains { $0.groupID == ended.groupID })
     }
+
+    /// v58 §5:「Trip を おわる」を 出せるのは 作成者だけ(= ownerCloudKitUserRecordName と
+    /// ゾーンの 実所有者の 両方が 一致する とき だけ)。
+    @Test func Tripをおわれるのは作成者だけ() {
+        let group = LaterGroup(name: "京都")
+        group.ownerCloudKitUserRecordName = "host-1"
+        group.ckZoneName = "group_\(group.id.uuidString)"
+        group.ckZoneOwnerName = "host-1"
+
+        // 作成者 本人
+        #expect(GroupLeaveService.isHost(group, currentUserRecordName: "host-1"))
+        // ほかの 人
+        #expect(!GroupLeaveService.isHost(group, currentUserRecordName: "member-2"))
+        // まだ 誰か わからない(サインインまえ など)
+        #expect(!GroupLeaveService.isHost(group, currentUserRecordName: nil))
+
+        // ホスト役が 次の人へ 引きつがれた(肩書きは 変わったが、ゾーンの 実所有者は 変わらない)
+        group.ownerCloudKitUserRecordName = "member-2"
+        #expect(!GroupLeaveService.isHost(group, currentUserRecordName: "member-2"), "肩書きだけでは おわれない(ゾーンの 実所有者とも 一致しないと だめ)")
+
+        // ゾーン情報が まだ 無い(一度も CloudKit へ 同期していない)
+        let fresh = LaterGroup(name: "沖縄")
+        fresh.ownerCloudKitUserRecordName = "host-3"
+        #expect(!GroupLeaveService.isHost(fresh, currentUserRecordName: "host-3"))
+    }
 }

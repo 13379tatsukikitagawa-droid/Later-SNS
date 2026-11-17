@@ -16,8 +16,11 @@ enum Darkroom {
     static let line = Color(hex: "1E1E21")
     static let weak = Color(hex: "8C8C93")
     static let faint = Color(hex: "55555B")
-    static let orange = Color(hex: "FF6A1A")
-    static let stamp = Color(hex: "FF8A3D")
+    /// v42:フジの緑(主役の色。もとは オレンジ #FF6A1A だった場所ぜんぶ)
+    static let orange = Color(hex: "24A03C")
+    static let paleGreen = Color(hex: "9ED6A5")
+    /// 例外:チェキの 日付スタンプ と 7セグの 時刻 だけ(v42で オレンジの まま のこす)
+    static let stamp = Color(hex: "E0481A")
     static let star = Color(hex: "FFD60A")
 
     /// 見出し:英字は Instrument Serif、日本語が 入れば ヒラギノ明朝 W6
@@ -68,6 +71,21 @@ enum Darkroom {
     static func span(_ seconds: TimeInterval) -> String {
         let m = max(0, Int(seconds / 60))
         return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
+    }
+}
+
+// MARK: - Liquid Glass(iOS 26)。v36/v37:ナビ・ヒーローの 四角いボタン・ロックのピル。
+// iOS 26 未満は ultraThinMaterial + 上のふちに 白い線で 代用
+
+extension View {
+    @ViewBuilder func laterGlass<S: InsettableShape>(_ shape: S, interactive: Bool = true) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
+        } else {
+            self
+                .background(.ultraThinMaterial, in: shape)
+                .overlay(shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.55), .clear], startPoint: .top, endPoint: .center), lineWidth: 1))
+        }
     }
 }
 
@@ -215,10 +233,13 @@ private struct MilkLock: View {
 }
 
 /// 区切り線の 上の ラベル
-private struct DarkLabel: View {
+/// 区切り線の 上の ラベル(Home の 暗室・Later yesterday の Mondo で 共通)
+struct DarkLabel: View {
     let text: String
     var trailing: String?
     var doodle: Bool = false
+    /// trailing を 押せる ボタンに する(例:「ALL ×」)
+    var onTrailingTap: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
@@ -228,7 +249,14 @@ private struct DarkLabel: View {
             }
             Spacer()
             if let trailing {
-                Text(verbatim: trailing).font(Darkroom.mono(10.5)).tracking(0.14 * 10.5).foregroundStyle(Darkroom.faint)
+                if let onTrailingTap {
+                    Button(action: onTrailingTap) {
+                        Text(verbatim: trailing).font(Darkroom.mono(10.5)).tracking(0.14 * 10.5).foregroundStyle(Darkroom.orange)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text(verbatim: trailing).font(Darkroom.mono(10.5)).tracking(0.14 * 10.5).foregroundStyle(Darkroom.faint)
+                }
             }
         }
         .padding(.top, 14)
@@ -477,11 +505,17 @@ struct DarkroomSection: View {
     let onCreateGroup: () -> Void
     let onJoin: (FriendInviteCard) -> Void
     let onOpenMondo: () -> Void
+    /// v47:ことばのカード → そのことばで しぼって Mondo へ
+    var onOpenWord: (String) -> Void = { _ in }
     let onOpenFriends: () -> Void
     let onOpenPhoto: (DarkroomPhoto) -> Void
     let onToast: (String) -> Void
     /// はじめての 合図(keep)を 出してよい
     var keepHintEligible = false
+    /// v47:「People ›」→ 昨日のホームへ
+    var onOpenYesterday: () -> Void = {}
+    /// v54:ALBUMS の 見出し → ME 画面(別の 入口。右上の 丸は Profile)
+    var onOpenMe: () -> Void = {}
 
     @State private var keptRefresh = 0
     private var locked: Bool { FilmCounter.shared.used == 0 }
@@ -496,10 +530,11 @@ struct DarkroomSection: View {
             grid.padding(.horizontal, 14).padding(.top, 9)
             DarkLabel(text: "MONDO", trailing: "TOP 5", doodle: true)
             mondo
-            DarkLabel(text: "ALBUMS", trailing: "7 DAYS")
+            DarkLabel(text: "ALBUMS", trailing: "7 DAYS", onTrailingTap: onOpenMe)
             albums
-            DarkLabel(text: "FRIENDS")
-            friendsRow.padding(.horizontal, 14)
+            OnThisDaySection(now: now)
+            FriendsClockCard(friends: friends.filter { !$0.isMe }, onOpenFriend: onOpenFriends)
+                .padding(.horizontal, 14)
         }
         .foregroundStyle(.white)
         .padding(.bottom, 10)
@@ -512,145 +547,18 @@ struct DarkroomSection: View {
     private var active: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(invites.filter { $0.status == .pending }) { card in inviteCard(card) }
-                ForEach(groups) { group in groupCard(group) }
-                newGroupCard
+                ForEach(invites.filter { $0.status == .pending }) { card in ActiveInviteCard(card: card, onJoin: onJoin) }
+                ForEach(groups) { group in
+                    ActiveGroupCard(group: group, hasUnread: summaries.first { $0.id == group.id }?.chatUnread == true,
+                                     locked: locked, me: me, now: now, onOpenChat: onOpenChat)
+                }
+                ActiveNewGroupCard(onCreateGroup: onCreateGroup)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 4)
             .scrollTargetLayout()
         }
         .scrollTargetBehavior(.viewAligned)
-    }
-
-    private func cardChrome<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        ZStack(alignment: .topLeading) {
-            content()
-            LinearGradient(stops: [.init(color: .black.opacity(0.55), location: 0), .init(color: .clear, location: 0.46),
-                                   .init(color: .clear, location: 0.62), .init(color: .black.opacity(0.5), location: 1)], startPoint: .top, endPoint: .bottom)
-        }
-        .frame(width: 196, height: 248)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-    }
-
-    private func inviteCard(_ card: FriendInviteCard) -> some View {
-        Button {
-            Haptics.play(.success)
-            onJoin(card)
-        } label: {
-            ZStack(alignment: .topLeading) {
-                cardChrome { Darkroom.card }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(verbatim: card.groupName).font(Darkroom.title(card.groupName, size: 28)).lineLimit(2)
-                    Label { Text(verbatim: "from \(card.fromName)") } icon: { Image(systemName: "clock") }
-                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.white.opacity(0.88))
-                }
-                .padding(16)
-                Text(verbatim: "join").font(.system(size: 12.5, weight: .bold))
-                    .padding(.horizontal, 16).frame(height: 36)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Darkroom.orange))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                    .padding(.bottom, 14)
-            }
-            .frame(width: 196, height: 248)
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Darkroom.orange, lineWidth: 2))
-        }
-        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
-        .accessibilityLabel("\(card.groupName)。\(card.fromName)。join")
-    }
-
-    private func groupCard(_ group: LaterGroup) -> some View {
-        let summary = summaries.first { $0.id == group.id }
-        let members = GroupTogether.members(of: group, me: me, myShots: FilmCounter.shared.used, now: now)
-        let pending = members.count <= 1
-        let left = GroupTogether.remaining(members)
-        let status = pending ? "pending" : (left == 0 ? "all in" : String(format: String(localized: "darkroom.group.toGo"), left))
-        let photo = latestPhoto(of: group)
-        return Button {
-            Haptics.play(.pop)
-            onOpenChat(group.id)
-        } label: {
-            ZStack(alignment: .topLeading) {
-                cardChrome {
-                    if let photo, !pending {
-                        DarkThumb(photo: photo, maxPixel: 500, blur: locked ? 7 : 0)
-                            .saturation(locked ? 0.3 : 1)
-                    } else {
-                        Darkroom.card
-                    }
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(verbatim: group.name).font(Darkroom.title(group.name, size: 28)).lineLimit(2)
-                        .shadow(color: .black.opacity(0.35), radius: 8, y: 2)
-                    Label { Text(verbatim: status) } icon: { Image(systemName: "clock") }
-                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.white.opacity(0.88))
-                }
-                .padding(16)
-                if let tag = photo?.tags.first, !pending, !locked {
-                    let c = Darkroom.stickerColors(tag)
-                    Text(verbatim: "#\(tag)").font(.system(size: 12, weight: .black)).foregroundStyle(c.1)
-                        .padding(.horizontal, 9).padding(.vertical, 5)
-                        .background(RoundedRectangle(cornerRadius: 9).fill(c.0))
-                        .rotationEffect(.degrees(7))
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.trailing, 12).padding(.top, 84)
-                }
-                HStack {
-                    Image(systemName: "bubble.left.fill").font(.system(size: 15))
-                        .overlay(alignment: .topTrailing) {
-                            if summary?.chatUnread == true { Circle().fill(Darkroom.orange).frame(width: 7, height: 7).offset(x: 3, y: -2) }
-                        }
-                        .frame(minWidth: 58, minHeight: 36)
-                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(left == 0 && !pending ? Darkroom.orange : Color(hex: "0E0E10").opacity(0.82)))
-                    Spacer()
-                    avatars(members)
-                }
-                .padding(.horizontal, 12)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, 14)
-            }
-            .frame(width: 196, height: 248)
-        }
-        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
-        .accessibilityLabel("\(group.name)。\(status)")
-    }
-
-    private func avatars(_ members: [GroupTogether.Member]) -> some View {
-        HStack(spacing: -8) {
-            ForEach(members.prefix(3)) { member in
-                Group {
-                    if member.isMe {
-                        Circle().fill(RadialGradient(colors: [Color(hex: "FFE2C4"), Color(hex: "FF9A62"), Color(hex: "EE5E9C")], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 14))
-                            .overlay(Circle().strokeBorder(AngularGradient(colors: [Color(hex: "9B8CFF"), Color(hex: "5AC8FF"), Color(hex: "5AD6B0"), Color(hex: "C8F25A"), Color(hex: "F2A65A"), Color(hex: "EE5E9C"), Color(hex: "9B8CFF")], center: .center), lineWidth: 2.5).padding(-3.5))
-                    } else {
-                        LayerAvatar(data: member.avatarData, seed: member.seed, name: member.name)
-                    }
-                }
-                .frame(width: 24, height: 24)
-                .overlay(Circle().strokeBorder(Color(hex: "111111"), lineWidth: 2))
-            }
-        }
-    }
-
-    /// その グループの いちばん 新しい「見られる」1枚(投稿ずみ)
-    private func latestPhoto(of group: LaterGroup) -> LaterPhoto? {
-        group.photos.filter { $0.isPosted && !$0.imageData.isEmpty }.max { $0.captureDate < $1.captureDate }
-    }
-
-    private var newGroupCard: some View {
-        Button {
-            Haptics.play(.tick)
-            onCreateGroup()
-        } label: {
-            VStack(spacing: 12) {
-                Image(systemName: "plus").font(.system(size: 22, weight: .bold)).foregroundStyle(Color(hex: "111111"))
-                    .frame(width: 52, height: 52).background(Circle().fill(.white))
-                Text(verbatim: "New group").font(Darkroom.title("New group", size: 22))
-            }
-            .frame(width: 150, height: 248)
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Color(hex: "2A2A2E"), lineWidth: 1.5))
-        }
-        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
     }
 
     // MARK: YESTERDAY
@@ -667,11 +575,17 @@ struct DarkroomSection: View {
                                    .init(color: .black.opacity(0.45), location: 0.58), .init(color: Darkroom.bg.opacity(0.96), location: 1)],
                            startPoint: .top, endPoint: .bottom)
             if locked {
-                Label { Text("darkroom.locked.pill") } icon: { Image(systemName: "lock.fill") }
-                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(Color(hex: "111111"))
-                    .padding(.horizontal, 16).frame(height: 38)
-                    .background(Capsule().fill(.white))
-                    .padding(.top, 150)
+                Button {
+                    Haptics.play(.tick)
+                    CaptureRequestStore.shared.pendingRequestID = UUID()
+                } label: {
+                    Label { Text("darkroom.locked.pill") } icon: { Image(systemName: "lock.fill") }
+                        .font(.system(size: 13, weight: .heavy)).foregroundStyle(Color(hex: "111111"))
+                        .padding(.horizontal, 16).frame(height: 38)
+                        .background(Capsule().fill(.white))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 150)
             } else if let tag = data.hero?.tag {
                 let c = Darkroom.stickerColors(tag)
                 Text(verbatim: "#\(tag)").font(.system(size: 15, weight: .black)).foregroundStyle(c.1)
@@ -707,7 +621,7 @@ struct DarkroomSection: View {
             }
             Button {
                 Haptics.play(.pop)
-                onToast(String(format: String(localized: "darkroom.people.toast"), data.people))
+                onOpenYesterday()
             } label: {
                 stat(value: "\(data.people)", label: "People ›")
             }
@@ -729,8 +643,8 @@ struct DarkroomSection: View {
         HStack(spacing: 8) {
             Button {
                 if locked {
-                    LayerHaptics.softDouble()
-                    onToast(String(localized: "darkroom.locked.shootToday"))
+                    Haptics.play(.tick)
+                    CaptureRequestStore.shared.pendingRequestID = UUID()
                     return
                 }
                 Haptics.play(.pop)
@@ -774,8 +688,8 @@ struct DarkroomSection: View {
         return DarkTile(item: item, height: height, kept: item.shotID != nil && item.dayKey.flatMap { MEPickStore.pick(day: $0) } == item.shotID,
                  onTap: {
                      if item.locked {
-                         LayerHaptics.softDouble()
-                         onToast(item.lockedText)
+                         Haptics.play(.tick)
+                         CaptureRequestStore.shared.pendingRequestID = UUID()
                      } else {
                          Haptics.play(.pop)
                          onOpenPhoto(item)
@@ -788,7 +702,7 @@ struct DarkroomSection: View {
 
     private func keep(_ item: DarkroomPhoto) {
         guard let day = item.dayKey, let shot = item.shotID else { return }
-        MEPickStore.set(day: day, shotID: shot, imageData: item.photo.imageData, videoURL: LaterVideoStore.localURL(for: item.photo))
+        MEPickStore.set(day: day, shotID: shot, imageData: item.photo.imageData, videoURL: LaterVideoStore.localURL(for: item.photo), tags: item.tag.map { [$0] } ?? [])
         Haptics.play(.heart)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { Haptics.play(.success) }
         onToast(String(localized: "darkroom.kept.toast"))
@@ -803,12 +717,12 @@ struct DarkroomSection: View {
                 ForEach(Array(words.prefix(5).enumerated()), id: \.element.id) { i, word in
                     Button {
                         if locked {
-                            LayerHaptics.softDouble()
-                            onToast(String(localized: "darkroom.locked.shootToday"))
+                            Haptics.play(.tick)
+                            CaptureRequestStore.shared.pendingRequestID = UUID()
                             return
                         }
                         Haptics.play(.pop)
-                        onOpenMondo()
+                        onOpenWord(word.tag)
                     } label: {
                         ZStack(alignment: .topLeading) {
                             LinearGradient(colors: word.tones.isEmpty ? [Darkroom.card, Darkroom.card2] : word.tones.map { Color(hex: $0) }, startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -901,7 +815,7 @@ struct DarkroomSection: View {
             if let item {
                 DarkTile(item: item, height: 112, width: 84, radius: 15, kept: kept, compact: true,
                          onTap: {
-                             if item.locked { LayerHaptics.softDouble(); onToast(item.lockedText) } else { Haptics.play(.pop); onOpenPhoto(item) }
+                             if item.locked { Haptics.play(.tick); CaptureRequestStore.shared.pendingRequestID = UUID() } else { Haptics.play(.pop); onOpenPhoto(item) }
                          },
                          onKeep: item.locked ? nil : { keep(item) })
             } else {
@@ -910,44 +824,216 @@ struct DarkroomSection: View {
         }
     }
 
-    // MARK: FRIENDS
+    // MARK: FRIENDS(v47:12の席の時計盤は FriendsClockCard.swift)
+}
 
-    private var friendsRow: some View {
-        let list = friends.filter { !$0.isMe }
-        let shot = list.filter(\.hasShot).count
+// MARK: - ACTIVE カード(Home の 暗室と、Later yesterday の ACTIVE で 共通。たてカード 196×248)
+
+func activeCardChrome<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    ZStack(alignment: .topLeading) {
+        content()
+        LinearGradient(stops: [.init(color: .black.opacity(0.55), location: 0), .init(color: .clear, location: 0.46),
+                               .init(color: .clear, location: 0.62), .init(color: .black.opacity(0.5), location: 1)], startPoint: .top, endPoint: .bottom)
+    }
+    .frame(width: 196, height: 248)
+    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+}
+
+/// その グループの いちばん 新しい「見られる」1枚(投稿ずみ)
+func activeLatestPhoto(of group: LaterGroup) -> LaterPhoto? {
+    group.photos.filter { $0.isPosted && !$0.imageData.isEmpty }.max { $0.captureDate < $1.captureDate }
+}
+
+struct ActiveInviteCard: View {
+    let card: FriendInviteCard
+    let onJoin: (FriendInviteCard) -> Void
+
+    var body: some View {
+        Button {
+            Haptics.play(.success)
+            onJoin(card)
+        } label: {
+            ZStack(alignment: .topLeading) {
+                activeCardChrome { Darkroom.card }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(verbatim: card.groupName).font(Darkroom.title(card.groupName, size: 28)).lineLimit(2)
+                    Label { Text(verbatim: "from \(card.fromName)") } icon: { Image(systemName: "clock") }
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.white.opacity(0.88))
+                }
+                .padding(16)
+                Text(verbatim: "join").font(.system(size: 12.5, weight: .bold))
+                    .padding(.horizontal, 16).frame(height: 36)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Darkroom.orange))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 14)
+            }
+            .frame(width: 196, height: 248)
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Darkroom.orange, lineWidth: 2))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+        .accessibilityLabel("\(card.groupName)。\(card.fromName)。join")
+    }
+}
+
+struct ActiveGroupCard: View {
+    let group: LaterGroup
+    /// 新しいメッセージが あるか(右上の 赤い点)
+    let hasUnread: Bool
+    let locked: Bool
+    let me: String?
+    let now: Date
+    let onOpenChat: (UUID) -> Void
+
+    /// v59 §2:「DAY n」(つくった日からの 日数)。実データ(creationDate)から 出す。予定日数(n/m)は 持っていないので nだけ。
+    private var day: Int {
+        max(1, (Calendar.current.dateComponents([.day], from: group.creationDate, to: now).day ?? 0) + 1)
+    }
+
+    /// v59 §2:23こまの フィルム。実の「1日23枚」予約は 無いので、このグループが 今まで ポストした 枚数(capされた 近似)を 使う。
+    private var frames: Int { min(23, group.photos.filter(\.isPosted).count) }
+
+    var body: some View {
+        let members = GroupTogether.members(of: group, me: me, myShots: FilmCounter.shared.used, now: now)
+        let pending = members.count <= 1
+        let left = GroupTogether.remaining(members)
+        let status = pending ? "pending" : (left == 0 ? "all in" : String(format: String(localized: "darkroom.group.toGo"), left))
+        let photo = activeLatestPhoto(of: group)
         return Button {
             Haptics.play(.pop)
-            onOpenFriends()
+            onOpenChat(group.id)
         } label: {
-            HStack(spacing: 14) {
-                if list.isEmpty {
-                    HStack(spacing: -12) {
-                        ForEach(0..<2, id: \.self) { _ in Circle().strokeBorder(Color(hex: "3A3A3F"), style: StrokeStyle(lineWidth: 2, dash: [3, 3])).frame(width: 40, height: 40) }
+            ZStack(alignment: .topLeading) {
+                ZStack(alignment: .topLeading) {
+                    if let photo, !pending {
+                        DarkThumb(photo: photo, maxPixel: 500, blur: locked ? 7 : 0)
+                            .saturation(locked ? 0.3 : 1)
+                    } else {
+                        Darkroom.card
                     }
-                } else {
-                    HStack(spacing: -12) {
-                        ForEach(list.prefix(4)) { friend in
-                            LayerAvatar(data: friend.avatarData, seed: friend.seed, name: friend.name)
-                                .frame(width: 40, height: 40)
-                                .overlay(Circle().strokeBorder(Darkroom.card, lineWidth: 2.5))
-                                .overlay(Circle().strokeBorder(friend.hasShot ? Darkroom.orange : .clear, lineWidth: 2).padding(-2))
-                        }
+                    // v59 §2:上45%→0→下92%の 黒(行き先・フィルムを 読みやすく)
+                    LinearGradient(stops: [
+                        .init(color: .black.opacity(0.45), location: 0), .init(color: .clear, location: 0.3),
+                        .init(color: .clear, location: 0.42), .init(color: .black.opacity(0.92), location: 1),
+                    ], startPoint: .top, endPoint: .bottom)
+                }
+                .frame(width: 196, height: 248)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+
+                // 上段: DAY n + (未読なら)赤い点
+                HStack {
+                    Text(verbatim: "DAY \(day)")
+                        .font(Darkroom.mono(8.5)).tracking(0.1 * 8.5)
+                        .foregroundStyle(.white.opacity(0.85))
+                    Spacer()
+                    if hasUnread {
+                        Circle().fill(LaterColor.red).frame(width: 9, height: 9)
+                            .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
                     }
                 }
-                VStack(alignment: .leading, spacing: 3) {
-                    let names = list.isEmpty ? "No one yet" : list.prefix(3).map(\.name).joined(separator: ", ")
-                    Text(verbatim: names).font(Darkroom.title(names, size: 21)).lineLimit(1)
-                    Text(verbatim: list.isEmpty ? "shake to connect" : "\(shot) shot today").font(.system(size: 12, weight: .medium)).foregroundStyle(Darkroom.weak)
+                .padding(.horizontal, 14).padding(.top, 12)
+
+                // 下段: 行き先(グループ名)・状態・フィルム・N/23
+                VStack(alignment: .leading, spacing: 6) {
+                    Spacer(minLength: 0)
+                    Text(verbatim: group.name)
+                        .font(LF.serif(36)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
+                        .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
+                    Label { Text(verbatim: status) } icon: { Image(systemName: "clock") }
+                        .font(Darkroom.mono(9)).foregroundStyle(.white.opacity(0.8))
+                    HStack(spacing: 8) {
+                        activeFilmStrip
+                        Text(verbatim: "\(frames)/23").font(LF.serif(22)).foregroundStyle(.white)
+                    }
+                    .padding(.top, 2)
+                    HStack {
+                        Image(systemName: "bubble.left.fill").font(.system(size: 13))
+                            .frame(minWidth: 40, minHeight: 28)
+                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(left == 0 && !pending ? LaterColor.filmLight : Color(hex: "0E0E10").opacity(0.82)))
+                            .foregroundStyle(left == 0 && !pending ? Color(hex: "111111") : .white)
+                        Spacer(minLength: 0)
+                        activeAvatars(members)
+                    }
+                    .padding(.top, 4)
                 }
-                Spacer(minLength: 4)
-                (Text(verbatim: "\(list.count)").font(.custom("InstrumentSerif-Italic", size: 24))
-                 + Text(verbatim: "/\(FriendRules.maxFriends)").font(.custom("InstrumentSerif-Italic", size: 17)).foregroundColor(Darkroom.faint))
+                .padding(.horizontal, 14).padding(.bottom, 14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 76)
-            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Darkroom.card))
+            .frame(width: 196, height: 248)
         }
-        .buttonStyle(SquishButtonStyle(pressedScale: 0.98))
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+        .accessibilityLabel("\(group.name)。DAY \(day)。\(status)。\(frames) / 23")
+    }
+
+    /// 23こまの フィルム(高さ18・番号なし)。撮った ぶんだけ 緑。横いっぱいに 収まるよう 細く 並べる
+    private var activeFilmStrip: some View {
+        HStack(spacing: 1.4) {
+            ForEach(0..<23, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(i < frames ? LaterColor.filmLight : .white.opacity(0.16))
+            }
+        }
+        .frame(height: 18)
+    }
+
+    private func activeAvatars(_ members: [GroupTogether.Member]) -> some View {
+        HStack(spacing: -8) {
+            ForEach(members.prefix(3)) { member in
+                Group {
+                    if member.isMe {
+                        Circle().fill(RadialGradient(colors: [Color(hex: "FFE2C4"), Color(hex: "FF9A62"), Color(hex: "EE5E9C")], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 14))
+                            .overlay(Circle().strokeBorder(AngularGradient(colors: [Color(hex: "9B8CFF"), Color(hex: "5AC8FF"), Color(hex: "5AD6B0"), Color(hex: "C8F25A"), Color(hex: "F2A65A"), Color(hex: "EE5E9C"), Color(hex: "9B8CFF")], center: .center), lineWidth: 2.5).padding(-3.5))
+                    } else {
+                        LayerAvatar(data: member.avatarData, seed: member.seed, name: member.name)
+                    }
+                }
+                .frame(width: 24, height: 24)
+                .overlay(Circle().strokeBorder(Color(hex: "111111"), lineWidth: 2))
+            }
+        }
+    }
+}
+
+/// v59 §2:New trip カード。幅170・#0E0E0F・細い線。中に 旅の 写真3枚を チェキの扇に、下に 紙色の丸い+。
+struct ActiveNewGroupCard: View {
+    let onCreateGroup: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.play(.tick)
+            onCreateGroup()
+        } label: {
+            VStack(spacing: 14) {
+                Spacer(minLength: 0)
+                chekiFan
+                Circle().fill(Color(hex: "F5F0E8"))
+                    .overlay(Image(systemName: "plus").font(.system(size: 20, weight: .bold)).foregroundStyle(Color(hex: "111111")))
+                    .frame(width: 48, height: 48)
+                VStack(spacing: 3) {
+                    Text(verbatim: "New trip").font(LF.serif(24)).foregroundStyle(.white)
+                    Text(verbatim: "旅行 ・ 合宿 ・ イベント").font(.system(size: 10, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(width: 170, height: 248)
+            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color(hex: "0E0E0F")))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Color(hex: "2A2A2E"), lineWidth: 1.5))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
+        .accessibilityLabel(Text(verbatim: "New trip。旅行・合宿・イベント"))
+    }
+
+    private var chekiFan: some View {
+        ZStack {
+            ForEach(Array([(-10.0, -18.0, -10.0), (0.0, 0.0, 0.0), (10.0, 18.0, 10.0)].enumerated()), id: \.offset) { _, v in
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(.white)
+                    .frame(width: 46, height: 56)
+                    .overlay(RoundedRectangle(cornerRadius: 3).fill(Color(hex: "D8D4C8")).padding(4).padding(.bottom, 10))
+                    .rotationEffect(.degrees(v.2))
+                    .offset(x: v.0, y: v.1 / 6)
+            }
+        }
+        .frame(width: 70, height: 60)
     }
 }
 
@@ -1164,7 +1250,7 @@ struct DarkroomViewer: View {
             Haptics.play(.soft)
             return
         }
-        MEPickStore.set(day: day, shotID: shot, imageData: item.photo.imageData, videoURL: LaterVideoStore.localURL(for: item.photo))
+        MEPickStore.set(day: day, shotID: shot, imageData: item.photo.imageData, videoURL: LaterVideoStore.localURL(for: item.photo), tags: item.tag.map { [$0] } ?? [])
         Haptics.play(.heart)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { Haptics.play(.success) }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { kept = true }

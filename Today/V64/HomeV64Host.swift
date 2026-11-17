@@ -43,11 +43,11 @@ struct HomeV64Host: View {
         y.now = now
         y.avatar = src.avatarImage
         y.cells = L.yesterday.map { c in
-            .init(id: c.id, photo: image(c.imageData) ?? image(c.mosaicTiny), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), tag: c.tag)
+            .init(id: c.id, photo: image(c.imageData, "yd\(c.id)", max: 480) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), tag: c.tag)
         }
         y.friendCount = L.friends.filter { !$0.isMe }.count
         y.shotFriends = L.friends.filter { !$0.isMe && $0.hasShot }.count
-        y.mondoPhoto = L.yesterday.first.flatMap { image($0.imageData) ?? image($0.mosaicTiny) }
+        y.mondoPhoto = L.yesterday.first.flatMap { image($0.imageData, "yd\($0.id)", max: 640) ?? image($0.mosaicTiny, "ym\($0.id)", max: 160) }
         y.mondoTag = L.words.first.map { "#\($0)" } ?? "#夕焼け"
         if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }
         return y
@@ -65,7 +65,7 @@ struct HomeV64Host: View {
         return a
     }
 
-    private func image(_ data: Data?) -> UIImage? { data.flatMap(UIImage.init(data:)) }
+    private func image(_ data: Data?, _ key: String = "x", max: CGFloat = 640) -> UIImage? { V64Images.image(key: key, data: data, maxPixel: max) }
 
     private func makeInput(now: Date) -> HomeV64Input {
         var input = HomeV64Input()
@@ -81,20 +81,20 @@ struct HomeV64Host: View {
         input.requestCount = incoming.count
         input.requestFaces = incoming.prefix(3).map { r in HomeV64Face(id: r.id, initial: String((r.fromName.isEmpty ? "ね" : r.fromName).prefix(1)), color: Self.color(for: UUID(uuidString: r.fromUserID.padding(toLength: 36, withPad: "0", startingAt: 0)) ?? UUID())) }
         input.friends = others.prefix(7).map { f in
-            HomeV64Friend(id: f.id, name: f.name, color: Self.color(for: f.seed), image: image(f.avatarData) ?? image(f.mosaicTiny), shots: f.hasShot ? 3 : 0)
+            HomeV64Friend(id: f.id, name: f.name, color: Self.color(for: f.seed), image: image(f.avatarData, "av\(f.id)", max: 160) ?? image(f.mosaicTiny, "mt\(f.id)", max: 160), shots: f.hasShot ? 3 : 0)
         }
         input.faces = others.filter(\.hasShot).prefix(3).map { f in
-            HomeV64Face(id: f.id, initial: String(f.name.prefix(1)), color: Self.color(for: f.seed), image: image(f.avatarData) ?? image(f.mosaicTiny))
+            HomeV64Face(id: f.id, initial: String(f.name.prefix(1)), color: Self.color(for: f.seed), image: image(f.avatarData, "av\(f.id)", max: 96) ?? image(f.mosaicTiny, "mt\(f.id)", max: 96))
         }
         // うしろに ぼかして 敷く 写真:友だちが 今日 撮った モザイク → 自分の きのう → なし
-        let mosaics = others.filter(\.hasShot).compactMap { image($0.mosaicTiny) }
-        let myYesterday = L.yesterday.compactMap { image($0.imageData) }
+        let mosaics = others.filter(\.hasShot).compactMap { image($0.mosaicTiny, "mt\($0.id)", max: 160) }
+        let myYesterday = L.yesterday.compactMap { image($0.imageData, "yd\($0.id)", max: 640) }
         input.backdrop = mosaics.isEmpty ? Array(myYesterday.prefix(3)) : Array(mosaics.prefix(3))
         input.isFirstDay = L.yesterday.isEmpty
         input.yesterdayPhoto = myYesterday.first
         let df = DateFormatter(); df.dateFormat = "HH:mm"
         input.yesterdayThumbs = L.yesterday.prefix(3).map { c in
-            HomeV64Thumb(id: c.id, image: image(c.imageData) ?? image(c.mosaicTiny), time: df.string(from: c.captureDate), tag: c.tag)
+            HomeV64Thumb(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 480) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: df.string(from: c.captureDate), tag: c.tag)
         }
         // 下の 区画
         var low = HomeV64LowerData()
@@ -102,7 +102,7 @@ struct HomeV64Host: View {
         if let first = L.yesterday.first {
             low.hero = .init(photo: image(first.imageData) ?? image(first.mosaicTiny), tag: first.tag.map { "#\($0)" } ?? "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: Self.dateLabel(first.captureDate, now: now), moments: L.yesterday.count, people: Set(L.yesterday.map(\.authorName)).count, daysLeft: 6)
             low.tiles = L.yesterday.map { c in
-                .init(photo: image(c.imageData) ?? image(c.mosaicTiny), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), own: false, kept: false)
+                .init(photo: image(c.imageData, "yd\(c.id)", max: 480) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), own: false, kept: false)
             }
         }
         low.mondo = L.words.prefix(3).map { (tag: "#\($0)", photo: nil) }

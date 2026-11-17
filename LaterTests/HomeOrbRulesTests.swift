@@ -43,19 +43,14 @@ struct HomeOrbRulesTests {
         #expect(!HomeOrbRules.plan(Input(used: 3, remaining: 0, openedYesterday: 2)).done)
     }
 
-    @Test func まわりは_順に_4つ_まんなか以外() {
-        // 0枚:撮る が まんなか → きのう・New group・Mondo・Friends(グループ なし)
-        #expect(HomeOrbRules.plan(Input(used: 0, remaining: 3)).satellites == [.yesterday, .newGroup, .mondo, .friends])
-        // 0枚・グループ あり → きのう・チャット・New group・Mondo
-        #expect(HomeOrbRules.plan(Input(used: 0, remaining: 3, hasGroups: true)).satellites == [.yesterday, .chat, .newGroup, .mondo])
-        // 1枚:きのう が まんなか → 撮る・現像・チャット・New group
-        #expect(HomeOrbRules.plan(Input(used: 1, remaining: 2, hasGroups: true, openedYesterday: 1)).satellites == [.shoot, .develop, .chat, .newGroup])
-        // 3枚:撮る は 出ない
-        #expect(HomeOrbRules.plan(Input(used: 3, remaining: 0, hasGroups: false)).satellites == [.develop, .newGroup, .mondo, .friends])
-        // 招待:撮る・きのう・チャット・New group
-        #expect(HomeOrbRules.plan(Input(hasInvite: true, used: 0, remaining: 3, hasGroups: true)).satellites == [.shoot, .yesterday, .chat, .newGroup])
-        // 新しい メッセージ:チャットは まんなか → まわりに 出さない
-        #expect(HomeOrbRules.plan(Input(used: 2, remaining: 1, hasUnread: true, hasGroups: true)).satellites == [.shoot, .develop, .yesterday, .newGroup])
+    /// v61 §8:四すみは 状況で 入れかえない。常に 左上 Yesterday・右上 Trip・左下 Mondo・右下 Friends の 固定 4つ。
+    @Test func まわりは_四つ固定_状況で_入れかえない() {
+        #expect(HomeOrbRules.plan(Input(used: 0, remaining: 3)).satellites == [.yesterday, .trip, .mondo, .friends])
+        #expect(HomeOrbRules.plan(Input(used: 0, remaining: 3, hasGroups: true)).satellites == [.yesterday, .trip, .mondo, .friends])
+        #expect(HomeOrbRules.plan(Input(used: 1, remaining: 2, hasGroups: true, openedYesterday: 1)).satellites == [.yesterday, .trip, .mondo, .friends])
+        #expect(HomeOrbRules.plan(Input(used: 3, remaining: 0, hasGroups: false)).satellites == [.yesterday, .trip, .mondo, .friends])
+        #expect(HomeOrbRules.plan(Input(hasInvite: true, used: 0, remaining: 3, hasGroups: true)).satellites == [.yesterday, .trip, .mondo, .friends])
+        #expect(HomeOrbRules.plan(Input(used: 2, remaining: 1, hasUnread: true, hasGroups: true)).satellites == [.yesterday, .trip, .mondo, .friends])
     }
 
     @Test func まだ_ひらかない_ものと_点() {
@@ -88,15 +83,31 @@ struct HomeOrbRulesTests {
 
     @Test func 文字の輪は_まわりの_下で_消える() {
         let holes = (0..<4).map { HomeOrbRules.satelliteHole(.newGroup, index: $0) }
-        // まわりの 4つの 方向(半径 128)では 消える
-        for o in HomeOrbRules.satelliteOffsets {
-            let a = atan2(Double(o.height), Double(o.width))
-            #expect(HomeRingText.visibility(at: CGPoint(x: cos(a) * 128, y: sin(a) * 128), holes: holes) == 0)
+        // まわりの 4つの ボタン自身の 場所では 消える
+        for o in HomeOrbRules.satelliteOffsets() {
+            #expect(HomeRingText.visibility(at: CGPoint(x: o.width, y: o.height), holes: holes) == 0)
         }
-        // 真上・真下は 見える
-        #expect(HomeRingText.visibility(at: CGPoint(x: 0, y: -128), holes: holes) == 1)
-        #expect(HomeRingText.visibility(at: CGPoint(x: 0, y: 128), holes: holes) == 1)
+        // まんなかの 真上・真下(x=0)は どの 穴にも 入らず 見える
+        let r = hypot(Double(HomeOrbRules.satelliteOffsets()[0].width), Double(HomeOrbRules.satelliteOffsets()[0].height))
+        #expect(HomeRingText.visibility(at: CGPoint(x: 0, y: -r), holes: holes) == 1)
+        #expect(HomeRingText.visibility(at: CGPoint(x: 0, y: r), holes: holes) == 1)
         // 長い 字ほど 広い
         #expect(HomeOrbRules.satelliteHole(.newGroup, index: 0).width > HomeOrbRules.satelliteHole(.chat, index: 0).width)
+    }
+
+    /// v61 §15:四すみは「端からの 距離」。幅(375・390・402)が 変わっても、丸の 中心は 端から 62pt の まま。
+    @Test func 四すみは_幅が変わっても_端から62pt() {
+        for w: CGFloat in [375, 390, 402] {
+            let offsets = HomeOrbRules.satelliteOffsets(width: w)
+            // 左上・左下(index 0・2):中心からの 距離は w/2 - 62 → 端からは ちょうど 62pt
+            #expect(abs(Double(w / 2 + offsets[0].width) - 62) < 0.01)
+            #expect(abs(Double(w / 2 + offsets[2].width) - 62) < 0.01)
+            // 右上・右下(index 1・3):同じく 端(右)から 62pt
+            #expect(abs(Double(w / 2 - offsets[1].width) - 62) < 0.01)
+            #expect(abs(Double(w / 2 - offsets[3].width) - 62) < 0.01)
+            // y(縦)は 幅に よらず 固定
+            #expect(offsets[0].height == -232)
+            #expect(offsets[2].height == 218)
+        }
     }
 }

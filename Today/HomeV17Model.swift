@@ -295,6 +295,8 @@ struct HomeV17Actions {
     var knock: (HomeFriend) -> Void = { _ in }
     /// 呼ぶ・合言葉・QR(ともだちの画面)
     var openFriends: () -> Void = {}
+    /// v47:ことばのカード → Mondo を そのことばで しぼって ひらく
+    var openWord: (String) -> Void = { _ in }
 }
 
 /// スクロール位置(ここを読む小さな View だけが、スクロールのたびに描きなおされる)

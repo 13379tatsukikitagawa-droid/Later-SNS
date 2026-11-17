@@ -499,13 +499,15 @@ struct LayerAvatar: View {
     let data: Data?
     let seed: UUID
     let name: String
+    /// v52:プロフィール編集で えらんだ色(UserProfile.avatarColorIndex)。nil なら id から決める
+    var colorOverride: Int? = nil
 
     var body: some View {
         if let image = LayerImageCache.avatar(data, key: seed.uuidString) {
             Image(uiImage: image).resizable().scaledToFill().clipShape(Circle())
         } else {
             Circle()
-                .fill(LinearGradient(colors: Self.colors(seed), startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(LinearGradient(colors: Self.colors(seed, override: colorOverride), startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(
                     Text(String(name.prefix(1)))
                         .font(.system(size: 18, weight: .bold))
@@ -514,10 +516,14 @@ struct LayerAvatar: View {
         }
     }
 
-    static func colors(_ seed: UUID) -> [Color] {
-        let palettes: [[String]] = [["FF9A4D", "FF5D73"], ["5DA9FF", "7A5CFF"], ["4CD6A8", "2E9BFF"], ["FFC93D", "FF7A3D"], ["C77DFF", "FF6FB5"]]
-        let index = Int(seed.uuid.0) % palettes.count
-        return palettes[index].map { Color(hex: $0) }
+    static let palettes: [[String]] = [
+        ["FF9A4D", "FF5D73"], ["5DA9FF", "7A5CFF"], ["4CD6A8", "2E9BFF"],
+        ["FFC93D", "FF7A3D"], ["C77DFF", "FF6FB5"], ["5FE0C8", "3DBF8A"],
+    ]
+
+    static func colors(_ seed: UUID, override: Int? = nil) -> [Color] {
+        let index = override ?? (Int(seed.uuid.0) % palettes.count)
+        return palettes[index % palettes.count].map { Color(hex: $0) }
     }
 }
 

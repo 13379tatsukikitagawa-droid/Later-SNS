@@ -42,6 +42,10 @@ final class UserProfile {
     /// 撮影時のハッシュタグ(LaterPhoto.tags)とは別物。
     var selfTags: [String] = []
 
+    /// v52:プロフィール編集で選んだ、アバターの色(LayerAvatar.palettes の index)。
+    /// nil なら今まで通り id から決める(LayerAvatar.colors 参照)。CloudKitへ同期(グループの共有ゾーンに複製)。
+    var avatarColorIndex: Int?
+
     /// 「ノックを受けない」(今日のホームの層:まだ撮っていない友だちへの、文字なしの知らせ)。
     /// グループの共有ゾーンの UserProfile に載せ、ノックする側がボタンを出さないのに使う。
     var knockOff: Bool = false

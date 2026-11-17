@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 import SwiftData
 import UIKit
@@ -174,6 +175,13 @@ struct NewGroupFlowView: View {
     /// できた画面を とじた(ホームで「「{name}」を つくりました」)
     var onCreated: (String) -> Void = { _ in }
     let onClose: () -> Void
+    /// v58 §5:TRIP SETTINGS モード(nil なら ふつうの New trip)。既存の Trip を 渡すと、
+    /// なまえ・表紙・メンバーを 初期値に 入れ、下のボタンが「Save changes」+「Trip をおわる / ぬける」になる。
+    var existingGroup: LaterGroup? = nil
+    /// 「ぬける」を 押した(本物の 処理は 呼び出し側の 既存フロー(leaveSnapshot など)に まかせる。ここでは 何も しない)
+    var onLeaveRequested: () -> Void = {}
+    /// 「Trip をおわる」(作成者だけ)を 押した。同上、本物の 処理は 呼び出し側に まかせる
+    var onEndTripRequested: () -> Void = {}
 
     enum Preview: Equatable {
         case name
@@ -217,6 +225,26 @@ struct NewGroupFlowView: View {
     @State private var picked: [String] = []
     @State private var toast: String?
 
+    // v58 §3:New trip ウィザード(Cover / Where / When / Who)。見た目だけ。
+    enum WizardStep: Int, CaseIterable { case cover, whereStep, when, who }
+    @State private var wizardStep: WizardStep = .cover
+    @State private var coverPickerItem: PhotosPickerItem?
+    /// v58 §3 Cover:選んだ 表紙(大きさ・位置・色あいを かけたあと)。create() で 実在の `group.iconImageData` に
+    /// そのまま 入れる(新しい フィールドは 作らない)
+    @State private var coverImageData: Data?
+    /// v58 §3 Cover クロップ:GroupSettingsView(旧 設定画面)の FaceImageRenderer/FaceTone を そのまま 再利用。
+    /// 選んだ もとの 写真(切り出し まえ)
+    @State private var coverSourceImage: UIImage?
+    @State private var coverFaceScale: CGFloat = 1
+    @State private var coverFaceOffset: CGSize = .zero
+    @State private var coverDragBase: CGSize?
+    @State private var coverTone: FaceTone = .original
+    /// v58 §3 When:12日ぶんの 候補の うち、はじまり・おわりの index。表示だけ(保存する フィールドが 無いので、今は その場 限り)
+    @State private var tripStartDay: Int?
+    @State private var tripEndDay: Int?
+    /// v58 §5:「Trip をおわる」は 2回押しで 確定(1回目から 2.4秒 以内)
+    @State private var endConfirmArmed = false
+
     // 演出
     @State private var bounce = 0
     @State private var flashSeat: Int?
@@ -239,8 +267,10 @@ struct NewGroupFlowView: View {
     @State private var passphrase: String?
     @State private var invited: [String] = []
     @State private var showingShare = false
-    @State private var copied = false
     @State private var haptics = ExposureHaptics()
+    // v43:できた画面から ともだちを 追加で 招待する
+    @State private var showingAddFriends = false
+    @State private var addSending = false
 
     private var colors: GroupCreateColors { GroupCreateColors(night: palette.isNight) }
     private var currentUser: UserProfile? { UserProfile.current(from: profiles) }
@@ -251,6 +281,8 @@ struct NewGroupFlowView: View {
     /// 10個のときは、つくらせない
     private var isFull: Bool { myGroupNames.count >= GroupMembershipPolicy.maxGroupsPerUser && createdGroup == nil }
     private var canCreate: Bool { nameStatus == .ok && !isCreating && !isFull }
+    /// v58 §5:TRIP SETTINGS の 保存。既存の グループの 編集なので、グループ数の 上限(isFull)は 関係ない
+    private var canSaveSettings: Bool { nameStatus == .ok && !isCreating }
     private var animates: Bool { !reduceMotion }
 
     /// できた画面で 使う リンク(今までと 同じ:CKShare の URL を later://join で つつむ)
@@ -267,51 +299,35 @@ struct NewGroupFlowView: View {
 
     var body: some View {
         ZStack {
-            GroupCreateBackdrop(colors: GroupCreateBlobPalette.colors(for: name), bg: colors.bg, night: colors.night, animates: animates)
-                .ignoresSafeArea()
+            Color(hex: "0B0B0C").ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                ScrollView {
-                    VStack(spacing: 0) {
-                        stage
-                        content
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom, 16)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .scrollBounceBehavior(.basedOnSize)
-                .scrollIndicators(.hidden)
-            }
-            // 「つくる」は 下に 固定(キーボードの すぐ上に ついてくる)
-            .safeAreaInset(edge: .bottom) { bottomArea }
-
-            if let confettiStart, animates {
-                GroupConfetti(start: confettiStart)
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea()
+            switch phase {
+            case .name, .creating:
+                wizardBody
+                    .transition(.opacity)
+            case .done:
+                doneBody
+                    .transition(.opacity)
+            case .failed:
+                failedBody
+                    .transition(.opacity)
             }
 
             if let toast {
                 Text(toast)
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(colors.primaryText)
+                    .foregroundStyle(.white)
                     .padding(.horizontal, 18).padding(.vertical, 11)
-                    .background(Capsule().fill(colors.primaryBg))
+                    .background(Capsule().fill(.black.opacity(0.85)))
                     .frame(maxHeight: .infinity, alignment: .top)
                     .padding(.top, 64)
                     .transition(.opacity.combined(with: .move(edge: .top)))
                     .allowsHitTesting(false)
             }
         }
-        .background(GeometryReader { proxy in
-            Color.clear
-                .onAppear { screenHeight = proxy.size.height }
-                .onChange(of: proxy.size.height) { _, h in if !keyboardUp { screenHeight = h } }
-        })
-        .preferredColorScheme(colors.night ? .dark : .light)
+        .preferredColorScheme(.dark)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: toast)
+        .animation(.easeInOut(duration: 0.3), value: phase)
         .onAppear(perform: appear)
         .onDisappear { haptics.tearDown() }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -320,6 +336,17 @@ struct NewGroupFlowView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeOut(duration: 0.25)) { keyboardUp = false }
         }
+        .onChange(of: coverPickerItem) { _, item in
+            guard let item else { return }
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else { return }
+                coverSourceImage = image
+                coverFaceScale = 1
+                coverFaceOffset = .zero
+                coverTone = .original
+                renderCoverPreview()
+            }
+        }
         .sheet(isPresented: $showingShare) {
             // 今までと 同じ:アイコンつきの 招待文(全文)を 渡す
             ShareSheet(activityItems: [
@@ -327,28 +354,423 @@ struct NewGroupFlowView: View {
             ]) { _ in showingShare = false }
             .presentationDetents([.medium, .large])
         }
+        .sheet(isPresented: $showingAddFriends) {
+            // v43:できた あとから ともだちを よぶ(今の GroupInviteCard の 流れを そのまま 使う)
+            GroupAddFriendsSheet(
+                friends: friends.filter { !invited.contains($0.id) },
+                sending: addSending,
+                onSend: { ids in Task { await sendAdditionalInvites(ids) } },
+                onClose: { showingAddFriends = false }
+            )
+        }
     }
 
-    // MARK: 上(×)
+    /// v58 §3:0.5秒で 下から 出る New trip ウィザード(Cover → Where → When → Who)
+    private var wizardBody: some View {
+        VStack(spacing: 0) {
+            wizardHeader
+            stepDots
+            TabView(selection: $wizardStep) {
+                coverStep.tag(WizardStep.cover)
+                whereStepView.tag(WizardStep.whereStep)
+                whenStepView.tag(WizardStep.when)
+                whoStepView.tag(WizardStep.who)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .animation(.easeInOut(duration: 0.3), value: wizardStep)
+        }
+        .safeAreaInset(edge: .bottom) { wizardBottomBar }
+        .opacity(phase == .creating ? 0.3 : 1)
+        .overlay {
+            if phase == .creating { creatingOverlay }
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
 
-    private var topBar: some View {
+    // MARK: 上(✕・NEW TRIP / TRIP SETTINGS)
+
+    private var wizardHeader: some View {
         HStack {
             Button(action: closeTapped) {
                 Image(systemName: "xmark")
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(colors.ink)
+                    .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(colors.field))
-                    .overlay(Circle().strokeBorder(colors.line.opacity(0.6), lineWidth: 1))
+                    .background(Circle().fill(.white.opacity(0.08)))
             }
             .buttonStyle(PressScaleStyle())
             .opacity(isCreating ? 0.35 : 1)
             .disabled(isCreating)
             .accessibilityLabel("とじる")
             Spacer()
+            Text(verbatim: existingGroup == nil ? "NEW TRIP" : "TRIP SETTINGS")
+                .font(Darkroom.mono(11)).tracking(0.2 * 11)
+                .foregroundStyle(.white.opacity(0.7))
+            Spacer()
+            Color.clear.frame(width: 44, height: 44)
         }
         .padding(.horizontal, 18)
-        .padding(.top, 6)
+        .padding(.top, 10)
+    }
+
+    /// 4ステップの 小さい 点(Cover・Where・When・Who)
+    private var stepDots: some View {
+        HStack(spacing: 7) {
+            ForEach(WizardStep.allCases, id: \.self) { s in
+                Capsule().fill(s == wizardStep ? LaterColor.lime : .white.opacity(0.2))
+                    .frame(width: s == wizardStep ? 18 : 6, height: 6)
+                    .animation(.easeInOut(duration: 0.25), value: wizardStep)
+            }
+        }
+        .padding(.top, 14)
+        .accessibilityHidden(true)
+    }
+
+    // MARK: v58 §3 Cover:写真(62×80)を 横に 並べる。選んだ 写真は 紙色の 輪で 浮く
+
+    private var coverStep: some View {
+        VStack(spacing: 18) {
+            Spacer(minLength: 0)
+            Text(verbatim: "Cover").font(LF.serif(26)).foregroundStyle(.white)
+            PhotosPicker(selection: $coverPickerItem, matching: .images) {
+                ZStack {
+                    if let coverImageData, let uiImage = UIImage(data: coverImageData) {
+                        Image(uiImage: uiImage).resizable().scaledToFill()
+                    } else {
+                        Color(hex: "1B1B1B")
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 26, weight: .regular))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                }
+                .frame(width: 124, height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(coverImageData == nil ? .white.opacity(0.14) : Color(hex: "F5F0E8"), lineWidth: coverImageData == nil ? 1 : 3)
+                )
+                .shadow(color: .black.opacity(coverImageData == nil ? 0 : 0.4), radius: 10, y: 6)
+                .gesture(coverSourceImage == nil ? nil : coverDragGesture)
+            }
+            .buttonStyle(PressScaleStyle())
+            .onChange(of: coverPickerItem) { _, _ in Haptics.play(.sel) }
+            Text(verbatim: coverSourceImage == nil ? "カメラロールから えらぶ" : "ドラッグで 位置を 調整できます")
+                .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+            // v58 §3 Cover の クロップ・色あい(旧 設定画面の FaceImageRenderer/FaceTone を そのまま 再利用)
+            if coverSourceImage != nil {
+                HStack(spacing: 12) {
+                    Text(verbatim: "大きさ").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(.white)
+                    Slider(value: $coverFaceScale, in: FaceImageRenderer.scaleRange).tint(.white)
+                        .onChange(of: coverFaceScale) { _, _ in
+                            coverFaceOffset = FaceImageRenderer.clampOffset(coverFaceOffset, scale: coverFaceScale)
+                            renderCoverPreview()
+                        }
+                }
+                .padding(.horizontal, 24)
+                HStack(spacing: 8) {
+                    ForEach(FaceTone.allCases) { value in
+                        Button {
+                            Haptics.play(.sel)
+                            coverTone = value
+                            renderCoverPreview()
+                        } label: {
+                            Text(value.label)
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundStyle(coverTone == value ? Color(hex: "111111") : .white)
+                                .frame(maxWidth: .infinity, minHeight: 34)
+                                .background(Capsule().fill(coverTone == value ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.08))))
+                        }
+                        .buttonStyle(PressScaleStyle())
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+    }
+
+    // MARK: v58 §3 Where:行き先(前の ラウンドで 作った チップを 再利用)
+
+    private var whereStepView: some View {
+        VStack(spacing: 18) {
+            Spacer(minLength: 0)
+            Text(verbatim: "Where").font(LF.serif(26)).foregroundStyle(.white)
+            nameField
+            destinationChips
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: v58 §3 When:12日ぶんの 候補(6列×2段)。はじまり → おわりの 順に 押す
+
+    private var whenStepView: some View {
+        VStack(spacing: 18) {
+            Spacer(minLength: 0)
+            HStack {
+                Text(verbatim: "When").font(LF.serif(26)).foregroundStyle(.white)
+                Spacer()
+                if let days = tripDays {
+                    Text(verbatim: "\(days) DAYS")
+                        .font(Darkroom.mono(10)).tracking(0.15 * 10)
+                        .foregroundStyle(LaterColor.lime)
+                }
+            }
+            .padding(.horizontal, 24)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+                ForEach(0..<12, id: \.self) { i in dayCell(i) }
+            }
+            .padding(.horizontal, 24)
+            Text(verbatim: tripRangeText ?? "はじまりの日 → おわりの日 の 順に おしてください")
+                .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var tripDays: Int? {
+        guard let s = tripStartDay, let e = tripEndDay else { return nil }
+        return e - s + 1
+    }
+
+    private var tripRangeText: String? {
+        guard let s = tripStartDay, let e = tripEndDay else { return nil }
+        let cal = Calendar.current
+        let start = cal.date(byAdding: .day, value: s, to: Date()) ?? Date()
+        let end = cal.date(byAdding: .day, value: e, to: Date()) ?? Date()
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        return "FROM \(f.string(from: start)) → TO \(f.string(from: end))"
+    }
+
+    private func dayCell(_ i: Int) -> some View {
+        let date = Calendar.current.date(byAdding: .day, value: i, to: Date()) ?? Date()
+        let f = DateFormatter()
+        f.dateFormat = "d"
+        let inRange = tripStartDay != nil && tripEndDay != nil && i >= tripStartDay! && i <= tripEndDay!
+        let isEnd = i == tripStartDay || i == tripEndDay
+        return Button {
+            if tripStartDay == nil || (tripStartDay != nil && tripEndDay != nil) {
+                Haptics.play(.tick)
+                tripStartDay = i
+                tripEndDay = nil
+            } else if i >= tripStartDay! {
+                Haptics.play(.click)
+                tripEndDay = i
+            } else {
+                Haptics.play(.tick)
+                tripStartDay = i
+            }
+        } label: {
+            Text(verbatim: f.string(from: date))
+                .font(.system(size: 14, weight: isEnd ? .bold : .medium, design: .monospaced))
+                .foregroundStyle(isEnd ? Color(hex: "111111") : (inRange ? Color(hex: "111111") : .white.opacity(0.8)))
+                .frame(maxWidth: .infinity, minHeight: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(isEnd ? LaterColor.lime : (inRange ? LaterColor.lime.opacity(0.35) : .white.opacity(0.08)))
+                )
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityLabel(Text(verbatim: f.string(from: date)))
+    }
+
+    // MARK: v58 §3 Who:既存の 友だち選び(friendsRow)を そのまま 再利用
+
+    private var whoStepView: some View {
+        VStack(spacing: 18) {
+            Spacer(minLength: 0)
+            Text(verbatim: "Who").font(LF.serif(26)).foregroundStyle(.white)
+            friendsRow
+            Spacer(minLength: 0)
+        }
+    }
+
+    // MARK: 下に 固定の Create trip →
+
+    private var wizardBottomBar: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                if wizardStep != .cover {
+                    Button {
+                        Haptics.play(.tick)
+                        withAnimation { wizardStep = WizardStep(rawValue: wizardStep.rawValue - 1) ?? .cover }
+                    } label: {
+                        Image(systemName: "chevron.left").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 58, height: 58)
+                            .background(Circle().fill(.white.opacity(0.08)))
+                    }
+                    .buttonStyle(PressScaleStyle())
+                }
+                if wizardStep != .who {
+                    Button {
+                        Haptics.play(.sel)
+                        withAnimation { wizardStep = WizardStep(rawValue: wizardStep.rawValue + 1) ?? .who }
+                    } label: {
+                        Text(verbatim: "Next →")
+                            .font(LF.inter(800, 17))
+                            .foregroundStyle(Color(hex: "111111"))
+                            .frame(maxWidth: .infinity, minHeight: 58)
+                            .background(Capsule().fill(Color(hex: "F5F0E8")))
+                    }
+                    .buttonStyle(PressScaleStyle())
+                } else if existingGroup != nil {
+                    Button(action: saveChanges) {
+                        Text(verbatim: "Save changes")
+                            .font(LF.inter(800, 17))
+                            .foregroundStyle(canSaveSettings ? Color(hex: "111111") : .white.opacity(0.4))
+                            .frame(maxWidth: .infinity, minHeight: 58)
+                            .background(Capsule().fill(canSaveSettings ? Color(hex: "F5F0E8") : Color(hex: "1E1E1F")))
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .disabled(!canSaveSettings)
+                } else {
+                    Button(action: submit) {
+                        Text(verbatim: "Create trip →")
+                            .font(LF.inter(800, 17))
+                            .foregroundStyle(canCreate ? Color(hex: "111111") : .white.opacity(0.4))
+                            .frame(maxWidth: .infinity, minHeight: 58)
+                            .background(Capsule().fill(canCreate ? Color(hex: "F5F0E8") : Color(hex: "1E1E1F")))
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .disabled(!canCreate)
+                }
+            }
+            if existingGroup != nil { endOrLeaveRow }
+        }
+        .padding(.horizontal, 18).padding(.bottom, 10).padding(.top, 8)
+        .background(.ultraThinMaterial)
+    }
+
+    /// v58 §5:作成者だけ「Trip をおわる」(赤・2回押しで確定)、それ以外は「ぬける」だけ。
+    /// 本物の 削除/離脱処理は 持たない。既存の 呼び出し側(leaveSnapshot など)に まかせる。
+    private var isHost: Bool {
+        guard let existingGroup else { return false }
+        return GroupLeaveService.isHost(existingGroup, currentUserRecordName: CloudKitManager.current?.currentUserRecordName)
+    }
+
+    private var endOrLeaveRow: some View {
+        Group {
+            if isHost {
+                Button {
+                    if endConfirmArmed {
+                        Haptics.play(.warn)
+                        onEndTripRequested()
+                    } else {
+                        Haptics.play(.click)
+                        endConfirmArmed = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { endConfirmArmed = false }
+                    }
+                } label: {
+                    Text(verbatim: endConfirmArmed ? "もういちど押すと おわります" : "Trip をおわる")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(LaterColor.red)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Capsule().strokeBorder(LaterColor.red.opacity(endConfirmArmed ? 0.9 : 0.4), lineWidth: 1.5))
+                }
+                .buttonStyle(PressScaleStyle())
+                .animation(.easeInOut(duration: 0.2), value: endConfirmArmed)
+            } else {
+                Button {
+                    Haptics.play(.click)
+                    onLeaveRequested()
+                } label: {
+                    Text(verbatim: "ぬける")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(LaterColor.red)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(Capsule().strokeBorder(LaterColor.red.opacity(0.4), lineWidth: 1.5))
+                }
+                .buttonStyle(PressScaleStyle())
+            }
+        }
+    }
+
+    /// v58 §5:Save changes。裏側は 既存の GroupSettingsService.save(なまえ・表紙)を 呼ぶだけ
+    /// v58 §3 Cover:旧 設定画面(GroupSettingsView)と 同じ ドラッグの 式(円板の 大きさに 対する 割合)。
+    /// 円の 直径ぶんの 定数(176 × 0.74)の かわりに、Cover の 表示幅(124)を 使う。
+    private var coverDragGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                if coverDragBase == nil { coverDragBase = coverFaceOffset }
+                guard let base = coverDragBase else { return }
+                let disc = 124 * coverFaceScale
+                coverFaceOffset = FaceImageRenderer.clampOffset(
+                    CGSize(width: base.width + value.translation.width / disc, height: base.height + value.translation.height / disc),
+                    scale: coverFaceScale)
+                renderCoverPreview()
+            }
+            .onEnded { _ in coverDragBase = nil }
+    }
+
+    private func renderCoverPreview() {
+        guard let coverSourceImage else { return }
+        coverImageData = FaceImageRenderer.render(coverSourceImage, scale: coverFaceScale, offset: coverFaceOffset, tone: coverTone)?.jpegData(compressionQuality: 0.85)
+    }
+
+    private func saveChanges() {
+        guard let existingGroup, canSaveSettings else { return }
+        Haptics.play(.click)
+        isCreating = true
+        Task { @MainActor in
+            do {
+                try await GroupSettingsService.save(group: existingGroup, name: finalName, iconData: coverImageData, colorIndex: nil, context: modelContext)
+                isCreating = false
+                onCreated(finalName)
+                onClose()
+            } catch {
+                isCreating = false
+                finishFailure(Failure(kind: .save, detail: "\(error)"))
+            }
+        }
+    }
+
+    /// つくっている間:パスが 沈んで 浮く(印刷の 感じ)
+    private var creatingOverlay: some View {
+        VStack(spacing: 16) {
+            ProgressView().tint(.white).scaleEffect(1.3)
+            Text(verbatim: "Printing your pass…")
+                .font(Darkroom.mono(10)).tracking(0.12 * 10)
+                .foregroundStyle(.white.opacity(0.7))
+        }
+    }
+
+    /// v58 §4:できた → QR パス(前の ラウンドで 作った InviteQROverlay を そのまま 使う)
+    @ViewBuilder
+    private var doneBody: some View {
+        if let createdGroup, let url = createdShareURL {
+            InviteQROverlay(group: createdGroup, url: url, auraIndex: createdGroup.colorIndex, memberCount: picked.count + 1, onClose: closeTapped)
+        } else {
+            // 保険:リンクが まだ ない(通常は ここに 来ない。create() が .failed に 回す)
+            ProgressView().tint(.white)
+        }
+    }
+
+    /// うまく いかなかった:かんたんな やりなおし画面(見た目は この ラウンドの 対象外)
+    private var failedBody: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 30)).foregroundStyle(.white.opacity(0.6))
+            Text(verbatim: "うまく つくれませんでした")
+                .font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+            if let failure {
+                Text(verbatim: failure.detail).font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
+                    .multilineTextAlignment(.center).padding(.horizontal, 30).lineLimit(3)
+            }
+            Button(action: retryTapped) {
+                Text(verbatim: "もういちど")
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Color(hex: "111111"))
+                    .frame(width: 180, height: 50)
+                    .background(Capsule().fill(Color(hex: "F5F0E8")))
+            }
+            .buttonStyle(PressScaleStyle())
+            Button(action: closeTapped) {
+                Text(verbatim: "とじる").font(.system(size: 14, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+            }
+            .padding(.top, 4)
+        }
     }
 
     // MARK: まんなか(アバター + 席)
@@ -368,8 +790,10 @@ struct NewGroupFlowView: View {
             glow: glow,
             glowLoop: glowLoop,
             animates: animates,
-            ink: colors.ink,
-            seatLine: colors.sub
+            // v33/v43:できた画面は いつも 黒 × フジの緑(昼夜に よらない)
+            isDone: phase == .done,
+            ink: phase == .done ? .white : colors.ink,
+            seatLine: phase == .done ? .white : colors.sub
         )
         .scaleEffect(scale)
         .frame(height: GroupCreateStage.box * scale)
@@ -387,7 +811,7 @@ struct NewGroupFlowView: View {
             return list
         case .done:
             let joined = Set(createdGroup?.members.compactMap(\.cloudKitUserRecordName) ?? [])
-            var list: [GroupCreateSeat] = [.host(initial: GroupCreateName.initial(shownName), colors: GroupCreateBlobPalette.colors(for: name))]
+            var list: [GroupCreateSeat] = [.me]
             for id in invited {
                 guard let friend = friends.first(where: { $0.id == id }) else { continue }
                 list.append(.friend(initial: friend.initial, colors: friend.colors, pending: !joined.contains(id)))
@@ -420,6 +844,12 @@ struct NewGroupFlowView: View {
             nameField
                 .padding(.horizontal, 24)
                 .padding(.top, keyboardUp ? 10 : 16)
+
+            // v58 §3「Where」の近似:旅さきの定番候補(押すと その場で なまえ欄に 入る)
+            if !keyboardUp || isNameFocused {
+                destinationChips
+                    .padding(.top, 10)
+            }
 
             seedChips
                 .padding(.top, 14)
@@ -493,6 +923,37 @@ struct NewGroupFlowView: View {
         }
     }
 
+    /// v58 §3「Where」の近似:定番の 旅さき 6つ。押すと なまえ欄に 入る(裏の 保存処理は 今の まま)
+    /// v58 §3「Where」:押すと 英語名(Kyoto など)が パスに 入る(チップ自体は 日本語の まま)
+    private static let destinations: [(ja: String, en: String)] = [
+        ("京都", "Kyoto"), ("沖縄", "Okinawa"), ("修学旅行", "School Trip"),
+        ("卒業旅行", "Grad Trip"), ("合宿", "Camp"), ("ライブ遠征", "Live Trip"),
+    ]
+
+    private var destinationChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Self.destinations, id: \.ja) { place in
+                    Button {
+                        Haptics.play(.sel)
+                        name = place.en
+                    } label: {
+                        Text(verbatim: place.ja)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(name == place.en ? Color(hex: "111111") : colors.ink)
+                            .padding(.horizontal, 13)
+                            .frame(minHeight: 32)
+                            .background(Capsule().fill(name == place.en ? LaterColor.lime : colors.field))
+                            .overlay(Capsule().strokeBorder(colors.line.opacity(0.7), lineWidth: name == place.en ? 0 : 1))
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .accessibilityLabel("行き先の候補、\(place.ja)")
+                }
+            }
+            .padding(.horizontal, 24)
+        }
+    }
+
     private var friendsRow: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -556,26 +1017,48 @@ struct NewGroupFlowView: View {
 
     // MARK: 3. できた画面
 
+    /// v33/v43/v44/v45/v46:できた画面(黒 × フジの緑。KEY が 主役)
     private var doneContent: some View {
         VStack(spacing: 0) {
-            Text(invited.isEmpty ? "できました" : "おくりました")
-                .font(.system(size: 34, weight: .heavy))
-                .tracking(-0.03 * 34)
-                .foregroundStyle(colors.ink)
-                .padding(.top, 14)
+            Text(verbatim: invited.isEmpty ? "CREATED" : "SENT")
+                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                .tracking(0.24 * 10.5)
+                .foregroundStyle(Darkroom.orange)
+                .padding(.top, 10)
+            Text(invited.isEmpty ? shownName : "おくりました")
+                .font(Darkroom.title(invited.isEmpty ? shownName : "おくりました", size: 38))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
+                .padding(.top, 8)
+                .padding(.horizontal, 24)
                 .accessibilityAddTraits(.isHeader)
             if !invited.isEmpty {
                 Text("「入る」で なかまに なります")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(colors.sub)
+                    .foregroundStyle(.white.opacity(0.6))
                     .padding(.top, 6)
                 invitedTags
                     .padding(.top, 16)
             }
-            linkCapsule
-                .padding(.top, invited.isEmpty ? 18 : 16)
+            keySection
+                .padding(.top, 26)
+            GroupActionTiles(friendsEmpty: friends.isEmpty, onAdd: addTapped, onLink: sendTapped, onCopy: copyKeyTapped)
+                .padding(.top, 22)
+                .padding(.horizontal, 20)
         }
         .transition(.opacity)
+    }
+
+    /// 合言葉(通信ずみなら KEY、まだなら 小さく 待つ)
+    @ViewBuilder
+    private var keySection: some View {
+        if let code = passphrase {
+            GroupKeyReveal(code: code, onCopy: copyKeyTapped)
+        } else {
+            ProgressView().tint(.white.opacity(0.6)).padding(.vertical, 24)
+        }
     }
 
     /// えらんだ 友だちの 札(「承認まち」。入ったら 消える)
@@ -587,39 +1070,20 @@ struct NewGroupFlowView: View {
                 let friend = friends.first { $0.id == id }
                 let waiting = !joined.contains(id)
                 HStack(spacing: 5) {
-                    Circle().fill(LinearGradient(colors: friend?.colors ?? [colors.sub, colors.sub], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    Circle().fill(LinearGradient(colors: friend?.colors ?? [Darkroom.weak, Darkroom.weak], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 14, height: 14)
                     Text(friend?.name ?? "ともだち").font(.system(size: 12, weight: .bold)).lineLimit(1)
-                    Text(waiting ? "承認まち" : "入った").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(colors.sub)
+                    Text(waiting ? "承認まち" : "入った").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
                 }
-                .foregroundStyle(colors.ink)
+                .foregroundStyle(.white)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Capsule().fill(colors.field))
-                .overlay(Capsule().strokeBorder(colors.line, style: StrokeStyle(lineWidth: 1, dash: waiting ? [3, 3] : [])))
+                .background(Capsule().fill(Darkroom.card))
+                .overlay(Capsule().strokeBorder(.white.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: waiting ? [3, 3] : [])))
                 .accessibilityElement(children: .combine)
             }
           }
           .padding(.horizontal, 24)
           .padding(.vertical, 2)
-        }
-    }
-
-    /// リンクは 1行の 小さな 丸い カプセル(短く 省略。招待文の 全文は 出さない)
-    @ViewBuilder
-    private var linkCapsule: some View {
-        if joinLink != nil {
-            HStack(spacing: 6) {
-                Image(systemName: "link").font(.system(size: 11, weight: .bold))
-                Text(GroupCreateName.shortLink(createdShareURL))
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                    .lineLimit(1)
-            }
-            .foregroundStyle(colors.sub)
-            .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(Capsule().fill(colors.field))
-            .overlay(Capsule().strokeBorder(colors.line.opacity(0.7), lineWidth: 1))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("招待リンク")
         }
     }
 
@@ -670,15 +1134,7 @@ struct NewGroupFlowView: View {
                     .disabled(isCreating)
                     .accessibilityHint(nameStatus == .ok ? "グループを つくります" : "なまえを いれると 押せます")
             case .done:
-                if joinLink != nil {
-                    HStack(spacing: 10) {
-                        primaryButton(invited.isEmpty ? "リンクを おくる" : "リンクでも よぶ", enabled: true) { sendTapped() }
-                            .accessibilityHint("共有シートを ひらきます")
-                        secondaryButton(copied ? "コピーした" : "コピー") { copyTapped() }
-                            .frame(width: 112)
-                            .accessibilityHint("招待リンクを コピーします")
-                    }
-                }
+                // v43:「リンクをおくる」「コピー」は Add / Link / Copy の タイルに 統合ずみ
                 laterButton
             case .failed:
                 primaryButton(retrying ? "やりなおしています…" : "もういちど", enabled: !retrying) { retryTapped() }
@@ -692,16 +1148,19 @@ struct NewGroupFlowView: View {
         .padding(.bottom, keyboardUp ? 8 : 12)
         // 下の ボタンの うしろに、背景色を うすく しく(スクロールした 中身が 重ならない)
         .background(
-            LinearGradient(colors: [colors.bg.opacity(0), colors.bg.opacity(0.92), colors.bg], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))
+            LinearGradient(colors: [bottomBg.opacity(0), bottomBg.opacity(0.92), bottomBg], startPoint: .top, endPoint: .init(x: 0.5, y: 0.35))
                 .ignoresSafeArea()
         )
     }
+
+    /// できた画面は 黒、それ以外は 昼夜の 背景
+    private var bottomBg: Color { phase == .done ? Color(hex: "0A0A0B") : colors.bg }
 
     private var laterButton: some View {
         Button(action: closeTapped) {
             Text("あとで")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(colors.sub)
+                .foregroundStyle(phase == .done ? .white.opacity(0.6) : colors.sub)
                 .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.plain)
@@ -722,31 +1181,28 @@ struct NewGroupFlowView: View {
         .buttonStyle(PressScaleStyle(scale: 0.97))
     }
 
-    private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(colors.ink)
-                .frame(maxWidth: .infinity, minHeight: 56)
-                .background(Capsule().fill(colors.field))
-                .overlay(Capsule().strokeBorder(colors.line, lineWidth: GroupCreateColors.lineWidth))
-                .contentTransition(.opacity)
-        }
-        .buttonStyle(PressScaleStyle(scale: 0.97))
-    }
-
     // MARK: 動き
 
     private func appear() {
         haptics.prepare()
         appearedAt = Date()
         if let initialName, name.isEmpty { name = GroupCreateName.clean(initialName) }
+        if let existingGroup {
+            // v58 §5:TRIP SETTINGS。今の 値を 初期値に 入れる(メンバーは 見た目の プレフィルだけ。
+            // この画面に メンバーを 入れかえる 保存先は 無いので、Who ステップの 選び なおしは 保存されない)。
+            name = existingGroup.name
+            coverImageData = existingGroup.iconImageData
+            if let iconData = existingGroup.iconImageData { coverSourceImage = UIImage(data: iconData) }
+            let memberIDs = Set(existingGroup.members.compactMap(\.cloudKitUserRecordName))
+            picked = friends.filter { memberIDs.contains($0.id) }.map(\.id)
+        }
         if let preview {
             applyPreview(preview)
             return
         }
         Haptics.play(.soft)
-        // アニメが 落ち着いてから(0.7秒)キーボードを 出す
+        // アニメが 落ち着いてから(0.7秒)キーボードを 出す(TRIP SETTINGS では 自動で 出さない)
+        guard existingGroup == nil else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             guard phase == .name, !UIAccessibility.isVoiceOverRunning else { return }
             isNameFocused = true
@@ -798,19 +1254,23 @@ struct NewGroupFlowView: View {
         onClose()
     }
 
-    private func copyTapped() {
-        guard joinLink != nil else { return }
+    /// v43/v44:Copy・KEY の タップ → KEY だけ(「#peach408」)を コピー
+    private func copyKeyTapped() {
+        guard let code = passphrase else { return }
         Haptics.play(.click)
-        UIPasteboard.general.string = shareMessage
-        withAnimation(.easeOut(duration: 0.15)) { copied = true }
-        show("招待リンクを コピーしました")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { withAnimation(.easeOut(duration: 0.2)) { copied = false } }
+        UIPasteboard.general.string = "#\(code)"
+        show("合言葉を コピーしました")
     }
 
     private func sendTapped() {
         guard joinLink != nil else { return }
         Haptics.play(.click)
         showingShare = true
+    }
+
+    private func addTapped() {
+        Haptics.play(.pop)
+        showingAddFriends = true
     }
 
     private func show(_ text: String) {
@@ -944,6 +1404,25 @@ struct NewGroupFlowView: View {
         }
     }
 
+    /// v43:できた あとから「Add」で ともだちを よぶ(今の GroupInviteCard の 流れを そのまま 使う)
+    @MainActor
+    private func sendAdditionalInvites(_ ids: [String]) async {
+        guard let group = createdGroup, !ids.isEmpty, !addSending else { return }
+        addSending = true
+        let ok = await FriendCloud.sendInvites(to: ids, groupName: group.name, memberCount: group.members.count, shareURL: inviteLink, myName: currentUser?.name ?? "")
+        addSending = false
+        if ok {
+            invited += ids.filter { !invited.contains($0) }
+            GroupInviteSentStore.add(ids, to: group.id)
+            Haptics.play(.success)
+            showingAddFriends = false
+            show("\(ids.count)人に 招待カードを おくりました")
+        } else {
+            Haptics.play(.warn)
+            show("招待カードを おくれませんでした")
+        }
+    }
+
     // MARK: 作成(保存 → リンク → 招待カード。順番も 呼ぶ 関数も 今までと 同じ)
 
     private func create() {
@@ -978,6 +1457,8 @@ struct NewGroupFlowView: View {
         group.colorIndex = GroupPalette.index(forName: finalName)
         group.faceStyle = GroupFaceStyle.aura
         group.showsInitial = true
+        // v58 §3 Cover:選んだ 表紙(既存の iconImageData フィールド。新しい保存先は 作らない)
+        if let coverImageData { group.iconImageData = coverImageData }
         group.joinedAt = Date()
         _ = group.addMember(user)
         modelContext.insert(group)
@@ -1050,7 +1531,10 @@ struct NewGroupFlowView: View {
             glow = 0.8
         case .doneLink, .doneFriends:
             phase = .done
+            // v58 §4:doneBody は createdGroup を 読むので、見た目の 確認用に 作っておく(本物の 作成は しない)
+            createdGroup = LaterGroup(name: finalName.isEmpty ? "Kyoto" : finalName)
             createdShareURL = URL(string: "https://www.icloud.com/share/0aBcDeFgHiJkLmNoPq")
+            passphrase = "peach408"
             if preview == .doneFriends { invited = Array(friends.prefix(3).map(\.id)) }
         case .failed:
             phase = .failed
@@ -1097,7 +1581,8 @@ private struct GroupCreateBackdrop: View {
 enum GroupCreateSeat: Equatable {
     case empty
     case friend(initial: String, colors: [Color], pending: Bool)
-    case host(initial: String, colors: [Color])
+    /// v33/v43:ホスト本人の席(名前の1文字ではなく、白い丸にイタリック「you」+ 緑の輪)
+    case me
 }
 
 struct GroupCreateStage: View {
@@ -1114,6 +1599,8 @@ struct GroupCreateStage: View {
     /// 保存を 待つ間、光を くりかえす
     let glowLoop: Bool
     let animates: Bool
+    /// v33/v43:できた画面(黒 × フジの緑 × 白赤金の3本線)
+    var isDone: Bool = false
     let ink: Color
     let seatLine: Color
 
@@ -1141,23 +1628,34 @@ struct GroupCreateStage: View {
         }
     }
 
-    /// 虹色の リング(14秒で 1周)
+    /// 虹色の リング(14秒で 1周)。できた画面は 白・赤・白・金の 3本線
     private func ring(_ t: Double) -> some View {
-        Circle()
-            .strokeBorder(
-                AngularGradient(colors: [Color(hex: "FF6A5F"), Color(hex: "FFC24B"), Color(hex: "7BE07F"), Color(hex: "5FC8FF"), Color(hex: "9A7CFF"), Color(hex: "FF6FB5"), Color(hex: "FF6A5F")], center: .center),
-                lineWidth: 4
-            )
-            .frame(width: Self.avatar + 16, height: Self.avatar + 16)
-            .rotationEffect(.degrees(t / 14 * 360))
+        Group {
+            if isDone {
+                Circle()
+                    .strokeBorder(
+                        AngularGradient(colors: [.white, Color(hex: "D8262C"), .white, Color(hex: "C8A46A"), .white], center: .center),
+                        lineWidth: 4
+                    )
+            } else {
+                Circle()
+                    .strokeBorder(
+                        AngularGradient(colors: [Color(hex: "FF6A5F"), Color(hex: "FFC24B"), Color(hex: "7BE07F"), Color(hex: "5FC8FF"), Color(hex: "9A7CFF"), Color(hex: "FF6FB5"), Color(hex: "FF6A5F")], center: .center),
+                        lineWidth: 4
+                    )
+            }
+        }
+        .frame(width: Self.avatar + 16, height: Self.avatar + 16)
+        .rotationEffect(.degrees(t / 14 * 360))
     }
 
     private func avatarFace(_ t: Double) -> some View {
         let loop = glowLoop ? 0.45 + 0.4 * (0.5 - 0.5 * cos(t * 2 * .pi / 1.1)) : 0
         let light = max(glow, loop)
+        let faceColors = isDone ? [Darkroom.orange, Color(hex: "1F9236")] : avatarColors
         return ZStack {
             Circle()
-                .fill(LinearGradient(colors: avatarColors, startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(LinearGradient(colors: faceColors, startPoint: .topLeading, endPoint: .bottomTrailing))
             Text(initial.isEmpty ? "?" : initial)
                 .font(.system(size: 54, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
@@ -1174,7 +1672,7 @@ struct GroupCreateStage: View {
         }
         .frame(width: Self.avatar, height: Self.avatar)
         .overlay(Circle().fill(.white).opacity(light * 0.55).blendMode(.plusLighter))
-        .shadow(color: avatarColors[0].opacity(0.35 + light * 0.5), radius: 18 + light * 30)
+        .shadow(color: faceColors[0].opacity(0.35 + light * 0.5), radius: 18 + light * 30)
         .scaleEffect(1 + 0.06 * light)
     }
 
@@ -1201,9 +1699,15 @@ struct GroupCreateStage: View {
             seatFace(initial: initial, colors: colors)
                 .overlay(Circle().strokeBorder(ink.opacity(0.75), style: StrokeStyle(lineWidth: 2, dash: pending ? [3, 3] : [])).padding(-3))
                 .transition(.scale(scale: 0.2).combined(with: .opacity))
-        case let .host(initial, colors):
-            seatFace(initial: initial, colors: colors)
-                .overlay(Circle().strokeBorder(ink.opacity(0.75), lineWidth: 2).padding(-3))
+        case .me:
+            ZStack {
+                Circle().fill(.white)
+                Text(verbatim: "you")
+                    .font(.custom("InstrumentSerif-Italic", size: 12))
+                    .foregroundStyle(Color(hex: "111111"))
+            }
+            .frame(width: Self.seat, height: Self.seat)
+            .overlay(Circle().strokeBorder(isDone ? Darkroom.orange : ink.opacity(0.75), lineWidth: 2).padding(-3))
         }
     }
 
@@ -1269,6 +1773,236 @@ private struct GroupConfetti: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - v44/v45/v46 KEY(文字だけが 暗やみに 浮かぶ。1文字ずつ 現像されるように)
+
+/// 合言葉の 見せ方。code は「peach408」のような 英語+数字(ハイフンなし)。
+/// 古い 形(hikari-2741)が 渡された ときは、そのまま 表示する(作り方は 変えない)
+private struct GroupKeyReveal: View {
+    let code: String
+    let onCopy: () -> Void
+
+    @State private var revealedCount = 0
+    @State private var flashCopied = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var characters: [Character] { Array(code) }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Rectangle().fill(.white.opacity(0.15)).frame(width: 22, height: 1)
+                Text(verbatim: "— K E Y —")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(0.2 * 10)
+                    .foregroundStyle(Color(hex: "6E6E75"))
+                Rectangle().fill(.white.opacity(0.15)).frame(width: 22, height: 1)
+            }
+            ZStack {
+                Ellipse()
+                    .fill(RadialGradient(colors: [Darkroom.paleGreen.opacity(0.32), .clear], center: .center, startRadius: 0, endRadius: 130))
+                    .frame(width: 260, height: 110)
+                    .allowsHitTesting(false)
+                HStack(spacing: 1) {
+                    Text(verbatim: "#")
+                        .font(.custom("InstrumentSerif-Italic", size: 32))
+                        .foregroundStyle(Darkroom.orange)
+                        .opacity(revealedCount > 0 ? 1 : 0)
+                        .blur(radius: revealedCount > 0 ? 0 : 6)
+                    ForEach(Array(characters.enumerated()), id: \.offset) { index, ch in
+                        Text(String(ch))
+                            .font(.system(size: 32, weight: .heavy, design: .rounded))
+                            .foregroundStyle(ch.isNumber ? Darkroom.paleGreen : .white)
+                            .opacity(revealedCount > index + 1 ? 1 : 0)
+                            .blur(radius: revealedCount > index + 1 ? 0 : 6)
+                    }
+                }
+                .tracking(1)
+                .opacity(flashCopied ? 0.55 : 1)
+            }
+            Text(verbatim: flashCopied ? "COPIED" : "TAP TO COPY")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(0.18 * 10)
+                .foregroundStyle(flashCopied ? Darkroom.orange : Color(hex: "6E6E75"))
+                .contentTransition(.opacity)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard revealedCount > characters.count else { return }
+            Haptics.play(.click)
+            onCopy()
+            withAnimation(.easeOut(duration: 0.2)) { flashCopied = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { withAnimation(.easeOut(duration: 0.2)) { flashCopied = false } }
+        }
+        .onAppear { reveal() }
+        .onChange(of: code) { _, _ in revealedCount = 0; reveal() }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("合言葉")
+        .accessibilityValue("ハッシュタグ #\(code)")
+        .accessibilityHint("タップで コピー")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// 1文字ずつ ぼかし → くっきり(110msおき)。そのたびに ごく軽い バイブ
+    private func reveal() {
+        guard revealedCount == 0 else { return }
+        if reduceMotion { revealedCount = characters.count + 1; return }
+        for i in 0...characters.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.11) {
+                revealedCount = i + 1
+                Haptics.play(.tick, gap: 0.05)
+            }
+        }
+    }
+}
+
+// MARK: - v43 Add / Link / Copy(3つの タイル)
+
+private struct GroupActionTiles: View {
+    let friendsEmpty: Bool
+    let onAdd: () -> Void
+    let onLink: () -> Void
+    let onCopy: () -> Void
+
+    @State private var copied = false
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                tile(icon: "person.badge.plus", title: "Add", subtitle: "ともだち", primary: false, action: onAdd)
+                tile(icon: "square.and.arrow.up", title: "Link", subtitle: "共有する", primary: true, action: onLink)
+                tile(icon: "doc.on.doc", title: copied ? "Copied" : "Copy", subtitle: "KEY だけ", primary: false) {
+                    onCopy()
+                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { withAnimation(.easeOut(duration: 0.2)) { copied = false } }
+                }
+            }
+            if friendsEmpty {
+                Text("まだ ともだちが いません ・ Link で よべます")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Color(hex: "8E8E93"))
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    private func tile(icon: String, title: String, subtitle: String, primary: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 18, weight: .semibold))
+                Text(verbatim: title)
+                    .font(.custom("InstrumentSerif-Regular", size: 17))
+                    .contentTransition(.opacity)
+                Text(verbatim: subtitle)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(primary ? .white.opacity(0.85) : Color(hex: "8E8E93"))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 92)
+            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(primary ? Darkroom.orange : Darkroom.card))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.96))
+        .accessibilityLabel("\(title)。\(subtitle)")
+    }
+}
+
+// MARK: - v43 Add(できた あとから ともだちを えらんで 招待カードを おくる。GroupInviteCard の 流れを そのまま 使う)
+
+private struct GroupAddFriendsSheet: View {
+    let friends: [GroupCreateFriend]
+    let sending: Bool
+    let onSend: ([String]) -> Void
+    let onClose: () -> Void
+
+    @State private var picked: Set<String> = []
+    @Environment(\.palette) private var palette
+    private var colors: GroupCreateColors { GroupCreateColors(night: palette.isNight) }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 18) {
+                if friends.isEmpty {
+                    Spacer()
+                    Text("まだ ともだちが いません。あとで Link で よべます")
+                        .font(.system(size: 14))
+                        .foregroundStyle(colors.sub)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76))], spacing: 16) {
+                            ForEach(friends) { friend in friendCell(friend) }
+                        }
+                        .padding(20)
+                    }
+                    Button {
+                        Haptics.play(.click)
+                        onSend(Array(picked))
+                    } label: {
+                        Text(picked.isEmpty ? "えらんで おくる" : "\(picked.count)人に おくる")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(picked.isEmpty ? colors.disabledText : colors.primaryText)
+                            .frame(maxWidth: .infinity, minHeight: 54)
+                            .background(Capsule().fill(picked.isEmpty ? colors.disabledBg : colors.primaryBg))
+                    }
+                    .buttonStyle(PressScaleStyle(scale: 0.97))
+                    .disabled(picked.isEmpty || sending)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+                }
+            }
+            .background(colors.bg.ignoresSafeArea())
+            .navigationTitle("ともだちを よぶ")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("とじる", action: onClose)
+                }
+            }
+        }
+        .preferredColorScheme(colors.night ? .dark : .light)
+        .interactiveDismissDisabled(sending)
+    }
+
+    private func friendCell(_ friend: GroupCreateFriend) -> some View {
+        let on = picked.contains(friend.id)
+        return Button {
+            if on {
+                Haptics.play(.tick)
+                picked.remove(friend.id)
+            } else {
+                Haptics.play(.pop)
+                picked.insert(friend.id)
+            }
+        } label: {
+            VStack(spacing: 6) {
+                LayerAvatar(data: friend.avatarData, seed: friend.seed, name: friend.name)
+                    .frame(width: 52, height: 52)
+                    .padding(3)
+                    .overlay(Circle().strokeBorder(on ? colors.ink : Color.clear, lineWidth: 2.5))
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .heavy))
+                            .foregroundStyle(colors.primaryText)
+                            .frame(width: 20, height: 20)
+                            .background(Circle().fill(colors.primaryBg))
+                            .scaleEffect(on ? 1 : 0.01)
+                            .opacity(on ? 1 : 0)
+                            .animation(.spring(response: 0.35, dampingFraction: 0.55), value: on)
+                    }
+                Text(friend.name)
+                    .font(.system(size: 11.5, weight: .bold))
+                    .foregroundStyle(colors.ink)
+                    .lineLimit(1)
+            }
+        }
+        .buttonStyle(SquishButtonStyle())
+        .accessibilityLabel(friend.name)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 
