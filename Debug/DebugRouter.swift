@@ -92,6 +92,11 @@ struct HomeV64Preview: View {
         input.spotlight = d.bool(forKey: "debugVeil")
         input.openLiveAtStart = d.bool(forKey: "debugLive")
         input.debugClock = d.bool(forKey: "debugLive") ? Calendar.current.date(bySettingHour: 11, minute: 54, second: 59, of: Date()) : nil
+        // v68 の 見本は 朝 7:33:50(ひらくまで 1:26:10)。-debugMock 1 で 見本と 同じ 時刻 ・ 同じ アバターに する
+        if d.bool(forKey: "debugMock") {
+            input.debugClock = Calendar.current.date(bySettingHour: 7, minute: 33, second: 50, of: Date())
+            input.avatar = SampleData.photo("e")
+        }
         input.avatarBadge = d.object(forKey: "debugBadge") == nil ? true : d.bool(forKey: "debugBadge")
         input.faces = SampleData.faces(count: d.integer(forKey: "debugFaces"))
         if d.bool(forKey: "debugBackdrop") {

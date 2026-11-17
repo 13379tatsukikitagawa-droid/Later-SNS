@@ -43,22 +43,10 @@ enum HVPage: Int, CaseIterable {
 
 // MARK: - ページの 型(背景・ヘッダー行・タイトル・CTA)
 
+/// v68:ページの カードは 透明。うしろの 写真は Home の 全面の 層(`HV68Backdrop`)が ページ位置で 入れかえる。
 struct HVPageBackdrop: View {
     let photo: UIImage?
-    var body: some View {
-        ZStack {
-            Color(hex: "0E0E0F")
-            if let photo {
-                Image(uiImage: V64Images.blurred(key: "pb\(ObjectIdentifier(photo).hashValue)", source: photo, maxPixel: 96, radius: 16)).resizable().scaledToFill().frame(width: 510, height: 700)
-                    .saturation(1.3).overlay(Color.black.opacity(0.6))
-            }
-            LinearGradient(stops: [.init(color: .black.opacity(0.25), location: 0), .init(color: .clear, location: 0.30), .init(color: .clear, location: 0.60), .init(color: .black.opacity(0.5), location: 1)], startPoint: .top, endPoint: .bottom)
-            HVGrain().opacity(0.16).blendMode(.overlay)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 1))
-        .background(HVCardShadow())
-    }
+    var body: some View { Color.clear }
 }
 
 /// 上の 行:丸い アイコン(40pt)+ `0N / 04` + 右に 状態
@@ -432,6 +420,7 @@ struct HVPager: View {
     @Binding var page: Int
     let width: CGFloat
     var onChange: (Int) -> Void = { _ in }
+    var onDrag: (CGFloat) -> Void = { _ in }
     @State private var drag: CGFloat = 0
     @State private var horizontal: Bool? = nil
     @State private var settling = false
@@ -470,10 +459,11 @@ struct HVPager: View {
                     var dx = v.translation.width
                     if (page == 0 && dx > 0) || (page == pages.count - 1 && dx < 0) { dx *= 0.35 }   // 端は ゴムのように 重く
                     drag = dx
+                    onDrag(dx)
                 }
                 .onEnded { v in
                     defer { horizontal = nil }
-                    guard horizontal == true else { drag = 0; return }
+                    guard horizontal == true else { drag = 0; onDrag(0); return }
                     let projected = v.translation.width + (v.predictedEndTranslation.width - v.translation.width) * 0.5
                     var next = Int((CGFloat(page) - projected / width).rounded())
                     next = max(page - 1, min(page + 1, next))                 // 1回で 動けるのは ±1ページ
@@ -481,7 +471,7 @@ struct HVPager: View {
                     if next == page && abs(v.translation.width) > 20 && (page == 0 || page == pages.count - 1) { Haptics.play(.soft) }
                     let changed = next != page
                     settling = true
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) { page = next; drag = 0 }
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) { page = next; drag = 0; onDrag(0) }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { settling = false }
                     if changed { onChange(next) }
                 }

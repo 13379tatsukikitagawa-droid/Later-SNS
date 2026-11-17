@@ -82,14 +82,22 @@ struct HomeV64View: View {
     @State private var entered = false
 
     @State private var scrollY: CGFloat = 0
+    @State private var dragVal: CGFloat = 0
+    @State private var compact = false
+    @State private var lastCompactTick = Date.distantPast
 
     var body: some View {
         GeometryReader { g in
             let f = HV.Frame(w: g.size.width, h: g.size.height)
-            let dark = Double(min(1, max(0, (scrollY - 160) / 260)))
+            let dark = 1.0
+            let pagePos = Double(page) - Double(dragVal / max(1, f.w - 20))
             ZStack(alignment: .topLeading) {
-                HV.bg
-                HVBackground(f: f).offset(y: -scrollY)
+                Color(hex: "0A0A0B")
+                // うしろの 全面の 写真(中身の 0.68倍の 速さ・スクロール 420 → 800 で うすく)
+                HV68Backdrop(input: input, pos: pagePos, focus: pressing || input.pressedFocus, entered: entered || reduceMotion, width: f.w)
+                    .offset(y: -scrollY * 0.68)
+                    .opacity(1 - Double(min(1, max(0, (scrollY - 420) / 380))))
+                HV68Dusk(width: f.w).offset(y: 692 + 2 * f.mid - scrollY)
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         ZStack(alignment: .topLeading) {
@@ -101,7 +109,11 @@ struct HomeV64View: View {
                         }
                         }
                     .onChange(of: wantsToday) { _, _ in withAnimation(.easeInOut(duration: 0.6)) { proxy.scrollTo("today", anchor: .top) } }
-                    .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, new in scrollY = new }
+                    .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, new in
+                        scrollY = new
+                        let want = new > 60
+                        if want != compact, Date().timeIntervalSince(lastCompactTick) > 0.3 { compact = want; lastCompactTick = Date(); Haptics.play(.tick) }
+                    }
                     .onAppear {
                         if let sec = input.debugSection, let y = Double(sec.split(separator: ":").last ?? "150") {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { proxy.scrollTo(String(sec.split(separator: ":").first ?? ""), anchor: UnitPoint(x: 0.5, y: y / Double(f.h))) }
@@ -114,7 +126,9 @@ struct HomeV64View: View {
                         .offset(y: -scrollY).opacity((1 - Double(min(1, scrollY / 420))) * (entered || reduceMotion ? 1 : 0))
                         .scaleEffect(entered || reduceMotion ? 1 : 1.06)
                         .allowsHitTesting(scrollY < 120)
-                    header(f, dark: dark)
+                    HV68Header(input: input, f: f, compact: compact, scrollY: scrollY, entered: entered || reduceMotion,
+                               onYesterday: actions.openYesterday, onProfile: actions.openProfile,
+                               onLive: { actions.openLive(); withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showLive = true } })
                 }
                 .modifier(HVVeil(on: input.spotlight || showLive, dim: input.spotlight))
                 .animation(.easeOut(duration: 0.35), value: input.spotlight)
@@ -152,7 +166,7 @@ struct HomeV64View: View {
             AnyView(HVYesterdayPage(input: input, cardW: cardW, actions: actions)),
         ]
         return ZStack(alignment: .topLeading) {
-            HVPager(pages: views, page: $page, width: cardW, onChange: { _ in Haptics.play(.sel) })
+            HVPager(pages: views, page: $page, width: cardW, onChange: { _ in Haptics.play(.sel) }, onDrag: { dragVal = $0 })
                 .frame(width: cardW, height: 508)
                 .offset(x: 10, y: top)
             // 目次(ページに 重ねる)
@@ -166,13 +180,6 @@ struct HomeV64View: View {
 
     private func cameraPage(_ f: HV.Frame, cardW: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
-            HVCardBackdrop(images: input.backdrop, focus: pressing || input.pressedFocus, done: input.done, night: input.isNight)
-                .frame(width: cardW, height: 508)
-                .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.16), lineWidth: 1))
-                .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.18), lineWidth: 1.5).mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.04))))
-                .background(HVCardShadow())
-
             HVStar().offset(x: 14, y: 12)
             HVSquiggle().offset(x: cardW - 60.3, y: 26.4)
 
@@ -743,10 +750,15 @@ struct HVMoon: View {
         let sub: String = input.done ? "あした 9:00 に ひらく" : "のこり \(input.remaining)こま"
         Button(action: action) {
             ZStack(alignment: .top) {
-                Circle().fill(Color(red: 14 / 255, green: 16 / 255, blue: 16 / 255).opacity(pressing ? 0.66 : 0.62))
+                Circle().fill(RadialGradient(stops: [.init(color: Color(red: 59 / 255, green: 211 / 255, blue: 90 / 255).opacity(0.34), location: 0),
+                                                     .init(color: Color(red: 22 / 255, green: 84 / 255, blue: 38 / 255).opacity(0.5), location: 0.26),
+                                                     .init(color: Color(red: 11 / 255, green: 30 / 255, blue: 16 / 255).opacity(pressing ? 0.76 : 0.82), location: 0.6),
+                                                     .init(color: Color(red: 11 / 255, green: 30 / 255, blue: 16 / 255).opacity(0.82), location: 1)],
+                                              center: UnitPoint(x: 0.5, y: 0), startRadius: 0, endRadius: d * 0.9))
                     .background(Circle().fill(.ultraThinMaterial))
                     .shadow(color: .black.opacity(0.45), radius: 23, y: -20)
-                HVRim(radius: d / 2, width: 1.4)
+                Circle().strokeBorder(Color(red: 160 / 255, green: 240 / 255, blue: 170 / 255).opacity(0.3), lineWidth: 1)
+                HVRim(radius: d / 2, width: 1.2).opacity(0.6)
                 VStack(spacing: 15) {
                     HStack(spacing: 9) {
                         if !input.done { HVCameraGlyph(width: 26, line: 1.8, color: .white, showsFlash: false) }

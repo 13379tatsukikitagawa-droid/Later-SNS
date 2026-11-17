@@ -1,7 +1,7 @@
 #!/bin/bash
 # 計測できる 画面を ぜんぶ 撮って score を 出す(DEBUG ビルドを 入れた シミュレータで)
 cd "$(dirname "$0")/.."
-H="-debugBackdrop 1 -debugRequests 1"
+H="-debugBackdrop 1 -debugRequests 1 -debugMock 1"
 r(){ id=$1; route=$2; shift 2; printf "%-28s %s\n" "$id" "$(SNAP_WAIT=9 scripts/snapto.sh $id $route -- "$@" | head -1 | sed 's/ *->.*//')"; }
 r H01_home home $H -debugHint 1 -debugPhoto d
 r H02_home_hint home $H -debugHint 1 -debugVeil 1 -debugPhoto d
