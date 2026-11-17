@@ -383,8 +383,8 @@ struct HVYesterdayPage: View {
         let locked = input.locked, firstDay = input.isFirstDay
         let thumbs = input.yesterdayThumbs
         ZStack(alignment: .topLeading) {
-            HVPageBackdrop(photo: firstDay ? nil : (thumbs.first?.image ?? input.yesterdayPhoto))
-            HVPageHeader(page: .yesterday, number: 4, status: firstDay ? "FROM TOMORROW" : (locked ? "LOCKED" : "\(max(1, thumbs.count)) OPENED"), cardW: cardW, iconColor: Color(hex: "C8A46A"))
+            HVPageBackdrop(photo: firstDay ? nil : (thumbs[safe: 1]?.image ?? thumbs.first?.image ?? input.yesterdayPhoto))
+            HVPageHeader(page: .yesterday, number: 4, status: firstDay ? "FROM TOMORROW" : (locked ? "LOCKED" : "\(max(1, min(thumbs.count, input.shotsUsed))) OPENED"), cardW: cardW, iconColor: Color(hex: "C8A46A"))
             HVPageTitle(text: "Yesterday").offset(x: 22, y: 72)
             // チェキの 扇(3枚とも 128×170・−10° / 0° / +10°・横へ ±70・外側は 14pt 下)
             let times = ["18:42", "16:05", "21:13"]
