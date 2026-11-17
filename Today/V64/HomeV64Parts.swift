@@ -206,7 +206,7 @@ struct HVSquiggle: View {
             }
             ctx.stroke(p, with: .color(.white), style: StrokeStyle(lineWidth: 3.2, lineCap: .round, lineJoin: .round))
         }
-        .frame(width: 46.6, height: 19.9)
+        .frame(width: 46, height: 18)
         .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
     }
 }

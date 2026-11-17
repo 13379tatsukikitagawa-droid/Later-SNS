@@ -185,19 +185,21 @@ struct HomeV64View: View {
 
     private func cameraPage(_ f: HV.Frame, cardW: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
-            HVStar().offset(x: 14, y: 12)
-            HVSquiggle().offset(x: cardW - 60.3, y: 26.4)
-
             HV68Finder(cardW: cardW, pressing: pressing || input.pressedFocus, afOn: pressing || input.pressedFocus || afFlash)
 
-            HVLens(input: input, pressing: pressing, onPress: { p in
+            HV68Lens(input: input, pressing: pressing, onPress: { p in
                 pressing = p
                 if p { Haptics.play(.click) }
             }, onTap: {
                 if input.done { Haptics.play(.click); actions.openYesterday() } else { Haptics.play(.shutter); actions.shoot() }
             })
             .position(x: cardW / 2, y: 254)
-            HVFlower().offset(x: cardW / 2 + 49 - 18, y: 140 - 18 + 18)
+            // かざりの シール:レンズの 中心から の 位置(ボタン ・ かぎから 8pt 以上。幅 390 より せまい 端末では 出さない)
+            if f.w >= 389 {
+                HVStar().offset(x: cardW / 2 - 153 - 17.5, y: 254 - 254.5 - 17.5)
+                HVSquiggle().offset(x: cardW / 2 + 148 - 23, y: 254 - 253 - 9)
+            }
+            HVFlower().offset(x: cardW / 2 + 73 - 18, y: 254 - 111 - 18)
 
             HVChip(input: input, onTap: { Haptics.play(.sel); goPage(1) }, onAdd: { Haptics.play(.sel); actions.addFriends() })
                 .position(x: cardW / 2, y: 36)
