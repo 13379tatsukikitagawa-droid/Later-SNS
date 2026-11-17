@@ -19,3 +19,46 @@
 |---|---|---|---|
 
 | P15 | v71 レンズ ・ 表記 ・ かぎ | ☐ | H01 H03 H06 L09 F02 |
+
+## 2026-11-17 土台(新しい 見本 v68〜v71 に 対する 今の v64 実装の 点数・M0)
+
+最低 iOS 18 に 下げた あと(M0a/M0b)。H は うしろが 全面の 写真に 変わる ので 20〜46 に 戻る のは 予定どおり。Y01〜Y05 も 新しい 見本が 暗い 画面に なって いて 大きい(Y05 の 見本は まだ キャラクターが 残って いる:P12〜P15 の 対象外 → 要 確認)。
+
+| ID | score |
+|---|---|
+| H01_home | 26.0 |
+| H02_home_hint | 46.7 |
+| H03_home_press | 26.1 |
+| H04_home_1shot | 27.2 |
+| H05_home_2shot | 26.5 |
+| H06_home_3shot | 28.6 |
+| H07_home_friends | 30.6 |
+| H08_home_firstday | 30.6 |
+| H09_home_night | 26.8 |
+| H10_live_panel | 16.4 |
+| H11_page_friends | 21.5 |
+| H12_page_friends_filled | 21.1 |
+| H13_page_trip | 21.4 |
+| H14_page_mondo_locked | 26.4 |
+| H15_page_mondo_open | 26.7 |
+| H16_page_yesterday | 22.6 |
+| H17_page_yesterday_open | 22.5 |
+| H18_page_yesterday_firstday | 29.4 |
+| L01_today | 7.2 |
+| L02_active | 6.9 |
+| L03_yesterday | 10.0 |
+| L04_yesterday_open | 9.2 |
+| L05_mondo_row | 9.4 |
+| L06_albums | 7.5 |
+| L07_onthisday | 16.9 |
+| L08_friends_card_empty | 17.2 |
+| L09_friends_card | 21.3 |
+| L10_firstday_yesterday | 6.1 |
+| L11_develop_view | 12.5 |
+| Y01_yesterday_locked | 41.2 |
+| Y02_yesterday_open | 41.4 |
+| Y03_yesterday_mondo_tab | 53.1 |
+| Y04_yesterday_friends_tab | 41.6 |
+| Y05_yesterday_scroll | 76.5 |
+| Y06_photo_viewer | 1.4 |
+| C01_tag | 26.6 |
