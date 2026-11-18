@@ -42,7 +42,6 @@ struct ProfileV82View: View {
     @State private var pos = ScrollPosition()
     @State private var lastTick = Date.distantPast
 
-    private let sticker: [(String, String, Double)] = [("C8F25A", "0B0C0D", -8), ("EE5E9C", "FFFFFF", 8), ("9ED8FF", "0B0C0D", -6)]
     private var compactBar: Bool { scrollY > 300 }
 
     var body: some View {
@@ -52,7 +51,7 @@ struct ProfileV82View: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
                     Color.clear.frame(height: 104)
-                    chekiArea.rise(shown, 0)
+                    ProfileChekiArea(name: data.name, avatar: data.avatar, tags: data.tags, onPhoto: onPhoto).rise(shown, 0)
                     VStack(spacing: 10) {
                         Text(data.name).font(LGFont.mincho(46)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
                         HStack(spacing: 10) { Text("SINCE").font(LF.mono(12)).tracking(3).foregroundStyle(.white.opacity(0.55)); Text(data.since).font(LF.serif(22, italic: true)).foregroundStyle(HV.lime) }
@@ -113,40 +112,6 @@ struct ProfileV82View: View {
 
     private func circle(_ icon: String, _ a: @escaping () -> Void) -> some View {
         Button { Haptics.play(.tick); a() } label: { Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.1), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1)) }.buttonStyle(HVPress(scale: 0.92))
-    }
-
-    // チェキ(高さ 372)+ 自分の タグの シール 3つ
-    private var chekiArea: some View {
-        GeometryReader { g in
-            ZStack {
-                cheki.position(x: g.size.width / 2, y: 186)
-                ForEach(Array(data.tags.prefix(3).enumerated()), id: \.offset) { i, t in
-                    let st = sticker[i]
-                    Text("#\(t)").font(LF.inter(900, 17)).foregroundStyle(Color(hex: st.1)).padding(.horizontal, 16).frame(height: 38).fixedSize()
-                        .background(Color(hex: st.0), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: .black.opacity(0.35), radius: 5, x: 3, y: 4).rotationEffect(.degrees(st.2))
-                        .position(x: [88, g.size.width - 62, 62][i], y: [78, 130, 270][i])
-                }
-            }
-        }.frame(height: 372)
-    }
-
-    private var cheki: some View {
-        ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                ZStack(alignment: .bottomTrailing) {
-                    if let a = data.avatar { Image(uiImage: a).resizable().scaledToFill() }
-                    else { LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing).overlay(Text(String(data.name.prefix(1))).font(LF.inter(900, 90)).foregroundStyle(.white.opacity(0.9))) }
-                    Button { Haptics.play(.click); onPhoto() } label: {
-                        HStack(spacing: 5) { Image(systemName: "camera.fill").font(.system(size: 11, weight: .bold)); Text("写真").font(.system(size: 12, weight: .heavy)) }.foregroundStyle(.white).padding(.horizontal, 10).frame(height: 28).background(.black.opacity(0.55), in: Capsule())
-                    }.buttonStyle(.plain).padding(8)
-                }.frame(width: 214, height: 214).clipped().padding(.top, 12)
-                Text(data.name).font(LGFont.mincho(30)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 20).padding(.top, 6)
-                Spacer()
-            }.frame(width: 238, height: 300).background(Color(hex: "F6F2EA"), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
-            Rectangle().fill(HV.lime.opacity(0.85)).frame(width: 96, height: 32).rotationEffect(.degrees(-4)).offset(y: -14)
-        }.rotationEffect(.degrees(4))
     }
 
     private var stats: some View {
@@ -281,5 +246,75 @@ struct ProfileV82Host: View {
         user.profileImageData = data; user.profileUpdatedAt = Date(); try? modelContext.save()
         if let cloud = CloudKitManager.current { for g in user.groups { cloud.markForUpload(userProfile: user, in: g) } }
         Task { await UserDirectoryService.publish(user) }
+    }
+}
+
+
+/// チェキ(高さ 372)+ 自分の タグの シール 3つ。編集中は シールが ゆれて ×(はずす)・ 名前に 点線 ・ 右上 カメラ / 右下 ペン(v88 B)
+struct ProfileChekiArea: View {
+    var name: String
+    var avatar: UIImage?
+    var tags: [String]
+    var editing = false
+    var onPhoto: () -> Void = {}
+    var onName: () -> Void = {}
+    var onRemoveTag: (Int) -> Void = { _ in }
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var wobble = false
+    private let sticker: [(String, String, Double)] = [("C8F25A", "0B0C0D", -8), ("EE5E9C", "FFFFFF", 8), ("9ED8FF", "0B0C0D", -6)]
+    /// チェキの 中心から:左上 (-120, -112, -8°) ・ 右上 (118, -84, 7°) ・ 左下 (-128, 52, 5°)
+    private let spots: [(CGFloat, CGFloat)] = [(-120, -112), (118, -84), (-128, 52)]
+
+    var body: some View {
+        GeometryReader { g in
+            let c = CGPoint(x: g.size.width / 2, y: 186)
+            ZStack {
+                cheki.position(c)
+                ForEach(Array(tags.prefix(3).enumerated()), id: \.offset) { i, t in
+                    let st = sticker[i]
+                    ZStack(alignment: .topLeading) {
+                        Text("#\(t)").font(LF.inter(900, 17)).foregroundStyle(Color(hex: st.1)).padding(.horizontal, 16).frame(height: 38).fixedSize()
+                            .background(Color(hex: st.0), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .shadow(color: .black.opacity(0.35), radius: 5, x: 3, y: 4)
+                        if editing {
+                            Button { Haptics.play(.tick); onRemoveTag(i) } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .black)).foregroundStyle(.white).frame(width: 22, height: 22).background(Color.black, in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.6), lineWidth: 1)) }
+                                .buttonStyle(.plain).frame(width: 44, height: 44, alignment: .topLeading).contentShape(Rectangle()).padding(-14)
+                        }
+                    }
+                    .rotationEffect(.degrees(st.2 + (editing && !reduceMotion ? (wobble ? 2 : -2) : 0)))
+                    .position(x: c.x + spots[i].0, y: c.y + spots[i].1)
+                }
+            }
+        }.frame(height: 372)
+            .onAppear { if editing { withAnimation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true)) { wobble = true } } }
+    }
+
+    private var cheki: some View {
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                ZStack {
+                    if let a = avatar { Image(uiImage: a).resizable().scaledToFill() }
+                    else { LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing).overlay(Text(String(name.prefix(1))).font(LF.inter(900, 90)).foregroundStyle(.white.opacity(0.9))) }
+                }.frame(width: 214, height: 214).clipped()
+                    .overlay(alignment: .topTrailing) {
+                        if editing { Button { Haptics.play(.click); onPhoto() } label: { Image(systemName: "camera.fill").font(.system(size: 14, weight: .bold)).foregroundStyle(Color(hex: "0B0C0D")).frame(width: 44, height: 44).background(HV.lime, in: Circle()) }.buttonStyle(.plain).padding(4) }
+                        else { Button { Haptics.play(.click); onPhoto() } label: {
+                            HStack(spacing: 5) { Image(systemName: "camera.fill").font(.system(size: 11, weight: .bold)); Text("写真").font(.system(size: 12, weight: .heavy)) }.foregroundStyle(.white).padding(.horizontal, 10).frame(height: 28).background(.black.opacity(0.55), in: Capsule())
+                        }.buttonStyle(.plain).padding(8).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing) }
+                    }
+                    .padding(.top, 12)
+                HStack {
+                    Text(name).font(LGFont.mincho(30)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.85)).lineLimit(1).minimumScaleFactor(0.6)
+                        .padding(.horizontal, editing ? 6 : 0)
+                        .overlay { if editing { RoundedRectangle(cornerRadius: 6).strokeBorder(HV.lime.opacity(0.6), style: StrokeStyle(lineWidth: 1.4, dash: [4, 3])) } }
+                    Spacer(minLength: 0)
+                    if editing { Button { Haptics.play(.tick); onName() } label: { Image(systemName: "pencil").font(.system(size: 13, weight: .bold)).foregroundStyle(Color(hex: "0B0C0D")).frame(width: 44, height: 44).background(.white, in: Circle()).shadow(radius: 3) }.buttonStyle(.plain) }
+                }.padding(.leading, 20).padding(.trailing, 6).padding(.top, 2)
+                Spacer()
+            }.frame(width: 238, height: 300).background(Color(hex: "F6F2EA"), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
+            Rectangle().fill(HV.lime.opacity(0.85)).frame(width: 96, height: 32).rotationEffect(.degrees(-4)).offset(y: -14)
+        }.rotationEffect(.degrees(4))
     }
 }

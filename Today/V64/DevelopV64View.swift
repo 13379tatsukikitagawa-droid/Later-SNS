@@ -281,7 +281,7 @@ struct DevelopFooter: View, Animatable {
                 Spacer(minLength: 8)
                 HStack(spacing: 6) {
                     Circle().fill(lime).frame(width: 5, height: 5)
-                    Text(playing ? "DEVELOPING" : (done ? "NOW" : "TAP TO DEVELOP")).font(LF.mono(9.5)).tracking(1.7).foregroundStyle(lime).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(playing ? "DEVELOPING" : (done ? "NOW" : (d > 0.001 ? "REPLAY" : "TAP TO DEVELOP"))).font(LF.mono(9.5)).tracking(1.7).foregroundStyle(lime).lineLimit(1).minimumScaleFactor(0.7)
                 }.padding(.horizontal, 10).frame(height: 26).background(lime.opacity(0.10), in: Capsule())
             }
             bar.padding(.top, 8)

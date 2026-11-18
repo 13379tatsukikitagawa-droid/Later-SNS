@@ -37,7 +37,9 @@ struct ProfileEditV88View: View {
             ScrollView {
                 VStack(spacing: 12) {
                     Color.clear.frame(height: 104)
-                    photoBox.rise(shown, 0)
+                    ProfileChekiArea(name: name.isEmpty ? initialName : name, avatar: avatar, tags: tags, editing: true, onPhoto: onPhoto, onName: { focus = true }, onRemoveTag: { i in
+                        withAnimation(.easeOut(duration: 0.2)) { if tags.indices.contains(i) { tags.remove(at: i) } }
+                    }).rise(shown, 0).padding(.horizontal, -16)
                     nameBox.rise(shown, 1)
                     tagBox.rise(shown, 2)
                     Color.clear.frame(height: 80)

@@ -40,6 +40,16 @@
                ReferencedContainer = "container:Later &#x518d;&#x5ea6;.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "AD0B35E3725B281BEE884218"
+               BuildableName = "LaterUITests.xctest"
+               BlueprintName = "LaterUITests"
+               ReferencedContainer = "container:Later &#x518d;&#x5ea6;.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
