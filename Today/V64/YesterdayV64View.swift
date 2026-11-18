@@ -246,6 +246,7 @@ struct YesterdayV64View: View {
     // ② 友だちを よぶ(友だちが 0人の 時)
     private var inviteBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
+            storyRowV95.padding(.bottom, 18)
             HStack(alignment: .firstTextBaseline) {
                 Text("友だちを よぶ").font(LF.inter(900, 19)).foregroundStyle(.white)
                 Spacer()
@@ -267,6 +268,47 @@ struct YesterdayV64View: View {
             }.padding(.horizontal, 16).padding(.top, 26)
             SamplePostV94().padding(.top, 12)
             VStack(spacing: 14) { ghostPost }.padding(.top, 14).mask(LinearGradient(colors: [.black.opacity(0.5), .clear], startPoint: .top, endPoint: .bottom))
+        }
+    }
+    /// v95-11:いちばん 上の ストーリーの 列(あなた → おすすめ → よぶ)
+    private var storyRowV95: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 16) {
+                Button { Haptics.play(.click); actions.shoot() } label: {
+                    VStack(spacing: 6) {
+                        ZStack(alignment: .bottomTrailing) {
+                            Circle().strokeBorder(HV.lime, lineWidth: 2.5).frame(width: 68, height: 68).shadow(color: HV.lime.opacity(0.45), radius: 6)
+                            Group {
+                                if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
+                                else { Text(String(input.avatarName.prefix(1))).font(LF.inter(800, 22)).foregroundStyle(.white) }
+                            }.frame(width: 58, height: 58).background(Color(hex: "3A3A3C")).clipShape(Circle()).frame(width: 68, height: 68)
+                            Image(systemName: "camera.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(HV.ink)
+                                .frame(width: 24, height: 24).background(HV.lime, in: Circle()).overlay(Circle().strokeBorder(.black, lineWidth: 2.5))
+                        }
+                        Text("あなた").font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.85))
+                    }
+                }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("あなた ・ 撮る")
+                ForEach(0..<3, id: \.self) { _ in
+                    Button { Haptics.play(.sel); actions.openFriends() } label: {
+                        VStack(spacing: 6) {
+                            ZStack {
+                                Circle().strokeBorder(.white.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [3, 4])).frame(width: 68, height: 68)
+                                Image(systemName: "person.fill").font(.system(size: 22)).foregroundStyle(.white.opacity(0.18))
+                            }
+                            Text("おすすめ").font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.4))
+                        }
+                    }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("おすすめの 人 ・ さがす")
+                }
+                Button { Haptics.play(.sel); actions.openFriends() } label: {
+                    VStack(spacing: 6) {
+                        ZStack {
+                            Circle().strokeBorder(HV.lime.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [5, 4])).frame(width: 68, height: 68)
+                            Image(systemName: "plus").font(.system(size: 22, weight: .bold)).foregroundStyle(HV.lime)
+                        }
+                        Text("よぼう").font(LF.inter(700, 11.5)).foregroundStyle(HV.lime)
+                    }
+                }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("友だちを よぶ")
+            }.padding(.horizontal, 16)
         }
     }
     private func inviteTile(_ icon: String, _ t: String, green: Bool, _ a: @escaping () -> Void) -> some View {
