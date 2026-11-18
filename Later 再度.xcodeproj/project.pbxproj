@@ -68,6 +68,7 @@
 		10FA17F468ABDA2DAFFA90D5 /* V64/ProfileV82View.swift in Sources */ = {isa = PBXBuildFile; fileRef = D913D5C6B689C4EA4AC49236 /* V64/ProfileV82View.swift */; };
 		967E93A58B904220A71CA630 /* V64/FriendCardV82Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 254DE2A1B6D302556485CB02 /* V64/FriendCardV82Sheet.swift */; };
 		E701C379624FDE8F8C0E4E1C /* V64/SettingsV87Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59EEF3EED2BF94B5FE07FB96 /* V64/SettingsV87Sheet.swift */; };
+		7632BEB81B5BF8E549C665C4 /* V64/ProfileEditV88View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0379B7B1C3D13126CF9489E1 /* V64/ProfileEditV88View.swift */; };
 		5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7259E737667BD9D41829457 /* HomeMoon.swift */; };
 		605EF09EAACE41EDB4BC64F8 /* ImageCacheLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0548D25953234EAF947739A5 /* ImageCacheLimits.swift */; };
 		60C5A0CFDCC62D982F0F1FCF /* GroupDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BA4D4C5BB926C8BB1A4A8A /* GroupDetailView.swift */; };
@@ -488,6 +489,7 @@
 		D913D5C6B689C4EA4AC49236 /* V64/ProfileV82View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ProfileV82View.swift; sourceTree = "<group>"; };
 		254DE2A1B6D302556485CB02 /* V64/FriendCardV82Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FriendCardV82Sheet.swift; sourceTree = "<group>"; };
 		59EEF3EED2BF94B5FE07FB96 /* V64/SettingsV87Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/SettingsV87Sheet.swift; sourceTree = "<group>"; };
+		0379B7B1C3D13126CF9489E1 /* V64/ProfileEditV88View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ProfileEditV88View.swift; sourceTree = "<group>"; };
 		C7259E737667BD9D41829457 /* HomeMoon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMoon.swift; sourceTree = "<group>"; };
 		C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilmEmulation.swift; sourceTree = "<group>"; };
 		CF0F7F40C595276C07B370F9 /* HoldGauge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HoldGauge.swift; sourceTree = "<group>"; };
@@ -880,6 +882,7 @@
 				C41C00000000000000000002 /* ChicTheme.swift */,
 				C41C00000000000000000004 /* ChicHomeView.swift */,
 				C7259E737667BD9D41829457 /* HomeMoon.swift */,
+				0379B7B1C3D13126CF9489E1 /* V64/ProfileEditV88View.swift */,
 				59EEF3EED2BF94B5FE07FB96 /* V64/SettingsV87Sheet.swift */,
 				254DE2A1B6D302556485CB02 /* V64/FriendCardV82Sheet.swift */,
 				D913D5C6B689C4EA4AC49236 /* V64/ProfileV82View.swift */,
@@ -1405,6 +1408,7 @@
 				C41C00000000000000000001 /* ChicTheme.swift in Sources */,
 				C41C00000000000000000003 /* ChicHomeView.swift in Sources */,
 				5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */,
+				7632BEB81B5BF8E549C665C4 /* V64/ProfileEditV88View.swift in Sources */,
 				E701C379624FDE8F8C0E4E1C /* V64/SettingsV87Sheet.swift in Sources */,
 				967E93A58B904220A71CA630 /* V64/FriendCardV82Sheet.swift in Sources */,
 				10FA17F468ABDA2DAFFA90D5 /* V64/ProfileV82View.swift in Sources */,

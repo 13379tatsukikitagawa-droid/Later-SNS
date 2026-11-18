@@ -6,6 +6,7 @@ struct HomeV64Host: View {
     let src: HomeViewSwitch
     @State private var sessionStart = Date()
     @State private var showYesterday = false
+    @State private var showProfileOverYesterday = false
     @State private var showRequests = false
     @State private var showDevelop = false
     @State private var chatWith: (id: String, name: String)?
@@ -24,6 +25,9 @@ struct HomeV64Host: View {
         }
         .fullScreenCover(isPresented: $showYesterday) {
             YesterdayV64View(input: makeYesterdayInput(now: Date()), actions: makeYesterdayActions())
+                .fullScreenCover(isPresented: $showProfileOverYesterday) {
+                    ProfileV82Host(onBack: { showProfileOverYesterday = false }, onShoot: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }, onMe: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenProfile() } })
+                }
         }
     }
 
@@ -90,7 +94,7 @@ struct HomeV64Host: View {
         let friends = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.layerActions.openFriends() } }
         a.addFriends = friends; a.openRequests = friends; a.openFriends = friends; a.scanQR = friends
         a.shoot = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }
-        a.openProfile = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenProfile() } }
+        a.openProfile = { showProfileOverYesterday = true }
         a.approve = { id in Task { if let r = incoming.first(where: { $0.id == id }) { _ = await FriendRequests.respond(to: r, accept: true, myName: src.avatarName); await refreshRequests() } } }
         return a
     }

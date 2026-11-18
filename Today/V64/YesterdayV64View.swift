@@ -90,6 +90,8 @@ struct YesterdayV64View: View {
     @State private var mineIndex = 1
     @State private var swapped: [String: Int] = [:]
     @State private var tip = false
+    @State private var avatarPress = false
+    @State private var singleTask: DispatchWorkItem?
     @State private var lastTick = Date.distantPast
 
     private var compact: Bool { scrollY > 24 }
@@ -163,9 +165,17 @@ struct YesterdayV64View: View {
                 }
             }.frame(width: 250).offset(x: (w - 250) / 2, y: compact ? 58 : 52)
             // 右上 = 自分の アイコン(1回 → プロフィール ・ 2回 → 今日)
-            Button { } label: { avatar }.buttonStyle(HVPress(scale: 0.92)).scaleEffect(k)
-                .onTapGesture(count: 2) { Haptics.play(.pop); actions.close() }
-                .onTapGesture { Haptics.play(.sel); actions.openProfile() }
+            avatar.frame(width: 44, height: 44).contentShape(Circle()).scaleEffect(k * (avatarPress ? 0.9 : 1))
+                .animation(.easeOut(duration: 0.2), value: avatarPress)
+                .onTapGesture(count: 2) { singleTask?.cancel(); Haptics.play(.sel); actions.close() }
+                .onTapGesture {
+                    Haptics.play(.tick); avatarPress = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { avatarPress = false }
+                    singleTask?.cancel()
+                    let t = DispatchWorkItem { actions.openProfile() }; singleTask = t
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.34, execute: t)
+                }
+                .accessibilityAddTraits(.isButton)
                 .offset(x: w - 56 - (compact ? 4 : 0), y: compact ? 50 : 52)
                 .accessibilityLabel("プロフィール。2回 タップで 今日へ")
         }

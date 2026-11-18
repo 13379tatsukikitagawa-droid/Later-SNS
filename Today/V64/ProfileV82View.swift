@@ -213,7 +213,7 @@ struct ProfileV82Host: View {
     var onMe: () -> Void = {}
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
-    @State private var showsShelf = false
+    @State private var editing = false
     @State private var showsSettings = false
     @State private var toast: String?
     @Query private var blocked: [BlockedUser]
@@ -226,13 +226,13 @@ struct ProfileV82Host: View {
     private var recordName: String? { CloudKitManager.current?.currentUserRecordName }
 
     var body: some View {
-        ProfileV82View(data: data, onBack: onBack, onSettings: { showsSettings = true }, onEdit: { showsShelf = true }, onShare: share, onScan: { showsScan = true }, onQR: { showsQR = true }, onPhoto: { showsIcon = true }, onShelf: { showsShelf = true }, onMe: onMe, onCopyID: { UIPasteboard.general.string = me?.username; Haptics.play(.success); toast = "ID を コピーしました"; DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { toast = nil } })
+        ProfileV82View(data: data, onBack: onBack, onSettings: { showsSettings = true }, onEdit: { editing = true }, onShare: share, onScan: { showsScan = true }, onQR: { showsQR = true }, onPhoto: { showsIcon = true }, onShelf: { editing = true }, onMe: onMe, onCopyID: { UIPasteboard.general.string = me?.username; Haptics.play(.success); toast = "ID を コピーしました"; DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { toast = nil } })
             .overlay(alignment: .bottom) { if let toast { Text(toast).font(LF.inter(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 36).background(.white, in: Capsule()).padding(.bottom, 60) } }
             .sheet(isPresented: $showsSettings) {
-                SettingsV87Sheet(name: me?.name ?? "", username: me?.username ?? "", avatar: me?.profileImageData.flatMap { UIImage(data: $0) }, blockedCount: blocked.count, groupCount: me?.groups.count ?? 0, onEdit: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsShelf = true } }, onPhoto: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsIcon = true } }, onClose: { showsSettings = false }, onLoggedOut: { showsSettings = false })
+                SettingsV87Sheet(name: me?.name ?? "", username: me?.username ?? "", avatar: me?.profileImageData.flatMap { UIImage(data: $0) }, blockedCount: blocked.count, groupCount: me?.groups.count ?? 0, onEdit: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { editing = true } }, onPhoto: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsIcon = true } }, onClose: { showsSettings = false }, onLoggedOut: { showsSettings = false })
                     .presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Color(hex: "0F1011"))
             }
-            .fullScreenCover(isPresented: $showsShelf) { ProfileShelfView(onBack: { showsShelf = false }, onShoot: { showsShelf = false; onShoot() }) }
+            .overlay { if editing { ProfileEditV88View(name: me?.name ?? "", tags: me?.selfTags ?? [], avatar: me?.profileImageData.flatMap { UIImage(data: $0) }, onPhoto: { showsIcon = true }, onSave: { saveProfile($0, $1) }, onClose: { withAnimation(.easeOut(duration: 0.25)) { editing = false } }).transition(.opacity) } }
             .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: me?.name ?? "", friendCount: 0) { _ in } }
             .sheet(isPresented: $showsQR) { ProfileSelfQRSheet(name: me?.name ?? "", recordName: recordName) }
             .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) { ShareSheet(activityItems: shareItems ?? []) { _ in shareItems = nil }.presentationDetents([.medium, .large]) }
@@ -266,6 +266,15 @@ struct ProfileV82Host: View {
     }
 
     private func share() { if let rn = recordName { shareItems = ["\(me?.name ?? "") と Lattag で つながろう\n\(FriendRules.link(recordName: rn).absoluteString)"] } }
+
+    private func saveProfile(_ name: String, _ tags: [String]) {
+        guard let p = me else { return }
+        p.name = name; p.selfTags = tags; p.profileUpdatedAt = Date(); try? modelContext.save()
+        if let cloud = CloudKitManager.current { for g in p.groups { cloud.markForUpload(userProfile: p, in: g) } }
+        Task { await UserDirectoryService.publish(p) }
+        withAnimation(.easeOut(duration: 0.25)) { editing = false }
+        toast = "プロフィールを 保存しました"; DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { toast = nil }
+    }
 
     private func saveIcon(_ data: Data?) {
         guard let user = me else { return }

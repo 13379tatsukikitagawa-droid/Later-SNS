@@ -480,7 +480,6 @@ struct HVPager: View {
     var onChange: (Int) -> Void = { _ in }
     var onDrag: (CGFloat) -> Void = { _ in }
     @State private var drag: CGFloat = 0
-    @State private var horizontal: Bool? = nil
     @State private var settling = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -506,34 +505,25 @@ struct HVPager: View {
         .frame(width: width, height: 508)
         .mask(Rectangle().frame(width: width, height: 700))   // 左右の ページは カードの 外へ はみ出さない
         .contentShape(Rectangle())
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 12)
-                .onChanged { v in
-                    if horizontal == nil {
-                        if abs(v.translation.width) > 12 && abs(v.translation.width) > 2 * abs(v.translation.height) { horizontal = true }
-                        else if abs(v.translation.height) > 10 { horizontal = false }
-                    }
-                    guard horizontal == true else { return }
-                    var dx = v.translation.width
-                    if (page == 0 && dx > 0) || (page == pages.count - 1 && dx < 0) { dx *= 0.35 }   // 端は ゴムのように 重く
-                    drag = dx
-                    onDrag(dx)
-                }
-                .onEnded { v in
-                    defer { horizontal = nil }
-                    guard horizontal == true else { drag = 0; onDrag(0); return }
-                    let projected = v.translation.width + (v.predictedEndTranslation.width - v.translation.width) * 0.5
-                    var next = Int((CGFloat(page) - projected / width).rounded())
-                    next = max(page - 1, min(page + 1, next))                 // 1回で 動けるのは ±1ページ
-                    next = max(0, min(pages.count - 1, next))
-                    if next == page && abs(v.translation.width) > 20 && (page == 0 || page == pages.count - 1) { Haptics.play(.soft) }
-                    let changed = next != page
-                    settling = true
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) { page = next; drag = 0; onDrag(0) }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { settling = false }
-                    if changed { onChange(next) }
-                }
-        )
+        .gesture(HorizontalPanV88(
+            onChanged: { dx in
+                var dx = dx
+                if (page == 0 && dx > 0) || (page == pages.count - 1 && dx < 0) { dx *= 0.35 }   // 端は ゴムのように 重く
+                drag = dx
+                onDrag(dx)
+            },
+            onEnded: { dx, predicted in
+                let projected = dx + (predicted - dx) * 0.5
+                var next = Int((CGFloat(page) - projected / width).rounded())
+                next = max(page - 1, min(page + 1, next))                 // 1回で 動けるのは ±1ページ
+                next = max(0, min(pages.count - 1, next))
+                if next == page && abs(dx) > 20 && (page == 0 || page == pages.count - 1) { Haptics.play(.soft) }
+                let changed = next != page
+                settling = true
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) { page = next; drag = 0; onDrag(0) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { settling = false }
+                if changed { onChange(next) }
+            }))
     }
 }
 
@@ -610,5 +600,37 @@ struct HVLivePanel: View {
             .padding(.top, 98)
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
+
+/// 横にだけ 反応する パン(たてに 動き出したら すぐ 失敗 → たての ScrollView が そのまま 動く)。v88 D
+struct HorizontalPanV88: UIGestureRecognizerRepresentable {
+    var onChanged: (CGFloat) -> Void
+    var onEnded: (CGFloat, CGFloat) -> Void
+
+    final class Pan: UIPanGestureRecognizer {
+        override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+            super.touchesMoved(touches, with: event)
+            if state == .possible {
+                let t = translation(in: view)
+                if abs(t.y) > 8 && abs(t.y) > abs(t.x) * 0.5 { state = .failed }
+            }
+        }
+    }
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+    }
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+    func makeUIGestureRecognizer(context: Context) -> Pan {
+        let p = Pan(); p.maximumNumberOfTouches = 1; p.delegate = context.coordinator; return p
+    }
+    func handleUIGestureRecognizerAction(_ r: Pan, context: Context) {
+        let t = r.translation(in: r.view).x
+        switch r.state {
+        case .changed: onChanged(t)
+        case .ended: onEnded(t, t + r.velocity(in: r.view).x * 0.2)
+        case .cancelled, .failed: onEnded(0, 0)
+        default: break
+        }
     }
 }
