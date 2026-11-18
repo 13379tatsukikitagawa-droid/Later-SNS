@@ -1,63 +1,355 @@
 import SwiftUI
+import SwiftData
+import CoreHaptics
 
-/// L11:今日の フィルム(現像中)を ひらく。ミルク色の 窓 + すすみ(%)+ 9:00 まで。
+// v93-3:現像画面の 作りなおし(フリーズ 対策)。見本 L11 L13 L14 ・ 動き M34。
+// ・ぼかした 写真は 1回 だけ 作って キャッシュ(V64Images.blurred)。動かすのは 不透明度 だけ
+// ・進み具合 d は 1つの Double を withAnimation 1回で 動かす(Animatable な 部品の 中 だけ が 毎コマ 再描画)
+// ・自動 再生は しない(押すまで 待つ)・横に めくったら 止める
+// ・バイブは CHHapticEngine の パターンを 1回 作って 1回 再生
+// ・ぜんぶ VStack で 上から 並べる(決めうちの offset で 置かない)
+
 struct DevelopV64View: View {
     var count = 3
     var index = 0
     var times: [String] = []
     var now = Date()
     var photos: [UIImage?] = []
+    var onShoot: () -> Void = {}
     var onClose: () -> Void = {}
-    @State private var page = 0
 
-    var body: some View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var page = 0
+    @State private var d: Double = 0
+    @State private var playing = false
+    @State private var done = false
+    @State private var flash = false
+    @State private var pulse = false
+    @State private var bump = false
+    @State private var blurred: [UIImage?] = []
+    @State private var tasks: [Task<Void, Never>] = []
+    @State private var haptics = DevelopHaptics()
+    @State private var scrollID: Int? = 0
+    @State private var shake = false
+
+    private let lime = HV.lime
+    private let milk = Color(hex: "0B0B0C")
+
+    /// k:今の 時間で 決まる 濃さ(9:00 まで の のこりから)
+    private var k: Double {
         let cal = Calendar.current
         let open = cal.date(bySettingHour: 9, minute: 0, second: 0, of: cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: now)) ?? now) ?? now
-        let remain = max(0, Int(open.timeIntervalSince(now)))
-        let progress = min(1, max(0, 1 - Double(remain) / 86400))
-        let pct = Int(progress * 100)
-        VStack(spacing: 0) {
-            ZStack {
-                VStack(spacing: 2) {
-                    Text("Developing").font(LF.serif(30)).foregroundStyle(.white)
-                    Text("\(page + 1) / \(count)").font(LF.inter(500, 15)).foregroundStyle(Color(hex: "8E8E93"))
-                }
-                HStack { Button { Haptics.play(.tick); onClose() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 48, height: 48).background(Color(hex: "161618"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }.buttonStyle(.plain); Spacer() }.padding(.leading, 14)
-            }.padding(.top, 54)
-            TabView(selection: $page) {
-                ForEach(0..<count, id: \.self) { i in
-                    ZStack {
-                        LinearGradient(colors: [Color(hex: "E6EDE8"), Color(hex: "D2DAD7")], startPoint: .top, endPoint: .bottom)
-                        if let img = (photos[safe: i] ?? nil) { Image(uiImage: img).resizable().scaledToFill().blur(radius: 30 * (1 - progress)).opacity(progress) }
-                        VStack { HStack { Spacer(); Text("\(pct)%").font(LF.serif(32, italic: true)).foregroundStyle(HV.ink.opacity(0.8)).padding(24) }; Spacer()
-                            HStack { Text(times[safe: i] ?? "--:--").font(LF.mono(15)).foregroundStyle(Color(hex: "E0481A")); Spacer(); Text("PHOTO").font(LF.mono(13)).tracking(2.4).foregroundStyle(HV.gray) }.padding(24)
-                        }
-                    }
-                    .frame(height: 452).clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous)).padding(.horizontal, 14).tag(i)
-                }
+        return min(1, max(0, 1 - Double(max(0, Int(open.timeIntervalSince(now)))) / 86400))
+    }
+    private var remain: Int {
+        let cal = Calendar.current
+        let open = cal.date(bySettingHour: 9, minute: 0, second: 0, of: cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: now)) ?? now) ?? now
+        return max(0, Int(open.timeIntervalSince(now)))
+    }
+    private var shot: Bool { page < times.count }
+
+    var body: some View {
+        GeometryReader { g in
+            let small = g.size.height < 720
+            VStack(spacing: 0) {
+                topBar.padding(.top, 52 - g.safeAreaInsets.top + (g.safeAreaInsets.top > 0 ? 0 : 0))
+                pager(small: small)
+                    .frame(height: small ? 360 : 446).padding(.top, 10)
+                dots.padding(.top, 8)
+                DevelopFooter(d: d, k: k, playing: playing, done: done, shot: shot, time: times.first ?? "--:--", remain: remain, onTap: tap, bumpWarn: shake)
+                    .padding(.horizontal, 20).padding(.top, 14)
+                Spacer(minLength: 0)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never)).frame(height: 452).padding(.top, 20)
-            HStack(spacing: 7) { ForEach(0..<count, id: \.self) { i in Capsule().fill(i == page ? .white : .white.opacity(0.25)).frame(width: i == page ? 22 : 6, height: 6) } }.padding(.top, 20)
-            HStack(alignment: .lastTextBaseline) {
-                (Text("\(pct)").font(LF.serif(56, italic: true)) + Text("%").font(LF.serif(28, italic: true)).foregroundColor(.white.opacity(0.6))).foregroundStyle(.white)
-                Spacer()
-                Text("DEVELOPING…").font(LF.mono(13)).tracking(3).foregroundStyle(Color(hex: "24A03C"))
-            }.padding(.horizontal, 18).padding(.top, 14)
-            ZStack(alignment: .leading) {
-                GeometryReader { g in
-                    Capsule().fill(Color.white.opacity(0.12)).frame(height: 3).offset(y: 6)
-                    Capsule().fill(Color(hex: "24A03C")).frame(width: max(14, g.size.width * progress), height: 3).offset(y: 6)
-                    Circle().fill(Color(hex: "24A03C")).frame(width: 24, height: 24).shadow(color: Color(hex: "24A03C").opacity(0.6), radius: 8).offset(x: max(0, g.size.width * progress - 12))
-                }.frame(height: 24)
-            }.padding(.horizontal, 18).padding(.top, 6)
-            HStack { Text("\(times.first ?? "") SHOT").font(LF.mono(12)).tracking(1.5).foregroundStyle(Color(hex: "5A5A5F")); Spacer(); Text("9:00 OPENS").font(LF.mono(12)).tracking(1.5).foregroundStyle(Color(hex: "5A5A5F")) }.padding(.horizontal, 18).padding(.top, 10)
-            HStack(spacing: 10) { Image(systemName: "play.fill").font(.system(size: 14)); Text("developing…").font(LF.inter(800, 20)) }
-                .foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(.white, in: Capsule()).padding(.horizontal, 18).padding(.top, 18)
-            Text("OPENS IN \(remain / 3600)H \((remain % 3600) / 60)M").font(LF.mono(12)).tracking(3).foregroundStyle(Color(hex: "5A5A5F")).padding(.top, 12)
-            Spacer(minLength: 0)
+            .frame(width: g.size.width, height: g.size.height)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color(hex: "0A0A0B").ignoresSafeArea()).ignoresSafeArea()
+        .background(milk.ignoresSafeArea())
+        .environment(\.colorScheme, .dark)
+        .task { await loadBlurred() }
+        .onDisappear { stopAll() }
+    }
+
+    // MARK: 上
+
+    private var topBar: some View {
+        HStack {
+            Button { Haptics.play(.tick); stopAll(); onClose() } label: {
+                Image(systemName: "chevron.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 44, height: 44)
+                    .background(Color(hex: "17171A"), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.08), lineWidth: 1))
+            }.buttonStyle(.plain).accessibilityLabel("もどる")
+            Spacer()
+            VStack(spacing: 2) {
+                Text("Developing").font(LF.serif(24)).foregroundStyle(.white)
+                Text("\(page + 1) / \(count)").font(LF.mono(10)).tracking(2).foregroundStyle(Color(hex: "6E6E75"))
+            }
+            Spacer()
+            Color.clear.frame(width: 44, height: 44)
+        }.padding(.horizontal, 16).frame(height: 56)
+    }
+
+    // MARK: チェキ(横に めくる)
+
+    private func pager(small: Bool) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 14) {
+                ForEach(0..<max(1, count), id: \.self) { i in
+                    cheki(i, small: small)
+                        .id(i)
+                        .scrollTransition(axis: .horizontal) { c, ph in c.scaleEffect(ph.isIdentity ? 1 : 0.9).opacity(ph.isIdentity ? 1 : 0.5) }
+                }
+            }.scrollTargetLayout().padding(.horizontal, 46)
+        }
+        .scrollTargetBehavior(.viewAligned).scrollPosition(id: $scrollID).scrollClipDisabled()
+        .onChange(of: scrollID) { _, new in
+            guard let new, new != page else { return }
+            Haptics.play(.sel); stopAll(); page = new; d = 0; done = false
+        }
+    }
+
+    private func cheki(_ i: Int, small: Bool) -> some View {
+        let tilt = [-2.0, 1.6, -1.2][i % 3]
+        let scale: CGFloat = small ? 0.8 : 1
+        return ZStack(alignment: .top) {
+            RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color(hex: "F4F1EA"))
+            VStack(spacing: 0) {
+                DevelopWindow(d: i == page ? d : 0, blurred: blurred[safe: i] ?? nil, playing: i == page && playing, reduce: reduceMotion, flash: i == page && flash)
+                    .frame(width: 274, height: 360).clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous)).padding(.top, 12)
+                HStack {
+                    Text(times[safe: i] ?? "--:--").font(LF.mono(11)).fontWeight(.bold).foregroundStyle(Color(hex: "E0481A")).shadow(color: Color(hex: "E0481A").opacity(0.5), radius: 3)
+                    Spacer()
+                    HStack(spacing: 4) { Image(systemName: "lock.fill").font(.system(size: 10)); Text("9:00").font(.custom("Caveat-Bold", size: 19)) }.foregroundStyle(Color(hex: "3A362F"))
+                    Spacer()
+                    Text("PHOTO").font(LF.mono(9)).tracking(1.8).foregroundStyle(Color(hex: "8A857B"))
+                }.padding(.horizontal, 16).frame(maxHeight: .infinity)
+            }
+        }
+        .frame(width: 298, height: 430)
+        .shadow(color: .black.opacity(0.95), radius: 30, y: 28)
+        .scaleEffect(scale * (i == page ? (bump ? 1.035 : (pulse ? 1.012 : 1)) : 1))
+        .rotationEffect(.degrees(tilt))
+        .frame(width: 298 * scale, height: 446 * scale)
+    }
+
+    private var dots: some View {
+        HStack(spacing: 7) { ForEach(0..<max(1, count), id: \.self) { i in Capsule().fill(i == page ? lime : .white.opacity(0.22)).frame(width: i == page ? 22 : 7, height: 7) } }
+            .animation(.easeOut(duration: 0.25), value: page)
+    }
+
+    // MARK: 現像
+
+    private func tap() {
+        guard shot else { Haptics.play(.click); stopAll(); onClose(); onShoot(); return }
+        if playing { Haptics.play(.warn); return }
+        let target = k
+        guard target > 0.005 else { Haptics.play(.warn); return }
+        Haptics.play(.click)
+        done = false; d = 0; playing = true
+        let T = 1.7 + 2.3 * target
+        if !reduceMotion { haptics.play(duration: T) }
+        withAnimation(reduceMotion ? .easeInOut(duration: 0.6) : .easeInOut(duration: T), completionCriteria: .logicallyComplete) { d = target } completion: { finish() }
+        guard !reduceMotion else { return }
+        // 10% ごとに チェキが ポン
+        let bez = OPBez(0.42, 0, 0.58, 1)
+        for n in 1...max(1, Int(target * 10)) where Double(n) / 10 < target {
+            var lo = 0.0, hi = 1.0
+            for _ in 0..<24 { let mid = (lo + hi) / 2; if bez.at(mid) * target < Double(n) / 10 { lo = mid } else { hi = mid } }
+            let t = Task { try? await Task.sleep(for: .seconds(hi * T)); if Task.isCancelled { return }; await MainActor.run { withAnimation(.easeOut(duration: 0.11)) { pulse = true }; withAnimation(.easeOut(duration: 0.22).delay(0.11)) { pulse = false } } }
+            tasks.append(t)
+        }
+    }
+
+    private func finish() {
+        guard playing else { return }
+        playing = false; done = true
+        haptics.stop()
+        Haptics.play(.heart)
+        tasks.append(Task { try? await Task.sleep(for: .seconds(0.16)); if !Task.isCancelled { await MainActor.run { Haptics.play(.success) } } })
+        guard !reduceMotion else { return }
+        withAnimation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.24)) { bump = true }
+        withAnimation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.24).delay(0.24)) { bump = false }
+        withAnimation(.easeOut(duration: 0.12)) { flash = true }
+        withAnimation(.easeOut(duration: 0.62).delay(0.12)) { flash = false }
+    }
+
+    private func stopAll() {
+        tasks.forEach { $0.cancel() }; tasks = []
+        haptics.stop()
+        playing = false; pulse = false; bump = false; flash = false
+        withTransaction(Transaction(animation: nil)) { d = d }
+    }
+
+    // ぼかした 写真(1回 だけ ・ main の 外)
+    private func loadBlurred() async {
+        if !photos.isEmpty { blurred = photos.enumerated().map { i, p in p.map { V64Images.blurred(key: "dv\(i)", source: $0, maxPixel: 64, radius: 14, saturation: 1.1) } }; return }
+        let start = Calendar.current.startOfDay(for: now)
+        var fd = FetchDescriptor<LaterPhoto>(predicate: #Predicate { $0.captureDate >= start }, sortBy: [SortDescriptor(\.captureDate)])
+        fd.fetchLimit = 30
+        let items = (try? context.fetch(fd)) ?? []
+        var seen = Set<Int>(), datas: [(Int, Data)] = []
+        for p in items { let s = Int(p.captureDate.timeIntervalSinceReferenceDate); if seen.insert(s).inserted { datas.append((s, p.imageData)) } }
+        let out: [UIImage?] = await Task.detached(priority: .utility) {
+            datas.prefix(max(1, count)).map { s, data in
+                guard let small = V64Images.image(key: "dvsrc\(s)", data: data, maxPixel: 96) else { return nil }
+                return V64Images.blurred(key: "dv\(s)", source: small, maxPixel: 64, radius: 14, saturation: 1.1)
+            }
+        }.value
+        blurred = out
+    }
+}
+
+// MARK: - 写真の 窓(d だけ で 決まる 層 ・ Animatable)
+
+struct DevelopWindow: View, Animatable {
+    var d: Double
+    var blurred: UIImage?
+    var playing: Bool
+    var reduce: Bool
+    var flash: Bool
+    var animatableData: Double { get { d } set { d = newValue } }
+
+    private static let grain: UIImage = {
+        let size = CGSize(width: 120, height: 120)
+        return UIGraphicsImageRenderer(size: size).image { ctx in
+            var seed: UInt64 = 0xA24BAED4963EE407
+            func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double((seed >> 33) & 0xFFFF) / 65535 }
+            for _ in 0..<900 { UIColor.black.withAlphaComponent(rnd() * 0.7).setFill(); ctx.cgContext.fill(CGRect(x: rnd() * 120, y: rnd() * 120, width: 1.2, height: 1.2)) }
+        }
+    }()
+
+    var body: some View {
+        let v = pow(max(0, min(1, d)), 0.35)
+        ZStack {
+            Color(hex: "E4E8DF")
+            if let blurred { Image(uiImage: blurred).resizable().scaledToFill().scaleEffect(1.12).opacity(0.08 + 0.92 * v) }
+            LinearGradient(colors: [Color(hex: "5E8F86"), Color(hex: "2E4F57")], startPoint: .top, endPoint: .bottom).blendMode(.multiply).opacity(sin(.pi * min(1, 1.2 * v)) * 0.55)
+            LinearGradient(colors: [.clear, Color(hex: "E8A55A")], startPoint: .top, endPoint: .bottom).blendMode(.softLight).opacity(0.7 * v)
+            LinearGradient(colors: [Color(hex: "F1F3EC"), Color(hex: "DCE3DA"), Color(hex: "E6E9E1")], startPoint: .top, endPoint: .bottom).opacity(1 - 0.84 * v)
+            Image(uiImage: Self.grain).resizable(resizingMode: .tile).blendMode(.multiply).opacity(0.22)
+            if playing && !reduce {
+                TimelineView(.animation) { ctx in
+                    let u = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.15) / 1.15
+                    GeometryReader { g in
+                        LinearGradient(colors: [.clear, HV.lime.opacity(0.28), .clear], startPoint: .top, endPoint: .bottom).frame(height: g.size.height * 0.6).offset(y: -g.size.height * 0.6 + g.size.height * 1.6 * u)
+                    }
+                }.allowsHitTesting(false)
+            }
+            if flash { HV.lime.opacity(0.55).blendMode(.overlay) }
+        }.drawingGroup(opaque: true)
+    }
+}
+
+// MARK: - 下の かたまり(% ・ バー ・ ボタン)
+
+struct DevelopFooter: View, Animatable {
+    var d: Double
+    var k: Double
+    var playing: Bool
+    var done: Bool
+    var shot: Bool
+    var time: String
+    var remain: Int
+    var onTap: () -> Void
+    var bumpWarn: Bool
+    var animatableData: Double { get { d } set { d = newValue } }
+    private let lime = HV.lime
+
+    var body: some View {
+        let pct = Int((d * 100).rounded())
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .lastTextBaseline) {
+                (Text("\(pct)").font(LF.serif(46, italic: true)) + Text("%").font(LF.serif(22, italic: true)).foregroundColor(Color(hex: "6E6E75"))).foregroundStyle(.white).monospacedDigit()
+                Spacer(minLength: 8)
+                HStack(spacing: 6) {
+                    Circle().fill(lime).frame(width: 5, height: 5)
+                    Text(playing ? "DEVELOPING" : (done ? "NOW" : "TAP TO DEVELOP")).font(LF.mono(9.5)).tracking(1.7).foregroundStyle(lime).lineLimit(1).minimumScaleFactor(0.7)
+                }.padding(.horizontal, 10).frame(height: 26).background(lime.opacity(0.10), in: Capsule())
+            }
+            bar.padding(.top, 8)
+            HStack {
+                Text("\(time) SHOT").font(LF.mono(9)).tracking(1.6).foregroundStyle(Color(hex: "5D5D63"))
+                Spacer()
+                Text("9:00 OPENS").font(LF.mono(9)).tracking(1.6).foregroundStyle(lime)
+            }.padding(.top, 4)
+            button.padding(.top, 16)
+            Text("OPENS IN \(remain / 3600)H \((remain % 3600) / 60)M").font(LF.mono(9.5)).tracking(1.4).foregroundStyle(Color(hex: "5D5D63")).frame(maxWidth: .infinity).padding(.top, 12)
+        }
+    }
+
+    private var bar: some View {
+        GeometryReader { g in
+            let w = g.size.width
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color(hex: "1C1C1F")).frame(height: 4)
+                Capsule().strokeBorder(.white.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [3, 3])).frame(width: max(0, w * (1 - k)), height: 4).frame(width: w, alignment: .trailing)
+                Capsule().fill(LinearGradient(colors: [lime.opacity(0.25), lime], startPoint: .leading, endPoint: .trailing)).frame(width: max(4, w * k), height: 4).shadow(color: lime.opacity(0.4), radius: 5)
+                Rectangle().fill(lime.opacity(0.7)).frame(width: 2, height: 16).offset(x: w * k - 1)
+                Circle().fill(lime).frame(width: 16, height: 16).overlay(Circle().strokeBorder(lime.opacity(0.16), lineWidth: 5)).shadow(color: lime.opacity(0.6), radius: 6).offset(x: w * min(d, k) - 8)
+            }.frame(height: 20)
+        }.frame(height: 20)
+    }
+
+    private var button: some View {
+        Button(action: onTap) {
+            ZStack {
+                if playing {
+                    GeometryReader { g in
+                        Capsule().fill(lime).frame(width: g.size.width * (k > 0 ? min(1, d / k) : 0)).overlay(alignment: .trailing) { Rectangle().fill(.white.opacity(0.6)).frame(width: 3).blur(radius: 2) }.clipShape(Capsule())
+                    }
+                }
+                HStack(spacing: 8) {
+                    if !done { Image(systemName: shot ? "play.fill" : "camera.fill").font(.system(size: 14)) }
+                    VStack(spacing: 1) {
+                        Text(!shot ? "撮る" : (playing ? "現像中" : (done ? "もう一度 見る" : "現像する"))).font(LF.inter(800, 19))
+                        if shot && !playing && !done { Text("\(Int(k * 100))% まで").font(LF.mono(9.5)).opacity(0.55) }
+                        if playing { Text("\(Int((d * 100).rounded()))%").font(LF.mono(9.5)).monospacedDigit().opacity(0.7) }
+                    }
+                }.foregroundStyle(playing ? lime : (done ? .white : HV.ink)).blendMode(.normal)
+            }
+            .frame(maxWidth: .infinity).frame(height: 58)
+            .background(playing ? Color(hex: "141416") : (done ? Color(hex: "1A1A1D") : lime), in: Capsule())
+            .overlay(Capsule().strokeBorder(playing ? lime.opacity(0.35) : (done ? .white.opacity(0.1) : .clear), lineWidth: 1))
+            .clipShape(Capsule())
+        }.buttonStyle(HVPress(scale: 0.96))
+    }
+}
+
+// MARK: - バイブ(パターンを 1つ 作って 1回 再生。だんだん 細かく 強く)
+
+final class DevelopHaptics {
+    private var engine: CHHapticEngine?
+    private var player: CHHapticAdvancedPatternPlayer?
+    private var fallback: UIImpactFeedbackGenerator?
+
+    func play(duration T: Double) {
+        stop()
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else {
+            let g = UIImpactFeedbackGenerator(style: .light); g.prepare(); g.impactOccurred(); fallback = g; return
+        }
+        do {
+            let e = try CHHapticEngine()
+            try e.start()
+            var events: [CHHapticEvent] = [CHHapticEvent(eventType: .hapticContinuous, parameters: [CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.75), CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.4)], relativeTime: 0, duration: T)]
+            var t = 0.0
+            while t < T {
+                let u = t / T
+                let gap = 0.23 - (0.23 - 0.06) * u
+                events.append(CHHapticEvent(eventType: .hapticTransient, parameters: [CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(0.35 + 0.45 * u)), CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(0.3 + 0.4 * u))], relativeTime: t))
+                t += gap
+            }
+            let curve = CHHapticParameterCurve(parameterID: .hapticIntensityControl, controlPoints: [.init(relativeTime: 0, value: 0.2), .init(relativeTime: T, value: 1.0)], relativeTime: 0)
+            let sharp = CHHapticParameterCurve(parameterID: .hapticSharpnessControl, controlPoints: [.init(relativeTime: 0, value: 0.5), .init(relativeTime: T, value: 1.0)], relativeTime: 0)
+            let pattern = try CHHapticPattern(events: events, parameterCurves: [curve, sharp])
+            let p = try e.makeAdvancedPlayer(with: pattern)
+            try p.start(atTime: CHHapticTimeImmediate)
+            engine = e; player = p
+        } catch {
+            let g = UIImpactFeedbackGenerator(style: .light); g.prepare(); g.impactOccurred(); fallback = g
+        }
+    }
+
+    func stop() {
+        try? player?.stop(atTime: CHHapticTimeImmediate)
+        engine?.stop(completionHandler: nil)
+        player = nil; engine = nil
     }
 }
