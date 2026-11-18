@@ -19,9 +19,10 @@ struct OpeningV21Tests {
         #expect(opKeys(999, [(0, 1), (180, 0.86), (360, 1)], OPBez(0.3, 1.4, 0.5, 1)) == 1)
     }
 
-    @Test func 時間割りは2秒半以内() {
-        #expect(OP72.openStart + OP72.openDur == OP72.total)
-        #expect(OP72.total <= 2500)
+    @Test func 時間割りは1秒半以内() {
+        #expect(OP72.homeStart + OP72.homeDur == OP72.total)
+        #expect(OP72.openStart + OP72.openDur <= OP72.total)
+        #expect(OP72.total <= 1500)
         #expect(OP72.skipAfter == 600)
     }
 

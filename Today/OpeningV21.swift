@@ -34,15 +34,15 @@ enum OpeningSettings {
     }
 }
 
-/// full = アイコンが 横へ → Lattag + 9:00 → ひらく(2.48秒)/ short = 0.33秒 → すぐ ひらく(通知 ・ 設定「短く」)/ fade = 動かさない 版
+/// full = アイコンが 横へ → Lattag + 9:00 → ひらく(1.47秒)/ short = 0.33秒 → すぐ ひらく(通知 ・ 設定「短く」)/ fade = 動かさない 版
 enum OpeningVariant: Equatable {
     case full, short, fade
 
     /// 全体の 長さ(秒)
     var duration: Double {
         switch self {
-        case .full: return 2.48
-        case .short: return 1.45
+        case .full: return 1.47
+        case .short: return 0.77
         case .fade: return 1.0
         }
     }
