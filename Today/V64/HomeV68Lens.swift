@@ -148,9 +148,40 @@ struct HV68Lens: View {
     @State private var dialRot: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @State private var tapped = false
+
     var body: some View {
+        // たてに スクロール できる ように、DragGesture は 使わない。押している 間は Button の isPressed で とる
+        Button {
+            tapped = true
+        } label: { lensBody }
+        .buttonStyle(HVPress(scale: 1.0, onPress: { p in
+            if p {
+                onPress(true)
+                withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.75)) { hole = 66 }
+            } else {
+                onPress(false)
+                DispatchQueue.main.async {
+                    if tapped {
+                        tapped = false
+                        if reduceMotion { withAnimation(.easeOut(duration: 0.4)) { hole = 104 } }
+                        else {
+                            withAnimation(.easeIn(duration: 0.09)) { hole = 0 }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { withAnimation(.easeOut(duration: 0.16)) { hole = 104 } }
+                        }
+                        onTap()
+                    } else { withAnimation(.easeOut(duration: 0.4)) { hole = 104 } }
+                }
+            }
+        }))
+        .accessibilityElement()
+        .accessibilityLabel(input.done ? "Yesterday を ひらく" : "撮る。あと \(input.remaining) 枚")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var lensBody: some View {
         let k: CGFloat = pressing ? 0.70 : 0.737
-        ZStack {
+        return ZStack {
             // 黒い 影(半径 26pt 外まで 55% → 0)
             Circle().fill(RadialGradient(colors: [.black.opacity(0.55), .clear], center: .center, startRadius: 155, endRadius: 181)).frame(width: 362, height: 362)
             HV68LensBody(shotsUsed: input.shotsUsed)
@@ -184,28 +215,5 @@ struct HV68Lens: View {
         }
         .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.28), value: pressing)
         .contentShape(Circle())
-        .gesture(DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                if !pressing {
-                    onPress(true)
-                    withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.75)) { hole = 66 }
-                }
-            }
-            .onEnded { v in
-                onPress(false)
-                let tapped = abs(v.translation.width) < 12 && abs(v.translation.height) < 12
-                if tapped && !reduceMotion {
-                    // はなした 瞬間:一気に しまって(0.09秒)→ ひらく = シャッター
-                    withAnimation(.easeIn(duration: 0.09)) { hole = 0 }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { withAnimation(.easeOut(duration: 0.16)) { hole = 104 } }
-                    onTap()
-                } else {
-                    withAnimation(.easeOut(duration: 0.4)) { hole = 104 }
-                    if tapped { onTap() }
-                }
-            })
-        .accessibilityElement()
-        .accessibilityLabel(input.done ? "Yesterday を ひらく" : "撮る。あと \(input.remaining) 枚")
-        .accessibilityAddTraits(.isButton)
     }
 }

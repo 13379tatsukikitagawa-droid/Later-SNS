@@ -507,10 +507,10 @@ struct HVPager: View {
         .mask(Rectangle().frame(width: width, height: 700))   // 左右の ページは カードの 外へ はみ出さない
         .contentShape(Rectangle())
         .simultaneousGesture(
-            DragGesture(minimumDistance: 8)
+            DragGesture(minimumDistance: 12)
                 .onChanged { v in
                     if horizontal == nil {
-                        if abs(v.translation.width) > 8 && abs(v.translation.width) > 1.2 * abs(v.translation.height) { horizontal = true }
+                        if abs(v.translation.width) > 12 && abs(v.translation.width) > 2 * abs(v.translation.height) { horizontal = true }
                         else if abs(v.translation.height) > 10 { horizontal = false }
                     }
                     guard horizontal == true else { return }

@@ -401,18 +401,15 @@ struct HVMoon: View {
         let sub: String = input.done ? "あした 9:00 に ひらく" : "のこり \(input.remaining)こま"
         Button(action: action) {
             ZStack(alignment: .top) {
-                Circle().fill(RadialGradient(stops: [.init(color: Color(red: 59 / 255, green: 211 / 255, blue: 90 / 255).opacity(0.34), location: 0),
-                                                     .init(color: Color(red: 22 / 255, green: 84 / 255, blue: 38 / 255).opacity(0.5), location: 0.26),
-                                                     .init(color: Color(red: 11 / 255, green: 30 / 255, blue: 16 / 255).opacity(pressing ? 0.76 : 0.82), location: 0.6),
-                                                     .init(color: Color(red: 11 / 255, green: 30 / 255, blue: 16 / 255).opacity(0.82), location: 1)],
-                                              center: UnitPoint(x: 0.5, y: 0), startRadius: 0, endRadius: d * 0.9))
-                    .shadow(color: .black.opacity(0.45), radius: 23, y: -20)
-                Circle().strokeBorder(Color(red: 160 / 255, green: 240 / 255, blue: 170 / 255).opacity(0.3), lineWidth: 1)
+                Circle().fill(LinearGradient(stops: [.init(color: Color(hex: "1E6A33"), location: 0), .init(color: Color(hex: "0E3A1B"), location: 0.22), .init(color: Color(hex: "07190C"), location: 0.52), .init(color: Color(hex: "040A06"), location: 1)], startPoint: .top, endPoint: .bottom))
+                    .shadow(color: Color(red: 59 / 255, green: 211 / 255, blue: 90 / 255).opacity(0.35), radius: 30, y: -14)
+                HV72DomeGlobe(d: d, pressing: pressing)
+                Circle().strokeBorder(HV.lime.opacity(0.55), lineWidth: 1)
                 HVRim(radius: d / 2, width: 1.2).opacity(0.6)
                 VStack(spacing: 15) {
                     HStack(spacing: 9) {
                         if !input.done { HVCameraGlyph(width: 26, line: 1.8, color: .white, showsFlash: false) }
-                        Text(title).font(LF.inter(800, 21)).tracking(-0.21).foregroundStyle(input.done ? .white.opacity(0.6) : .white)
+                        Text(title).font(LF.inter(800, 21)).tracking(-0.21).foregroundStyle(input.done ? .white.opacity(0.6) : .white).shadow(color: .black.opacity(0.75), radius: 7, y: 2)
                     }
                     .frame(height: 30)
                     HStack(spacing: 8) {
