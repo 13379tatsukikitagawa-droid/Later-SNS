@@ -190,12 +190,14 @@ struct OBCheki: View {
             // 貼った タグ(最大 3)
             ForEach(Array(tags.prefix(3).enumerated()), id: \.offset) { i, tag in
                 let s = OB.tagStyle[i]
-                Text(tag).font(LF.inter(900, 12.5)).foregroundStyle(s.fg).lineLimit(1).fixedSize()
+                // v95-2: 頭文字に かからない 3つの 席(左上の 角 / 右の ふち / 左下)
+                Text("#" + tag).font(LF.inter(900, 12.5)).foregroundStyle(s.fg).lineLimit(1).fixedSize()
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(s.bg, in: RoundedRectangle(cornerRadius: 10))
                     .shadow(color: .black.opacity(0.6), radius: 6, y: 6)
-                    .rotationEffect(.degrees(s.rot))
-                    .offset(x: i == 1 ? 180 - 70 : (i == 0 ? -34 : -26), y: [20, 92, 150][i])
+                    .rotationEffect(.degrees([-8, 7, 5][i]))
+                    .frame(width: 180, alignment: i == 1 ? .trailing : .leading)
+                    .offset(x: [-26, 30, -20][i], y: [-12, 70, 168][i])
                     .transition(.scale(scale: 2.4).combined(with: .opacity))
             }
             // ういている 友だちの 丸(申請した 人)

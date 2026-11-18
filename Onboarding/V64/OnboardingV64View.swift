@@ -78,12 +78,14 @@ struct OnboardingV64View: View {
     private func contentBottom(_ s: OBStep) -> CGFloat { s == .name ? 684 : (s == .mail ? 604 : (s == .tag ? 716 : 0)) }
     private func lift(mid: CGFloat) -> CGFloat {
         let b = contentBottom(step)
-        guard b > 0, kbTop < .greatestFiniteMagnitude else { return 0 }
+        guard b > 0, kbTop < .greatestFiniteMagnitude, !editing else { return 0 }
         // 下の ボタンは キーボードの 上に のる(下の すきま 34pt)。入力欄の 下は その ボタンより 上に
         let groupHeight: CGFloat = (step == .mail) ? 106 : 60
         let buttonTop = kbTop - 34 - groupHeight
         return max(0, b + mid + 14 - buttonTop)
     }
+    /// v95-1: 名前 / ID を 打って いる 間(キーボードが 出て いる)。チェキを 小さく 上へ、入力欄を その すぐ 下へ
+    private var editing: Bool { (step == .name || step == .id) && kbTop < .greatestFiniteMagnitude }
     private var validName: Bool { OnboardingRules.validateName(name).problem == nil }
 
     var body: some View {
@@ -156,13 +158,14 @@ struct OnboardingV64View: View {
                 // チェキ
                 OBCheki(step: step, initial: initial, colors: colors, photo: photo, tags: tags,
                         friendInitials: requestedInvite ? [(invitedBy.map { String($0.prefix(1)) } ?? "", colors.0)] : [])
-                    .scaleEffect(step.chekiScale)
+                    .scaleEffect(editing ? 0.52 : step.chekiScale)
                     .rotationEffect(.degrees(step.chekiRotation))
-                    .position(x: W / 2, y: step.chekiTop + mid + 108)
+                    .position(x: W / 2, y: editing ? 92 + 108 * 0.52 : step.chekiTop + mid + 108)
                     .offset(y: entered ? 0 : -300)
                     .rotationEffect(.degrees(entered ? 0 : -14))
                     .opacity(entered ? 1 - min(1, up / 60) : 0)
                     .animation(.timingCurve(0.3, 1.2, 0.4, 1, duration: 0.6), value: step)
+                    .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.38), value: editing)
                     .onTapGesture { if step == .tag { Haptics.play(.pop); showPhotoPicker = true } }
                 if step == .nt { OBNoticeCard().frame(width: W).offset(y: 104).transition(.opacity.combined(with: .offset(y: -20))) }
                 // 戻る
@@ -177,6 +180,7 @@ struct OnboardingV64View: View {
                 content(step, W: W, mid: mid)
                     .offset(y: slideY - up).opacity(slideOpacity)
                     .animation(.easeOut(duration: 0.25), value: up)
+                    .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.38), value: editing)
                 // ながおしの 光
                 if step == .go {
                     RadialGradient(colors: [OB.stamp.opacity(0.8 * holdLevel), .clear], center: UnitPoint(x: 0.5, y: 0.66), startRadius: 0, endRadius: max(W, H) * (0.18 + holdLevel * 0.62))
@@ -249,10 +253,10 @@ struct OnboardingV64View: View {
             .frame(width: W).offset(y: 448 + mid)
         case .name:
             VStack(spacing: 0) {
-                Text("Name").font(LF.serif(64, italic: true)).tracking(-1.28).foregroundStyle(.white).frame(height: 64)
-                Text("\(Brand.name) で よばれる なまえ").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8)
+                Text("Name").font(LF.serif(editing ? 44 : 64, italic: true)).tracking(editing ? -0.88 : -1.28).foregroundStyle(.white).frame(height: editing ? 44 : 64)
+                if !editing { Text("\(Brand.name) で よばれる なまえ").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8) }
             }
-            .frame(width: W).offset(y: 453 + mid)
+            .frame(width: W).offset(y: editing ? 214 : 453 + mid)
             VStack(alignment: .leading, spacing: 0) {
                 ZStack {
                     if name.isEmpty { Text("なまえ").font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(OB.sub.opacity(0.5)) }
@@ -268,10 +272,10 @@ struct OnboardingV64View: View {
                 }
                 .frame(height: 58)
                 Rectangle().fill(focus == .name ? OB.accent : .white).frame(height: 2.5)
-                Text("\(name.count) / 12").font(LF.mono(11.5, bold: true)).foregroundStyle(OB.sub).padding(.top, 8)
+                if !editing { Text("\(name.count) / 12").font(LF.mono(11.5, bold: true)).foregroundStyle(OB.sub).padding(.top, 8) }
             }
-            .frame(width: w).offset(x: 24, y: 691 + mid)
-            Button { Haptics.play(.click); showsIcon = true } label: {
+            .frame(width: w).offset(x: 24, y: editing ? 266 : 691 + mid)
+            if !editing { Button { Haptics.play(.click); showsIcon = true } label: {
                 HStack(spacing: 14) {
                     ZStack(alignment: .bottomTrailing) {
                         ZStack {
@@ -287,15 +291,15 @@ struct OnboardingV64View: View {
                     }
                     Spacer()
                 }.padding(.horizontal, 0)
-            }.buttonStyle(.plain).frame(width: w).offset(x: 24, y: 592 + mid)
+            }.buttonStyle(.plain).frame(width: w).offset(x: 24, y: 592 + mid) }
         case .id:
             VStack(spacing: 0) {
-                Text("ID").font(LF.serif(64, italic: true)).tracking(-1.28).foregroundStyle(.white).frame(height: 64)
-                Text("友だちが さがす ときに つかう ・ あとで かえられる").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8)
+                Text("ID").font(LF.serif(editing ? 44 : 64, italic: true)).tracking(editing ? -0.88 : -1.28).foregroundStyle(.white).frame(height: editing ? 44 : 64)
+                if !editing { Text("友だちが さがす ときに つかう ・ あとで かえられる").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8) }
             }
-            .frame(width: W).offset(y: 453 + mid)
+            .frame(width: W).offset(y: editing ? 214 : 453 + mid)
             HandleField(text: $handle, ownerKey: UserProfile.current(from: profiles)?.id.uuidString ?? currentProfileID, suggestions: HandleRules.suggestions(fromName: name), autofocus: true) { handleState = $0 }
-                .frame(width: w).offset(x: 24, y: 560 + mid)
+                .frame(width: w).offset(x: 24, y: editing ? 266 : 560 + mid)
         case .tag:
             heading([("じぶんを、", false), ("タグ", true), ("で。", false)]).offset(y: 424 + mid)
             swatches.frame(width: W).offset(y: 488 + mid)
@@ -454,9 +458,9 @@ struct OnboardingV64View: View {
                         Button { resend() } label: { Text("もういちど おくる") }.buttonStyle(OBButtonStyle(kind: .plain))
                     }.padding(.bottom, 34)
                 case .name:
-                    Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!validName).padding(.bottom, 34)
+                    Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!validName).padding(.bottom, editing ? 10 : 34)
                 case .id:
-                    Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!(handleState == .ok || handleState == .mine) || busy).padding(.bottom, 34)
+                    Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!(handleState == .ok || handleState == .mine) || busy).padding(.bottom, editing ? 10 : 34)
                 case .tag:
                     Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).padding(.bottom, 34)
                 case .fr:
@@ -480,6 +484,7 @@ struct OnboardingV64View: View {
             .padding(.horizontal, 24)
             .offset(y: slideY).opacity(slideOpacity)
             .opacity(entered ? 1 : 0)
+            .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.38), value: editing)
         }
     }
 
