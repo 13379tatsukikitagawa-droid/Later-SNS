@@ -25,6 +25,7 @@ enum DebugRouter {
         case "trip": showRaw(TripV83Preview())
         case "triphome": showRaw(TripHomeV83Preview())
         case "me": showRaw(MEV86Preview())
+        case "profile": showRaw(ProfileV82View(data: ProfileV82Data(name: "ゆい", username: "yui_0612", avatar: UserDefaults.standard.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型", "夕焼け", "放課後", "帰り道"], since: "Oct 2026", streak: 11, shots: 48, kept: 9)))
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
         }

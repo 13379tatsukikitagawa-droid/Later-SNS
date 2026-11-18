@@ -40,15 +40,27 @@ struct MainNavigationView: View {
                     .onPreferenceChange(HomeNoSwipeRegionKey.self) { homeNoSwipeRegions = $0 }
 
                 // v54:Profile(あなた)。右上の 丸・端スワイプから。右から 横に すべって 出る
-                ProfileShelfView(
-                    onBack: { show(.home) },
-                    onShoot: {
-                        show(.home)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                            CaptureRequestStore.shared.pendingRequestID = UUID()
-                        }
+                Group {
+                    if UIFlag.v64 {
+                        ProfileV82Host(
+                            onBack: { show(.home) },
+                            onShoot: {
+                                show(.home)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { CaptureRequestStore.shared.pendingRequestID = UUID() }
+                            }
+                        )
+                    } else {
+                        ProfileShelfView(
+                            onBack: { show(.home) },
+                            onShoot: {
+                                show(.home)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                    CaptureRequestStore.shared.pendingRequestID = UUID()
+                                }
+                            }
+                        )
                     }
-                )
+                }
                     .frame(width: width)
                     .offset(x: screen == .profile ? 0 : width)
                     .opacity(screen == .profile ? 1 : 0)
