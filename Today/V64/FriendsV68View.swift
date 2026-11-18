@@ -5,6 +5,8 @@ import SwiftData
 // データ ・ 申請 ・ つつく ・ チャット ・ ブロック ・ 通報の しくみは 今までの まま(`FriendRequests` `KnockStore` `DirectMessageView` `ModerationService`)。
 // 友だちの 数は どこにも 出さない。キャラクターは 使わない。
 
+extension Notification.Name { static let friendsSearchFocus = Notification.Name("friendsSearchFocus") }
+
 struct FriendsV68View: View {
     let myName: String
     var myAvatarData: Data?
@@ -97,6 +99,7 @@ struct FriendsV68View: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { Haptics.play(.tick) }
         }
         .fullScreenCover(isPresented: $showsMyQR) { SelfQRChekiHost(onScan: { showsMyQR = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showsScan = true } }, onClose: { showsMyQR = false }) }
+        .onReceive(NotificationCenter.default.publisher(for: .friendsSearchFocus)) { _ in searching = true }
         .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: myName, friendCount: list.count, friendIDs: Set(list.map(\.id)), myUsername: me?.username ?? "", onSearchID: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { searching = true } }) { show($0) } }
         .sheet(isPresented: $showsID) {
             FriendIDSearchSheet(myName: myName, seed: idSeed, onQR: { showsMyQR = true }, onLink: { shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }, onScan: { showsScan = true }) { show($0) }

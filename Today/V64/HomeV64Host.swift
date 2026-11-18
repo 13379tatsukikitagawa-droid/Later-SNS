@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// 実際の アプリの 状態(TodayView が 決めて 渡す 値)を、V64 の 画面(HomeV64View)が 読む 形に うつす。
 /// 友だちの 今日の 写真は 「ひらく 前は 小さな モザイク(mosaicTiny)だけ」。元の 写真は 使わない(PROMPT_v64 §3)。
@@ -11,6 +12,16 @@ struct HomeV64Host: View {
     @State private var showDevelop = false
     @State private var chatWith: (id: String, name: String)?
     @State private var incoming: [FriendRequests.Request] = []
+    // v95-9:4つの ボタンは それぞれ 別の 画面
+    @State private var showShare = false
+    @State private var showSelfQR = false
+    @State private var showScan = false
+    @State private var mondoStart = false
+    @Query private var profiles: [UserProfile]
+    private var myLink: URL {
+        let me = UserProfile.current(from: profiles)
+        return FriendRules.link(recordName: CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? "")
+    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { ctx in
@@ -20,10 +31,15 @@ struct HomeV64Host: View {
         .task { await refreshRequests() }
         .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
         .sheet(isPresented: Binding(get: { chatWith != nil }, set: { if !$0 { chatWith = nil } })) { if let c = chatWith { DirectMessageView(friendID: c.id, friendName: c.name) } }
+        .sheet(isPresented: $showShare) { ShareSheet(activityItems: [myLink]) { _ in showShare = false }.presentationDetents([.medium, .large]) }
+        .fullScreenCover(isPresented: $showSelfQR) { SelfQRChekiHost(onScan: { showSelfQR = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showScan = true } }, onClose: { showSelfQR = false }) }
+        .fullScreenCover(isPresented: $showScan) {
+            FriendQRScanView(myName: src.avatarName, friendCount: src.layerData.friends.filter { !$0.isMe }.count, friendIDs: Set(src.layerData.friends.map(\.id)), myUsername: UserProfile.current(from: profiles)?.username ?? "", onSearchID: { openSearch() }) { src.layerActions.toast($0) }
+        }
         .fullScreenCover(isPresented: $showDevelop) {
             DevelopV64View(count: max(1, src.shotsToday), times: { let f = DateFormatter(); f.dateFormat = "HH:mm"; return src.todayShots.map { f.string(from: $0.takenAt) } }(), now: Date(), onShoot: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }) { showDevelop = false }
         }
-        .fullScreenCover(isPresented: $showYesterday) {
+        .fullScreenCover(isPresented: $showYesterday, onDismiss: { mondoStart = false }) {
             YesterdayV64View(input: makeYesterdayInput(now: Date()), actions: makeYesterdayActions())
                 .fullScreenCover(isPresented: $showProfileOverYesterday) {
                     ProfileV82Host(onBack: { showProfileOverYesterday = false }, onShoot: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }, onMe: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenProfile() } })
@@ -41,6 +57,7 @@ struct HomeV64Host: View {
 
     private func makeYesterdayInput(now: Date) -> YesterdayV64Input {
         var y = YesterdayV64Input()
+        y.startTab = mondoStart ? 1 : 0
         let L = src.layerData
         let df = DateFormatter(); df.dateFormat = "HH:mm"
         y.shotsUsed = min(FilmRoll.shotsPerDay, src.shotsToday)
@@ -185,15 +202,22 @@ struct HomeV64Host: View {
             Task { _ = await FriendRequests.respond(to: r, accept: true, myName: src.avatarName); await refreshRequests() }
         }
         a.poke = { id in if let f = src.layerData.friends.first(where: { $0.id == id }) { src.layerActions.knock(f) } }
-        a.shareLink = src.layerActions.openFriends
-        a.showQR = src.layerActions.openFriends
-        a.searchByID = src.layerActions.openFriends
+        a.shareLink = { showShare = true }
+        a.showQR = { showSelfQR = true }
+        a.scanQR = { showScan = true }
+        a.searchByID = { openSearch() }
         a.openProfile = src.onOpenProfile
         a.openDevelop = { showDevelop = true }
         a.openTrip = src.onCreateGroup
         a.openTripHome = { id in src.onOpenChat(id) }
-        a.openMondo = src.v17Actions.openMondo
+        a.openMondo = { mondoStart = true; showYesterday = true }   // v95-10:いつでも Mondo タブ
         return a
+    }
+
+    /// Friends を ひらいて、検索欄に フォーカス
+    private func openSearch() {
+        src.layerActions.openFriends()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { NotificationCenter.default.post(name: .friendsSearchFocus, object: nil) }
     }
 
     // MARK: 小物
