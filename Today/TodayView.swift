@@ -691,13 +691,14 @@ struct TodayView: View {
                     onCancel: {
                         // 月のふくらみの途中でも、戻るはかならず反応させる
                         isMoonAnimating = false
+                        MusicPlayback.shared.fadeOut()   // v89:Home へ もどったら 止める
                         shrinkMoonBack()
                     },
                     onFinish: { photo, tags, place, shotIndex in
                         // 写真が返った時点で1回だけ。保存だけ行う(見せる動きとは つなげない)
                         saveCapturedShot(photo: photo, tags: tags, place: place, shotIndex: shotIndex)
                     },
-                    onShot: { handOff in landShot(handOff) },
+                    onShot: { handOff in MusicPlayback.shared.fadeOut(); landShot(handOff) },
                     onCaptureFailed: {
                         FilmCounter.shared.refundLast(reason: "noPhoto")   // 撮れなかった:数えない
                         FilmLanding.shared.pending = nil

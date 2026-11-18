@@ -20,6 +20,9 @@ nonisolated struct MusicPick: Codable, Equatable, Sendable {
     var artworkURL: String?
     var link: String?
     var service: Service
+    /// v89:カタログの 曲 ID と 30秒の 試聴(音の ファイルは 保存しない)
+    var songID: String? = nil
+    var previewURL: String? = nil
 
     /// 撮影画面の ピルに 出す 短い 名前
     var shortTitle: String {
@@ -212,7 +215,65 @@ enum AppleMusicCatalog {
             artist: song.artistName,
             artworkURL: song.artwork?.url(width: 300, height: 300)?.absoluteString,
             link: song.url?.absoluteString,
-            service: .apple
+            service: .apple,
+            songID: song.id.rawValue,
+            previewURL: song.previewAssets?.first?.url?.absoluteString
         )
+    }
+
+    private static func found(_ song: Song) -> Found { Found(id: song.id.rawValue, pick: pick(from: song), previewURL: song.previewAssets?.first?.url) }
+
+    // MARK: v89:おすすめ ・ 最近 ・ ライブラリ
+
+    /// あなたへの おすすめ(アルバムの 1曲目を 曲として 出す)
+    static func recommendations() async -> [Found] {
+        guard access == .ready else { return [] }
+        do {
+            let response = try await MusicPersonalRecommendationsRequest().response()
+            var albums: [Album] = []
+            for r in response.recommendations { for item in r.items { if case .album(let a) = item { albums.append(a) } } }
+            var out: [Found] = []
+            await withTaskGroup(of: Song?.self) { group in
+                for a in albums.prefix(10) {
+                    group.addTask {
+                        guard let full = try? await a.with([.tracks]), let t = full.tracks?.first else { return nil }
+                        if case .song(let s) = t { return s }
+                        return nil
+                    }
+                }
+                for await s in group { if let s { out.append(found(s)) } }
+            }
+            return out
+        } catch { logger.error("recommendations failed \(describe(error), privacy: .public)"); return [] }
+    }
+
+    /// いま 人気(世界の 日間 トップ)
+    static func charts() async -> [Found] {
+        guard access == .ready else { return [] }
+        do {
+            let request = MusicCatalogChartsRequest(kinds: [.dailyGlobalTop], types: [Song.self])
+            let response = try await request.response()
+            return (response.songCharts.first?.items ?? []).prefix(25).map(found)
+        } catch { logger.error("charts failed \(describe(error), privacy: .public)"); return [] }
+    }
+
+    static func recent() async -> [Found] {
+        guard access == .ready else { return [] }
+        do {
+            var request = MusicRecentlyPlayedRequest<Song>()
+            request.limit = 25
+            return try await request.response().items.map(found)
+        } catch { logger.error("recent failed \(describe(error), privacy: .public)"); return [] }
+    }
+
+    static func library(term: String = "") async -> [Found] {
+        guard access == .ready else { return [] }
+        do {
+            var request = MusicLibraryRequest<Song>()
+            request.limit = 30
+            request.sort(by: \.libraryAddedDate, ascending: false)
+            if !term.isEmpty { request.filter(text: term) }
+            return try await request.response().items.map(found)
+        } catch { logger.error("library failed \(describe(error), privacy: .public)"); return [] }
     }
 }

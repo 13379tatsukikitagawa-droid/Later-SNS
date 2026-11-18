@@ -17,6 +17,9 @@ struct TagMusicButton: View {
     /// 「この曲にする」で はずむ(0.9 → 1.06 → 1)
     var bounce: Int = 0
     let action: () -> Void
+    /// v89:曲が ある とき 1回 タップ = 止める / 流す(長押し = えらびなおす)
+    var onToggle: (() -> Void)? = nil
+    var playing = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -24,14 +27,23 @@ struct TagMusicButton: View {
     static let expandedWidth: CGFloat = 206
 
     var body: some View {
-        Button(action: action) {
+        if pick != nil, let onToggle {
+            chip.onTapGesture { onToggle() }.onLongPressGesture(minimumDuration: 0.5) { Haptics.play(.pop); action() }
+                .accessibilityAddTraits(.isButton)
+        } else {
+            Button(action: action) { chip }.buttonStyle(SquishButtonStyle(pressedScale: 0.93))
+        }
+    }
+
+    private var chip: some View {
+        Group {
             ZStack(alignment: .leading) {
                 Capsule().fill(Color(red: 40 / 255, green: 40 / 255, blue: 44 / 255).opacity(0.72))
                     .background(.ultraThinMaterial.opacity(0.4), in: Capsule())
                     .overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 1))
                 if let pick {
                     HStack(spacing: 9) {
-                        MusicDisc(artworkURL: pick.artworkURL, seed: pick.title, spinning: !reduceMotion)
+                        MusicDisc(artworkURL: pick.artworkURL, seed: pick.title, spinning: !reduceMotion && (onToggle == nil || playing))
                             .frame(width: 34, height: 34)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(pick.title)
@@ -43,7 +55,7 @@ struct TagMusicButton: View {
                         }
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        MusicEqualizer(animating: !reduceMotion)
+                        MusicEqualizer(animating: !reduceMotion && (onToggle == nil || playing), lime: onToggle != nil)
                     }
                     .padding(.leading, 6)
                     .padding(.trailing, 14)
@@ -64,7 +76,6 @@ struct TagMusicButton: View {
             .clipShape(Capsule())
             .contentShape(Capsule())
         }
-        .buttonStyle(SquishButtonStyle(pressedScale: 0.93))
         .keyframeAnimator(initialValue: CGFloat(1), trigger: bounce) { view, scale in
             view.scaleEffect(scale)
         } keyframes: { _ in
@@ -125,6 +136,7 @@ struct MusicDisc: View {
 /// 白い イコライザー(3本・濃さを かえる)。900ms で 上下
 struct MusicEqualizer: View {
     let animating: Bool
+    var lime = false
     private static let opacities: [Double] = [1, 0.7, 0.45]
 
     var body: some View {
@@ -134,7 +146,7 @@ struct MusicEqualizer: View {
                 ForEach(0..<3, id: \.self) { i in
                     let phase = animating ? (sin((t / 0.9 + Double(i) * 0.33) * 2 * .pi) + 1) / 2 : 0.5
                     RoundedRectangle(cornerRadius: 1.5)
-                        .fill(.white.opacity(Self.opacities[i]))
+                        .fill(lime ? HV.lime.opacity(Self.opacities[i] + 0.2) : .white.opacity(Self.opacities[i]))
                         .frame(width: 3, height: 4 + 10 * phase)
                 }
             }
@@ -144,7 +156,7 @@ struct MusicEqualizer: View {
     }
 }
 
-// MARK: - シート「今日の 1曲を つける」
+// MARK: - シート「今日の 1曲を つける」(v89 D:黒 ・ おすすめ / 最近 / ライブラリ ・ 行を おすと 流れる)
 
 struct MusicSheet: View {
     /// いま つけている 曲
@@ -153,348 +165,273 @@ struct MusicSheet: View {
     let onDone: (MusicPick?) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    private let playback = MusicPlayback.shared
     @State private var access: AppleMusicCatalog.Access = AppleMusicCatalog.access
-    @State private var subscribed = true
+    @State private var tab = 0
     @State private var term = ""
     @State private var results: [AppleMusicCatalog.Found] = []
+    @State private var libraryHits: [AppleMusicCatalog.Found] = []
     @State private var searching = false
-    /// 失敗の 本当の 中身(開発用に 小さく 出す)。nil なら 失敗していない
-    @State private var searchError: String?
-    /// 開発用:許可と サブスクの 状態
-    @State private var statusLine = ""
     @State private var searchTask: Task<Void, Never>?
+    @State private var recs: [AppleMusicCatalog.Found] = []
+    @State private var charts: [AppleMusicCatalog.Found] = []
+    @State private var recent: [AppleMusicCatalog.Found] = []
+    @State private var library: [AppleMusicCatalog.Found] = []
     @State private var linkText = ""
     @State private var linkPick: MusicPick?
     @State private var linkLoading = false
     @State private var selected: MusicPick?
-    @State private var player: AVPlayer?
-    @State private var playingID: String?
+    @Namespace private var tabNS
 
-    private static let ink = Color(hex: "111111")
-    private static let gray = Color(hex: "8E8E95")
+    private let bg = Color(hex: "0F1011"), grey = Color.white.opacity(0.5)
+    private let tabs = ["おすすめ", "最近", "ライブラリ"]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Capsule().fill(Color(hex: "D9D8DE")).frame(width: 38, height: 5)
-                .frame(maxWidth: .infinity).padding(.top, 8)
-            HStack(alignment: .firstTextBaseline) {
-                Text("今日の 1曲を つける").font(.system(size: 20, weight: .black)).foregroundStyle(Self.ink)
-                Spacer()
-                Text("MUSIC").font(.system(size: 10, weight: .semibold, design: .monospaced)).tracking(1).foregroundStyle(Self.gray)
+        ZStack(alignment: .bottom) {
+            bg.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("今日の 1曲").font(LF.inter(900, 22)).foregroundStyle(.white)
+                    Spacer()
+                    Text("MUSIC").font(LF.mono(10)).tracking(1.5).foregroundStyle(grey)
+                }.padding(.top, 26).padding(.horizontal, 20)
+                content
             }
-            .padding(.top, 14)
-
-            appleBody
-                .frame(maxHeight: .infinity, alignment: .top)
-
-            Button(action: choose) {
-                Text(selected == nil ? "曲を えらんでください" : "この曲にする")
-                    .font(.system(size: 15, weight: .heavy))
-                    .foregroundStyle(selected == nil ? Self.gray : .white)
-                    .frame(maxWidth: .infinity).frame(height: 54)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(selected == nil ? Color(hex: "F1F0F4") : Self.ink))
-            }
-            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
-            .disabled(selected == nil)
-            if current != nil {
-                Button(action: remove) {
-                    Text("音楽を はずす").font(.system(size: 13, weight: .bold)).foregroundStyle(Self.gray)
-                        .frame(maxWidth: .infinity).frame(height: 40)
-                }
-                .buttonStyle(.plain)
-            }
+            if access == .ready { bottomBar }
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 8)
-        .background(Color.white.ignoresSafeArea())
-        .preferredColorScheme(.light)
-        .presentationDetents([.large])
-        .presentationCornerRadius(32)
-        .presentationDragIndicator(.hidden)
+        .preferredColorScheme(.dark)
+        .presentationDetents([.large]).presentationCornerRadius(34).presentationDragIndicator(.visible).presentationBackground(bg)
         .onAppear { selected = current }
-        .task {
-            if access == .ready { subscribed = await AppleMusicCatalog.hasSubscription() }
-            statusLine = await AppleMusicCatalog.statusLine()
-        }
-        .onDisappear {
-            searchTask?.cancel()
-            player?.pause()
-        }
+        .task { await loadAll() }
+        .onDisappear { searchTask?.cancel() }   // 曲は とじても 流れつづける
     }
 
-
-    // MARK: Apple Music
-
-    @ViewBuilder
-    private var appleBody: some View {
+    @ViewBuilder private var content: some View {
         switch access {
-        case .ready:
-            VStack(alignment: .leading, spacing: 10) {
-                searchField
-                if !subscribed {
-                    note("Apple Music に 入っていない 場合は、試聴だけに なります。リンクを はる 方法も 使えます。")
-                }
-                resultList
-                if !subscribed { linkField(placeholder: "music.apple.com の リンクを はる") }
-            }
-            .padding(.top, 14)
-        case .notDetermined:
-            connect(text: "Apple Music に つなぐと、曲を さがして つけられます。\nその人の ライブラリは 読みません。")
-        case .denied:
-            VStack(alignment: .leading, spacing: 10) {
-                note("Apple Music の 許可が ありません。設定アプリの「Lattag」で「メディアと Apple Music」を オンにしてください。\nApple Music に 入っていない 場合は、リンクを はる 方法を 使ってください。")
-                linkField(placeholder: "music.apple.com の リンクを はる")
-                linkResult
-            }
-            .padding(.top, 18)
-        case .unavailable:
-            VStack(alignment: .leading, spacing: 10) {
-                note("この 端末では、Apple Music を 使えません。Apple Music に 入っていない 場合は、リンクを はる 方法を 使ってください。")
-                linkField(placeholder: "music.apple.com の リンクを はる")
-                linkResult
-            }
-            .padding(.top, 18)
+        case .ready: readyBody
+        case .notDetermined: connectBody
+        case .denied: fallback("Apple Music の 許可が ありません。設定アプリの「Lattag」で「メディアと Apple Music」を オンにして ください。")
+        case .unavailable: fallback("この 端末では、Apple Music を 使えません。")
         }
     }
 
-    private func connect(text: String) -> some View {
-        VStack(spacing: 16) {
-            Text(text)
-                .font(.system(size: 13, weight: .semibold)).lineSpacing(5)
-                .foregroundStyle(Color(hex: "6E6E76"))
-                .multilineTextAlignment(.center)
+    // つなぐ 前(C13)
+    private var connectBody: some View {
+        VStack(spacing: 18) {
+            Spacer(minLength: 20)
+            ZStack {
+                ForEach(0..<3, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 18, style: .continuous).fill([Color(hex: "C8F25A"), Color(hex: "EE5E9C"), Color(hex: "9ED8FF")][i]).frame(width: 96, height: 96)
+                        .overlay(Image(systemName: "music.note").font(.system(size: 34, weight: .bold)).foregroundStyle(Color(hex: "0B0C0D")))
+                        .rotationEffect(.degrees([-12, 0, 12][i])).offset(x: CGFloat(i - 1) * 62, y: i == 1 ? -8 : 0)
+                }
+            }.frame(height: 130)
+            Text("今日の 写真に、1曲").font(LF.inter(900, 24)).foregroundStyle(.white)
+            Text("友だちが 写真を ひらくと、この曲が 流れます").font(LF.inter(600, 14)).foregroundStyle(grey).multilineTextAlignment(.center)
             Button {
                 Task {
-                    let result = await AppleMusicCatalog.requestAccess()
-                    if result == .ready {
-                        Haptics.play(.success)   // つなぐ(許可が 通った)
-                        subscribed = await AppleMusicCatalog.hasSubscription()
-                    } else {
-                        Haptics.play(.warn)
-                    }
-                    withAnimation { access = result }
-                    statusLine = await AppleMusicCatalog.statusLine()
+                    let r = await AppleMusicCatalog.requestAccess()
+                    Haptics.play(r == .ready ? .success : .warn)
+                    withAnimation { access = r }
+                    if r == .ready { await loadAll() }
                 }
-            } label: {
-                Text("つなぐ").font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 50)
-                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Self.ink))
-            }
-            .buttonStyle(SquishButtonStyle(pressedScale: 0.97))
-        }
-        .padding(.top, 26)
+            } label: { Text("Apple Music と つなぐ").font(LF.inter(800, 16)).foregroundStyle(Color(hex: "0B0C0D")).frame(maxWidth: .infinity).frame(height: 56).background(.white, in: Capsule()) }
+                .buttonStyle(HVPress(scale: 0.97)).padding(.horizontal, 20)
+            Spacer()
+        }.frame(maxWidth: .infinity)
     }
+
+    private func fallback(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(text).font(LF.inter(600, 13)).foregroundStyle(grey).lineSpacing(4)
+            linkField
+            if let linkPick { row(linkPick, previewURL: linkPick.previewURL.flatMap(URL.init(string:))) }
+        }.padding(20)
+    }
+
+    // つないだ あと(C14)
+    private var readyBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            searchField.padding(.horizontal, 20).padding(.top, 14)
+            if term.isEmpty { tabBar.padding(.horizontal, 20) }
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if !term.isEmpty {
+                        if searching && results.isEmpty { ProgressView().frame(maxWidth: .infinity).padding(.top, 30) }
+                        else if results.isEmpty && libraryHits.isEmpty { Text("見つかりませんでした").font(LF.inter(600, 13)).foregroundStyle(grey).padding(20) }
+                        list(results)
+                        if !libraryHits.isEmpty { head("ライブラリ"); list(libraryHits) }
+                    } else if tab == 0 {
+                        if !recs.isEmpty { head("あなたへの おすすめ"); recsRow }
+                        if !charts.isEmpty { head("いま 人気"); list(charts) }
+                        if recs.isEmpty && charts.isEmpty { empty }
+                    } else if tab == 1 {
+                        head("最近 聴いた 曲"); if recent.isEmpty { empty } else { list(recent) }
+                    } else {
+                        head("ライブラリ ・ 曲"); if library.isEmpty { empty } else { list(library) }
+                    }
+                    Color.clear.frame(height: 130)
+                }
+            }.scrollDismissesKeyboard(.immediately)
+        }
+    }
+
+    private var empty: some View { Text("まだ ありません").font(LF.inter(600, 13)).foregroundStyle(grey).padding(20) }
+    private func head(_ t: String) -> some View { Text(t).font(LF.inter(800, 15)).foregroundStyle(.white).padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 8) }
 
     private var searchField: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .bold)).foregroundStyle(Self.gray)
-            TextField("曲名・アーティスト", text: $term)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Self.ink)
-                .submitLabel(.search)
-                .autocorrectionDisabled()
-                .onChange(of: term) { _, value in scheduleSearch(value) }
-                .onSubmit { scheduleSearch(term, now: true) }
+            Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .bold)).foregroundStyle(grey)
+            TextField("曲名・アーティスト", text: $term).font(LF.inter(700, 15)).foregroundStyle(.white).submitLabel(.search).autocorrectionDisabled()
+                .onChange(of: term) { _, v in scheduleSearch(v) }.onSubmit { scheduleSearch(term, now: true) }
             if searching { ProgressView().scaleEffect(0.8) }
-        }
-        .padding(.horizontal, 14)
-        .frame(height: 46)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "F4F3F7")))
+        }.padding(.horizontal, 16).frame(height: 46).background(.white.opacity(0.08), in: Capsule())
     }
 
-    private var resultList: some View {
-        ScrollView {
-            LazyVStack(spacing: 2) {
-                if let searchError {
-                    note("さがせませんでした。")
-                    debugText(searchError)
-                } else if !term.isEmpty, results.isEmpty, !searching {
-                    note("見つかりませんでした")
-                }
-                ForEach(results) { found in
-                    row(found.pick, previewURL: found.previewURL, id: found.id)
-                }
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(tabs.enumerated()), id: \.offset) { i, t in
+                Button { Haptics.play(.sel); withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { tab = i } } label: {
+                    Text(t).font(LF.inter(800, 14)).foregroundStyle(tab == i ? Color(hex: "0B0C0D") : .white.opacity(0.7)).frame(maxWidth: .infinity).frame(height: 40)
+                        .background { if tab == i { Capsule().fill(.white).matchedGeometryEffect(id: "tab", in: tabNS) } }
+                }.buttonStyle(.plain)
             }
-        }
-        .scrollDismissesKeyboard(.immediately)
-        .safeAreaInset(edge: .bottom) {
-            // 開発用:許可と サブスクの 状態(小さな 灰色の 文字)
-            // v89:デバッグの 字は 出さない
-        }
+        }.padding(3).background(.white.opacity(0.07), in: Capsule())
     }
 
-    /// 開発用の 小さな 文字(選んで コピーできる)
-    private func debugText(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 9.5, weight: .regular, design: .monospaced))
-            .foregroundStyle(Color(hex: "9A9AA2"))
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
-    }
-
-    private func linkField(placeholder: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "link").font(.system(size: 14, weight: .bold)).foregroundStyle(Self.gray)
-            TextField(placeholder, text: $linkText)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Self.ink)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .onChange(of: linkText) { _, value in readLink(value) }
-            if linkLoading { ProgressView().scaleEffect(0.8) }
-            PasteButton(payloadType: String.self) { strings in
-                if let text = strings.first { linkText = text }
-            }
-            .labelStyle(.titleOnly)
-            .buttonBorderShape(.capsule)
-            .tint(Self.ink)
-            .controlSize(.small)
-        }
-        .padding(.horizontal, 14)
-        .frame(height: 46)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "F4F3F7")))
-    }
-
-    @ViewBuilder
-    private var linkResult: some View {
-        if let linkPick {
-            row(linkPick, previewURL: nil, id: "link")
-        } else if !linkText.isEmpty, !linkLoading, MusicLink.find(in: linkText) == nil {
-            note("曲の リンクが 見つかりません")
-        }
-    }
-
-    // MARK: 行
-
-    private func row(_ pick: MusicPick, previewURL: URL?, id: String) -> some View {
-        let on = selected == pick
-        return Button {
-            Haptics.play(.detent)   // 曲を えらぶ(コツッ)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selected = pick }
-        } label: {
+    private var recsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                AsyncImage(url: pick.artworkURL.flatMap(URL.init(string:))) { phase in
-                    if let image = phase.image { image.resizable().scaledToFill() } else { Color(hex: "E3E2E9") }
+                ForEach(recs) { f in
+                    Button { choosePlay(f.pick, f.previewURL) } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            art(f.pick, 132, 18, f.id)
+                            Text(f.pick.title).font(LF.inter(800, 13)).foregroundStyle(.white).lineLimit(1)
+                            Text(f.pick.artist).font(LF.inter(600, 11.5)).foregroundStyle(grey).lineLimit(1)
+                        }.frame(width: 132)
+                    }.buttonStyle(.plain)
                 }
-                .frame(width: 46, height: 46)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(pick.title).font(.system(size: 14.5, weight: .heavy)).foregroundStyle(Self.ink)
-                    Text(pick.artist).font(.system(size: 12, weight: .medium)).foregroundStyle(Self.gray)
-                }
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                // 30秒の 試聴(えらんだ 行だけ。自動では 流さない)
-                if on, let previewURL {
-                    Button { togglePreview(previewURL, id: id) } label: {
-                        Image(systemName: playingID == id ? "pause.fill" : "play.fill")
-                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Self.ink)
-                            .frame(width: 30, height: 30)
-                            .background(Circle().fill(Color(hex: "E3E2E9")))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(playingID == id ? "試聴を とめる" : "試聴する")
-                }
-                ZStack {
-                    Circle().fill(on ? Self.ink : Color(hex: "E3E2E9"))
-                    Image(systemName: "checkmark").font(.system(size: 10, weight: .black)).foregroundStyle(.white).opacity(on ? 1 : 0)
-                }
-                .frame(width: 24, height: 24)
-                .scaleEffect(on ? 1 : 0.7)
-            }
-            .padding(.horizontal, 6).padding(.vertical, 8)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(on ? Color(hex: "F4F3F7") : .clear))
-            .contentShape(Rectangle())
+            }.padding(.horizontal, 20)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(pick.title)、\(pick.artist)\(on ? "、選択中" : "")")
     }
 
-    private func note(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12.5, weight: .semibold)).lineSpacing(4)
-            .foregroundStyle(Color(hex: "6E6E76"))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
+    private func list(_ items: [AppleMusicCatalog.Found]) -> some View {
+        ForEach(items) { f in row(f.pick, previewURL: f.previewURL) }
+    }
+
+    private func key(_ p: MusicPick) -> String { p.songID ?? p.title + p.artist }
+
+    private func art(_ p: MusicPick, _ size: CGFloat, _ r: CGFloat, _ id: String) -> some View {
+        ZStack {
+            AsyncImage(url: p.artworkURL.flatMap(URL.init(string:))) { ph in if let i = ph.image { i.resizable().scaledToFill() } else { Color.white.opacity(0.1) } }
+            if playback.isPlaying(key(p)) {
+                Color.black.opacity(0.35)
+                MusicEqualizer(animating: true, lime: true)
+            }
+        }.frame(width: size, height: size).clipShape(RoundedRectangle(cornerRadius: r, style: .continuous))
+    }
+
+    private func row(_ p: MusicPick, previewURL: URL?) -> some View {
+        let on = selected == p, playing = playback.isPlaying(key(p))
+        return Button { choosePlay(p, previewURL) } label: {
+            HStack(spacing: 12) {
+                art(p, 52, 12, key(p))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(p.title).font(LF.inter(800, 15)).foregroundStyle(on ? HV.lime : .white)
+                    Text(p.artist).font(LF.inter(600, 12.5)).foregroundStyle(grey)
+                }.lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: playing ? "pause.fill" : "play.fill").font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(playing ? Color(hex: "0B0C0D") : .white).frame(width: 44, height: 44)
+                    .background(playing ? HV.lime : .white.opacity(0.1), in: Circle())
+            }.padding(.horizontal, 20).padding(.vertical, 6).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+        .accessibilityLabel("\(p.title)、\(p.artist)\(on ? "、選択中" : "")")
+    }
+
+    private var linkField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "link").foregroundStyle(grey)
+            TextField("music.apple.com の リンクを はる", text: $linkText).font(LF.inter(600, 14)).foregroundStyle(.white).textInputAutocapitalization(.never).autocorrectionDisabled()
+                .onChange(of: linkText) { _, v in readLink(v) }
+            if linkLoading { ProgressView().scaleEffect(0.8) }
+        }.padding(.horizontal, 16).frame(height: 46).background(.white.opacity(0.08), in: Capsule())
+    }
+
+    // 下:えらんだ 曲の バー + この曲にする
+    private var bottomBar: some View {
+        VStack(spacing: 10) {
+            if let sel = selected {
+                HStack(spacing: 10) {
+                    art(sel, 40, 9, key(sel))
+                    VStack(alignment: .leading, spacing: 2) { Text(sel.title).font(LF.inter(800, 14)).foregroundStyle(.white); Text("プレビュー").font(LF.mono(9)).tracking(1.5).foregroundStyle(grey) }.lineLimit(1)
+                    Spacer()
+                }.padding(.horizontal, 6)
+            }
+            Button(action: choose) {
+                Text(selected == nil ? "曲を えらんでください" : "この曲にする").font(LF.inter(800, 16)).foregroundStyle(selected == nil ? grey : Color(hex: "0B0C0D"))
+                    .frame(maxWidth: .infinity).frame(height: 56).background(selected == nil ? Color.white.opacity(0.08) : HV.lime, in: Capsule())
+            }.buttonStyle(HVPress(scale: 0.97)).disabled(selected == nil)
+            if current != nil { Button(action: remove) { Text("音楽を はずす").font(LF.inter(700, 13)).foregroundStyle(grey).frame(maxWidth: .infinity).frame(height: 36) }.buttonStyle(.plain) }
+        }.padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 10)
+            .background(LinearGradient(colors: [bg.opacity(0), bg, bg], startPoint: .top, endPoint: .bottom))
     }
 
     // MARK: 動き
 
-    /// 0.4秒 待ってから 検索(デバウンス)。待っている間に 打ったら、前の 待ちを とりけす。
-    /// とりけしは「待ち」の 間だけ。検索を はじめたら、とちゅうで キャンセルしない(結果が 古ければ 捨てるだけ)
+    /// 行を おす = えらぶ + すぐ 流れる(もう1回 = 止める)
+    private func choosePlay(_ p: MusicPick, _ url: URL?) {
+        Haptics.play(.sel)
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selected = p }
+        playback.toggle(key: key(p), url: url ?? p.previewURL.flatMap(URL.init(string:)))
+    }
+
+    private func loadAll() async {
+        guard access == .ready else { return }
+        async let r = AppleMusicCatalog.recommendations()
+        async let c = AppleMusicCatalog.charts()
+        async let rc = AppleMusicCatalog.recent()
+        async let l = AppleMusicCatalog.library()
+        let (a, b, d, e) = await (r, c, rc, l)
+        recs = a; charts = b; recent = d; library = e
+    }
+
     private func scheduleSearch(_ value: String, now: Bool = false) {
         searchTask?.cancel()
-        let query = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else {
-            results = []
-            searching = false
-            searchError = nil
-            return
-        }
+        let q = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { results = []; libraryHits = []; searching = false; return }
         searchTask = Task {
-            if !now {
-                try? await Task.sleep(for: .milliseconds(400))
-                guard !Task.isCancelled else { return }
-            }
+            if !now { try? await Task.sleep(for: .milliseconds(400)); guard !Task.isCancelled else { return } }
             searching = true
-            let outcome: Result<[AppleMusicCatalog.Found], Error>
-            do {
-                outcome = .success(try await Task.detached { try await AppleMusicCatalog.search(query) }.value)
-            } catch {
-                outcome = .failure(error)
-            }
-            // いまの 入力と ちがう(あとから 打った)結果は 捨てる
-            guard term.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
-            searching = false
-            switch outcome {
-            case .success(let found):
-                searchError = nil
-                results = found
-            case .failure(let error):
-                results = []
-                searchError = AppleMusicCatalog.describe(error)
-                statusLine = await AppleMusicCatalog.statusLine()
-            }
+            let found = (try? await Task.detached { try await AppleMusicCatalog.search(q) }.value) ?? []
+            let lib = await AppleMusicCatalog.library(term: q)
+            guard term.trimmingCharacters(in: .whitespacesAndNewlines) == q else { return }
+            searching = false; results = found; libraryHits = lib
         }
     }
 
     private func readLink(_ text: String) {
-        guard let found = MusicLink.find(in: text) else { linkPick = nil; return }
+        guard let f = MusicLink.find(in: text) else { linkPick = nil; return }
         linkLoading = true
         Task {
-            let pick = await MusicLink.pick(from: found.url, service: found.service)
+            let p = await MusicLink.pick(from: f.url, service: f.service)
             linkLoading = false
             guard linkText == text else { return }
-            linkPick = pick
-            Haptics.play(.detent)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selected = pick }
+            linkPick = p; Haptics.play(.detent); selected = p
         }
-    }
-
-    private func togglePreview(_ url: URL, id: String) {
-        if playingID == id {
-            player?.pause()
-            playingID = nil
-            return
-        }
-        player?.pause()
-        let next = AVPlayer(url: url)
-        next.volume = 0.6
-        next.play()
-        player = next
-        playingID = id
     }
 
     private func choose() {
         guard let selected else { return }
         Haptics.play(.success)
+        // えらんだ 曲が まだ 流れて いなければ 流す(決めた あとも 流れる)
+        if !playback.isPlaying(key(selected)), let u = selected.previewURL.flatMap(URL.init(string:)) { playback.start(key: key(selected), url: u) }
         onDone(selected)
         dismiss()
     }
 
     private func remove() {
         Haptics.play(.soft)
+        playback.stop()
         onDone(nil)
         dismiss()
     }

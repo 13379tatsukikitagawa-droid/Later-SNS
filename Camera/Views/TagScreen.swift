@@ -280,6 +280,7 @@ struct TagScreen: View {
     @State private var music: MusicPick? = MusicDraft.load()
     @State private var showsMusic = false
     @State private var musicBounce = 0
+    private let musicPlayback = MusicPlayback.shared
 
     private static let space = "tagScreen"
     private static let examples = ["雨の日", "放課後", "いい匂い", "部活", "帰り道", "テスト前"]
@@ -299,11 +300,14 @@ struct TagScreen: View {
                     HStack(alignment: .top) {
                         closeButton
                         Spacer(minLength: 12)
-                        TagMusicButton(pick: music, bounce: musicBounce) {
+                        TagMusicButton(pick: music, bounce: musicBounce, action: {
                             Haptics.play(.pop)
                             inputFocused = false
                             showsMusic = true
-                        }
+                        }, onToggle: {
+                            let g = MusicPlayback.shared
+                            if g.isPlaying { Haptics.play(.soft); g.stop() } else if let m = music, let u = m.previewURL.flatMap(URL.init(string:)) { Haptics.play(.tick); g.start(key: m.songID ?? m.title + m.artist, url: u) }
+                        }, playing: musicPlayback.isPlaying)
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 7)
@@ -381,8 +385,8 @@ struct TagScreen: View {
             }
         }
         .preferredColorScheme(.dark)
-        .onAppear(perform: appear)
-        .onDisappear { placeholderTask?.cancel() }
+        .onAppear { MusicPlayback.shared.setVolume(0.9); appear() }
+        .onDisappear { placeholderTask?.cancel(); MusicPlayback.shared.setVolume(0.45) }   // v89:撮影画面へ 行っても 小さく 流れる
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
             BackTiming.mark("⑥キーボードが 出た", on: .chipToTags)
         }
