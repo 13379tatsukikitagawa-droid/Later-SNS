@@ -375,6 +375,9 @@ struct RootView: View {
             InvitePasteSheet { shareURL in
                 showingInvitePaste = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { handleInviteLink(shareURL) }
+            } onTripCode: {
+                showingInvitePaste = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { joinFlow = JoinFlowRequest(start: .passphrase) }
             } onDismiss: {
                 showingInvitePaste = false
             }

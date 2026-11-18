@@ -1073,50 +1073,118 @@ struct JoinFlowRequest: Identifiable {
 /// OS の「ペースト」ボタンなので、許可のアラートは出ない。外部のサービスは使わない。
 struct InvitePasteSheet: View {
     let onLink: (URL) -> Void
+    var onTripCode: () -> Void = {}
     let onDismiss: () -> Void
 
+    @Query private var profiles: [UserProfile]
+    @State private var open: Int? = nil
     @State private var message: String?
+    @State private var idText = ""
+    @State private var hit: UserDirectoryService.Hit?
+    @State private var searching = false
+    @State private var requested = false
+    @State private var task: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 0) {
             Capsule().fill(.white.opacity(0.25)).frame(width: 40, height: 5).padding(.top, 10)
             Text("招待されて、来ましたか?")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(.top, 26)
-            Text("招待のリンクをコピーしてから来た人は、ここに貼りつけると、そのまま続きから入れます。")
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: "BCBBC0"))
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 10)
-            if let message {
-                Text(message).font(.system(size: 12.5)).foregroundStyle(Color(hex: "FFB078")).padding(.top, 10)
-            }
-            Spacer(minLength: 20)
-            PasteButton(payloadType: URL.self) { urls in
-                if let shareURL = urls.lazy.compactMap(InviteConfig.shareURL(from:)).first {
-                    onLink(shareURL)
-                } else {
-                    message = "Lattag の招待ではありません"
+                .font(.system(size: 22, weight: .bold)).foregroundStyle(.white).padding(.top, 22)
+            Text("入り方を えらんでください。ひとつ だけ ひらきます。")
+                .font(.system(size: 13)).foregroundStyle(Color(hex: "BCBBC0")).padding(.top, 8)
+            VStack(spacing: 10) {
+                route(0, "link", "招待リンクを 貼りつける") {
+                    PasteButton(payloadType: URL.self) { urls in
+                        if let shareURL = urls.lazy.compactMap(InviteConfig.shareURL(from:)).first { onLink(shareURL) }
+                        else { message = "Lattag の招待ではありません" }
+                    }
+                    .buttonBorderShape(.capsule).controlSize(.large).tint(HV.lime)
+                    if let message { Text(message).font(.system(size: 12.5)).foregroundStyle(Color(hex: "FFB078")) }
+                }
+                route(1, "airplane", "Trip の コード") {
+                    Text("Trip の 合言葉(例 peach408)を 入れて 入ります。").font(.system(size: 12.5)).foregroundStyle(Color(hex: "BCBBC0"))
+                    Button { Haptics.play(.click); onTripCode() } label: {
+                        Text("コードを 入れる").font(.system(size: 15, weight: .heavy)).foregroundStyle(HV.ink)
+                            .frame(maxWidth: .infinity, minHeight: 48).background(HV.lime, in: Capsule())
+                    }.buttonStyle(.plain)
+                }
+                route(2, "at", "友だちの @ID") {
+                    HStack(spacing: 8) {
+                        Text("@").font(LF.mono(18, bold: true)).foregroundStyle(HV.lime)
+                        TextField("", text: $idText, prompt: Text(verbatim: "id").foregroundStyle(.white.opacity(0.3)))
+                            .font(LF.mono(18, bold: true)).foregroundStyle(.white).tint(HV.lime)
+                            .textInputAutocapitalization(.never).autocorrectionDisabled()
+                            .onChange(of: idText) { _, v in lookup(v) }
+                    }
+                    .padding(.horizontal, 14).frame(height: 48).background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                    if let hit {
+                        HStack(spacing: 10) {
+                            Text(String(hit.profile.name.prefix(1))).font(.system(size: 15, weight: .heavy)).foregroundStyle(.white)
+                                .frame(width: 36, height: 36).background(Color(hex: "3A3A3F"), in: Circle())
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(hit.profile.name).font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                                Text("@" + hit.profile.username).font(LF.mono(11)).foregroundStyle(Color(hex: "BCBBC0"))
+                            }
+                            Spacer()
+                            Button { sendRequest(hit) } label: {
+                                Text(requested ? "✓ 申請中" : "申請").font(.system(size: 13, weight: .heavy)).foregroundStyle(HV.ink)
+                                    .padding(.horizontal, 16).frame(height: 36).background(HV.lime.opacity(requested ? 0.5 : 1), in: Capsule())
+                            }.buttonStyle(.plain).disabled(requested)
+                        }
+                    } else if searching { ProgressView().tint(.white) }
+                    else if idText.count >= 3 { Text("見つかりません").font(.system(size: 12.5)).foregroundStyle(Color(hex: "BCBBC0")) }
                 }
             }
-            .buttonBorderShape(.capsule)
-            .controlSize(.large)
-            .tint(.white)
+            .padding(.top, 20)
+            Spacer(minLength: 12)
             Button(action: onDismiss) {
-                Text("ちがいます")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color(hex: "8E8E93"))
-                    .frame(minHeight: 44)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 6)
+                Text("ちがいます ・ このまま はじめる").font(.system(size: 14, weight: .medium)).foregroundStyle(Color(hex: "8E8E93")).frame(minHeight: 44)
+            }.buttonStyle(.plain)
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 20)
+        .padding(.horizontal, 20).padding(.bottom, 16)
         .frame(maxWidth: .infinity)
         .background(Color(hex: "16161A").ignoresSafeArea())
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
+        .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.3), value: open)
+    }
+
+    private func route<C: View>(_ i: Int, _ icon: String, _ title: String, @ViewBuilder _ content: () -> C) -> some View {
+        VStack(spacing: 12) {
+            Button { Haptics.play(.sel); open = (open == i) ? nil : i } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: icon).font(.system(size: 15, weight: .bold)).foregroundStyle(HV.lime).frame(width: 24)
+                    Text(title).font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                    Spacer()
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.5)).rotationEffect(.degrees(open == i ? 180 : 0))
+                }.frame(minHeight: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain)
+            if open == i { content().transition(.opacity) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 6)
+        .background(.white.opacity(open == i ? 0.1 : 0.06), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(open == i ? HV.lime.opacity(0.5) : .clear, lineWidth: 1))
+    }
+
+    private func lookup(_ v: String) {
+        task?.cancel(); hit = nil; requested = false
+        let q = HandleRules.normalize(v)
+        guard q.count >= 3 else { searching = false; return }
+        searching = true
+        task = Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            let r = await UserDirectoryService.searchUsers(q, myRecordName: CloudKitManager.current?.currentUserRecordName)
+            guard !Task.isCancelled else { return }
+            await MainActor.run { hit = r.first(where: { $0.kind == .exact }); searching = false }
+        }
+    }
+
+    private func sendRequest(_ h: UserDirectoryService.Hit) {
+        guard let rn = h.profile.cloudKitUserRecordName else { message = "申請できません"; return }
+        let me = UserProfile.current(from: profiles)
+        Task {
+            let ok = await FriendRequests.send(to: rn, toName: h.profile.name, myName: me?.name ?? "", myUsername: me?.username ?? "")
+            await MainActor.run { if ok { requested = true; Haptics.play(.success) } else { Haptics.play(.warn) } }
+        }
     }
 }
