@@ -31,3 +31,10 @@ struct HandleRulesTests {
         #expect(HandleRules.daysUntilChange(lastChange: now.addingTimeInterval(-20 * 86400), now: now) == 0)
     }
 }
+
+struct DirectoryNameKeyTests {
+    @Test func カタカナはひらがなと同じ() {
+        #expect(DirectoryNameKey.make("ユイ") == DirectoryNameKey.make("ゆい"))
+        #expect(DirectoryNameKey.make("Yui Chan") == "yuichan")
+    }
+}

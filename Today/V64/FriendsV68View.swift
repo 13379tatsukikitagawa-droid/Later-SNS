@@ -35,6 +35,15 @@ struct FriendsV68View: View {
     @State private var reportingFriend: HomeFriend?
     @State private var toast: String?
     @State private var scrollY: CGFloat = 0
+    @Query private var profiles: [UserProfile]
+    @State private var hits: [UserDirectoryService.Hit] = []
+    @State private var searchingNow = false
+    @State private var searchTask: Task<Void, Never>?
+    @State private var sentTo: Set<UUID> = []
+    @State private var showsHandle = false
+    @State private var copiedID = false
+    private var me: UserProfile? { UserProfile.current(from: profiles) }
+    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private var myRecordName: String { CloudKitManager.current?.currentUserRecordName ?? "" }
     private var list: [HomeFriend] { friends.filter { !$0.isMe } }
@@ -53,21 +62,23 @@ struct FriendsV68View: View {
             backdrop
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    Color.clear.frame(height: 62 + 44 + 12)
-                    if !empty { todayLine.rise(on, 0); search.rise(on, 1) }
-                    qrCards.rise(on, empty ? 0 : 2)
-                    connectRow.rise(on, empty ? 1 : 3)
-                    if !requests.isEmpty { requestsBlock.rise(on, empty ? 2 : 4) }
-                    if !empty { friendsBlock.rise(on, 5) }
-                    footer
+                    Color.clear.frame(height: 62 + 44 + 10 + 54 + 14)
+                    if isSearching { resultsBlock } else {
+                        idCard.rise(on, 0)
+                        pathsRow.rise(on, 1)
+                        if !requests.isEmpty { requestsBlock.rise(on, 2) }
+                        if !empty { todayLine.padding(.top, 26).rise(on, 3); friendsBlock.rise(on, 4) }
+                        footer
+                    }
                     Color.clear.frame(height: 60)
                 }
             }
             .scrollIndicators(.hidden)
             .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, v in scrollY = v }
             header
+            searchBar.padding(.horizontal, 16).offset(y: 62 + 44 + 10)
         }
-        .background(Color(hex: "0A0A0B"))
+        .background(Color(hex: "0B0B0C"))
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
         .overlay(alignment: .bottom) {
@@ -120,21 +131,14 @@ struct FriendsV68View: View {
     // MARK: うしろ(友だちの 写真を ぼかして 上 400pt に)
 
     private var backdrop: some View {
-        let imgs = list.filter(\.hasShot).compactMap { f -> UIImage? in V64Images.image(key: "fb\(f.id)", data: f.mosaicTiny ?? f.avatarData, maxPixel: 160) }.prefix(3)
-        return ZStack(alignment: .top) {
-            Color(hex: "0A0A0B")
-            if let img = imgs.first {
-                Color.clear.frame(maxWidth: .infinity).frame(height: 640)
-                    .overlay { Image(uiImage: V64Images.blurred(key: "fk\(ObjectIdentifier(img).hashValue)", source: img, maxPixel: 96, radius: 26, saturation: 1.4, brightness: 0.5)).resizable().scaledToFill() }
-                    .clipped()
-                    .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black.opacity(0.7), location: 0.45), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
-            } else {
-                RadialGradient(colors: [Color(red: 36 / 255, green: 160 / 255, blue: 60 / 255).opacity(0.38), .clear], center: UnitPoint(x: 0.85, y: 0.05), startRadius: 0, endRadius: 320)
-                RadialGradient(colors: [Color(hex: "C8F25A").opacity(0.12), .clear], center: UnitPoint(x: 0.05, y: 0.18), startRadius: 0, endRadius: 280)
+        ZStack(alignment: .top) {
+            Color(hex: "0B0B0C")
+            GeometryReader { g in
+                Circle().fill(RadialGradient(colors: [HV.lime.opacity(0.11), .clear], center: .center, startRadius: 0, endRadius: g.size.width * 0.45))
+                    .frame(width: g.size.width * 0.9, height: g.size.width * 0.9).scaleEffect(x: 1, y: 0.42).position(x: g.size.width * 0.85, y: 80)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top).ignoresSafeArea().allowsHitTesting(false)
-        .offset(y: -scrollY * 0.5)
     }
 
     // MARK: ヘッダー
@@ -149,7 +153,7 @@ struct FriendsV68View: View {
                     .background(.white.opacity(0.14), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.22), lineWidth: 1))
             }.buttonStyle(HVPress(scale: 0.92)).offset(x: 18, y: 62).accessibilityLabel("もどる")
             Text("Friends").font(LF.serif(40)).foregroundStyle(.white).frame(height: 40, alignment: .leading).fixedSize().offset(x: 74, y: 66)
-            Button { Haptics.play(.sel); showsScan = true } label: {
+            Button { Haptics.play(.sel); showsMyQR = true } label: {
                 Image(systemName: "qrcode").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44)
                     .background(.white.opacity(0.14), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.22), lineWidth: 1))
             }.buttonStyle(HVPress(scale: 0.92)).frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 18).offset(y: 62).accessibilityLabel("QR")
@@ -176,90 +180,149 @@ struct FriendsV68View: View {
         }.frame(height: 26)
     }
 
-    // MARK: さがす
+    // MARK: さがす(上に はりつく 検索欄)
 
-    private var search: some View {
+    private var searchBar: some View {
         HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
-            TextField("", text: $query, prompt: Text("名前 か ID で さがす").foregroundColor(.white.opacity(0.55)))
-                .font(LF.inter(600, 16)).foregroundStyle(.white).focused($searching).submitLabel(.search)
-                .onSubmit { if shown.isEmpty && !query.isEmpty { idSeed = query; showsID = true } }
+            Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .bold)).foregroundStyle(HV.lime)
+            TextField("", text: $query, prompt: Text("名前 か @ID で さがす").foregroundColor(.white.opacity(0.45)))
+                .font(LF.inter(600, 16)).foregroundStyle(.white).tint(HV.lime).focused($searching).submitLabel(.search)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .onChange(of: query) { _, v in runSearch(v) }
+            if !query.isEmpty { Button { Haptics.play(.tick); query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.white.opacity(0.45)).frame(width: 44, height: 44) }.buttonStyle(.plain) }
         }
-        .padding(.horizontal, 18).frame(height: 48)
-        .background(.white.opacity(0.12), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
-        .padding(.horizontal, 16).padding(.top, 20)
+        .padding(.leading, 18).padding(.trailing, query.isEmpty ? 18 : 4).frame(height: 54)
+        .background(Color(hex: "1C1C1F").opacity(0.92), in: Capsule()).background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(searching ? HV.lime.opacity(0.65) : .white.opacity(0.08), lineWidth: 1.5))
+        .shadow(color: searching ? HV.lime.opacity(0.08) : .clear, radius: 12)
+        .animation(.easeOut(duration: 0.2), value: searching)
     }
 
-    // MARK: QR を 見せる / QR を 読む(v85。Shake は なくした)
-
-    @ViewBuilder private var qrCards: some View {
-        if empty {
-            VStack(spacing: 8) {
-                showCard(compact: false)
-                readCard(compact: false)
+    // 自分の ID カード
+    private var idCard: some View {
+        let handle = me?.username ?? ""
+        let ink = Color(hex: "0B0C0D")
+        return HStack(spacing: 12) {
+            avatarMe.frame(width: 48, height: 48)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("あなたの ID").font(LF.mono(9)).tracking(1.5).foregroundStyle(ink.opacity(0.5))
+                Text("@\(handle)").font(LF.mono(16.5)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.6)
+                Text(myName).font(ChekiFont.hand(16)).foregroundStyle(ink.opacity(0.75)).lineLimit(1)
             }
-            .padding(.horizontal, 32).padding(.top, 14)
-        } else {
-            HStack(spacing: 8) {
-                showCard(compact: true)
-                readCard(compact: true)
-            }
-            .padding(.horizontal, 32).padding(.top, 12)
+            Spacer(minLength: 4)
+            Button { UIPasteboard.general.string = handle; Haptics.play(.success); copiedID = true; DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { copiedID = false } } label: { Image(systemName: copiedID ? "checkmark" : "doc.on.doc").font(.system(size: 14, weight: .semibold)).foregroundStyle(ink).frame(width: 44, height: 44) }.buttonStyle(.plain).accessibilityLabel("ID を コピー")
+            Button { Haptics.play(.tick); showsHandle = true } label: { Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(ink).frame(width: 44, height: 44) }.buttonStyle(.plain).accessibilityLabel("ID を かえる")
+            Button { Haptics.play(.click); showsMyQR = true } label: {
+                HStack(spacing: 5) { Image(systemName: "qrcode").font(.system(size: 13, weight: .bold)); Text("QR").font(LF.inter(800, 13)) }.foregroundStyle(HV.lime).padding(.horizontal, 12).frame(height: 44).background(ink, in: Capsule())
+            }.buttonStyle(HVPress(scale: 0.95))
         }
+        .padding(.horizontal, 14).padding(.vertical, 12).background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(.horizontal, 16).padding(.top, 4)
+        .sheet(isPresented: $showsHandle) { HandleChangeHost { _ in showsHandle = false } }
     }
 
-    private func showCard(compact: Bool) -> some View {
-        Button { Haptics.play(.click); showsMyQR = true } label: {
-            ZStack(alignment: compact ? .bottomTrailing : .trailing) {
-                RoundedRectangle(cornerRadius: compact ? 24 : 30, style: .continuous).fill(HV.lime)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("QR を 見せる").font(LF.inter(900, compact ? 17 : 22)).foregroundStyle(HV.ink)
-                    Text("会った 友だちに").font(LF.inter(600, 11.5)).foregroundStyle(HV.ink.opacity(0.78))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(.leading, 14)
-                MiniQR(text: FriendRules.link(recordName: myRecordName).absoluteString, box: compact ? 56 : 96)
-                    .padding(compact ? 12 : 18)
-            }
-            .frame(maxWidth: .infinity).frame(height: compact ? 142 : 150)
-        }
-        .buttonStyle(HVPress(scale: 0.98))
-        .accessibilityLabel("QR を 見せる")
+    private var avatarMe: some View {
+        ZStack {
+            Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing))
+            if let d = me?.profileImageData ?? myAvatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(myName.prefix(1))).font(LF.inter(900, 20)).foregroundStyle(.white) }
+        }.clipShape(Circle()).overlay(Circle().strokeBorder(.white, lineWidth: 2.5).padding(-1)).overlay(Circle().strokeBorder(HV.lime, lineWidth: 1.5).padding(-3))
     }
 
-    private func readCard(compact: Bool) -> some View {
-        Button { Haptics.play(.click); showsScan = true } label: {
-            ZStack(alignment: compact ? .bottomTrailing : .trailing) {
-                RoundedRectangle(cornerRadius: compact ? 24 : 30, style: .continuous).fill(.white.opacity(0.08))
-                    .overlay(RoundedRectangle(cornerRadius: compact ? 24 : 30, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 1))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("QR を 読む").font(LF.inter(900, compact ? 17 : 22)).foregroundStyle(.white)
-                    Text("カメラで 読む").font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.6))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(.leading, 14)
-                ScanFrame(size: compact ? 44 : 80).padding(compact ? 12 : 18)
-            }
-            .frame(maxWidth: .infinity).frame(height: compact ? 142 : 150)
-        }
-        .buttonStyle(HVPress(scale: 0.98))
-        .accessibilityLabel("QR を 読む")
-    }
-
-    // MARK: QR / Link / ID
-
-    private var connectRow: some View {
+    // 3つの 道:QR を 読む ・ リンク ・ 連絡先
+    private var pathsRow: some View {
         HStack(spacing: 8) {
-            tile("link", "Link") { Haptics.play(.tick); shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }
-            tile("at", "ID") { Haptics.play(.tick); idSeed = ""; showsID = true }
-        }
-        .padding(.horizontal, 16).padding(.top, 8)
+            path("viewfinder", "QR を 読む", lime: true) { Haptics.play(.click); showsScan = true }
+            path("link", "リンク", lime: false) { Haptics.play(.tick); shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }
+            path("person.crop.circle", "連絡先", lime: false) { Haptics.play(.tick); show("連絡先は ゆるした とき だけ つかいます(じゅんび中)") }
+        }.padding(.horizontal, 16).padding(.top, 10)
     }
 
-    private func tile(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
+    private func path(_ icon: String, _ title: String, lime: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) { Image(systemName: icon).font(.system(size: 16, weight: .semibold)); Text(title).font(LF.inter(700, 14)) }
-                .foregroundStyle(.white).frame(width: 114, height: 48)
-                .background(.white.opacity(0.10), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.14), lineWidth: 1))
+            VStack(spacing: 8) {
+                Image(systemName: icon).font(.system(size: 22, weight: .semibold))
+                Text(title).font(LF.inter(800, 13)).lineLimit(1).minimumScaleFactor(0.7)
+            }.foregroundStyle(lime ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 86)
+                .background(lime ? HV.lime : Color(hex: "151517"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }.buttonStyle(HVPress(scale: 0.96))
+    }
+
+    // 検索の 結果
+    private var resultsBlock: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if searchingNow && hits.isEmpty { ProgressView().tint(HV.lime).frame(maxWidth: .infinity).padding(.top, 40) }
+            else if hits.isEmpty {
+                VStack(spacing: 10) {
+                    Text("見つかりません").font(LF.serif(30)).foregroundStyle(.white)
+                    Text("名前 か @ID を たしかめて ください。\n名前で 見つかるのは「名前で 見つかる」が オンの 人 だけです。").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.55)).multilineTextAlignment(.center)
+                    Button { Haptics.play(.tick); shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] } label: { Text("リンクを 送る").font(LF.inter(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 20).frame(height: 44).background(HV.lime, in: Capsule()) }.buttonStyle(.plain)
+                }.frame(maxWidth: .infinity).padding(.top, 50).padding(.horizontal, 24)
+            } else {
+                ForEach(Array(hits.enumerated()), id: \.element.id) { i, h in
+                    hitRow(h, big: h.kind == .exact).padding(.horizontal, 16)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    if h.kind == .exact && i + 1 < hits.count && hits[i + 1].kind != .exact {
+                        Text("@\(HandleRules.normalize(query)) で はじまる ID").font(LF.mono(10)).tracking(1.5).foregroundStyle(.white.opacity(0.45)).padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 4)
+                    }
+                }
+            }
+        }.animation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.26), value: hits.map(\.id))
+    }
+
+    private func hitRow(_ h: UserDirectoryService.Hit, big: Bool) -> some View {
+        let p = h.profile
+        let sentAlready = sentTo.contains(p.id)
+        let isFriend = list.contains { $0.id == p.cloudKitUserRecordName }
+        let size: CGFloat = big ? 64 : 48
+        return HStack(spacing: 14) {
+            ZStack {
+                Circle().fill(Color(hex: "7FB0FF"))
+                if let d = p.avatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(p.name.prefix(1))).font(LF.inter(800, size * 0.4)).foregroundStyle(HV.ink) }
+            }.frame(width: size, height: size).clipShape(Circle()).overlay { if big { Circle().strokeBorder(HV.lime, lineWidth: 2.5).padding(-4) } }
+            VStack(alignment: .leading, spacing: 3) {
+                highlighted(p.name, query).font(LF.inter(700, big ? 19 : 16)).lineLimit(1)
+                highlighted("@" + p.username, "@" + HandleRules.normalize(query)).font(LF.mono(12.5)).lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            Button { if isFriend { chat = list.first { $0.id == p.cloudKitUserRecordName } } else { sendRequest(p) } } label: {
+                Text(isFriend ? "チャット" : (sentAlready ? "申請中" : "+ 追加")).font(LF.inter(800, 14)).foregroundStyle(isFriend || sentAlready ? .white.opacity(sentAlready ? 0.5 : 1) : HV.ink)
+                    .padding(.horizontal, 14).frame(minWidth: 72, minHeight: 44).background(isFriend ? Color.white.opacity(0.12) : (sentAlready ? Color.white.opacity(0.08) : HV.lime), in: Capsule())
+            }.buttonStyle(HVPress(scale: 0.95)).disabled(sentAlready || (p.cloudKitUserRecordName == nil && !isFriend))
+        }
+        .padding(.horizontal, big ? 14 : 4).padding(.vertical, big ? 14 : 8)
+        .background { if big { RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color(hex: "151517")).overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(HV.lime.opacity(0.45), lineWidth: 1)) } }
+        .padding(.top, big ? 6 : 0)
+    }
+
+    /// 一致した 部分は ライムの 字
+    private func highlighted(_ text: String, _ q: String) -> Text {
+        let key = q.lowercased().trimmingCharacters(in: .whitespaces)
+        guard !key.isEmpty, let r = text.lowercased().range(of: key), text.lowercased().distance(from: text.lowercased().startIndex, to: r.lowerBound) == 0 else { return Text(text).foregroundColor(.white.opacity(text.hasPrefix("@") ? 0.55 : 1)) }
+        let n = key.count
+        return Text(String(text.prefix(n))).foregroundColor(HV.lime) + Text(String(text.dropFirst(n))).foregroundColor(.white.opacity(text.hasPrefix("@") ? 0.55 : 1))
+    }
+
+    private func runSearch(_ v: String) {
+        searchTask?.cancel()
+        let q = v.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { hits = []; searchingNow = false; return }
+        searchingNow = true
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            if Task.isCancelled { return }
+            let r = await UserDirectoryService.searchUsers(q, blocked: blockedIDs, myRecordName: myRecordName)
+            if Task.isCancelled { return }
+            await MainActor.run { hits = r; searchingNow = false }
+        }
+    }
+
+    private func sendRequest(_ p: UserDirectoryService.DirectoryProfile) {
+        guard let rn = p.cloudKitUserRecordName else { return }
+        Haptics.play(.click)
+        Task {
+            let ok = await FriendRequests.send(to: rn, toName: p.name, myName: myName, myUsername: me?.username ?? "")
+            await MainActor.run { if ok { sentTo.insert(p.id); Haptics.play(.success); show("\(p.name) に 申請を 送りました") } else { Haptics.play(.warn); show("送れませんでした") } }
+        }
     }
 
     // MARK: Requests
@@ -376,7 +439,7 @@ struct FriendsV68View: View {
                 Text("さいしょの 友だちを よぼう。\nつながると、あしたの 朝 9:00 に きのうを 見せあえます。").font(LF.inter(600, 13.5)).foregroundStyle(.white.opacity(0.6)).multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity).padding(.horizontal, 20).padding(.top, 30)
             }
-            Text("知らない人には 見つかりません ・ 友だちの 数は どこにも 出ません").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.4)).multilineTextAlignment(.center)
+            Text("友だちの 数は どこにも 出ません ・ 名前で 見つかるのは「名前で 見つかる」が オンの 人だけ").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.4)).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity).padding(.horizontal, 20).padding(.top, 28)
         }
     }

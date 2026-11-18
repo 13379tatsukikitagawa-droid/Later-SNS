@@ -33,6 +33,8 @@ enum UserDirectoryService {
         /// DM機能がsenderID/receiverIDとして使うため、旧バージョンで発行されたレコードには
         /// まだ無いことがある(その場合nil)。
         let cloudKitUserRecordName: String?
+        /// 「名前で 見つかる」(古い レコードは オン あつかい)
+        var discoverable = true
     }
 
     private static let directoryRecordIDPrefix = "userdir_"
@@ -50,7 +52,9 @@ enum UserDirectoryService {
             avatarData = try? Data(contentsOf: fileURL)
         }
         let cloudKitUserRecordName = record["cloudKitUserRecordName"] as? String
-        return DirectoryProfile(id: id, name: name, username: username, bio: bio, avatarData: avatarData, cloudKitUserRecordName: cloudKitUserRecordName)
+        var p = DirectoryProfile(id: id, name: name, username: username, bio: bio, avatarData: avatarData, cloudKitUserRecordName: cloudKitUserRecordName)
+        if let d = record["discoverableByName"] as? Int64 { p.discoverable = d != 0 }
+        return p
     }
 
     /// "@ユーザー名"の前方一致でPublic DBの公開ディレクトリを検索する。
@@ -72,6 +76,46 @@ enum UserDirectoryService {
             print("UserDirectoryService: search failed: \(error)")
             return []
         }
+    }
+
+    struct Hit: Identifiable {
+        enum Kind { case exact, idPrefix, name }
+        let profile: DirectoryProfile
+        let kind: Kind
+        var id: UUID { profile.id }
+    }
+
+    /// v94 C:ID ぴったり(いつでも)・ ID の 前方一致(2文字 から ・ 6人)・ 名前の 前方一致(8人)。
+    /// 前方一致と 名前は 「名前で 見つかる」が オンの 人 だけ。ブロックした 人(blocked)は 出さない
+    static func searchUsers(_ raw: String, blocked: Set<String> = [], myRecordName: String? = nil) async -> [Hit] {
+        let q = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return [] }
+        var out: [Hit] = []
+        var seen = Set<UUID>()
+        func keep(_ p: DirectoryProfile) -> Bool {
+            if let rn = p.cloudKitUserRecordName, blocked.contains(rn) || rn == myRecordName { return false }
+            return seen.insert(p.id).inserted
+        }
+        let isIDLike = q.hasPrefix("@") || q.unicodeScalars.allSatisfy { $0.isASCII }
+        if isIDLike {
+            let h = HandleRules.normalize(q)
+            if h.count >= 1 {
+                let exact = await search(usernamePrefix: h).filter { $0.username == h }
+                for p in exact where keep(p) { out.append(Hit(profile: p, kind: .exact)) }
+                if h.count >= 2 {
+                    let pre = await search(usernamePrefix: h).filter { $0.username != h && $0.discoverable }
+                    for p in pre.prefix(6) where keep(p) { out.append(Hit(profile: p, kind: .idPrefix)) }
+                }
+            }
+        } else {
+            let key = DirectoryNameKey.make(q)
+            let predicate = NSPredicate(format: "nameSearch BEGINSWITH %@", key)
+            let query = CKQuery(recordType: AppRecordType.userDirectory, predicate: predicate)
+            if let (results, _) = try? await publicDatabase.records(matching: query, resultsLimit: 20) {
+                for (_, r) in results { if case .success(let rec) = r, let p = directoryProfile(from: rec), p.discoverable, keep(p), out.count < 8 { out.append(Hit(profile: p, kind: .name)) } }
+            }
+        }
+        return out
     }
 
     /// idを指定して、他人が公開しているプロフィール情報を取得する。
@@ -98,5 +142,14 @@ enum UserDirectoryService {
             print("UserDirectoryService: fetchProfile(cloudKitUserRecordName:) failed: \(error)")
             return nil
         }
+    }
+}
+
+
+/// 名前の 検索キー:小文字 + カタカナ → ひらがな + 空白なし
+enum DirectoryNameKey {
+    static func make(_ name: String) -> String {
+        let hira = name.applyingTransform(.hiraganaToKatakana, reverse: true) ?? name
+        return hira.lowercased().filter { !$0.isWhitespace }
     }
 }

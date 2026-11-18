@@ -30,6 +30,8 @@ struct SettingsV87Sheet: View {
     @AppStorage("currentProfileID") private var currentProfileID = ""
     @AppStorage("isSetupCompleted") private var isSetupCompleted = false
     @State private var dailyOn = false
+    @AppStorage("privacy.discoverableByName") private var discoverable = true
+    @Query private var profiles: [UserProfile]
     @State private var showsBlocked = false
     @State private var showsHandle = false
     @State private var showsHowTo = false
@@ -57,6 +59,13 @@ struct SettingsV87Sheet: View {
                     toggleRow("友だち", "申請 ・ リアクション ・ コメント", $friendsOn) { _ in Haptics.play(.click) }
                     divider
                     toggleRow("Recap", "月曜 9:00 に できた 時", $recapOn) { v in Haptics.play(.click); RecapNotifier.setEnabled(v) }
+                }
+                header("プライバシー")
+                group {
+                    toggleRow("名前で 見つかる", "オフでも ID が ぴったり 合えば 見つかります", $discoverable) { _ in
+                        Haptics.play(.click)
+                        if let me = UserProfile.current(from: profiles) { Task { await UserDirectoryService.publish(me) } }
+                    }
                 }
                 header("表示")
                 group {

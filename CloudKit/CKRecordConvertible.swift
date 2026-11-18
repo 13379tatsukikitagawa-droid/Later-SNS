@@ -139,6 +139,9 @@ extension UserProfile {
         record["name"] = name
         record["username"] = username
         record["bio"] = bio
+        // v94:名前の 前方一致 用(小文字 + カタカナ → ひらがな)と「名前で 見つかる」
+        record["nameSearch"] = DirectoryNameKey.make(name)
+        record["discoverableByName"] = (UserDefaults.standard.object(forKey: "privacy.discoverableByName") as? Bool ?? true) ? 1 : 0
         // id(自己申告のローカルUUID)しか知らない相手からでも本当のiCloud識別子を
         // 引けるようにするため、自分のcloudKitUserRecordNameも公開しておく。
         record["cloudKitUserRecordName"] = cloudKitUserRecordName
