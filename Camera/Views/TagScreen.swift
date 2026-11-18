@@ -310,11 +310,13 @@ struct TagScreen: View {
                     .modifier(Stagger(phase: stage, inDelay: 0, outIndex: 0, reduceMotion: reduceMotion))
 
                     // L:文字を へらす。見出しだけ(×の すぐ下)
-                    Text("今日は、どんな日?")
-                        .font(LGFont.mincho(29)).tracking(-0.145)   // v64:Later Mincho 700 29pt(C01)
+                    Text(verbatim: DailyQuestion.text())
+                        .font(.system(size: 28, weight: .black)).tracking(-0.98).lineSpacing(28 * 0.22)   // v89:太い ゴシック 900 ・ 毎日 かわる お題
                         .foregroundStyle(.white)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .padding(.leading, 26)
+                        .lineLimit(2).minimumScaleFactor(0.8)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 26).padding(.trailing, 70)
                         .padding(.top, compact ? 14 : 22)
                         .modifier(Stagger(phase: stage, inDelay: 120, outIndex: 1, reduceMotion: reduceMotion))
                         .accessibilityAddTraits(.isHeader)

@@ -55,7 +55,7 @@ struct HV68Header: View {
 
     private var avatar: some View {
         let ratio = input.limit == 0 ? 0 : Double(min(input.shotsUsed, input.limit)) / Double(input.limit)
-        let size: CGFloat = 52
+        let size: CGFloat = 56
         return ZStack(alignment: .bottomLeading) {
             ZStack {
                 Circle().stroke(.white.opacity(0.22), lineWidth: 1.6).frame(width: size, height: size)
@@ -64,7 +64,7 @@ struct HV68Header: View {
                     if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
                     else { Circle().fill(Self.color(input.avatarName)).overlay(Text(String(input.avatarName.prefix(1))).font(LF.inter(800, 18)).foregroundStyle(HV.ink)) }
                 }
-                .frame(width: 44, height: 44).clipShape(Circle())
+                .frame(width: 48, height: 48).clipShape(Circle())
                 .overlay(Circle().strokeBorder(.white, lineWidth: 2))
                 .shadow(color: .black.opacity(0.6), radius: 8, y: 4)
             }.frame(width: size, height: size)
@@ -85,7 +85,7 @@ struct HV68Header: View {
         .overlay(alignment: .bottom) {
             if tip { Text("2回 タップで きのうへ").font(LF.inter(700, 12)).foregroundStyle(.white).fixedSize().padding(.horizontal, 12).padding(.vertical, 7).background(Color.black.opacity(0.85), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1)).offset(y: 40).transition(.opacity.combined(with: .scale(scale: 0.9))) }
         }
-        .offset(x: f.w - 70, y: 49)
+        .offset(x: f.w - 72, y: 47)
         .onAppear {
             guard !tipSeen else { return }
             tipSeen = true

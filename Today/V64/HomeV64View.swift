@@ -109,6 +109,14 @@ struct HomeV64View: View {
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         ZStack(alignment: .topLeading) {
+                            // v89 A:カード(# ・ レンズ ・ 4ページ)は スクロールの 中。どこを なぞっても たてに 動く(外に 置くと 指が ScrollView に とどかない)
+                            card(f)
+                                .frame(width: f.w, height: 810 + 2 * f.mid, alignment: .topLeading)
+                                .offset(y: 0.2 * scrollY)
+                                .opacity(max(0, 1 - Double(scrollY) / 560) * (entered || reduceMotion ? 1 : 0))
+                                .scaleEffect(entered || reduceMotion ? 1 : 1.06)
+                                .allowsHitTesting(scrollY < 700)
+                                .modifier(HVVeil(on: input.spotlight || showLive, dim: input.spotlight))
                             VStack(spacing: 0) { Color.clear.frame(width: 1, height: input.debugScroll); Color.clear.frame(width: 1, height: 1).id("dbg"); Spacer(minLength: 0) }.frame(width: 1)
                             VStack(spacing: 0) {
                                 Color.clear.frame(height: 810 + 2 * f.mid)
@@ -130,10 +138,6 @@ struct HomeV64View: View {
                 }
                 // 上の ブロック(ページの 5まい)は 上へ ながれて うすく なる
                 Group {
-                    Group { card(f) }
-                        .offset(y: -scrollY * 0.8).opacity(max(0, 1 - Double(scrollY) / 560) * (entered || reduceMotion ? 1 : 0))
-                        .scaleEffect(entered || reduceMotion ? 1 : 1.06)
-                        .allowsHitTesting(scrollY < 120)
                     HV68Header(input: input, f: f, compact: compact, scrollY: scrollY, entered: entered || reduceMotion,
                                onYesterday: actions.openYesterday, onProfile: actions.openProfile,
                                onLive: { actions.openLive(); withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showLive = true } })

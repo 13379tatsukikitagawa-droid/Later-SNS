@@ -165,7 +165,7 @@ struct YesterdayV64View: View {
                 }
             }.frame(width: 250).offset(x: (w - 250) / 2, y: compact ? 58 : 52)
             // 右上 = 自分の アイコン(1回 → プロフィール ・ 2回 → 今日)
-            avatar.frame(width: 44, height: 44).contentShape(Circle()).scaleEffect(k * (avatarPress ? 0.9 : 1))
+            avatar.frame(width: 60, height: 60).contentShape(Circle()).scaleEffect(k * (avatarPress ? 0.9 : 1))
                 .animation(.easeOut(duration: 0.2), value: avatarPress)
                 .onTapGesture(count: 2) { singleTask?.cancel(); Haptics.play(.sel); actions.close() }
                 .onTapGesture {
@@ -176,7 +176,7 @@ struct YesterdayV64View: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.34, execute: t)
                 }
                 .accessibilityAddTraits(.isButton)
-                .offset(x: w - 56 - (compact ? 4 : 0), y: compact ? 50 : 52)
+                .offset(x: w - 16 - 60 + 2 - (compact ? 4 : 0), y: compact ? 47 : 45)
                 .accessibilityLabel("プロフィール。2回 タップで 今日へ")
         }
         .frame(width: w, alignment: .topLeading)
@@ -185,13 +185,13 @@ struct YesterdayV64View: View {
 
     private var avatar: some View {
         ZStack {
-            Circle().fill(Color.black).frame(width: 44, height: 44)
+            Circle().fill(Color.black).frame(width: 56, height: 56)
             Group {
                 if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
-                else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(input.avatarName.prefix(1))).font(LF.inter(900, 16)).foregroundStyle(.white)) }
-            }.frame(width: 40, height: 40).clipShape(Circle())
-            Circle().strokeBorder(HV.lime, lineWidth: compact ? 1 : 1.5).frame(width: 44, height: 44)
-        }.frame(width: 44, height: 44)
+                else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(input.avatarName.prefix(1))).font(LF.inter(900, 20)).foregroundStyle(.white)) }
+            }.frame(width: 52, height: 52).clipShape(Circle())
+            Circle().strokeBorder(HV.lime, lineWidth: compact ? 1 : 1.5).frame(width: 56, height: 56)
+        }.frame(width: 56, height: 56)
     }
 
     // MARK: Friends

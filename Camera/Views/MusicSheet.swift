@@ -319,7 +319,7 @@ struct MusicSheet: View {
         .scrollDismissesKeyboard(.immediately)
         .safeAreaInset(edge: .bottom) {
             // 開発用:許可と サブスクの 状態(小さな 灰色の 文字)
-            if !statusLine.isEmpty { debugText(statusLine) }
+            // v89:デバッグの 字は 出さない
         }
     }
 
