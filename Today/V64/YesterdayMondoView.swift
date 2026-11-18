@@ -48,7 +48,7 @@ struct YesterdayMondoView: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    if !m.hasPosts { empty }
+                    if !m.hasPosts { MondoWaitV95View(input: input, actions: actions) }
                     else if !opened { stage }
                     else { openedBody(proxy: proxy) }
                 }
