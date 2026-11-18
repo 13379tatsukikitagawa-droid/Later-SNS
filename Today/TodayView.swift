@@ -651,8 +651,8 @@ struct TodayView: View {
                 ZStack {
                     Color.black.ignoresSafeArea()
                     if let request = revealRequest {
-                        YesterdayRevealView(image: request.image, tiny: request.tiny, key: request.key, ordinal: request.ordinal,
-                                            playsReveal: request.playsReveal) { outcome in
+                        ReleaseRevealV89View(image: request.image, ordinal: request.ordinal, count: request.count, tag: request.tag, time: request.time,
+                                             place: request.place, playsReveal: request.playsReveal) { outcome in
                             finishReveal(request, outcome: outcome)
                         }
                         .id(request.id)
@@ -1776,7 +1776,8 @@ struct TodayView: View {
         let target = dates[ordinal - 1]
         guard let photo = photos.first(where: { abs($0.captureDate.timeIntervalSince(target)) < 1 }) else { return nil }
         return RevealRequest(captureDate: photo.captureDate, image: UIImage(data: photo.imageData), tiny: photo.mosaicTiny ?? MosaicRenderer.makeTiny(from: photo.imageData),
-                             key: "reveal-\(Int(target.timeIntervalSinceReferenceDate))", ordinal: ordinal, playsReveal: playsReveal)
+                             key: "reveal-\(Int(target.timeIntervalSinceReferenceDate))", ordinal: ordinal, playsReveal: playsReveal,
+                             count: dates.count, tag: photo.tags.first, time: { let f = DateFormatter(); f.dateFormat = "HH:mm"; return f.string(from: photo.captureDate) }(), place: photo.locationName)
     }
 
     /// 月の「昨日の1枚を選ぶ」:ひらいていて まだ 決めていない 1枚の、投稿の 選択から
@@ -2517,6 +2518,10 @@ struct RevealRequest: Identifiable {
     let key: String
     let ordinal: Int
     let playsReveal: Bool
+    var count: Int = 1
+    var tag: String? = nil
+    var time: String = ""
+    var place: String? = nil
 }
 
 
