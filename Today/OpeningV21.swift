@@ -29,7 +29,7 @@ enum OpeningSettings {
         case .off: return nil
         case _ where reduceMotion: return .fade
         case .short: return .short
-        case .on: return .full
+        case .on: return OpeningLaunch.short ? .short : .full
         }
     }
 }
@@ -83,4 +83,9 @@ enum OpeningEase {
         return CGRect(x: a.minX + (b.minX - a.minX) * k, y: a.minY + (b.minY - a.minY) * k,
                       width: a.width + (b.width - a.width) * k, height: a.height + (b.height - a.height) * k)
     }
+}
+
+/// 通知 ・ リンク ・ ウィジェットから 開いた 起動か(オープニングを 短い 版に する)
+enum OpeningLaunch {
+    nonisolated(unsafe) static var short = false
 }

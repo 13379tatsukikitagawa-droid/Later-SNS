@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         // GoogleService-Info.plistが無い間はFirebase Authenticationを安全にスキップする
         // (FirebaseConfigurator参照)。
         FirebaseConfigurator.configureIfPossible()
+        // v72:通知 ・ リンクから 開いた 起動は オープニングの 短い 版
+        if launchOptions?[.url] != nil || launchOptions?[.remoteNotification] != nil || launchOptions?[.shortcutItem] != nil { OpeningLaunch.short = true }
 
         // CKSubscription(グループの共有DB)からのサイレントプッシュを受け取るために必要。
         application.registerForRemoteNotifications()

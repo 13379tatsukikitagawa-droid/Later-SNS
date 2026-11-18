@@ -97,6 +97,8 @@ struct OpeningV72View: View {
     var fadeOut = false
     /// 「ひらく」が 始まった(1回だけ)
     var onReveal: () -> Void = {}
+    /// Home の 1.06倍 → 1(ひらく 間 だけ 動く)
+    var homeScale: Binding<CGFloat>? = nil
     let onFinish: () -> Void
 
     @Environment(\.scenePhase) private var scenePhase
@@ -120,6 +122,10 @@ struct OpeningV72View: View {
                 scene(ms: ms, size: size)
                     .onChange(of: ms >= endMs) { _, done in if done { finish() } }
                     .onChange(of: ms >= OP72.openStart) { _, go in if go { reveal() } }
+                    .onChange(of: Int(ms / 16)) { _, _ in
+                        let ou = (ms - OP72.openStart) / OP72.openDur
+                        homeScale?.wrappedValue = ou <= 0 || variant == .fade || fadeOut ? 1.06 : CGFloat(opKeys(ou, [(0, 1.06), (0.35, 1.03), (1, 1)], OPBez(0.7, 0, 0.2, 1)))
+                    }
             }
             .frame(width: size.width, height: size.height)
             .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
@@ -128,6 +134,9 @@ struct OpeningV72View: View {
         .contentShape(Rectangle())
         .onTapGesture { skip() }
         .onAppear(perform: scheduleHaptics)
+        .onReceive(NotificationCenter.default.publisher(for: .photoNotificationTapped)) { _ in shortNow() }
+        .onReceive(NotificationCenter.default.publisher(for: .chatNotificationTapped)) { _ in shortNow() }
+        .onReceive(NotificationCenter.default.publisher(for: .openGroupRequested)) { _ in shortNow() }
         .onDisappear { hapticTask?.cancel() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Lattag。タップで とばす")
@@ -160,6 +169,14 @@ struct OpeningV72View: View {
             if let skipAt, ms >= skipAt { return max(ms - skipAt, 0) + OP72.openStart }
             return ms
         }
+    }
+
+    /// 通知 ・ リンクが 来た:すぐ「ひらく」へ(文字 ・ 9:00 は 出さない)
+    private func shortNow() {
+        guard variant == .full, skipAt == nil else { return }
+        let ms = Date().timeIntervalSince(start) * 1000
+        guard ms < OP72.openStart else { return }
+        skipAt = ms; hapticTask?.cancel(); Haptics.play(.land)
     }
 
     private func skip() {
@@ -235,7 +252,8 @@ struct OpeningV72View: View {
 
         // ひらく
         let ou = (ms - OP72.openStart) / OP72.openDur
-        let homeC = CGPoint(x: W / 2, y: H / 2 + 10)
+        // Home の レンズの 中心(カード内 214 + 上 178 + 余白 = 画面の 高さ / 2 − 30)
+        let homeC = CGPoint(x: W / 2, y: H / 2 - 30)
         let lens = CGPoint(x: lensX, y: cy)
         let holeR: Double, holeC: CGPoint
         if fade || fadeOut || ou <= 0 { holeR = 0; holeC = lens } else if ou < 0.35 {

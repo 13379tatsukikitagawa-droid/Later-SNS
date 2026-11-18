@@ -54,6 +54,7 @@ struct RootView: View {
     /// v72 B:アプリを 起動した とき だけ(戻った ときは 出さない)。起動画面と 同じ 絵から はじまる
     @State private var opening: (variant: OpeningVariant, start: Date)? = RootView.initialOpening()
     @State private var openingRevealed = false
+    @State private var homeScale: CGFloat = 1
     @State private var cloudKitManager: CloudKitManager?
     @State private var sharedProfile: UserProfile?
     @State private var showingSharedProfile = false
@@ -205,13 +206,15 @@ struct RootView: View {
                         OnboardingV64View()
                     }
                 }
+                .scaleEffect(opening == nil ? 1 : homeScale)
                 .transition(.opacity)
             }
 
             if let opening {
                 OpeningV72View(variant: opening.variant, start: opening.start, fadeOut: !isSetupCompleted,
-                               onReveal: { openingRevealed = true }) {
+                               onReveal: { openingRevealed = true }, homeScale: $homeScale) {
                     self.opening = nil
+                    homeScale = 1
                     NotificationCenter.default.post(name: .openingFinished, object: nil)
                 }
                 .zIndex(100)
