@@ -52,6 +52,7 @@
 		5CCB0FA934A2BF24EF1DDFA3 /* V64/HomeTourV95.swift in Sources */ = {isa = PBXBuildFile; fileRef = F546B117F76335334DBAE2EC /* V64/HomeTourV95.swift */; };
 		22916C5A6F5D88E05D39D26F /* V64/HomeNextV95.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B8E2911EFFED828CF900DD /* V64/HomeNextV95.swift */; };
 		CD5C4AB45B6A3503A0A779E1 /* V64/MondoWaitV95.swift in Sources */ = {isa = PBXBuildFile; fileRef = C867FCD95A952EDEC6388047 /* V64/MondoWaitV95.swift */; };
+		7D61488B26F67FC07FAB8796 /* V64/WidgetGuideV96.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9382E9C80F151DA05311BEA /* V64/WidgetGuideV96.swift */; };
 		1F6A1866991A120A5CDABE7D /* V64/ShutterIconV94.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39124A5DC2D4B9F1FACAA21B /* V64/ShutterIconV94.swift */; };
 		1FDDD83248CBA2F90AC65FAD /* V64/SelfQRChekiV92View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC1E46ADF9AC08558CBDAF /* V64/SelfQRChekiV92View.swift */; };
 		2353164534C48640CDB4FB82 /* ProfileChekiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109414FC4E47E9391C73F5BB /* ProfileChekiCard.swift */; };
@@ -398,6 +399,7 @@
 		F546B117F76335334DBAE2EC /* V64/HomeTourV95.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeTourV95.swift; sourceTree = "<group>"; };
 		C8B8E2911EFFED828CF900DD /* V64/HomeNextV95.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeNextV95.swift; sourceTree = "<group>"; };
 		C867FCD95A952EDEC6388047 /* V64/MondoWaitV95.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/MondoWaitV95.swift; sourceTree = "<group>"; };
+		F9382E9C80F151DA05311BEA /* V64/WidgetGuideV96.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/WidgetGuideV96.swift; sourceTree = "<group>"; };
 		39124A5DC2D4B9F1FACAA21B /* V64/ShutterIconV94.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ShutterIconV94.swift; sourceTree = "<group>"; };
 		3DBC3939C57455DE3F1BBC4D /* AccountDeletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDeletionView.swift; sourceTree = "<group>"; };
 		3E20E050E410BA1D32F171B6 /* MainNavigationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainNavigationView.swift; sourceTree = "<group>"; };
@@ -985,6 +987,7 @@
 				B7570F235D7BDA9A5DBA8EF6 /* V64/HandleChangeSheetV94.swift */,
 				B4273AC3A99091056D212333 /* V64/HandleField.swift */,
 				39124A5DC2D4B9F1FACAA21B /* V64/ShutterIconV94.swift */,
+				F9382E9C80F151DA05311BEA /* V64/WidgetGuideV96.swift */,
 				C867FCD95A952EDEC6388047 /* V64/MondoWaitV95.swift */,
 				C8B8E2911EFFED828CF900DD /* V64/HomeNextV95.swift */,
 				F546B117F76335334DBAE2EC /* V64/HomeTourV95.swift */,
@@ -1583,6 +1586,7 @@
 				E6ED73FB1405DA366C88B45C /* V64/HandleChangeSheetV94.swift in Sources */,
 				74E41292673F65D82CE75DE1 /* V64/HandleField.swift in Sources */,
 				1F6A1866991A120A5CDABE7D /* V64/ShutterIconV94.swift in Sources */,
+				7D61488B26F67FC07FAB8796 /* V64/WidgetGuideV96.swift in Sources */,
 				738D5A0AC54C212326C1FDAA /* KnockSender.swift in Sources */,
 				092332E0BBFB3FC5311F1A26 /* LattagWidgetsMid.swift in Sources */,
 				19046F9F10D6A2E9E26075B8 /* LattagWidgetsLock.swift in Sources */,

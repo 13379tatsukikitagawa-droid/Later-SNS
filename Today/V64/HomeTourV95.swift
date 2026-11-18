@@ -55,7 +55,7 @@ private struct SpotRing: Shape {
 
 struct HomeTourV95View: View {
     var start = 0
-    let onDone: () -> Void
+    let onDone: (_ finished: Bool) -> Void
     var body: some View {
         GeometryReader { g in
             HomeTourInner(f: HV.Frame(w: g.size.width, h: g.size.height), start: start, onDone: onDone)
@@ -66,7 +66,7 @@ struct HomeTourV95View: View {
 private struct HomeTourInner: View {
     let f: HV.Frame
     var start = 0
-    let onDone: () -> Void
+    let onDone: (_ finished: Bool) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var i = 0
     @State private var fill: CGFloat = 0
@@ -162,6 +162,6 @@ private struct HomeTourInner: View {
     private func finish(silent: Bool) {
         if !silent { Haptics.play(.success) }
         HomeTour.markSeen()
-        onDone()
+        onDone(!silent)
     }
 }

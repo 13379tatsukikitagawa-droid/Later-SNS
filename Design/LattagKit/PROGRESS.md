@@ -272,6 +272,6 @@
 
 ## P39 ・ v96 ウィジェット
 - ✓ A 土台:App Group は 今の `group.com.tatsukikitagawa.laternew2`(ID は 変えない)に `WidgetSnapshot.json` + `w/`(サムネ 300px ・ ぼかし ・ アイコン 120px)。書く = `WidgetSnapshotWriter`(`TodayView.syncWidget` ・ 写真の 同期 ・ 撮影)/ 読む = `WidgetModel.make`(9:00 を またぐと 今日 → きのう、こまは FilmCounter の App Group 値が 先)。写真の ルール:きのうの 本物は 自分が 今日 撮った 時 だけ 書く ・ ロック中は mosaicTiny を もう1回 ぼかした 物 だけ(使わない 画像は 毎回 消す)。予約 = 今 ・ 21:00 ・ 24:00 ・ 9:00。書体:ラテン系 9本を 拡張に 同梱、和文 2本(8MB)は App Group へ コピーして 拡張で 登録。行き先 `lattag://shoot|develop|friends|yesterday?f=|mondo|trip/<id>`(`WidgetRouteStore` → `HomeV64Host`)。コントロール 2つは 新しい 行き先へ。サーバーは 使わない(CloudKit のみ ・ 9:00 は タイムラインで 切りかえ)。
-- ☐ B 小 4種 + ロック 4種
-- ☐ C 中 ・ 大 + つつく
-- ☐ D 設定 › ウィジェット
+- ✓ B 小 4種(S1 レンズ ・ S2 9:00 まで ・ S3 友だちの 1枚 ・ S4 Mondo)+ ロック 4種(`LattagWidgetsSmall/Lock/Parts.swift`)。見た目は アプリの DEBUG ルート `widgets`(`-debugWShots N -debugWHour H -debugWPart small|mid|lock`)で 同じ View を 並べて 確認(拡張は シミュレータで ホームに 置けないため)。S1 の 字の 輪は ウィジェットでは 回らない(静止)・ S2 の 残りは 秒まで 動く 時計(h:mm だけには できない)
+- ✓ C 中 ・ 大(M1 Friends + `つつく` / M2 きのう / M3 Trip / L1 ボード)。`つつく` = `PokeFriendIntent` → `Shared/KnockSender.swift`(アプリの KnockStore と 同じ 書き方で CloudKit に ノック)。拡張に iCloud(CloudKit)の entitlement を 追加 → **実機は 署名の 更新が 必要**。失敗しても `lattag://friends` には 飛ばない(AppIntent の 型の 制約)
+- ✓ D 設定 › ウィジェット(3ステップ + 見本)・ はじめての 説明の さいごに 1回(`WidgetGuideV96.swift`)

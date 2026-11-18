@@ -89,6 +89,7 @@ struct HomeV64View: View {
     @State private var wantsToday = 0
     @State private var entered = false
     @State private var tourStep: Int?
+    @State private var showWidgetGuide = false
 
     @State private var scrollY: CGFloat = 0
     @State private var dragVal: CGFloat = 0
@@ -153,8 +154,10 @@ struct HomeV64View: View {
         }
         .ignoresSafeArea()
         .overlay {
-            if let tourStep { HomeTourV95View(start: tourStep, onDone: { withAnimation(.easeOut(duration: 0.25)) { self.tourStep = nil } }).transition(.opacity) }
+            if let tourStep { HomeTourV95View(start: tourStep, onDone: { finished in withAnimation(.easeOut(duration: 0.25)) { self.tourStep = nil }
+                if finished, !WidgetGuideV96.seen { WidgetGuideV96.markSeen(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showWidgetGuide = true } } }).transition(.opacity) }
         }
+        .sheet(isPresented: $showWidgetGuide) { WidgetGuideV96Sheet { showWidgetGuide = false } }
         .onReceive(NotificationCenter.default.publisher(for: HomeTour.replayRequested)) { _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { withAnimation(.easeOut(duration: 0.25)) { tourStep = 0 } }
         }
