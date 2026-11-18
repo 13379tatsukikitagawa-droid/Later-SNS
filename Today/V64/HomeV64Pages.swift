@@ -476,62 +476,115 @@ struct HVPager: View {
 
 // MARK: - 「消灯まで」を おした パネル(H10 / M13)
 
-/// 上から おりてくる 黒い パネル。LIVE ・ 時計 ・ 消灯まで ・ ひらくまで ・ 24時間の 線 ・ のこりこま + shoot。
+/// 1けた の オドメーター(0〜9 を たてに ならべて、値の 位置へ ころがす)
+struct OdometerDigit: View {
+    let value: Int
+    let size: CGFloat
+    var color: Color = .white
+    var trackingK: CGFloat = -0.05
+
+    var body: some View {
+        let h = size * 1.12
+        VStack(spacing: 0) {
+            ForEach(0..<10, id: \.self) { n in
+                Text("\(n)").font(LF.inter(900, size)).monospacedDigit().foregroundStyle(color).frame(height: h)
+            }
+        }
+        .offset(y: -CGFloat(value) * h)
+        .frame(width: size * 0.62, height: h, alignment: .top)
+        .clipped()
+        .mask(LinearGradient(stops: [.init(color: .black.opacity(0.0), location: 0), .init(color: .black, location: 0.22), .init(color: .black, location: 0.78), .init(color: .black.opacity(0.0), location: 1)], startPoint: .top, endPoint: .bottom))
+    }
+}
+
+/// 上から おりてくる 黒い パネル。LIVE ・ 時計 ・ 消灯まで ・ ひらくまで ・ 24時間の 線 ・ のこりこま + shoot。(v93:ライム + 動く 数字)
 struct HVLivePanel: View {
     let input: HomeV64Input
     let onClose: () -> Void
     let onShoot: () -> Void
 
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { ctx in
-            let now = Date(timeIntervalSinceReferenceDate: ctx.date.timeIntervalSinceReferenceDate + (input.now.timeIntervalSinceReferenceDate - Date().timeIntervalSinceReferenceDate))
-            panel(now: input.debugClock ?? now)
-        }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var digits = [0, 0, 0, 0, 0, 0]      // 時 十 / 一 ・ 分 十 / 一 ・ 秒 十 / 一
+    @State private var bigIn = false
+    @State private var barP: CGFloat = 0
+    @State private var opened = false
+    @State private var dotPulse = false
+    @State private var secPop = false
+    @State private var sweep: CGFloat = -1
+    @State private var tick = 0
+    @State private var lastMinute: Int?
+    @State private var clockText = ""
+    @State private var toOpenText = ""
+    @State private var secOfDayNow = 0
+    @State private var wave = false
+
+    private let lime = Color(hex: "C8F25A")
+
+    private func clock() -> Date {
+        input.debugClock ?? Date(timeIntervalSinceReferenceDate: Date().timeIntervalSinceReferenceDate + (input.now.timeIntervalSinceReferenceDate - Date().timeIntervalSinceReferenceDate))
+    }
+    private func snapshot() -> (sec: Int, h: Int, m: Int, s: Int, c: DateComponents) {
+        let c = Calendar.current.dateComponents([.hour, .minute, .second], from: clock())
+        let sec = (c.hour ?? 0) * 3600 + (c.minute ?? 0) * 60 + (c.second ?? 0)
+        let left = max(0, 86400 - sec)
+        return (sec, left / 3600, (left % 3600) / 60, left % 60, c)
     }
 
-    private func panel(now: Date) -> some View {
-        let cal = Calendar.current
-        let c = cal.dateComponents([.hour, .minute, .second], from: now)
-        let secOfDay = (c.hour ?? 0) * 3600 + (c.minute ?? 0) * 60 + (c.second ?? 0)
-        let toLights = max(0, 86400 - secOfDay)
-        let toOpen = max(0, 86400 + 9 * 3600 - secOfDay)
-        let frac = min(1, Double(secOfDay) / Double(33 * 3600))
-        let hh = toLights / 3600, mm = (toLights % 3600) / 60, ss = toLights % 60
-        let W: CGFloat = 330   // 中身の はば(366 - 余白 18 × 2)
+    var body: some View {
+        let snap = snapshot()
+        let frac = min(1, Double(secOfDayNow == 0 ? snap.sec : secOfDayNow) / Double(33 * 3600))
+        let toOpen = max(0, 86400 + 9 * 3600 - (secOfDayNow == 0 ? snap.sec : secOfDayNow))
+        let W: CGFloat = 330
         return ZStack(alignment: .top) {
-            Color.black.opacity(0.18).ignoresSafeArea().onTapGesture(perform: onClose)
+            Color.black.opacity(0.18).ignoresSafeArea().onTapGesture { Haptics.play(.soft); onClose() }
             ZStack(alignment: .topLeading) {
-                HStack(spacing: 6) { Circle().fill(Color(hex: "3BD35A")).frame(width: 7, height: 7); Text("LIVE").font(LF.mono(11)).tracking(2.2).foregroundStyle(Color(hex: "4CD964")) }
-                    .padding(.horizontal, 10).frame(height: 22).background(Color(hex: "0F2A16"), in: Capsule()).offset(x: 18, y: 19)
-                Text(String(format: "%02d:%02d:%02d", c.hour ?? 0, c.minute ?? 0, c.second ?? 0)).font(LF.mono(12)).foregroundStyle(Color(hex: "5A5A5F")).offset(x: 104, y: 22)
-                Button(action: onClose) { Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.7)).frame(width: 30, height: 30).background(Color(hex: "1C1C1E"), in: Circle()) }.buttonStyle(.plain).offset(x: 318, y: 15)
+                HStack(spacing: 6) {
+                    ZStack { Circle().fill(lime.opacity(dotPulse ? 0 : 0.5)).frame(width: dotPulse ? 14 : 7, height: dotPulse ? 14 : 7); Circle().fill(lime).frame(width: 7, height: 7) }.frame(width: 14, height: 14)
+                    Text("LIVE").font(LF.mono(11)).tracking(2.2).foregroundStyle(lime)
+                }
+                .padding(.horizontal, 10).frame(height: 22).background(lime.opacity(0.12), in: Capsule()).offset(x: 18, y: 19)
+                Text(clockText).font(LF.mono(12)).foregroundStyle(Color(hex: "5A5A5F")).offset(x: 104, y: 22)
+                Button { Haptics.play(.soft); onClose() } label: { Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.7)).frame(width: 30, height: 30).background(Color(hex: "1C1C1E"), in: Circle()) }.buttonStyle(.plain).offset(x: 318, y: 15)
                 Text("消灯まで").font(LF.inter(600, 13)).foregroundStyle(Color(hex: "8E8E93")).offset(x: 18, y: 56)
-                HStack(alignment: .lastTextBaseline, spacing: 0) {
-                    Text(String(format: "%02d", hh)).font(LF.inter(900, 62)).tracking(-3)
-                    VStack(spacing: 12) { Circle().frame(width: 8, height: 8); Circle().frame(width: 8, height: 8) }.foregroundStyle(Color(hex: "5A5A5F")).padding(.horizontal, 4).offset(y: -10)
-                    Text(String(format: "%02d", mm)).font(LF.inter(900, 62)).tracking(-3)
-                    Text(String(format: "%02d", ss)).font(LF.inter(900, 24)).foregroundStyle(Color(hex: "3BD35A")).padding(.leading, 6)
-                }.foregroundStyle(.white).offset(x: 18, y: 78)
+                // 大きな 時間(ころがる 数字)
+                HStack(alignment: .bottom, spacing: 0) {
+                    HStack(spacing: 0) { OdometerDigit(value: digits[0], size: 62); OdometerDigit(value: digits[1], size: 62) }
+                    VStack(spacing: 12) { Circle().frame(width: 8, height: 8); Circle().frame(width: 8, height: 8) }.foregroundStyle(Color(hex: "5A5A5F")).opacity(snap.s % 2 == 0 ? 0.85 : 0.22).padding(.horizontal, 4).padding(.bottom, 24)
+                    HStack(spacing: 0) { OdometerDigit(value: digits[2], size: 62); OdometerDigit(value: digits[3], size: 62) }
+                    HStack(spacing: 0) { OdometerDigit(value: digits[4], size: 24, color: secPop ? .white : lime); OdometerDigit(value: digits[5], size: 24, color: secPop ? .white : lime) }
+                        .scaleEffect(secPop ? 1.22 : 1, anchor: .bottomLeading).padding(.leading, 6).padding(.bottom, 12)
+                }
+                .overlay { GeometryReader { g in LinearGradient(colors: [.clear, lime.opacity(0.28), .clear], startPoint: .leading, endPoint: .trailing).frame(width: g.size.width * 0.5).offset(x: g.size.width * sweep).blendMode(.plusLighter).allowsHitTesting(false) }.clipped() }
+                .offset(x: 18, y: bigIn || reduceMotion ? 78 : 92).opacity(bigIn || reduceMotion ? 1 : 0)
                 HStack(spacing: 8) {
                     Text("ひらくまで").font(LF.inter(600, 13)).foregroundStyle(Color(hex: "8E8E93"))
-                    Text("\(toOpen / 3600)h \(String(format: "%02d", (toOpen % 3600) / 60))m").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.9))
+                    Text("\(toOpen / 3600)h \(String(format: "%02d", (toOpen % 3600) / 60))m").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.9)).contentTransition(.numericText(countsDown: true))
                 }.offset(x: 18, y: 154)
+                // バー
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.06)).frame(width: W, height: 8)
-                    Capsule().fill(LinearGradient(colors: [Color(hex: "1F8A3A"), Color(hex: "3BD35A")], startPoint: .leading, endPoint: .trailing)).frame(width: W * frac, height: 8).shadow(color: Color(hex: "3BD35A").opacity(0.5), radius: 8)
+                    Capsule().fill(LinearGradient(colors: [Color(hex: "171B0C"), Color(hex: "27310F")], startPoint: .leading, endPoint: .trailing)).frame(width: W * 24 / 33, height: 8).frame(width: W, alignment: .leading)
+                    Capsule().fill(Color.white.opacity(0.06)).frame(width: W, height: 8).mask(Rectangle().frame(width: W - W * 24 / 33).frame(width: W, alignment: .trailing))
+                    Capsule().fill(LinearGradient(colors: [lime.opacity(0.18), lime.opacity(0.85)], startPoint: .leading, endPoint: .trailing)).frame(width: max(8, W * frac * barP), height: 8).shadow(color: lime.opacity(0.32), radius: 7)
+                    if !reduceMotion {
+                        TimelineView(.animation) { ctx in
+                            let u = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.4) / 2.4
+                            LinearGradient(colors: [.clear, .white.opacity(0.35), .clear], startPoint: .leading, endPoint: .trailing).frame(width: W * 0.4, height: 8).offset(x: -W * 0.4 + (W * 1.4) * u)
+                        }.frame(width: W, height: 8).clipShape(Capsule()).allowsHitTesting(false)
+                    }
                     Rectangle().fill(Color(hex: "5A5A5F")).frame(width: 2, height: 14).offset(x: W * 9 / 33)
                     Rectangle().fill(Color(hex: "E0242C")).frame(width: 2, height: 14).offset(x: W * 24 / 33)
-                    Circle().fill(.white).frame(width: 18, height: 18).shadow(color: .white.opacity(0.6), radius: 6).offset(x: W * frac - 9)
+                    Circle().fill(.white).frame(width: 18, height: 18).overlay(Circle().strokeBorder(lime.opacity(0.22), lineWidth: 4)).shadow(color: lime.opacity(0.7), radius: 6)
+                        .scaleEffect(dotPulse ? 1.35 : 1).offset(x: W * frac * barP - 9)
                 }.frame(width: W, height: 20).offset(x: 18, y: 184)
                 Group {
                     Text("0:00").foregroundStyle(Color(hex: "5A5A5F")).offset(x: 0)
                     Text("9:00").foregroundStyle(Color(hex: "5A5A5F")).offset(x: W * 9 / 33 - 12)
                     Text("24:00").foregroundStyle(Color(hex: "E0242C")).offset(x: W * 24 / 33 - 14)
-                    Text("9:00 OPEN").foregroundStyle(Color(hex: "7EE08F")).frame(width: W, alignment: .trailing)
+                    Text("9:00 OPEN").foregroundStyle(lime).frame(width: W, alignment: .trailing)
                 }.font(LF.mono(10)).frame(width: W, alignment: .leading).offset(x: 18, y: 208)
                 ForEach(0..<3, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12), lineWidth: 1).frame(width: 40, height: 52)
-                        .overlay(Image(systemName: i < input.shotsUsed ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(i < input.shotsUsed ? Color(hex: "3BD35A") : Color(hex: "5A5A5F")))
+                        .overlay(Image(systemName: i < input.shotsUsed ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(i < input.shotsUsed ? lime : Color(hex: "5A5A5F")))
                         .offset(x: 18 + CGFloat(i) * 46, y: 243)
                 }
                 Button { Haptics.play(.click); onClose(); onShoot() } label: {
@@ -547,6 +600,49 @@ struct HVLivePanel: View {
             .padding(.top, 98)
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
+        .task { await run() }
+    }
+
+    private func targetDigits(_ h: Int, _ m: Int, _ s: Int) -> [Int] { [h / 10, h % 10, m / 10, m % 10, s / 10, s % 10] }
+    private static let df: DateFormatter = { let f = DateFormatter(); f.dateFormat = "HH:mm:ss"; return f }()
+
+    /// ひらく:数字が 0 から ころがる(0.18〜)→ そのあと 毎秒 更新(パネルが とじると タスクも 止まる)
+    @MainActor private func run() async {
+        let first = snapshot()
+        clockText = Self.df.string(from: clock()); secOfDayNow = first.sec; lastMinute = first.m
+        if reduceMotion {
+            digits = targetDigits(first.h, first.m, first.s); bigIn = true; barP = 1; opened = true
+        } else {
+            let target = targetDigits(first.h, first.m, first.s)
+            withAnimation(.timingCurve(0.3, 1.3, 0.5, 1, duration: 0.52).delay(0.16)) { bigIn = true }
+            let delays = [0.18, 0.26, 0.36, 0.44, 0.52, 0.58]
+            for (i, d) in delays.enumerated() { withAnimation(.timingCurve(0.16, 1.2, 0.3, 1, duration: 1.25).delay(d)) { digits[i] = target[i] } }
+            withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 1.1).delay(0.28)) { barP = 1 }
+            for t in [0.52, 0.64, 0.76, 0.88] { Task { try? await Task.sleep(for: .seconds(t)); Haptics.play(.tick) } }
+            Task { try? await Task.sleep(for: .seconds(1.0)); Haptics.play(.sel) }
+            try? await Task.sleep(for: .seconds(1.8))
+            opened = true
+        }
+        Haptics.play(.pop)
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(1000 - Int(Date().timeIntervalSince1970 * 1000) % 1000 + 5))
+            if Task.isCancelled { return }
+            let s = snapshot()
+            clockText = Self.df.string(from: clock()); secOfDayNow = s.sec
+            let target = targetDigits(s.h, s.m, s.s)
+            if reduceMotion { digits = target } else {
+                withAnimation(.timingCurve(0.2, 1.35, 0.35, 1, duration: 0.7)) { digits = target }
+                secPop = true
+                withAnimation(.timingCurve(0.2, 1.35, 0.35, 1, duration: 0.52)) { secPop = false }
+                dotPulse = true; withAnimation(.spring(response: 0.6, dampingFraction: 0.5)) { dotPulse = false }
+                if s.s == 0 { Haptics.play(.tick) }
+                if let last = lastMinute, last != s.m, opened {
+                    Haptics.play(.sel); sweep = -0.6
+                    withAnimation(.easeInOut(duration: 0.9)) { sweep = 1.2 }
+                }
+            }
+            lastMinute = s.m
+        }
     }
 }
 
