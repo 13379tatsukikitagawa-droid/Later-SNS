@@ -2,6 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Inter-Medium.ttf</string>
+		<string>Inter-Bold.ttf</string>
+		<string>Inter-ExtraBold.ttf</string>
+		<string>Inter-Black.ttf</string>
+		<string>InstrumentSerif-Regular.ttf</string>
+		<string>InstrumentSerif-Italic.ttf</string>
+		<string>SpaceMono-Bold.ttf</string>
+		<string>SpaceMono-Regular.ttf</string>
+		<string>Caveat-SemiBold.ttf</string>
+	</array>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

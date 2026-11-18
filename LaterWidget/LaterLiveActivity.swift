@@ -138,7 +138,7 @@ struct LaterActivityDisc: View {
 struct LaterShootControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "LaterShootControl") {
-            ControlWidgetButton(action: OpenURLIntent(LaterWidgetShared.deepLink(.U))) {
+            ControlWidgetButton(action: OpenURLIntent(LattagShared.Link.shoot)) {
                 Label("今日を撮る", systemImage: "circle.circle")
             }
         }
@@ -149,7 +149,7 @@ struct LaterShootControl: ControlWidget {
 struct LaterOpenControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "LaterOpenControl") {
-            ControlWidgetButton(action: OpenURLIntent(LaterWidgetShared.deepLink(.R))) {
+            ControlWidgetButton(action: OpenURLIntent(LattagShared.Link.yesterday())) {
                 Label("昨日をひらく", systemImage: "circle.dashed")
             }
         }

@@ -1171,6 +1171,7 @@ struct TodayView: View {
         }
         .onChange(of: state) { _, _ in syncWidget() }
         .onChange(of: openedWindowKey) { _, _ in syncWidget() }
+        .onChange(of: widgetPhotoCount) { _, _ in syncWidget() }
         .onChange(of: myCaptureDates.count) { _, _ in
             reconcileFilm()
             syncWidget()
@@ -2388,7 +2389,20 @@ struct TodayView: View {
             openedYesterday: openedWindowKey == DailyWindow.key(for: current),
             now: current
         )
+        // v96:新しい ウィジェット(App Group の WidgetSnapshot.json + 小さな 画像)
+        WidgetSnapshotWriter.write(.init(
+            now: current,
+            shots: filmUsed,
+            limit: FilmCounter.shared.limit,
+            me: currentUser,
+            myRecordName: CloudKitManager.current?.currentUserRecordName ?? currentUser?.cloudKitUserRecordName,
+            friends: layerData(sharedGroups: sharedGroups).friends,
+            groups: sharedGroups
+        ))
     }
+
+    /// v96:友だちの 写真が 同期で ふえた / へった 時に ウィジェットを 書きなおす
+    private var widgetPhotoCount: Int { sharedGroups.reduce(0) { $0 + $1.photos.count } }
 
     /// Homeの上に別の画面・シートが重なっているか
     private var isHomeCovered: Bool {

@@ -328,6 +328,19 @@ struct RootView: View {
                 }
                 return
             }
+            // v96 ウィジェット:lattag://shoot ・ develop ・ friends ・ yesterday?f= ・ mondo ・ trip/<id>
+            if let route = WidgetRouteStore.route(from: url) {
+                NotificationCenter.default.post(name: .photoNotificationTapped, object: nil)
+                if route == .shoot {
+                    // 撮る:のこりが あれば 撮影の 入口(later://widget/U と 同じ)。なければ Home
+                    if FilmCounter.shared.remaining > 0 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { CaptureRequestStore.shared.pendingRequestID = UUID() }
+                    }
+                } else {
+                    WidgetRouteStore.shared.pending = route
+                }
+                return
+            }
             // ウィジェット・コントロール・ライブアクティビティ:later://widget/<U|R|D|M>
             // U → 撮影へ(タグ選び)/ R → Home(月を長押しで昨日をひらく)/ D・M → Home
             if Brand.isOurScheme(url), url.host == "widget" {

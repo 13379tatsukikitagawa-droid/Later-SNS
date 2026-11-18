@@ -17,6 +17,8 @@ struct HomeV64Host: View {
     @State private var showSelfQR = false
     @State private var showScan = false
     @State private var mondoStart = false
+    /// v96:ウィジェットから 来た 行き先
+    @State private var widgetRoute = WidgetRouteStore.shared
     @Query private var profiles: [UserProfile]
     private var myLink: URL {
         let me = UserProfile.current(from: profiles)
@@ -29,6 +31,8 @@ struct HomeV64Host: View {
         }
         .accessibilityElement(children: .contain)
         .task { await refreshRequests() }
+        .onAppear { openWidgetRoute() }
+        .onChange(of: widgetRoute.pending) { _, _ in openWidgetRoute() }
         .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
         .sheet(isPresented: Binding(get: { chatWith != nil }, set: { if !$0 { chatWith = nil } })) { if let c = chatWith { DirectMessageView(friendID: c.id, friendName: c.name) } }
         .sheet(isPresented: $showShare) { ShareSheet(activityItems: [myLink]) { _ in showShare = false }.presentationDetents([.medium, .large]) }
@@ -212,6 +216,21 @@ struct HomeV64Host: View {
         a.openTripHome = { id in src.onOpenChat(id) }
         a.openMondo = { mondoStart = true; showYesterday = true }   // v95-10:いつでも Mondo タブ
         return a
+    }
+
+    /// v96:ウィジェットの 行き先を ひらく(lattag://develop ・ friends ・ yesterday ・ mondo ・ trip/<id>)
+    private func openWidgetRoute() {
+        guard let route = widgetRoute.take() else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            switch route {
+            case .shoot: makeActions().shoot()
+            case .develop: if src.shotsToday > 0 { showDevelop = true } else { makeActions().shoot() }
+            case .friends: src.layerActions.openFriends()
+            case .yesterday: mondoStart = false; showYesterday = true
+            case .mondo: mondoStart = true; showYesterday = true
+            case .trip(let id): if let uuid = UUID(uuidString: id) { src.onOpenChat(uuid) }
+            }
+        }
     }
 
     /// Friends を ひらいて、検索欄に フォーカス

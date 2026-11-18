@@ -7,6 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F961BA115D793A320DC57F96 /* Fonts/Caveat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1E0C4DD10F0C4B52A04FEBD2 /* Fonts/Caveat-SemiBold.ttf */; };
+		F964F496F0299184A9E9486F /* Fonts/SpaceMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5EB475C0B25346EBBDDE292C /* Fonts/SpaceMono-Regular.ttf */; };
+		F961362EE48E1FE4EEA0FB5B /* Fonts/SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */; };
+		F966912C96C5ED6399DC8ED1 /* Fonts/InstrumentSerif-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000043 /* Fonts/InstrumentSerif-Italic.ttf */; };
+		F96A28988D8ECD1D24CD1B67 /* Fonts/InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E4A000000000000000000041 /* Fonts/InstrumentSerif-Regular.ttf */; };
+		F961437D7997B742D8DB03BF /* Fonts/Inter-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 27B30D00E22A4904938D7ED6 /* Fonts/Inter-Black.ttf */; };
+		F9604D53BE6964B061D9D199 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
+		F969E7CC4EACC1A8FF017581 /* Fonts/Inter-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F3BD87A37A434721B1834A92 /* Fonts/Inter-Bold.ttf */; };
+		F96D951BA6178EF91C15CBF8 /* Fonts/Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0A0CDE87376944EE8E6DF443 /* Fonts/Inter-Medium.ttf */; };
+		F96D6CC198B2707E6A8E698A /* LattagWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */; };
+		F96EECA11D724D6738F6F307 /* WidgetSnapshotWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */; };
+		F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */; };
+		F96ED69A09688B3707B3E4CD /* LattagWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */; };
 		00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769863F83DF8CA3E06CAE493 /* SampleData.swift */; };
 		01C86E7D093E315A9ECF5307 /* LGFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED44F2F13C3467FBD25D831F /* LGFont.swift */; };
 		021C097B9475439B95C55961 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
@@ -337,6 +350,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetProvider.swift; sourceTree = "<group>"; };
+		F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotWriter.swift; sourceTree = "<group>"; };
+		F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetSnapshot.swift; sourceTree = "<group>"; };
 		0159D1A97715D4F4D7AB1471 /* LGMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGMotion.swift; sourceTree = "<group>"; };
 		024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileImmersiveView.swift; sourceTree = "<group>"; };
 		0379B7B1C3D13126CF9489E1 /* V64/ProfileEditV88View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ProfileEditV88View.swift; sourceTree = "<group>"; };
@@ -797,6 +813,7 @@
 			isa = PBXGroup;
 			children = (
 				B6A1C0010000000000000001 /* BackgroundMaintenance.swift */,
+				F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */,
 				BA74312F8635A2490D14152A /* AppDelegate.swift */,
 				A3B62837302D73920010ACBB /* SceneDelegate.swift */,
 			);
@@ -1204,6 +1221,7 @@
 			isa = PBXGroup;
 			children = (
 				E1D000000000000000000002 /* LaterWidgetShared.swift */,
+				F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -1216,6 +1234,7 @@
 				E1D000000000000000000005 /* LaterWidgets.swift */,
 				E1D000000000000000000009 /* LaterWidgetAccessory.swift */,
 				E1D000000000000000000006 /* LaterLiveActivity.swift */,
+				F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */,
 				E1D000000000000000000007 /* Info.plist */,
 				E1D000000000000000000008 /* LaterWidget.entitlements */,
 			);
@@ -1437,6 +1456,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F961BA115D793A320DC57F96 /* Fonts/Caveat-SemiBold.ttf in Resources */,
+				F964F496F0299184A9E9486F /* Fonts/SpaceMono-Regular.ttf in Resources */,
+				F961362EE48E1FE4EEA0FB5B /* Fonts/SpaceMono-Bold.ttf in Resources */,
+				F966912C96C5ED6399DC8ED1 /* Fonts/InstrumentSerif-Italic.ttf in Resources */,
+				F96A28988D8ECD1D24CD1B67 /* Fonts/InstrumentSerif-Regular.ttf in Resources */,
+				F961437D7997B742D8DB03BF /* Fonts/Inter-Black.ttf in Resources */,
+				F9604D53BE6964B061D9D199 /* Fonts/Inter-ExtraBold.ttf in Resources */,
+				F969E7CC4EACC1A8FF017581 /* Fonts/Inter-Bold.ttf in Resources */,
+				F96D951BA6178EF91C15CBF8 /* Fonts/Inter-Medium.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1462,6 +1490,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F96EECA11D724D6738F6F307 /* WidgetSnapshotWriter.swift in Sources */,
+				F96ED69A09688B3707B3E4CD /* LattagWidgetSnapshot.swift in Sources */,
 				E1D000000000000000000030 /* LaterWidgetShared.swift in Sources */,
 				E1D000000000000000000040 /* LaterWidgetTimeline.swift in Sources */,
 				E1D000000000000000000041 /* LaterWidgetScene.swift in Sources */,
@@ -1737,6 +1767,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F96D6CC198B2707E6A8E698A /* LattagWidgetProvider.swift in Sources */,
+				F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */,
 				E1D000000000000000000031 /* LaterWidgetShared.swift in Sources */,
 				E1D000000000000000000032 /* LaterWidgetTimeline.swift in Sources */,
 				E1D000000000000000000033 /* LaterWidgetScene.swift in Sources */,

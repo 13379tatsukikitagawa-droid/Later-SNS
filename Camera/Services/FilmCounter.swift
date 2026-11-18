@@ -76,6 +76,8 @@ final class FilmCounter {
         }
         usedIDs.append(id)
         save()
+        // v96:ウィジェット(レンズ ・ 9:00 まで ・ ロック)は App Group の こまを 読む。すぐ 書きなおす
+        WidgetSnapshotWriter.reloadAfterShot()
         #if DEBUG
         print("[Film] consume id=\(id) source=\(source) remaining=\(remaining)")
         #endif
