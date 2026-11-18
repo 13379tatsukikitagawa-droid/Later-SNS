@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import PhotosUI
+import SwiftData
 
 /// v94 D:QR を 読む = Lattag の カメラ(F10 F35 ・ M36)。
 /// 友だちの QR(later://friend?u=… / https://lattag.app/u/<id>)を 読む → 下から プロフィールの カード → 申請する。
@@ -10,7 +11,9 @@ struct FriendQRScanView: View {
     let friendCount: Int
     var friendIDs: Set<String> = []
     var myUsername = ""
+    var onSearchID: (() -> Void)? = nil
     let onToast: (String) -> Void
+    @Query private var profiles: [UserProfile]
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -27,7 +30,7 @@ struct FriendQRScanView: View {
     @State private var sending = false
 
     private let lime = HV.lime
-    private let side: CGFloat = 264
+    private let side: CGFloat = 282   // v95-5:上 206 ・ 282 × 282
 
     var body: some View {
         GeometryReader { g in
@@ -36,8 +39,8 @@ struct FriendQRScanView: View {
                 else {
                     QRCameraPreview(camera: camera).ignoresSafeArea()
                     dim(g)
-                    frame.position(x: g.size.width / 2, y: 150 + side / 2)
-                    status.position(x: g.size.width / 2, y: 150 + side + 36)
+                    frame.position(x: g.size.width / 2, y: 206 + side / 2)
+                    status.position(x: g.size.width / 2, y: 206 + side + 24 + 10)
                     VStack { topBar; Spacer(); bottomButtons }.padding(.horizontal, 16).padding(.top, 54).padding(.bottom, 40)
                 }
             }
@@ -74,7 +77,7 @@ struct FriendQRScanView: View {
 
     private func dim(_ g: GeometryProxy) -> some View {
         Color.black.opacity(0.55).ignoresSafeArea()
-            .mask { Rectangle().ignoresSafeArea().overlay { RoundedRectangle(cornerRadius: 40, style: .continuous).frame(width: side, height: side).position(x: g.size.width / 2, y: 150 + side / 2).blendMode(.destinationOut) }.compositingGroup() }
+            .mask { Rectangle().ignoresSafeArea().overlay { RoundedRectangle(cornerRadius: 40, style: .continuous).frame(width: side, height: side).position(x: g.size.width / 2, y: 206 + side / 2).blendMode(.destinationOut) }.compositingGroup() }
             .allowsHitTesting(false)
     }
 
@@ -105,12 +108,40 @@ struct FriendQRScanView: View {
     }
 
     private var bottomButtons: some View {
-        HStack(spacing: 10) {
-            bigButton("qrcode", "自分の QR") { Haptics.play(.click); showsMine = true }
-            PhotosPicker(selection: $photoItem, matching: .images) {
-                HStack(spacing: 8) { Image(systemName: "photo").font(.system(size: 16, weight: .bold)); Text("写真から").font(LF.inter(800, 15)) }.foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 56).background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1))
+        VStack(spacing: 18) {
+            Text("画面 でも 紙 でも 読めます ・ 暗い 時は ライト").font(LF.inter(500, 12)).foregroundStyle(.white.opacity(0.55))
+            HStack(alignment: .center) {
+                PhotosPicker(selection: $photoItem, matching: .images) { roundLabel("photo", "写真から") }
+                Spacer()
+                Button { Haptics.play(.click); showsMine = true } label: { miniCheki }.buttonStyle(HVPress(scale: 0.95)).accessibilityLabel("自分の QR")
+                Spacer()
+                Button { Haptics.play(.click); if let onSearchID { dismiss(); onSearchID() } else { onToast("Friends の さがすで @ID") } } label: { roundLabel("at", "@ID") }.buttonStyle(HVPress(scale: 0.92))
             }
+            .padding(.horizontal, 24)
         }
+    }
+
+    private func roundLabel(_ icon: String, _ t: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 20, weight: .bold)).foregroundStyle(.white).frame(width: 56, height: 56)
+                .background(.ultraThinMaterial, in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+            Text(t).font(LF.inter(700, 11)).foregroundStyle(.white.opacity(0.7))
+        }
+    }
+
+    /// 小さな チェキ(84 × 96 ・ -4°)の 中に 本物の QR
+    private var miniCheki: some View {
+        let me = UserProfile.current(from: profiles)
+        let rn = CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? ""
+        let m = QRMatrix.make(FriendRules.link(recordName: rn).absoluteString)
+        return VStack(spacing: 4) {
+            Group { if let m { StyledQRView(matrix: m, side: 64) } else { Color.clear } }.frame(width: 64, height: 64)
+            Text("自分の QR").font(LF.inter(800, 9.5)).foregroundStyle(Color(hex: "1A1A1C"))
+        }
+        .padding(10).frame(width: 84, height: 96)
+        .background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 4))
+        .shadow(color: .black.opacity(0.5), radius: 8, y: 4)
+        .rotationEffect(.degrees(-4))
     }
 
     private func bigButton(_ icon: String, _ t: String, _ a: @escaping () -> Void) -> some View {
