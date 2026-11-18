@@ -88,7 +88,7 @@ struct HVPageBackdrop: View {
     var body: some View { Color.clear }
 }
 
-/// 上の 行:丸い アイコン(40pt)+ `0N / 04` + 右に 状態
+/// 上の 行:丸い アイコン(40pt)+ `0N / 03` + 右に 状態
 struct HVPageHeader: View {
     let page: HVPage
     let number: Int
@@ -104,7 +104,7 @@ struct HVPageHeader: View {
                 HVIcon(kind: page.icon, size: 20, color: page == .mondo ? .black : .black)
             }
             .frame(width: 40, height: 40).offset(x: 22, y: 22)
-            Text(String(format: "%02d / 04", number)).font(LF.mono(9)).tracking(1.62).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 72, y: 35.5)
+            Text(String(format: "%02d / 03", number)).font(LF.mono(9)).tracking(1.62).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 72, y: 35.5)
             if let status {
                 Text(status).font(LF.mono(9.5)).tracking(1.14).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
                     .frame(width: 200, alignment: .trailing).offset(x: cardW - 22 - 200, y: 35)
@@ -260,7 +260,7 @@ struct HVTripPage: View {
                     stackedPhoto(imgs[safe: 1]).frame(width: 118, height: 150).offset(y: -2)
                 }
                 .frame(width: cardW, height: 200).offset(y: 25)
-                Text("02 / 04 ・ TRIP").font(LF.mono(9)).tracking(1.8).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 24, y: 252)
+                Text("02 / 03 ・ TRIP").font(LF.mono(9)).tracking(1.8).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 24, y: 252)
                 Text("Take a trip,").font(LF.serif(40)).foregroundStyle(.white).frame(height: 40, alignment: .leading).fixedSize().offset(x: 24, y: 273)
                 Text("together.").font(LF.serif(40, italic: true)).foregroundStyle(HV.lime).frame(height: 40, alignment: .leading).fixedSize().offset(x: 24, y: 313)
                 Text("旅行 ・ 合宿 ・ イベント。1日 23枚を、みんなで。").font(LF.inter(500, 12.5)).foregroundStyle(Color(hex: "8C8C93")).fixedSize().offset(x: 24, y: 366)
@@ -413,59 +413,6 @@ struct HVGlobe: View {
         }
         .drawingGroup()
         .allowsHitTesting(false)
-    }
-}
-
-// MARK: - 4 Yesterday
-
-struct HVYesterdayPage: View {
-    let input: HomeV64Input
-    let cardW: CGFloat
-    let actions: HomeV64Actions
-
-    var body: some View {
-        let locked = input.locked, firstDay = input.isFirstDay
-        let thumbs = input.yesterdayThumbs
-        ZStack(alignment: .topLeading) {
-            HVPageBackdrop(photo: firstDay ? nil : (thumbs[safe: 1]?.image ?? thumbs.first?.image ?? input.yesterdayPhoto))
-            HVPageHeader(page: .yesterday, number: 4, status: firstDay ? "FROM TOMORROW" : (locked ? "LOCKED" : "\(max(1, min(thumbs.count, input.shotsUsed))) OPENED"), cardW: cardW, iconColor: Color(hex: "C8A46A"))
-            HVPageTitle(text: "Yesterday").offset(x: 22, y: 72)
-            // チェキの 扇(3枚とも 128×170・−10° / 0° / +10°・横へ ±70・外側は 14pt 下)
-            let times = ["18:42", "16:05", "21:13"]
-            ForEach([0, 2, 1], id: \.self) { slot in
-                let t = thumbs[safe: slot]
-                let rot: Double = [-10, 0, 10][slot], dx: CGFloat = [-70, 0, 70][slot], dy: CGFloat = slot == 1 ? 0 : 14
-                ZStack(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: 4).fill(firstDay ? Color.clear : Color(hex: "F4F1EA"))
-                    if firstDay {
-                        RoundedRectangle(cornerRadius: 4).strokeBorder(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-                    } else {
-                        ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = t?.image ?? input.yesterdayPhoto { Image(uiImage: img).resizable().scaledToFill() } }
-                            .frame(width: 114, height: 137).clipped()
-                            .blur(radius: locked ? 8 : 0).saturation(locked ? 0.4 : 1).offset(x: 7, y: 7)
-                        Text(t?.time ?? times[slot]).font(LF.mono(9)).foregroundStyle(Color(hex: "FF9A3C")).fixedSize().offset(x: 92, y: 151)
-                    }
-                }
-                .frame(width: 128, height: 170)
-                .shadow(color: .black.opacity(firstDay ? 0 : 0.8), radius: 15, y: 16)
-                .rotationEffect(.degrees(rot))
-                .offset(x: (cardW - 128) / 2 + dx, y: 141.8 + dy)
-            }
-            if locked && !firstDay { Image(systemName: "lock.fill").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 46, height: 46).background(Color.black, in: Circle()).offset(x: 162, y: 211.4) }
-            if !firstDay {
-                HStack(spacing: 8) {
-                    chip("#夕焼け", bg: Color(hex: "9ED8FF"), fg: HV.ink); chip("#放課後", bg: Color(hex: "9B8CFF"), fg: .white); chip("#帰り道", bg: Color(hex: "EE5E9C"), fg: .white)
-                }.frame(width: cardW).offset(y: 349)
-            }
-            HVCTA(title: firstDay ? "撮ると、あした ひらく" : (locked ? "Shoot first" : "Open"), locked: locked && !firstDay, width: 334) {
-                if firstDay || locked { actions.shoot() } else { actions.openYesterday() }
-            }.offset(x: 18, y: 386)
-        }
-        .frame(width: cardW, height: 508, alignment: .topLeading)
-    }
-
-    private func chip(_ t: String, bg: Color, fg: Color) -> some View {
-        Text(t).font(LF.inter(900, 12)).foregroundStyle(fg).padding(.horizontal, 10).frame(height: 27).background(bg, in: RoundedRectangle(cornerRadius: 10))
     }
 }
 

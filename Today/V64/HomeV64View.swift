@@ -179,7 +179,6 @@ struct HomeV64View: View {
             AnyView(HVFriendsPage(input: input, cardW: cardW, actions: actions)),
             AnyView(HVTripPage(input: input, cardW: cardW, actions: actions)),
             AnyView(HVMondoPage(input: input, cardW: cardW, actions: actions)),
-            AnyView(HVYesterdayPage(input: input, cardW: cardW, actions: actions)),
         ]
         return ZStack(alignment: .topLeading) {
             // ページは 画面の はばで 切る(# の 横の 棒が 画面の はしまで とどく ように)。中身の はばは カードの まま
@@ -300,7 +299,7 @@ struct HVDock: View {
     let onSelect: (Int) -> Void
     @Namespace private var ns
     // Camera は # の 画面。そこでは 出さない(v79)。ほかの ページでは 左に 小さな 丸(字 なし)= Camera へ もどる
-    private let items: [(Int, HVIconKind, String)] = [(1, .friends, "Friends"), (2, .trip, "Trip"), (3, .mondo, "Mondo"), (4, .yesterday, "Yesterday")]
+    private let items: [(Int, HVIconKind, String)] = [(1, .friends, "Friends"), (2, .trip, "Trip"), (3, .mondo, "Mondo")]
 
     var body: some View {
         HStack(spacing: 4) {
