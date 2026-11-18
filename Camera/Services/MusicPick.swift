@@ -202,6 +202,13 @@ enum AppleMusicCatalog {
         }
     }
 
+    /// 30秒の 試聴 URL(Apple Music に 入って いなくても 流せる)
+    static func previewURL(songID: String) async -> URL? {
+        guard access == .ready else { return nil }
+        let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(songID))
+        return try? await request.response().items.first?.previewAssets?.first?.url
+    }
+
     static func song(id: String) async -> MusicPick? {
         guard access == .ready else { return nil }
         let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(id))

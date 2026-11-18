@@ -45,6 +45,11 @@ struct HomeYesterdayCard: Identifiable, Equatable {
     let captureDate: Date
     /// ひらいたあとだけ入る
     let imageData: Data?
+    /// v89:その 写真に つけた 1曲(あれば)
+    var musicTitle: String? = nil
+    var musicArtist: String? = nil
+    var musicArtworkURL: String? = nil
+    var musicLink: String? = nil
 }
 
 /// 7日のフィルムの1こま
@@ -357,7 +362,8 @@ enum HomeLayerBuilder {
                         mosaicKey: photo.imageCacheKey,
                         tag: photo.tags.first,
                         captureDate: photo.captureDate,
-                        imageData: mode == .open && !photo.imageData.isEmpty ? photo.imageData : nil
+                        imageData: mode == .open && !photo.imageData.isEmpty ? photo.imageData : nil,
+                        musicTitle: photo.musicTitle, musicArtist: photo.musicArtist, musicArtworkURL: photo.musicArtworkURL, musicLink: photo.musicLink
                     ))
                 }
             }

@@ -9,6 +9,28 @@ struct DebugStateMenu: View {
     @State private var shots = DebugState.shared.shots
     @State private var showPreview = false
 
+    /// (名前, route, 一時の 起動フラグ)
+    static let screens: [(String, String, [String: Any])] = [
+        ("Friends:はじめて", "friends", ["debugFriendsMode": "first"]),
+        ("Friends:友だち 0人", "friends", ["debugFriendsMode": "nofriends"]),
+        ("Friends:自分の きのう なし", "friends", ["debugFriendsMode": "noown"]),
+        ("Mondo:投稿 なし", "yesterday", ["debugTab": 1, "debugMondo": "empty"]),
+        ("ひらく(新)", "reveal", [:]),
+        ("音楽:つなぐ まえ", "music", [:]),
+        ("設定", "settings", [:]),
+        ("QR(チェキ)", "qr", [:]),
+        ("プロフィール 編集", "profileedit", [:]),
+        ("現像", "develop", [:]),
+        ("Trip を つくる", "trip", [:]),
+    ]
+
+    @MainActor static func open(_ item: (String, String, [String: Any])) {
+        let d = UserDefaults.standard
+        for (k, v) in item.2 { d.set(v, forKey: k) }
+        if let url = URL(string: "lattag://debug/\(item.1)") { _ = DebugRouter.handle(url) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { for k in item.2.keys { d.removeObject(forKey: k) } }
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -49,6 +71,11 @@ struct DebugStateMenu: View {
                 }
                 Section("新しい Home(V64)") {
                     Toggle("V64 の Home を つかう(切りかえたら 再起動)", isOn: Binding(get: { UIFlag.v64 }, set: { UserDefaults.standard.set($0, forKey: UIFlag.v64Key) }))
+                }
+                Section("画面を ひらく(見本どおりの 状態)") {
+                    ForEach(DebugStateMenu.screens, id: \.0) { item in
+                        Button(item.0) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { DebugStateMenu.open(item) } }
+                    }
                 }
                 Section("確かめる") {
                     Button("書体 ・ バイブ ・ ガラス の プレビュー") { showPreview = true }

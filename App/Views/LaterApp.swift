@@ -207,6 +207,7 @@ struct RootView: View {
                     }
                 }
                 .scaleEffect(opening == nil ? 1 : homeScale)
+                .opacity(opening == nil ? 1 : max(0, min(1, 1 - Double(homeScale - 1) / 0.04)))   // v91:Home が 0 → 1 で 出る(1.04 → 1 と 同じ 動き)
                 .transition(.opacity)
             }
 

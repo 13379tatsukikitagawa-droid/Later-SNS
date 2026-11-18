@@ -56,7 +56,7 @@ struct HomeV64Host: View {
         y.mondoTag = L.words.first.map { "#\($0)" } ?? "#夕焼け"
         if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }
         // v76:友だち 1人 = 1つの 投稿(大きな 1枚 + 小さな 2枚)。自分の 3枚は「あなたの きのう」
-        func photo(_ c: HomeYesterdayCard) -> YesterdayV64Input.Photo { .init(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 640) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: c.imageData == nil ? "" : df.string(from: c.captureDate), tag: c.tag) }
+        func photo(_ c: HomeYesterdayCard) -> YesterdayV64Input.Photo { .init(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 640) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: c.imageData == nil ? "" : df.string(from: c.captureDate), tag: c.tag, music: c.musicTitle.map { MusicPick(title: $0, artist: c.musicArtist ?? "", artworkURL: c.musicArtworkURL, link: c.musicLink, service: .apple) }) }
         let mine = L.yesterday.filter { $0.authorName == src.avatarName }
         y.mine = mine.sorted { $0.captureDate < $1.captureDate }.map(photo)
         var order: [String] = []

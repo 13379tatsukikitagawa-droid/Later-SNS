@@ -156,6 +156,7 @@ struct TripNewV83View: View {
     @State private var fly: (text: String, from: CGRect, kind: Int, id: UUID)?
     @State private var flyGo = false
     @State private var sink = false
+    @State private var lift = false
     @State private var coverKey = 0
     private let titles = ["どこへ 行く?", "いつ 行く?", "だれと 行く?", "表紙を えらぶ"]
 
@@ -166,7 +167,7 @@ struct TripNewV83View: View {
                 topBar.padding(.top, 52)
                 TripTicket(draft: draft, cover: cover, members: members, onNameFrame: { nameFrame = $0 }, coverKey: draft.coverIndex)
                     .padding(.horizontal, 16).padding(.top, 14)
-                    .scaleEffect(sink ? 0.95 : 1).offset(y: sink ? 6 : 0)
+                    .scaleEffect(sink ? 0.95 : 1).offset(y: lift ? -120 : (sink ? 6 : 0)).opacity(lift ? 0 : 1)
                 Text(titles[step]).font(.system(size: 30, weight: .black)).tracking(-1.2).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.top, 18).id("t\(step)")
                 ZStack {
@@ -400,6 +401,13 @@ struct TripNewV83View: View {
             switch result {
             case .success(let made):
                 Haptics.play(.success)
+                if !reduceMotion {
+                    // パスが 少し しずんで 上へ はねる(0.8秒)
+                    withAnimation(.easeIn(duration: 0.18)) { sink = true }
+                    try? await Task.sleep(for: .milliseconds(180))
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.6)) { sink = false; lift = true }
+                    try? await Task.sleep(for: .milliseconds(620))
+                }
                 pass = TripPassData(name: made.name, sub: draft.name, from: Self.upper(draft.start), to: Self.upper(draft.end), days: draft.days, key: made.key, link: made.link, cover: cover, members: members.map { $0.1 }, names: members.map { $0.0 })
             case .failure(let message):
                 Haptics.play(.warn); errorText = message

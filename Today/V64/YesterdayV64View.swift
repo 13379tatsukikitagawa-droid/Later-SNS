@@ -4,9 +4,9 @@ import SwiftUI
 // タブは 標準の `TabView`(iOS 26 は 浮かぶ ガラス)。見本:Y01〜Y18。キャラクターは 使わない(人は 写真の 丸 / 名前の 1文字 + 色)。
 
 struct YesterdayV64Input {
-    struct Cell: Identifiable { let id: String; var photo: UIImage?; var name: String; var time: String?; var tag: String? }
+    struct Cell: Identifiable { let id: String; var photo: UIImage?; var name: String; var time: String?; var tag: String?; var music: MusicPick? = nil }
     /// 1枚(1日 3枚まで)
-    struct Photo: Identifiable { let id: String; var image: UIImage?; var time: String; var tag: String? }
+    struct Photo: Identifiable { let id: String; var image: UIImage?; var time: String; var tag: String?; var music: MusicPick? = nil }
     /// 友だち 1人 = 1つの 投稿(大きな 1枚 + 小さな 2枚)。`published` が false =「まだ 公開して いません」
     struct Post: Identifiable {
         let id: String
@@ -358,7 +358,7 @@ struct YesterdayV64View: View {
                 }
                 .frame(width: w - 16, height: (w - 16) * 4 / 3).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .contentShape(Rectangle())
-                .onTapGesture { if !hidden, let big { viewing = .init(id: big.id, photo: big.image, name: post.name, time: big.time, tag: big.tag); Haptics.play(.tick) } }
+                .onTapGesture { if !hidden, let big { viewing = .init(id: big.id, photo: big.image, name: post.name, time: big.time, tag: big.tag, music: big.music); Haptics.play(.tick) } }
                 if post.published {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(smalls.prefix(2), id: \.element.id) { s in
@@ -536,6 +536,7 @@ struct YesterdayV64View: View {
                 Text(tag.hasPrefix("#") ? tag : "#\(tag)").font(LF.inter(900, 15)).foregroundStyle(HV.ink).frame(width: 81, height: 36)
                     .background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(-6)).offset(x: 29, y: 628)
             }
+            if let m = c.music { FriendMusicChip(pick: m).offset(x: 14, y: 690) }
             Button { Haptics.play(.pop); actions.openPhoto(c.id) } label: {
                 Text("reply").font(LF.inter(800, 15)).foregroundStyle(HV.ink).frame(width: 106, height: 56).background(.white, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.96)).offset(x: 142, y: 732)
@@ -556,5 +557,40 @@ struct Shimmer: View {
                 LinearGradient(colors: [.clear, .white.opacity(0.07), .clear], startPoint: .leading, endPoint: .trailing).frame(width: g.size.width * 0.5).offset(x: CGFloat(u) * g.size.width * 1.6 - g.size.width * 0.5)
             }
         }.allowsHitTesting(false)
+    }
+}
+
+
+/// 友だちの 写真に ついた 曲:チップを 押すと プレビューが 流れる(もう1回で 止まる)。曲の ID は リンクから 読む
+struct FriendMusicChip: View {
+    let pick: MusicPick
+    private let playback = MusicPlayback.shared
+    @State private var url: URL?
+    private var key: String { "friend-" + (pick.link ?? pick.title) }
+
+    var body: some View {
+        Button { toggle() } label: {
+            HStack(spacing: 8) {
+                MusicDisc(artworkURL: pick.artworkURL, seed: pick.title, spinning: playback.isPlaying(key)).frame(width: 30, height: 30)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(pick.title).font(LF.inter(800, 12)).foregroundStyle(.white).lineLimit(1)
+                    Text(pick.artist).font(LF.inter(600, 10.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                }
+                MusicEqualizer(animating: playback.isPlaying(key), lime: true)
+            }.padding(.leading, 6).padding(.trailing, 12).frame(height: 44).background(.white.opacity(0.1), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
+        }.buttonStyle(HVPress(scale: 0.96)).onDisappear { if playback.isPlaying(key) { playback.stop() } }
+    }
+
+    private func toggle() {
+        if playback.isPlaying(key) { Haptics.play(.soft); playback.stop(); return }
+        Haptics.play(.tick)
+        Task {
+            var u = url
+            if u == nil, let l = pick.link.flatMap(URL.init(string:)), let id = MusicLink.appleSongID(from: l) {
+                u = await AppleMusicCatalog.previewURL(songID: id)
+                url = u
+            }
+            if let u { playback.setVolume(0.9); playback.start(key: key, url: u) }
+        }
     }
 }

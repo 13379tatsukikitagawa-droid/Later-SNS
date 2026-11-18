@@ -31,7 +31,8 @@ struct DevelopV64View: View {
     @State private var tasks: [Task<Void, Never>] = []
     @State private var haptics = DevelopHaptics()
     @State private var scrollID: Int? = 0
-    @State private var shake = false
+    @State private var shakeX: CGFloat = 0
+    @State private var warned = false
 
     private let lime = HV.lime
     private let milk = Color(hex: "0B0B0C")
@@ -57,7 +58,8 @@ struct DevelopV64View: View {
                 pager(small: small)
                     .frame(height: small ? 360 : 446).padding(.top, 10)
                 dots.padding(.top, 8)
-                DevelopFooter(d: d, k: k, playing: playing, done: done, shot: shot, time: times.first ?? "--:--", remain: remain, onTap: tap, bumpWarn: shake)
+                DevelopFooter(d: d, k: k, playing: playing, done: done, shot: shot, time: times.first ?? "--:--", remain: remain, onTap: tap, onScrub: scrub)
+                    .offset(x: shakeX)
                     .padding(.horizontal, 20).padding(.top, 14)
                 Spacer(minLength: 0)
             }
@@ -158,6 +160,24 @@ struct DevelopV64View: View {
         }
     }
 
+    /// バーの つまみを 指で 動かす(k より 右へは 行けない:warn + 小さく ゆれる)
+    private func scrub(_ r: Double) {
+        guard shot, !playing else { return }
+        let t = k
+        var tr = Transaction(); tr.animation = nil
+        if r > t {
+            if !warned {
+                warned = true; Haptics.play(.warn)
+                tasks.append(Task { for x: CGFloat in [-6, 6, -4, 4, 0] { await MainActor.run { withAnimation(.easeOut(duration: 0.05)) { shakeX = x } }; try? await Task.sleep(for: .milliseconds(55)) } })
+            }
+            withTransaction(tr) { d = t }
+        } else {
+            warned = false
+            withTransaction(tr) { d = max(0, r) }
+        }
+        done = false
+    }
+
     private func finish() {
         guard playing else { return }
         playing = false; done = true
@@ -249,7 +269,7 @@ struct DevelopFooter: View, Animatable {
     var time: String
     var remain: Int
     var onTap: () -> Void
-    var bumpWarn: Bool
+    var onScrub: (Double) -> Void = { _ in }
     var animatableData: Double { get { d } set { d = newValue } }
     private let lime = HV.lime
 
@@ -284,7 +304,8 @@ struct DevelopFooter: View, Animatable {
                 Capsule().fill(LinearGradient(colors: [lime.opacity(0.25), lime], startPoint: .leading, endPoint: .trailing)).frame(width: max(4, w * k), height: 4).shadow(color: lime.opacity(0.4), radius: 5)
                 Rectangle().fill(lime.opacity(0.7)).frame(width: 2, height: 16).offset(x: w * k - 1)
                 Circle().fill(lime).frame(width: 16, height: 16).overlay(Circle().strokeBorder(lime.opacity(0.16), lineWidth: 5)).shadow(color: lime.opacity(0.6), radius: 6).offset(x: w * min(d, k) - 8)
-            }.frame(height: 20)
+            }.frame(height: 20).contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0).onChanged { v in onScrub(max(0, min(1, v.location.x / max(1, w)))) })
         }.frame(height: 20)
     }
 
