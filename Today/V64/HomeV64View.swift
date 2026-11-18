@@ -88,6 +88,7 @@ struct HomeV64View: View {
     @State private var showLive = false
     @State private var wantsToday = 0
     @State private var entered = false
+    @State private var tourStep: Int?
 
     @State private var scrollY: CGFloat = 0
     @State private var dragVal: CGFloat = 0
@@ -151,14 +152,33 @@ struct HomeV64View: View {
             .environment(\.hvDark, dark)
         }
         .ignoresSafeArea()
+        .overlay {
+            if let tourStep { HomeTourV95View(start: tourStep, onDone: { withAnimation(.easeOut(duration: 0.25)) { self.tourStep = nil } }).transition(.opacity) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: HomeTour.replayRequested)) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { withAnimation(.easeOut(duration: 0.25)) { tourStep = 0 } }
+        }
         .onAppear {
             if !pageSeeded { page = input.page; pageSeeded = true; if input.openLiveAtStart { showLive = true } }
+            scheduleTour()
             if !entered {
                 withAnimation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.9)) { entered = true }
                 afFlash = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.35) { afFlash = false }
             }
         }
+    }
+
+    /// v95-4:はじめての 説明は 1回 だけ(初回設定の あと)。`-debugTour N` で N 番目から 出す
+    private func scheduleTour() {
+        let d = UserDefaults.standard
+        if d.object(forKey: "debugTour") != nil { DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { tourStep = d.integer(forKey: "debugTour") }; return }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-debugRoute") { return }
+        #endif
+        guard !HomeTour.seen, d.bool(forKey: OnboardingStorage.completedKey) || d.bool(forKey: "isSetupCompleted") else { return }
+        FirstHintStore.markSeen(.first)   // 「ここから、1枚目」は この 説明に 置きかえ
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { if !HomeTour.seen, !showLive { withAnimation(.easeOut(duration: 0.3)) { tourStep = 0 } } }
     }
 
     // MARK: カード(5ページの 横スライド + 目次)

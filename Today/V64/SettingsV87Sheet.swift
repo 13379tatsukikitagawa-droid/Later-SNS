@@ -89,6 +89,8 @@ struct SettingsV87Sheet: View {
                 group {
                     linkRow("使いかた") { showsHowTo = true }
                     divider
+                    linkRow("はじめての 説明を もう1回") { HomeTour.markSeen(); dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NotificationCenter.default.post(name: HomeTour.replayRequested, object: nil) } }
+                    divider
                     linkRow("利用規約") { showsTerms = true }
                     divider
                     linkRow("プライバシー") { showsPrivacy = true }

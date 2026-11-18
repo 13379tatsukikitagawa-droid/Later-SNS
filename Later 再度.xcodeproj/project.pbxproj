@@ -24,6 +24,7 @@
 		13AB85698114C6E0851F5F04 /* CKRecordConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */; };
 		16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8074893E58921F0B4509881 /* DesignSystemPreview.swift */; };
 		1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EFD2BE01B050559B5C12A7E /* DebugState.swift */; };
+		5CCB0FA934A2BF24EF1DDFA3 /* V64/HomeTourV95.swift in Sources */ = {isa = PBXBuildFile; fileRef = F546B117F76335334DBAE2EC /* V64/HomeTourV95.swift */; };
 		1F6A1866991A120A5CDABE7D /* V64/ShutterIconV94.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39124A5DC2D4B9F1FACAA21B /* V64/ShutterIconV94.swift */; };
 		1FDDD83248CBA2F90AC65FAD /* V64/SelfQRChekiV92View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC1E46ADF9AC08558CBDAF /* V64/SelfQRChekiV92View.swift */; };
 		2353164534C48640CDB4FB82 /* ProfileChekiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109414FC4E47E9391C73F5BB /* ProfileChekiCard.swift */; };
@@ -359,6 +360,7 @@
 		288E412DBA3D560B94FDA1C6 /* V64/HomeV64Lower.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV64Lower.swift; sourceTree = "<group>"; };
 		28B69966E3153288F3B80519 /* V64/YesterdayV64View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/YesterdayV64View.swift; sourceTree = "<group>"; };
 		2A2BFAC1A6DE1DAB14447490 /* HomeScrollUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeScrollUITests.swift; sourceTree = "<group>"; };
+		F546B117F76335334DBAE2EC /* V64/HomeTourV95.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeTourV95.swift; sourceTree = "<group>"; };
 		39124A5DC2D4B9F1FACAA21B /* V64/ShutterIconV94.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ShutterIconV94.swift; sourceTree = "<group>"; };
 		3DBC3939C57455DE3F1BBC4D /* AccountDeletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDeletionView.swift; sourceTree = "<group>"; };
 		3E20E050E410BA1D32F171B6 /* MainNavigationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainNavigationView.swift; sourceTree = "<group>"; };
@@ -943,6 +945,7 @@
 				B7570F235D7BDA9A5DBA8EF6 /* V64/HandleChangeSheetV94.swift */,
 				B4273AC3A99091056D212333 /* V64/HandleField.swift */,
 				39124A5DC2D4B9F1FACAA21B /* V64/ShutterIconV94.swift */,
+				F546B117F76335334DBAE2EC /* V64/HomeTourV95.swift */,
 				8BDC1E46ADF9AC08558CBDAF /* V64/SelfQRChekiV92View.swift */,
 				D4B147E4D0B3D978B16F0E16 /* V64/StyledQR.swift */,
 				F1466E54B13DB34B570489EA /* V64/ReleaseRevealV89View.swift */,
@@ -1519,6 +1522,7 @@
 				E6ED73FB1405DA366C88B45C /* V64/HandleChangeSheetV94.swift in Sources */,
 				74E41292673F65D82CE75DE1 /* V64/HandleField.swift in Sources */,
 				1F6A1866991A120A5CDABE7D /* V64/ShutterIconV94.swift in Sources */,
+				5CCB0FA934A2BF24EF1DDFA3 /* V64/HomeTourV95.swift in Sources */,
 				1FDDD83248CBA2F90AC65FAD /* V64/SelfQRChekiV92View.swift in Sources */,
 				B1307E84F5C33C19142EAD65 /* V64/StyledQR.swift in Sources */,
 				9B9CA0A65DDEB023656DE319 /* V64/ReleaseRevealV89View.swift in Sources */,
