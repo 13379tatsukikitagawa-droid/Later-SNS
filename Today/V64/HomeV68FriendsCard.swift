@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 // P14(v70):Home 下の Friends カード(Instagram / BeReal 型・キャラクター なし・Shake なし)。
 // 友だち あり = ストーリーの 丸 + 申請の 1行 / だれも いない = 横に すべる カード(申請して きた 人 + 招待の しかた)。
@@ -9,6 +10,7 @@ struct HVFriendsCard: View {
     @State private var appeared = false
     @State private var hidden: Set<String> = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query private var profiles: [UserProfile]
 
     private var requests: [HomeV64Request] { input.requests.filter { !hidden.contains($0.id) } }
     private var tookCount: Int { input.friends.filter { $0.shots > 0 }.count }
@@ -22,7 +24,9 @@ struct HVFriendsCard: View {
     private var card: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            if input.friends.isEmpty { empty } else { stories; requestRow }
+            if !input.friends.isEmpty { stories }
+            requestRow
+            bento
         }
         .padding(.top, 18).padding(.bottom, 26)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -36,13 +40,15 @@ struct HVFriendsCard: View {
     private var header: some View {
         Button { Haptics.play(.sel); actions.openFriends() } label: {
             HStack(spacing: 10) {
-                Text("Friends").font(LF.serif(32)).foregroundStyle(.white).fixedSize()
+                Text("Friends").font(LF.serif(30)).foregroundStyle(.white).fixedSize()
                 if tookCount > 0 {
                     HStack(spacing: 6) {
                         Circle().fill(Color(hex: "3BD35A")).frame(width: 6, height: 6)
-                        Text("\(tookCount) SHOT TODAY").font(LF.mono(9.5)).tracking(1.4).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
+                        Text("\(tookCount)人 撮った").font(LF.inter(700, 11)).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
                     }
                     .padding(.horizontal, 12).frame(height: 26).background(Color(red: 59 / 255, green: 211 / 255, blue: 90 / 255).opacity(0.12), in: Capsule())
+                } else if input.friends.isEmpty {
+                    Text("つながると 毎朝 9:00 に 見せあえる").font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
@@ -160,67 +166,60 @@ struct HVFriendsCard: View {
         }
     }
 
-    // MARK: だれも いない:横に すべる カード
+    // MARK: 4つの ボタン(それぞれ 別の 画面)
 
-    private var empty: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(requests.isEmpty ? "つながると、毎朝 9:00 に きのうを 見せあえます。" : "友だちに なりたい 人が います。")
-                .font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6)).padding(.horizontal, 20).padding(.top, 17)
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(alignment: .top, spacing: 10) {
-                    ForEach(Array(requests.enumerated()), id: \.element.id) { i, r in requestCard(r, index: i) }
-                    inviteCard(0, icon: "square.and.arrow.up", title: "リンクを 送る", sub: "LINE ・ AirDrop など", button: "送る", white: true) { actions.shareLink() }
-                    inviteCard(1, icon: "qrcode", title: "QR を 見せる", sub: "となりの 友だちに", button: "ひらく", white: false) { actions.showQR() }
-                    inviteCard(2, icon: "at", title: "ID で さがす", sub: "@ID を 知って いる", button: "さがす", white: false) { actions.searchByID() }
+    private var myLinkText: String {
+        let me = UserProfile.current(from: profiles)
+        return FriendRules.link(recordName: CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? "").absoluteString
+    }
+
+    private var bento: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                // リンクを 送る(大きく ・ 2段)
+                Button { Haptics.play(.click); actions.shareLink() } label: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Image(systemName: "square.and.arrow.up").font(.system(size: 22, weight: .bold)).foregroundStyle(HV.ink)
+                        Spacer(minLength: 0)
+                        Text("リンクを 送る").font(LF.inter(800, 18)).foregroundStyle(HV.ink).lineLimit(1).minimumScaleFactor(0.7)
+                        Text("LINE ・ AirDrop など").font(LF.inter(600, 11.5)).foregroundStyle(HV.ink.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 2)
+                    }
+                    .padding(16).frame(maxWidth: .infinity, minHeight: 138, maxHeight: 138, alignment: .leading)
+                    .background(HV.lime, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                }.buttonStyle(HVPress(scale: 0.97)).modifier(HV68Rise(on: on))
+                VStack(spacing: 10) {
+                    Button { Haptics.play(.click); actions.showQR() } label: {
+                        HStack(spacing: 10) {
+                            Group { if let m = QRMatrix.make(myLinkText) { StyledQRView(matrix: m, side: 44) } else { Image(systemName: "qrcode").font(.system(size: 26)) } }
+                                .frame(width: 44, height: 44).clipShape(RoundedRectangle(cornerRadius: 6))
+                            Text("QR を 見せる").font(LF.inter(800, 13.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
+                        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    }.buttonStyle(HVPress(scale: 0.97)).modifier(HV68Rise(on: on))
+                    Button { Haptics.play(.click); actions.scanQR() } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "viewfinder").font(.system(size: 22, weight: .semibold)).foregroundStyle(HV.lime).frame(width: 44)
+                            Text("QR を 読む").font(LF.inter(800, 13.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
+                        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    }.buttonStyle(HVPress(scale: 0.97)).modifier(HV68Rise(on: on))
                 }
-                .padding(.horizontal, 20)
             }
-            .scrollTargetBehavior(.viewAligned)
-            .frame(height: 221).padding(.top, 30)
+            Button { Haptics.play(.click); actions.searchByID() } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .bold)).foregroundStyle(.white.opacity(0.6))
+                    Text("名前 か @ID で さがす").font(LF.inter(600, 15)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 52, maxHeight: 52)
+                .background(.white.opacity(0.08), in: Capsule())
+            }.buttonStyle(HVPress(scale: 0.98)).modifier(HV68Rise(on: on))
         }
-    }
-
-    private func requestCard(_ r: HomeV64Request, index: Int) -> some View {
-        ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                ZStack {
-                    Circle().strokeBorder(HV.lime, lineWidth: 2.5).frame(width: 88, height: 88)
-                    Circle().strokeBorder(Color(hex: "111214"), lineWidth: 3).frame(width: 83, height: 83)
-                    photo(r.image, name: r.name, color: r.color, size: 78)
-                }.frame(width: 88, height: 88).padding(.top, 11)
-                Text(r.name).font(LF.inter(700, 15)).foregroundStyle(.white).lineLimit(1).padding(.top, 6)
-                if !r.handle.isEmpty { Text(r.handle).font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).padding(.top, 3) }
-                Text("\(r.ago) ・ 申請").font(LF.mono(9)).foregroundStyle(Color(hex: "7EE08F")).padding(.top, 5)
-                Spacer(minLength: 0)
-                Button { Haptics.play(.click); withAnimation(.easeOut(duration: 0.42)) { hidden.insert(r.id) }; actions.approve(r.id) } label: {
-                    Text("承認").font(LF.inter(800, 14)).foregroundStyle(HV.ink).frame(width: 124, height: 38).background(HV.lime, in: Capsule())
-                }.buttonStyle(HVPress(scale: 0.96)).padding(.bottom, 12)
-            }
-            HStack { Spacer(); Button { Haptics.play(.soft); withAnimation(.easeOut(duration: 0.3)) { hidden.insert(r.id) }; actions.dismissRequest(r.id) } label: {
-                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white.opacity(0.55)).frame(width: 32, height: 32)
-            }.buttonStyle(.plain).accessibilityLabel("あとで") }.padding(.top, 6).padding(.trailing, 4)
-        }
-        .frame(width: 148, height: 221)
-        .background(Color(hex: "1B1C1F"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .modifier(HV68Slide(on: on, index: index))
-        .transition(.opacity.combined(with: .scale(scale: 0.9)))
-    }
-
-    private func inviteCard(_ i: Int, icon: String, title: String, sub: String, button: String, white: Bool, action: @escaping () -> Void) -> some View {
-        VStack(spacing: 0) {
-            Image(systemName: icon).font(.system(size: 30, weight: .semibold)).foregroundStyle(HV.ink)
-                .frame(width: 78, height: 78).background(HV.lime, in: Circle()).padding(.top, 16)
-            Text(title).font(LF.inter(700, 15)).foregroundStyle(.white).lineLimit(1).padding(.top, 10)
-            Text(sub).font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).padding(.top, 3)
-            Spacer(minLength: 0)
-            Button { Haptics.play(.click); action() } label: {
-                Text(button).font(LF.inter(800, 14)).foregroundStyle(white ? HV.ink : .white).frame(width: 124, height: 38)
-                    .background(white ? AnyShapeStyle(.white) : AnyShapeStyle(Color.white.opacity(0.12)), in: Capsule())
-            }.buttonStyle(HVPress(scale: 0.96)).padding(.bottom, 12)
-        }
-        .frame(width: 148, height: 221)
-        .background(Color(hex: "1B1C1F"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .modifier(HV68Slide(on: on, index: requests.count + i))
+        .padding(.horizontal, 14).padding(.top, 18)
     }
 }
 

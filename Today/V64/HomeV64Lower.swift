@@ -354,6 +354,7 @@ struct HVLowerSections: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 34) {
             HVTodayPanel(input: input, data: data) { input.shotsUsed == 0 ? actions.shoot() : actions.openDevelop() }.id("today")
+            HVFriendsCard(input: input, actions: actions)   // v95-9:今日の フィルムの すぐ 下
             HVActiveRow(data: data, input: input, actions: actions)
             HVYesterdayBlock(input: input, data: data, actions: actions)
             if !input.isFirstDay {
@@ -361,7 +362,6 @@ struct HVLowerSections: View {
                 HVAlbums(data: data, actions: actions)
                 HVOnThisDay(data: data)
             }
-            HVFriendsCard(input: input, actions: actions)
             Spacer().frame(height: 404)
         }
         .background(alignment: .top) { VStack(spacing: 0) { Color.clear.frame(height: 90); HVL.bg } }
