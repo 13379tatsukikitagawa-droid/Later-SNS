@@ -214,7 +214,24 @@ DEFINE SCHEMA
         bio                    STRING QUERYABLE SEARCHABLE SORTABLE,
         cloudKitUserRecordName STRING QUERYABLE SEARCHABLE SORTABLE,
         name                   STRING QUERYABLE SEARCHABLE SORTABLE,
+        nameSearch             STRING QUERYABLE SEARCHABLE SORTABLE,
+        discoverableByName     INT64 QUERYABLE,
         username               STRING QUERYABLE SEARCHABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE UserHandle (
+        "___createTime"        TIMESTAMP,
+        "___createdBy"         REFERENCE,
+        "___etag"              STRING,
+        "___modTime"           TIMESTAMP,
+        "___modifiedBy"        REFERENCE,
+        "___recordID"          REFERENCE,
+        claimedAt              TIMESTAMP,
+        ownerKey               STRING QUERYABLE,
+        releasedAt             TIMESTAMP,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"

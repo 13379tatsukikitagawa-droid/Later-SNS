@@ -12,6 +12,7 @@ struct MainNavigationView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var screen: Screen = .home
+    @State private var needsHandle = false
     /// Profileの全画面ビューアが開いている間は、スワイプで画面を切りかえない
     @State private var isProfileViewerOpen = false
     /// Homeの中で、横の動きをその場所に任せる範囲(グループの列など。画面の座標)
@@ -103,6 +104,9 @@ struct MainNavigationView: View {
         }
         // HomeView・ProfileFilmViewは、見えている時だけアニメーションや同期を動かす。
         .environment(\.selectedMainTabIndex, screen == .home ? 0 : 1)
+        // v94 B-2:ID が まだ 無い 人は、次に ひらいた 時に ID を きめる(とじられない)
+        .task { try? await Task.sleep(for: .seconds(2.5)); if !HandleService.hasClaimed && UIFlag.v64 && !ProcessInfo.processInfo.arguments.contains("-debugRoute") { needsHandle = true } }
+        .sheet(isPresented: $needsHandle) { HandleChangeHost(forced: true) { _ in needsHandle = false } }
         .onReceive(NotificationCenter.default.publisher(for: .photoNotificationTapped)) { _ in
             // 撮影通知をタップした場合は、Homeへ戻す。
             show(.home)

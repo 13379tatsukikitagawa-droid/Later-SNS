@@ -28,6 +28,8 @@ struct OnboardingV64View: View {
 
     // 場面
     @State private var step: OBStep = .signin
+    @State private var handle = ""
+    @State private var handleState: HandleService.Availability = .unknown
     @State private var started = false
     @State private var introStart: Date?
     @State private var entered = true
@@ -286,6 +288,14 @@ struct OnboardingV64View: View {
                     Spacer()
                 }.padding(.horizontal, 0)
             }.buttonStyle(.plain).frame(width: w).offset(x: 24, y: 592 + mid)
+        case .id:
+            VStack(spacing: 0) {
+                Text("ID").font(LF.serif(64, italic: true)).tracking(-1.28).foregroundStyle(.white).frame(height: 64)
+                Text("友だちが さがす ときに つかう ・ あとで かえられる").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8)
+            }
+            .frame(width: W).offset(y: 453 + mid)
+            HandleField(text: $handle, ownerKey: UserProfile.current(from: profiles)?.id.uuidString ?? currentProfileID, suggestions: HandleRules.suggestions(fromName: name), autofocus: true) { handleState = $0 }
+                .frame(width: w).offset(x: 24, y: 560 + mid)
         case .tag:
             heading([("じぶんを、", false), ("タグ", true), ("で。", false)]).offset(y: 424 + mid)
             swatches.frame(width: W).offset(y: 488 + mid)
@@ -445,6 +455,8 @@ struct OnboardingV64View: View {
                     }.padding(.bottom, 34)
                 case .name:
                     Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!validName).padding(.bottom, 34)
+                case .id:
+                    Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!(handleState == .ok || handleState == .mine) || busy).padding(.bottom, 34)
                 case .tag:
                     Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).padding(.bottom, 34)
                 case .fr:
@@ -504,7 +516,8 @@ struct OnboardingV64View: View {
     private func next() {
         Haptics.play(.click)
         switch step {
-        case .name: confirmName(); go(.tag)
+        case .name: confirmName(); handle = HandleRules.suggestions(fromName: name).first ?? ""; go(.id)
+        case .id: confirmHandle()
         case .tag: confirmTags(); go(.fr)
         case .fr: sendFriendRequest(); go(.nt)
         default: break
@@ -700,6 +713,22 @@ struct OnboardingV64View: View {
         userName = n
         userID = profile.username
         Task { await UserDirectoryService.publish(profile) }
+    }
+
+    /// ID を とって 保存(同じ ID は だめ)。とれたら 次へ
+    private func confirmHandle() {
+        guard let profile = UserProfile.current(from: profiles), !busy else { return }
+        busy = true
+        let h = HandleRules.normalize(handle)
+        Task { @MainActor in
+            let r = await HandleService.claim(h, ownerKey: profile.id.uuidString, previous: nil)
+            busy = false
+            if r == .mine || r == .ok {
+                profile.username = h; profile.profileUpdatedAt = Date(); try? modelContext.save(); userID = h
+                await UserDirectoryService.publish(profile)
+                go(.tag)
+            } else { Haptics.play(.warn); handleState = r }
+        }
     }
 
     private func confirmTags() {

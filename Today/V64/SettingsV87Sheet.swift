@@ -31,6 +31,7 @@ struct SettingsV87Sheet: View {
     @AppStorage("isSetupCompleted") private var isSetupCompleted = false
     @State private var dailyOn = false
     @State private var showsBlocked = false
+    @State private var showsHandle = false
     @State private var showsHowTo = false
     @State private var showsTerms = false
     @State private var showsPrivacy = false
@@ -71,6 +72,8 @@ struct SettingsV87Sheet: View {
                 group {
                     linkRow("アイコンの 写真") { onPhoto() }
                     divider
+                    linkRow("ID", value: "@\(username)") { showsHandle = true }
+                    divider
                     linkRow("ブロックした 人", value: "\(blockedCount)") { showsBlocked = true }
                 }
                 header("サポート")
@@ -92,6 +95,7 @@ struct SettingsV87Sheet: View {
         .background(Color(hex: "0F1011").ignoresSafeArea()).environment(\.colorScheme, .dark)
         .task { dailyOn = await DailyOpenNotification.isScheduled() }
         .sheet(isPresented: $showsBlocked) { SettingsBlockedList() }
+        .sheet(isPresented: $showsHandle) { HandleChangeHost { _ in showsHandle = false } }
         .fullScreenCover(isPresented: $showsHowTo) { HowToReplayView() }
         .sheet(isPresented: $showsTerms) { LaterPromiseView() }
         .sheet(isPresented: $showsPrivacy) { PrivacyPolicyView() }

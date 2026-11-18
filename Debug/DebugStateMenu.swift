@@ -65,7 +65,7 @@ struct DebugStateMenu: View {
                     Button("ぜんぶ 最初から", role: .destructive) { state.resetAll(); shots = 0 }
                 }
                 Section("はじめての 設定の 画面へ(O03〜O11)") {
-                    ForEach(["intro", "in", "mail", "sent", "name", "tag", "fr", "nt", "go"], id: \.self) { step in
+                    ForEach(["intro", "in", "mail", "sent", "name", "id", "tag", "fr", "nt", "go"], id: \.self) { step in
                         Button(step) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { state.jumpToOnboarding(step) } }
                     }
                 }
