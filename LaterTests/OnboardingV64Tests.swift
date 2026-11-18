@@ -8,12 +8,12 @@ struct OnboardingV64Tests {
     @Test func 手順のもどり先とページ番号() {
         #expect(OBStep.signin.back == nil && OBStep.name.back == nil && OBStep.go.back == nil)
         #expect(OBStep.mail.back == .signin && OBStep.sent.back == .mail)
-        #expect(OBStep.tag.back == .name && OBStep.fr.back == .tag && OBStep.nt.back == .fr)
+        #expect(OBStep.id.back == .name && OBStep.id.page == 1 && OBStep.tag.back == .id && OBStep.fr.back == .tag && OBStep.nt.back == .fr)
         #expect(OBStep.name.page == 1 && OBStep.tag.page == 2 && OBStep.fr.page == 3 && OBStep.nt.page == 4)
         #expect(OBStep.signin.page == nil && OBStep.go.page == nil)
         #expect(OBStep.tag.pageLabel == "TAG" && OBStep.fr.pageLabel == "FRIENDS")
         // 保存用の 文字は モックの 名前どおり(「in」は Swift の 予約語なので signin)
-        #expect(OBStep(rawValue: "in") == .signin && OBStep.allCases.count == 8)
+        #expect(OBStep(rawValue: "in") == .signin && OBStep.allCases.count == 9)
     }
 
     @Test func 名前から決まる色はいつも同じ() {
