@@ -69,6 +69,8 @@ r F15_recap_intro me $M -debugMePlay 1 -debugMePlayT 0.9
 r F16_recap_play me $M -debugMePlay 1 -debugMePlayT 3.4
 r F17_recap_end me $M -debugMePlay 1 -debugMePlayT 99
 r F08_profile profile $M
+r F19_profile_scrolled profile $M -debugScrollY 420
+r F20_settings settings $M
 r F12_profile_no_photo profile $M -debugNoPhoto 1
 r F07_dm_chat dm $M
 r F05_friend_card friendcard $M

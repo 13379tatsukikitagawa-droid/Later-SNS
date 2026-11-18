@@ -27,7 +27,8 @@ enum DebugRouter {
         case "me": showRaw(MEV86Preview())
         case "friendcard": showRaw(ZStack { Color(hex: "151413").ignoresSafeArea(); FriendCardV82Sheet(name: "れな", avatar: SampleData.photo("d"), tag: "雨の日", city: nil, times: ["08:14", "12:40"], mosaics: [SampleData.photo("d"), SampleData.photo("d")], canPoke: true).frame(height: 650).frame(maxHeight: .infinity, alignment: .bottom) })
         case "dm": showRaw(DirectMessageView(friendID: "x", friendName: "れな", yesterdayCount: 4, injected: [.init(id: "1", senderID: "れな", text: "きのうの 写真 みた?", createdAt: Date()), .init(id: "2", senderID: "れな", text: "わたしの 帰り道", createdAt: Date())]))
-        case "profile": showRaw(ProfileV82View(data: ProfileV82Data(name: "ゆい", username: "yui_0612", avatar: UserDefaults.standard.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型", "夕焼け", "放課後", "帰り道"], since: "Oct 2026", streak: 11, shots: 48, kept: 9)))
+        case "profile": showRaw(ProfileV82View(data: ProfileV82Data(name: "ゆい", username: "yui_0612", avatar: UserDefaults.standard.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型"], since: "Oct 2026", streak: 11, shots: 48, kept: 9, recapPhotos: [SampleData.photo("d")], recapRange: "NOV 9–15", weekHas: [true, true, true, true, true, true, true]), debugScrollY: UserDefaults.standard.object(forKey: "debugScrollY") == nil ? nil : CGFloat(UserDefaults.standard.double(forKey: "debugScrollY"))))
+        case "settings": showRaw(SettingsV87Sheet(name: "ゆい", username: "yui_0612", avatar: SampleData.photo("f"), blockedCount: 0))
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
         }

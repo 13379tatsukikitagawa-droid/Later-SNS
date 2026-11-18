@@ -65,7 +65,13 @@ struct MEV86Host: View {
 
 /// 毎週 月曜 9:00 の ローカル通知(「先週の Recap が できました」)。許可が ある 時だけ。押すと ME へ(アプリを ひらく)
 enum RecapNotifier {
+    static func setEnabled(_ on: Bool) {
+        UserDefaults.standard.set(on, forKey: "notify.recap")
+        if on { scheduleWeekly() } else { UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["recap.weekly"]) }
+    }
+
     static func scheduleWeekly() {
+        if UserDefaults.standard.object(forKey: "notify.recap") as? Bool == false { return }
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { s in
             guard s.authorizationStatus == .authorized || s.authorizationStatus == .provisional else { return }

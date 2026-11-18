@@ -14,6 +14,10 @@ struct ProfileV82Data {
     var shots = 0
     var kept = 0
     var recordName: String?
+    /// 先週の Recap(ME の カードに 出す)
+    var recapPhotos: [UIImage?] = []
+    var recapRange = ""
+    var weekHas: [Bool] = Array(repeating: false, count: 7)
 }
 
 struct ProfileV82View: View {
@@ -26,64 +30,107 @@ struct ProfileV82View: View {
     var onQR: () -> Void = {}
     var onPhoto: () -> Void = {}
     var onShelf: () -> Void = {}
+    var onMe: () -> Void = {}
+    var onCopyID: () -> Void = {}
+    /// DEBUG
+    var debugScrollY: CGFloat? = nil
 
-    private let sticker: [(String, String, Double)] = [("C8F25A", "0B0C0D", -8), ("EE5E9C", "FFFFFF", 8), ("9ED8FF", "0B0C0D", -6), ("FFD60A", "0B0C0D", -9), ("B28CFF", "FFFFFF", -3), ("3BD35A", "0B0C0D", 10)]
-    private let spots: [CGPoint] = [CGPoint(x: 73, y: 178), CGPoint(x: 315, y: 212), CGPoint(x: 59, y: 350), CGPoint(x: 326, y: 371), CGPoint(x: 93, y: 472), CGPoint(x: 290, y: 492)]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var scrollY: CGFloat = 0
+    @State private var shown = false
+    @State private var gearSpin = false
+    @State private var pos = ScrollPosition()
+    @State private var lastTick = Date.distantPast
+
+    private let sticker: [(String, String, Double)] = [("C8F25A", "0B0C0D", -8), ("EE5E9C", "FFFFFF", 8), ("9ED8FF", "0B0C0D", -6)]
+    private var compactBar: Bool { scrollY > 300 }
 
     var body: some View {
-        GeometryReader { g in
-            ZStack(alignment: .topLeading) {
-                background(g.size)
-                ZStack(alignment: .topLeading) {
-                    cheki.position(x: g.size.width / 2, y: 303)
-                    ForEach(Array(data.tags.prefix(6).enumerated()), id: \.offset) { i, t in
-                        let st = sticker[i % sticker.count]
-                        Text("#\(t)").font(LF.inter(900, 17)).foregroundStyle(Color(hex: st.1)).padding(.horizontal, 16).frame(height: 38)
-                            .background(Color(hex: st.0), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .shadow(color: .black.opacity(0.35), radius: 5, x: 3, y: 4).rotationEffect(.degrees(st.2))
-                            .position(x: spots[i % spots.count].x * g.size.width / 390, y: spots[i % spots.count].y)
-                    }
-                    VStack(spacing: 8) {
-                        Text(data.name).font(LGFont.mincho(66)).foregroundStyle(.white)
+        ZStack(alignment: .top) {
+            Color(hex: "0B0C0D").ignoresSafeArea()
+            glow
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: 104)
+                    chekiArea.rise(shown, 0)
+                    VStack(spacing: 10) {
+                        Text(data.name).font(LGFont.mincho(46)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
                         HStack(spacing: 10) { Text("SINCE").font(LF.mono(12)).tracking(3).foregroundStyle(.white.opacity(0.55)); Text(data.since).font(LF.serif(22, italic: true)).foregroundStyle(HV.lime) }
-                    }.frame(width: g.size.width).position(x: g.size.width / 2, y: 570)
-                    stats.padding(.horizontal, 16).frame(width: g.size.width).position(x: g.size.width / 2, y: 665)
-                    buttons.padding(.horizontal, 16).frame(width: g.size.width).position(x: g.size.width / 2, y: 755)
-                    Button { Haptics.play(.tick); onShelf() } label: {
-                        HStack { Text("ME ・ 7 DAYS").font(LF.mono(12)).tracking(2).foregroundStyle(Color(hex: "FF9F43")); Spacer(); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(.white.opacity(0.5)) }
-                            .padding(.horizontal, 28).frame(height: 70).background(Color(hex: "0E0F10"), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-                    }.buttonStyle(HVPress(scale: 0.98)).padding(.horizontal, 16).frame(width: g.size.width).position(x: g.size.width / 2, y: 855)
-                }.frame(width: g.size.width, height: g.size.height)
-                topBar(g.size.width)
+                    }.frame(maxWidth: .infinity).padding(.top, 8).rise(shown, 1)
+                    stats.padding(.horizontal, 16).padding(.top, 22).rise(shown, 2)
+                    buttons.padding(.horizontal, 16).padding(.top, 10).rise(shown, 3)
+                    recapCard.padding(.horizontal, 16).padding(.top, 10).rise(shown, 4)
+                    yearCard.padding(.horizontal, 16).padding(.top, 10).rise(shown, 5)
+                    Color.clear.frame(height: 70)
+                }
             }
-            .frame(width: g.size.width, height: g.size.height)
-        }.ignoresSafeArea().environment(\.colorScheme, .dark)
+            .scrollPosition($pos)
+            .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { old, v in
+                let was = old > 300
+                scrollY = v
+                if (v > 300) != was, Date().timeIntervalSince(lastTick) > 0.3 { lastTick = Date(); Haptics.play(.tick) }
+            }
+            topBar
+        }
+        .ignoresSafeArea(edges: .top)
+        .environment(\.colorScheme, .dark)
+        .onAppear {
+            withAnimation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.52)) { shown = true }
+            if let y = debugScrollY { DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { pos.scrollTo(y: y) } }
+        }
     }
 
-    private func background(_ size: CGSize) -> some View {
-        ZStack {
-            Color(hex: "0A0A0B")
-            if let a = data.avatar { Image(uiImage: V64Images.blurred(key: "pf\(a.hashValue)", source: a, maxPixel: 80, radius: 22, saturation: 1.2, brightness: 0.4)).resizable().scaledToFill().frame(width: size.width, height: 760).clipped().frame(maxHeight: .infinity, alignment: .top) }
-            LinearGradient(stops: [.init(color: Color(hex: "1B3320").opacity(0.95), location: 0), .init(color: Color(hex: "2B2A28").opacity(0.55), location: 0.3), .init(color: Color(hex: "3A1B2B").opacity(0.7), location: 0.55), .init(color: Color(hex: "0A0A0B"), location: 0.8)], startPoint: .top, endPoint: .bottom)
-        }.ignoresSafeArea()
+    private var glow: some View {
+        GeometryReader { g in
+            ZStack {
+                Ellipse().fill(RadialGradient(colors: [HV.lime.opacity(0.16), .clear], center: .center, startRadius: 0, endRadius: g.size.width * 0.5)).frame(width: g.size.width * 0.7, height: 250).position(x: g.size.width / 2, y: 140)
+                Ellipse().fill(RadialGradient(colors: [Color(hex: "24A03C").opacity(0.34), .clear], center: .center, startRadius: 0, endRadius: g.size.width * 0.55)).frame(width: g.size.width, height: 240).position(x: g.size.width / 2, y: g.size.height)
+            }.frame(width: g.size.width, height: g.size.height).clipped()
+        }.ignoresSafeArea().allowsHitTesting(false)
     }
 
-    private func topBar(_ w: CGFloat) -> some View {
-        ZStack {
-            Text("@\(data.username)").font(LF.mono(12)).tracking(2).foregroundStyle(.white.opacity(0.6))
-            HStack {
+    // 上の 帯(高さ 104 ・ 固定)
+    private var topBar: some View {
+        ZStack(alignment: .top) {
+            Rectangle().fill(.ultraThinMaterial).overlay(Color.black.opacity(0.82)).opacity(compactBar ? 1 : 0).frame(height: 104).ignoresSafeArea(edges: .top)
+            HStack(alignment: .center) {
                 circle("chevron.down") { onBack() }
                 Spacer()
-                circle("sun.max") { onSettings() }
-            }.padding(.horizontal, 18)
-        }.frame(width: w).padding(.top, 50)
+                circle("gearshape") { Haptics.play(.pop); withAnimation(.easeInOut(duration: 0.42)) { gearSpin.toggle() }; onSettings() }.rotationEffect(.degrees(gearSpin ? 90 : 0))
+            }.padding(.horizontal, 16).padding(.top, 50)
+            ZStack {
+                if compactBar {
+                    HStack(spacing: 8) {
+                        ZStack { if let a = data.avatar { Image(uiImage: a).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)) } }.frame(width: 28, height: 28).clipShape(Circle())
+                        Text(data.name).font(LF.inter(800, 16)).foregroundStyle(.white)
+                    }.transition(.move(edge: .bottom).combined(with: .opacity))
+                } else {
+                    Button { Haptics.play(.tick); onCopyID() } label: { Text("@\(data.username)").font(LF.mono(11)).tracking(1.5).foregroundStyle(.white.opacity(0.6)) }.buttonStyle(.plain).transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }.padding(.top, 62).animation(.easeOut(duration: 0.35), value: compactBar)
+        }.frame(height: 104, alignment: .top)
     }
 
     private func circle(_ icon: String, _ a: @escaping () -> Void) -> some View {
-        Button { Haptics.play(.tick); a() } label: { Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white).frame(width: 42, height: 42).background(.white.opacity(0.1), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.15), lineWidth: 1)) }.buttonStyle(HVPress(scale: 0.92))
+        Button { Haptics.play(.tick); a() } label: { Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.1), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1)) }.buttonStyle(HVPress(scale: 0.92))
     }
 
-    // チェキ(写真 or 名前の 1文字 + 色 ・ 下の 白い 帯に 名前)
+    // チェキ(高さ 372)+ 自分の タグの シール 3つ
+    private var chekiArea: some View {
+        GeometryReader { g in
+            ZStack {
+                cheki.position(x: g.size.width / 2, y: 186)
+                ForEach(Array(data.tags.prefix(3).enumerated()), id: \.offset) { i, t in
+                    let st = sticker[i]
+                    Text("#\(t)").font(LF.inter(900, 17)).foregroundStyle(Color(hex: st.1)).padding(.horizontal, 16).frame(height: 38).fixedSize()
+                        .background(Color(hex: st.0), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .shadow(color: .black.opacity(0.35), radius: 5, x: 3, y: 4).rotationEffect(.degrees(st.2))
+                        .position(x: [88, g.size.width - 62, 62][i], y: [78, 130, 270][i])
+                }
+            }
+        }.frame(height: 372)
+    }
+
     private var cheki: some View {
         ZStack(alignment: .top) {
             VStack(spacing: 0) {
@@ -93,37 +140,69 @@ struct ProfileV82View: View {
                     Button { Haptics.play(.click); onPhoto() } label: {
                         HStack(spacing: 5) { Image(systemName: "camera.fill").font(.system(size: 11, weight: .bold)); Text("写真").font(.system(size: 12, weight: .heavy)) }.foregroundStyle(.white).padding(.horizontal, 10).frame(height: 28).background(.black.opacity(0.55), in: Capsule())
                     }.buttonStyle(.plain).padding(8)
-                }.frame(width: 232, height: 232).clipped().padding(.top, 14)
-                Text(data.name).font(LGFont.mincho(32)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 26).padding(.top, 6)
+                }.frame(width: 214, height: 214).clipped().padding(.top, 12)
+                Text(data.name).font(LGFont.mincho(30)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 20).padding(.top, 6)
                 Spacer()
-            }.frame(width: 262, height: 332).background(Color(hex: "F6F2EA"), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }.frame(width: 238, height: 300).background(Color(hex: "F6F2EA"), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
-            Rectangle().fill(HV.lime.opacity(0.85)).frame(width: 100, height: 34).rotationEffect(.degrees(-4)).offset(y: -14)
+            Rectangle().fill(HV.lime.opacity(0.85)).frame(width: 96, height: 32).rotationEffect(.degrees(-4)).offset(y: -14)
         }.rotationEffect(.degrees(4))
     }
 
     private var stats: some View {
         HStack(spacing: 0) {
-            stat("\(data.streak)", "DAY STREAK"); Rectangle().fill(.white.opacity(0.1)).frame(width: 1, height: 50)
-            stat("\(data.shots)", "SHOTS"); Rectangle().fill(.white.opacity(0.1)).frame(width: 1, height: 50)
-            stat("\(data.kept)", "KEPT")
-        }.frame(height: 88).background(Color(hex: "0E0F10"), in: RoundedRectangle(cornerRadius: 28, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
+            stat(data.streak, "DAY STREAK", HV.lime, 0); Rectangle().fill(.white.opacity(0.1)).frame(width: 1, height: 44)
+            stat(data.shots, "SHOTS", .white, 1); Rectangle().fill(.white.opacity(0.1)).frame(width: 1, height: 44)
+            stat(data.kept, "KEPT", .white, 2)
+        }.padding(.vertical, 16).background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
-    private func stat(_ n: String, _ l: String) -> some View {
-        VStack(spacing: 4) { Text(n).font(LF.serif(46)).foregroundStyle(.white).frame(height: 44); Text(l).font(LF.mono(10.5)).tracking(2).foregroundStyle(.white.opacity(0.5)) }.frame(maxWidth: .infinity)
+    private func stat(_ n: Int, _ l: String, _ c: Color, _ i: Int) -> some View {
+        VStack(spacing: 4) {
+            Text("\(shown ? n : 0)").font(LF.inter(900, 28)).foregroundStyle(c).contentTransition(.numericText()).monospacedDigit()
+                .animation(.easeOut(duration: 0.62).delay(0.09 * Double(i)), value: shown)
+            Text(l).font(LF.mono(9)).tracking(1.6).foregroundStyle(.white.opacity(0.5))
+        }.frame(maxWidth: .infinity)
     }
 
     private var buttons: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             tile("qrcode", "QR", green: true, onQR); tile("pencil", "Edit", green: false, onEdit); tile("square.and.arrow.up", "Share", green: false, onShare); tile("viewfinder", "Scan", green: false, onScan)
         }
     }
     private func tile(_ icon: String, _ t: String, green: Bool, _ a: @escaping () -> Void) -> some View {
         Button { Haptics.play(.tick); a() } label: {
-            VStack(spacing: 10) { Image(systemName: icon).font(.system(size: 22, weight: .semibold)); Text(t).font(LF.serif(21)) }.foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 98)
-                .background(green ? Color(hex: "24A03C") : Color(hex: "0E0F10"), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(.white.opacity(green ? 0 : 0.1), lineWidth: 1))
+            VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 21, weight: .semibold)); Text(t).font(LF.inter(800, 12.5)) }.foregroundStyle(green ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 76)
+                .background(green ? HV.lime : Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }.buttonStyle(HVPress(scale: 0.96))
+    }
+
+    // ME = Recap の カード(押すと ME)
+    private var recapCard: some View {
+        Button { Haptics.play(.projector); onMe() } label: {
+            ZStack(alignment: .topLeading) {
+                Color(hex: "2A2326")
+                if let p = data.recapPhotos.first, let p { Image(uiImage: p).resizable().scaledToFill() }
+                LinearGradient(colors: [.black.opacity(0.5), .clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
+                HStack(spacing: 8) {
+                    Text("ME").font(LF.inter(900, 11)).foregroundStyle(HV.ink).padding(.horizontal, 10).frame(height: 24).background(HV.lime, in: Capsule())
+                    Text("RECAP ・ \(data.recapRange)").font(LF.mono(10)).tracking(1.5).foregroundStyle(.white)
+                }.padding(16)
+                VStack(alignment: .leading, spacing: -4) {
+                    Spacer()
+                    Text("Your").font(LF.serif(40)).foregroundStyle(.white)
+                    Text("week.").font(LF.serif(40, italic: true)).foregroundStyle(HV.lime)
+                    HStack(spacing: 4) { ForEach(0..<7, id: \.self) { i in Capsule().fill(data.weekHas[i] ? HV.lime : .white.opacity(0.25)).frame(height: 4) } }.padding(.top, 10).padding(.trailing, 70)
+                }.padding(16)
+                Image(systemName: "play.fill").font(.system(size: 18)).foregroundStyle(.white).frame(width: 52, height: 52).background(.ultraThinMaterial, in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1.2)).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing).padding(16)
+            }.frame(height: 206).clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        }.buttonStyle(HVPress(scale: 0.985))
+    }
+
+    private var yearCard: some View {
+        Button { Haptics.play(.tick); onShelf() } label: {
+            HStack { Text("1 YEAR ・ KEPT").font(LF.mono(12)).tracking(2).foregroundStyle(Color(hex: "FF9F43")); Spacer(); Text("\(data.kept) ★").font(LF.inter(800, 15)).foregroundStyle(.white.opacity(0.7)); Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.4)) }
+                .padding(.horizontal, 22).frame(height: 70).background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        }.buttonStyle(HVPress(scale: 0.985))
     }
 }
 
@@ -131,9 +210,13 @@ struct ProfileV82View: View {
 struct ProfileV82Host: View {
     var onBack: () -> Void
     var onShoot: () -> Void
+    var onMe: () -> Void = {}
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
     @State private var showsShelf = false
+    @State private var showsSettings = false
+    @State private var toast: String?
+    @Query private var blocked: [BlockedUser]
     @State private var showsIcon = false
     @State private var showsQR = false
     @State private var showsScan = false
@@ -143,7 +226,12 @@ struct ProfileV82Host: View {
     private var recordName: String? { CloudKitManager.current?.currentUserRecordName }
 
     var body: some View {
-        ProfileV82View(data: data, onBack: onBack, onSettings: { showsShelf = true }, onEdit: { showsShelf = true }, onShare: share, onScan: { showsScan = true }, onQR: { showsQR = true }, onPhoto: { showsIcon = true }, onShelf: { showsShelf = true })
+        ProfileV82View(data: data, onBack: onBack, onSettings: { showsSettings = true }, onEdit: { showsShelf = true }, onShare: share, onScan: { showsScan = true }, onQR: { showsQR = true }, onPhoto: { showsIcon = true }, onShelf: { showsShelf = true }, onMe: onMe, onCopyID: { UIPasteboard.general.string = me?.username; Haptics.play(.success); toast = "ID を コピーしました"; DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { toast = nil } })
+            .overlay(alignment: .bottom) { if let toast { Text(toast).font(LF.inter(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 36).background(.white, in: Capsule()).padding(.bottom, 60) } }
+            .sheet(isPresented: $showsSettings) {
+                SettingsV87Sheet(name: me?.name ?? "", username: me?.username ?? "", avatar: me?.profileImageData.flatMap { UIImage(data: $0) }, blockedCount: blocked.count, groupCount: me?.groups.count ?? 0, onEdit: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsShelf = true } }, onPhoto: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsIcon = true } }, onClose: { showsSettings = false }, onLoggedOut: { showsSettings = false })
+                    .presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Color(hex: "0F1011"))
+            }
             .fullScreenCover(isPresented: $showsShelf) { ProfileShelfView(onBack: { showsShelf = false }, onShoot: { showsShelf = false; onShoot() }) }
             .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: me?.name ?? "", friendCount: 0) { _ in } }
             .sheet(isPresented: $showsQR) { ProfileSelfQRSheet(name: me?.name ?? "", recordName: recordName) }
@@ -169,6 +257,11 @@ struct ProfileV82Host: View {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US"); f.dateFormat = "MMM yyyy"
         d.since = f.string(from: me.photos.map(\.captureDate).min() ?? Date())
         d.recordName = recordName
+        if let r = RecapStore.shared.items.first(where: { $0.kind == .week }) {
+            d.recapRange = MEV86View.range(r)
+            d.recapPhotos = r.photoIDs.prefix(3).map { id in me.photos.first { $0.id.uuidString == id }.flatMap { V64Images.image(key: "pr\($0.id)", data: $0.imageData, maxPixel: 640) } }
+            d.weekHas = (0..<7).map { i in let day = cal.date(byAdding: .day, value: i, to: r.start) ?? r.start; return me.photos.contains { cal.isDate($0.captureDate, inSameDayAs: day) } }
+        }
         return d
     }
 
