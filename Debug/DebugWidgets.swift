@@ -12,19 +12,26 @@ struct DebugWidgetsView: View {
         let now = Calendar.current.date(bySettingHour: hour, minute: 40, second: 0, of: Date()) ?? Date()
         let snap = Self.snapshot(shots: shots, now: now)
         let m = WidgetModel.make(snap, now: now, filmShots: nil)
+        let part = d.string(forKey: "debugWPart") ?? "all"
         let e = LattagEntry(date: now, model: m, hourIndex: d.integer(forKey: "debugWIndex"))
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Text("shots \(shots) ・ \(hour):40").font(.caption).foregroundStyle(.white)
-                HStack(spacing: 14) {
+                if part == "all" || part == "small" { HStack(spacing: 14) {
                     box(158, 158, WColor.ground) { LattagLensView(model: m) }
                     box(158, 158, m.part == .evening ? WColor.ground : WColor.lime) { LattagUntil9View(model: m) }
-                }
-                HStack(spacing: 14) {
+                } }
+                if part == "all" || part == "small" { HStack(spacing: 14) {
                     box(158, 158, WColor.ground) { LattagFriendView(entry: e) }
                     box(158, 158, WColor.ground) { LattagMondoView(model: m) }
+                } }
+                if part == "all" || part == "mid" {
+                box(338, 158, WColor.ground) { LattagFriendsView(model: m) }
+                box(338, 158, WColor.ground) { LattagYesterdayView(model: m) }
+                box(338, 158, WColor.ground) { LattagTripView(trip: m.trip ?? TripSnap(id: "t", title: "京都 2泊3日", sub: "11/19 THU ・ 3人", day: 2, count: 12, total: 23, passNo: 4065, filled: Array(0..<12), cover: "dbg_a.jpg")) }
+                box(338, 354, WColor.ground) { LattagBoardView(model: m) }
                 }
-                ZStack {
+                if part == "all" || part == "lock" { ZStack {
                     LinearGradient(colors: [Color(hex6: 0x6B5A50), Color(hex6: 0x2A2326)], startPoint: .top, endPoint: .bottom)
                     VStack(spacing: 12) {
                         HStack(spacing: 12) {
@@ -34,7 +41,7 @@ struct DebugWidgetsView: View {
                         LattagLockRectView(model: m).frame(width: 172, height: 76).padding(8).background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 14))
                         LattagLockInlineView(model: m).font(.system(size: 15)).foregroundStyle(.white)
                     }.foregroundStyle(.white).padding(16)
-                }.clipShape(RoundedRectangle(cornerRadius: 24))
+                }.clipShape(RoundedRectangle(cornerRadius: 24)) }
             }.padding(16)
         }
         .background(Color(hex6: 0x1C1C1E).ignoresSafeArea())

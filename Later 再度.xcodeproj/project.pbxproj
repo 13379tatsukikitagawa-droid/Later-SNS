@@ -22,9 +22,13 @@
 		6EFC45EBE8FA556D2F50352B /* LattagWidgetsSmall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81817C779AF302109FD3B8F5 /* LattagWidgetsSmall.swift */; };
 		19046F9F10D6A2E9E26075B8 /* LattagWidgetsLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */; };
 		10B6B6CDD11C3D57A1F2087D /* LattagWidgetsLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */; };
+		092332E0BBFB3FC5311F1A26 /* LattagWidgetsMid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */; };
+		FE7EF1B5361F641E85C0CF43 /* LattagWidgetsMid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */; };
 		55913463BB580C82514D7EEC /* LattagWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */; };
 		F96D6CC198B2707E6A8E698A /* LattagWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */; };
 		F96EECA11D724D6738F6F307 /* WidgetSnapshotWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */; };
+		738D5A0AC54C212326C1FDAA /* KnockSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A44017CE90E26C90018D9E /* KnockSender.swift */; };
+		86E492D2902A5D64756C105A /* KnockSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A44017CE90E26C90018D9E /* KnockSender.swift */; };
 		F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */; };
 		F96ED69A09688B3707B3E4CD /* LattagWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */; };
 		00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769863F83DF8CA3E06CAE493 /* SampleData.swift */; };
@@ -361,8 +365,10 @@
 		658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetParts.swift; sourceTree = "<group>"; };
 		81817C779AF302109FD3B8F5 /* LattagWidgetsSmall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsSmall.swift; sourceTree = "<group>"; };
 		A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsLock.swift; sourceTree = "<group>"; };
+		453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsMid.swift; sourceTree = "<group>"; };
 		F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetProvider.swift; sourceTree = "<group>"; };
 		F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotWriter.swift; sourceTree = "<group>"; };
+		66A44017CE90E26C90018D9E /* KnockSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnockSender.swift; sourceTree = "<group>"; };
 		F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetSnapshot.swift; sourceTree = "<group>"; };
 		0159D1A97715D4F4D7AB1471 /* LGMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGMotion.swift; sourceTree = "<group>"; };
 		024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileImmersiveView.swift; sourceTree = "<group>"; };
@@ -1235,6 +1241,7 @@
 			children = (
 				E1D000000000000000000002 /* LaterWidgetShared.swift */,
 				F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */,
+				66A44017CE90E26C90018D9E /* KnockSender.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -1248,6 +1255,7 @@
 				E1D000000000000000000009 /* LaterWidgetAccessory.swift */,
 				E1D000000000000000000006 /* LaterLiveActivity.swift */,
 				F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */,
+				453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */,
 				A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */,
 				81817C779AF302109FD3B8F5 /* LattagWidgetsSmall.swift */,
 				658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */,
@@ -1575,6 +1583,8 @@
 				E6ED73FB1405DA366C88B45C /* V64/HandleChangeSheetV94.swift in Sources */,
 				74E41292673F65D82CE75DE1 /* V64/HandleField.swift in Sources */,
 				1F6A1866991A120A5CDABE7D /* V64/ShutterIconV94.swift in Sources */,
+				738D5A0AC54C212326C1FDAA /* KnockSender.swift in Sources */,
+				092332E0BBFB3FC5311F1A26 /* LattagWidgetsMid.swift in Sources */,
 				19046F9F10D6A2E9E26075B8 /* LattagWidgetsLock.swift in Sources */,
 				F97C488B16039EDDED99F8C1 /* LattagWidgetsSmall.swift in Sources */,
 				75F3912B87D68D201AD6DF30 /* LattagWidgetParts.swift in Sources */,
@@ -1793,6 +1803,8 @@
 				6EFC45EBE8FA556D2F50352B /* LattagWidgetsSmall.swift in Sources */,
 				9136131F60AB4354E54032EF /* LattagWidgetParts.swift in Sources */,
 				F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */,
+				86E492D2902A5D64756C105A /* KnockSender.swift in Sources */,
+				FE7EF1B5361F641E85C0CF43 /* LattagWidgetsMid.swift in Sources */,
 				E1D000000000000000000031 /* LaterWidgetShared.swift in Sources */,
 				E1D000000000000000000032 /* LaterWidgetTimeline.swift in Sources */,
 				E1D000000000000000000033 /* LaterWidgetScene.swift in Sources */,
