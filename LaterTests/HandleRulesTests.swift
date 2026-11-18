@@ -38,3 +38,12 @@ struct DirectoryNameKeyTests {
         #expect(DirectoryNameKey.make("Yui Chan") == "yuichan")
     }
 }
+
+struct QRHandleParseTests {
+    @Test func lattagURLからIDを読む() {
+        #expect(FriendQRScanView.handle(from: URL(string: "https://lattag.app/u/yui_0612")!) == "yui_0612")
+        #expect(FriendQRScanView.handle(from: URL(string: "https://example.com/u/yui_0612")!) == nil)
+        #expect(FriendQRScanView.handle(from: URL(string: "https://lattag.app/x/yui_0612")!) == nil)
+        #expect(FriendQRScanView.handle(from: URL(string: "https://lattag.app/u/admin")!) == nil)
+    }
+}

@@ -97,7 +97,7 @@ struct FriendsV68View: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { Haptics.play(.tick) }
         }
         .fullScreenCover(isPresented: $showsMyQR) { SelfQRChekiHost(onScan: { showsMyQR = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showsScan = true } }, onClose: { showsMyQR = false }) }
-        .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: myName, friendCount: list.count) { show($0) } }
+        .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: myName, friendCount: list.count, friendIDs: Set(list.map(\.id)), myUsername: me?.username ?? "") { show($0) } }
         .sheet(isPresented: $showsID) {
             FriendIDSearchSheet(myName: myName, seed: idSeed, onQR: { showsMyQR = true }, onLink: { shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }, onScan: { showsScan = true }) { show($0) }
         }
