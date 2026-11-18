@@ -3,7 +3,7 @@
    1つの 動きを 決まった 時刻で 撮って、1枚の 画像に 並べる(左上が 0ms)。 */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
-const MOCK = path.resolve(process.argv[2] || 'mock/lattag_v82.html');
+const MOCK = path.resolve(process.argv[2] || 'mock/lattag_v83.html');
 const OUT = path.resolve(process.argv[3] || '.');
 const ONLY = process.argv[4] || '';
 fs.mkdirSync(path.join(OUT, 'motion/_frames'), { recursive: true });
@@ -38,6 +38,9 @@ const M = [
   ['M19_header_compact', 'Home:下へ スクロール → ヘッダーが 1つの ガラスに まとまる', home, p => ev(p, () => { __kit.hs().scrollTo({ top: 300, behavior: 'smooth' }) }), [0, 120, 240, 360, 480, 640, 800, 1000]],
   ['M24_recap_develop', 'ME:新しい Recap が 現像される(ぼけ ・ 白黒 → くっきり)', home, p => ev(p, () => { __kit.rcSeen(false); __kit.openMe() }), [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400]],
   ['M25_recap_play', 'Recap:押す → 題 → 写真が 動いて 入れかわる', async p => { await home(p); await ev(p, () => { __kit.rcSeen(true); __kit.openMe() }); await W(1500) }, p => ev(p, () => document.querySelector('#mew .rch').click()), [0, 200, 400, 700, 1100, 1500, 1900, 2300, 2700, 3100, 3500, 4200]],
+  ['M26_camera_flip', '撮影画面:インカメへ 切りかえ(裏がえる)', async p => { await ctl(p, 'cam'); await W(2200); await ev(p, () => __kit.cmHide()); await W(300) }, p => ev(p, () => __kit.x8Flip()), [0, 60, 120, 180, 240, 300, 360, 440, 520]],
+  ['M27_settings_open', 'プロフィール:歯車 → 設定の シートが 下から 出る', async p => { await home(p); await ev(p, () => __kit.openPrf()); await W(2400) }, p => ev(p, () => document.getElementById('pfset').click()), [0, 80, 160, 240, 320, 420, 520, 700]],
+  ['M28_avatar_double_tap', 'Home:右上の アイコンを 2回 タップ → きのうへ', home, async p => { const r = await ev(p, () => { const q = document.querySelector('#hhd .av').getBoundingClientRect(); return [q.x + q.width / 2, q.y + q.height / 2] }); await p.mouse.click(r[0], r[1]); await W(110); p.mouse.click(r[0], r[1]).catch(() => { }) }, [0, 150, 300, 450, 600, 800, 1000, 1300]],
 ];
 
 (async () => {

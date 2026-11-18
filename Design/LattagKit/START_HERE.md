@@ -12,8 +12,8 @@
 | `CLAUDE.md` | Claude Code が毎回読むルール。**リポジトリのいちばん上に置く** |
 | `prompts/P00〜P09` | 10段階の作業指示。**1回に 1つずつ**使う |
 | `prompts/reference/` | これまでの詳しい仕様（PROMPT v54〜v70 と、全部をまとめたもの） |
-| `mock/lattag_v82.html` | 最新のモック（Safari で開いて触れる） |
-| `mock/lattag_v82.html` の デモボタン | `きのう を ひらく` ・ `Mondo:投稿 あり / なし` ・ `Mondo:地球に もどす` ・ `Friends へ` で yesterday を 動かせる |
+| `mock/lattag_v83.html` | 最新のモック（Safari で開いて触れる） |
+| `mock/lattag_v83.html` の デモボタン | `きのう を ひらく` ・ `Mondo:投稿 あり / なし` ・ `Mondo:地球に もどす` ・ `Friends へ` で yesterday を 動かせる |
 | `mock/opening_v72.html` | 新しいオープニングの動く見本（本番 B ・ ゆっくり） |
 | `assets/` | アプリアイコン・起動画面の印 |
 | `mock/src/` | モックの元のコード（読む順番は `LOAD_ORDER.md`） |
@@ -81,6 +81,7 @@ Design/LattagKit/prompts/P00_setup.md を 読んで、その とおりに 進め
 | P27 | `P27_v83_trip.md` | **v83**:Trip を わかりやすく(1問ずつの 入力 ・ できた 後は Trip の ホーム ・ チャットは サブ)| 2回 |
 | P28 | `P28_v85_remove_shake.md` | **v85**:Shake(ふって つながる)を なくす ・ かわりに QR で 会って つながる | 1回 |
 | P29 | `P29_v86_me_recap.md` | **v86**:ME を Recap 中心に(毎週 月曜 9:00 に できる ・ 作成中の リング ・ これまでの Recap ・ アルバム ・ 1日の 全画面 ・ Recap の 再生)| 2回(A 画面 → B しくみ)|
+| P30 | `P30_v87_fixes.md` | **v87**:実機を 見て 直す(撮影画面の 色 + インカメ ・ Home の 帯 / アイコンで 切りかえ / 地球儀の ボタン / スクロール ・ Friends はじめて ・ Mondo ・ プロフィール + 設定)| 3回(A → B → C)|
 
 > 1つの段階が 1回で終わらなかったら、`/clear` のあとに「`Design/LattagKit/prompts/P02_home_top_card.md` の続き。`Design/LattagKit/PROGRESS.md` を見て、のこりをやって」と送る。
 

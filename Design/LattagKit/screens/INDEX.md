@@ -1,6 +1,6 @@
 # 見本画像の 一覧(screens/)
 
-- すべて **モック `mock/lattag_v82.html` から 自動で 撮った もの**(390 × 844pt を 2倍 = 780 × 1688px の JPG)。**v85 に 更新済み**(Shake を なくした)。その 前は v83(Trip の 入力 ・ ホーム)。その 前は v82(Mondo の 地球 = 字なし)。その 前は v81(アイコン = プロフィール写真)。その 前は v80(スクロールで 上が 小さく ・ Mondo の 字 なし)。その 前は v79(時間の カプセル ・ あなたの きのう ・ Mondo の 大きな 地球 ・ ない 日)。その 前は v73(まんなかの シャッター)。その 前は v71(まんなかの レンズ ・ かぎ ・「Friends」の 表記)。その 前は v70(Home の ヘッダー ・ 四すみ ・ フルブリード、Friends ・ Shake)。
+- すべて **モック `mock/lattag_v83.html` から 自動で 撮った もの**(390 × 844pt を 2倍 = 780 × 1688px の JPG)。**v85 に 更新済み**(Shake を なくした)。その 前は v83(Trip の 入力 ・ ホーム)。その 前は v82(Mondo の 地球 = 字なし)。その 前は v81(アイコン = プロフィール写真)。その 前は v80(スクロールで 上が 小さく ・ Mondo の 字 なし)。その 前は v79(時間の カプセル ・ あなたの きのう ・ Mondo の 大きな 地球 ・ ない 日)。その 前は v73(まんなかの シャッター)。その 前は v71(まんなかの レンズ ・ かぎ ・「Friends」の 表記)。その 前は v70(Home の ヘッダー ・ 四すみ ・ フルブリード、Friends ・ Shake)。
 - 同じ ID の **数値データ** が `spec/screens/<ID>.json` に ある(位置 ・ 大きさ ・ 書体 ・ 色 ・ 角丸 ・ 影 ・ ぼかし。**CSS の 上書きを ぜんぶ 計算した あとの 最終値**)。
 - どうやって その 状態に したかは `tools/capture_mock.js` の 同じ ID の 行を 見る。
 - JSON の 座標は **画面の 左上 = (0, 0)、単位 = pt**。`el` は モックの 要素名(タグ#id.class)。
@@ -151,3 +151,18 @@
 | `F18_me_recap_new` | ME:新しい Recap が できた(現像の 途中)|
 
 > v86:ME は **Recap が 主役**。動きは `motion/M24_recap_develop` `M25_recap_play`。
+
+> v87:実機を 見て 直した 画面(**ぜんぶの 見本を 撮りなおした**:上の アイコン ・ 帯 ・ 下の 地球儀が 変わった ため)。
+
+|---|---|
+| `C12_camera_front` | 撮影画面:インカメ |
+| `Y19_friends_first` | Friends:はじめて(自分の きのう も 友だち も ない)|
+| `Y20_friends_first_scroll` | Friends:はじめて(下 ・ 友だちを よぶ)|
+| `Y21_friends_no_friends` | Friends:自分の きのうは ある ・ 友だち 0人 |
+| `Y22_friends_no_own` | Friends:友だちは いる ・ 自分の きのう なし |
+| `F19_profile_scrolled` | Profile:下へ(上の 帯に アイコン + 名前 ・ Recap ・ 1年)|
+| `F20_settings` | 設定(歯車 → 下から シート)|
+| `F21_settings_bottom` | 設定:下(ログアウト ・ アカウントを 消す)|
+| `F22_settings_logout` | 設定:ログアウトの 確認 |
+
+動き:`motion/M26_camera_flip` `M27_settings_open` `M28_avatar_double_tap`。

@@ -1,9 +1,65 @@
 [
  {
-  "id": "F18_me_recap_new",
-  "ph": 6,
-  "name": "ME:新しい Recap が できた(現像の 途中)",
-  "n": 128,
+  "id": "O01_opening_print",
+  "ph": 1,
+  "name": "オープニング:チェキが 出てくる",
+  "n": 74,
+  "errs": []
+ },
+ {
+  "id": "O02_opening_logo",
+  "ph": 1,
+  "name": "オープニング:Lattag の 文字",
+  "n": 46,
+  "errs": []
+ },
+ {
+  "id": "O03_onboarding_intro",
+  "ph": 1,
+  "name": "はじめての 設定:入口(落ちてくる 題字)",
+  "n": 166,
+  "errs": []
+ },
+ {
+  "id": "O04_onboarding_signin",
+  "ph": 1,
+  "name": "はじめての 設定:サインイン(Apple / Google / メール)",
+  "n": 157,
+  "errs": []
+ },
+ {
+  "id": "O05_onboarding_mail",
+  "ph": 1,
+  "name": "はじめての 設定:メールアドレス",
+  "n": 155,
+  "errs": []
+ },
+ {
+  "id": "O06_onboarding_sent",
+  "ph": 1,
+  "name": "はじめての 設定:メール送信済み",
+  "n": 154,
+  "errs": []
+ },
+ {
+  "id": "O07_onboarding_name",
+  "ph": 1,
+  "name": "はじめての 設定:名前と 色",
+  "n": 94,
+  "errs": []
+ },
+ {
+  "id": "O08_onboarding_tag",
+  "ph": 1,
+  "name": "はじめての 設定:タグを 3つ",
+  "n": 110,
+  "errs": []
+ },
+ {
+  "id": "O09_onboarding_fr",
+  "ph": 1,
+  "name": "はじめての 設定:友だち",
+  "n": 97,
   "errs": []
  }
 ]

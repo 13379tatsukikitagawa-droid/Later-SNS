@@ -5,17 +5,17 @@
 
 ## 1. いま やって いる こと
 
-- HTML の モック(`Design/LattagKit/mock/lattag_v82.html`)を、**見た目 ・ 動き ・ バイブまで そのまま** SwiftUI の 実機アプリに 移す。
-- 範囲は **オープニング 〜 Trip を つくる まで ぜんぶ**。段階(フェーズ)ごとに 進める:`Design/LattagKit/prompts/P00〜P29`。
+- HTML の モック(`Design/LattagKit/mock/lattag_v83.html`)を、**見た目 ・ 動き ・ バイブまで そのまま** SwiftUI の 実機アプリに 移す。
+- 範囲は **オープニング 〜 Trip を つくる まで ぜんぶ**。段階(フェーズ)ごとに 進める:`Design/LattagKit/prompts/P00〜P30`。
 - 進み具合は `Design/LattagKit/PROGRESS.md` に 書く(フェーズ と 画面 ID に ✓)。
 
 ## 2. 正解の 順番(迷ったら 上が 勝つ)
 
 1. **見本画像** `Design/LattagKit/screens/<ID>.jpg` と **数値** `Design/LattagKit/spec/screens/<ID>.json`
    - JSON は モックを 実際に 動かして 測った **最終値**(CSS の 上書きを 計算した あと)。位置 ・ 大きさ ・ 書体 ・ 色 ・ 角丸 ・ 影 ・ ぼかしは **ここを 最優先**。
-2. **動いて いる モック** `mock/lattag_v82.html`(Safari で ひらける。上の デモボタンで 状態を 変えられる)
+2. **動いて いる モック** `mock/lattag_v83.html`(Safari で ひらける。上の デモボタンで 状態を 変えられる)
 3. **モックの 元コード** `mock/src/`(読む 順番は `mock/src/LOAD_ORDER.md`。**後の ファイルほど 優先**:CSS は 後勝ち、JS は 関数を 上書き)
-4. **詳しい 仕様** `prompts/reference/PROMPT_v54〜v86.md`(**番号が 大きい ほど 新しく、優先**)
+4. **詳しい 仕様** `prompts/reference/PROMPT_v54〜v87.md`(**番号が 大きい ほど 新しく、優先**)
 5. ここに ない ことは **作らない ・ 推測しない**。わからない ときは コードを 読むか、手を 止めて 聞く。
 
 ## 3. 名前と 中身の 名前
@@ -43,6 +43,8 @@
 - **重さ**:ぼかしは 小さな 画像を 1回だけ ぼかして 引きのばす(毎フレーム 計算しない)。ガラスは 1画面 8枚まで。画面の 外の 動きは 止める(`PROMPT_v68.md` 5章)。
 - **キャラクター(にこちゃんの 顔 ・ 人の 絵)は 使わない**。
 - **ME の 写真と Recap は 端末 + iCloud(CloudKit の 自分用 DB)に のこす**。Firebase の 写真は 7日で 消える ままで よい(`PROMPT_v86.md`)。
+- **今日 / きのう の 切りかえは 右上の アイコンを 2回 タップ**(1回 = プロフィール)。ロゴの 横に `TODAY` の 字は 置かない(v87)。
+- **部品を 重ねて 置かない**(`offset` ・ 決めうちの 幅を 使わず、`VStack` / `HStack` で 並べる)。はみ出しそうな 字は `lineLimit(1)` + `minimumScaleFactor` + `ViewThatFits`(v87)。
 - **Shake(ふって つながる)は 作らない**(v85 で なくした)。友だちとは QR ・ リンク ・ ID で つながる。人は 写真の 丸(無ければ 名前の 1文字 + 色)。
 - ガラス:iOS 26 は `.glassEffect()`(押せる 物は `.interactive()`)、それ より 前は `.ultraThinMaterial` + 白 10〜14% + ふちの 白い 線。部品は `LGGlass` に まとめる。
 - バイブ:`spec/HAPTICS.md` の 15種類(`tick` `sel` `pop` `click` `soft` `thud` `warn` `success` `shutter` `land` `heart` `projector` `buzz` `rumble` `vui`)を `Haptics.play(.名前)` で。モックの `hap('名前', …)` と 1対1。
