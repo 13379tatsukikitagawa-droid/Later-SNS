@@ -16,6 +16,13 @@
 		F9604D53BE6964B061D9D199 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
 		F969E7CC4EACC1A8FF017581 /* Fonts/Inter-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F3BD87A37A434721B1834A92 /* Fonts/Inter-Bold.ttf */; };
 		F96D951BA6178EF91C15CBF8 /* Fonts/Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0A0CDE87376944EE8E6DF443 /* Fonts/Inter-Medium.ttf */; };
+		75F3912B87D68D201AD6DF30 /* LattagWidgetParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */; };
+		9136131F60AB4354E54032EF /* LattagWidgetParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */; };
+		F97C488B16039EDDED99F8C1 /* LattagWidgetsSmall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81817C779AF302109FD3B8F5 /* LattagWidgetsSmall.swift */; };
+		6EFC45EBE8FA556D2F50352B /* LattagWidgetsSmall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81817C779AF302109FD3B8F5 /* LattagWidgetsSmall.swift */; };
+		19046F9F10D6A2E9E26075B8 /* LattagWidgetsLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */; };
+		10B6B6CDD11C3D57A1F2087D /* LattagWidgetsLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */; };
+		55913463BB580C82514D7EEC /* LattagWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */; };
 		F96D6CC198B2707E6A8E698A /* LattagWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */; };
 		F96EECA11D724D6738F6F307 /* WidgetSnapshotWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */; };
 		F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */; };
@@ -36,6 +43,7 @@
 		10FA17F468ABDA2DAFFA90D5 /* V64/ProfileV82View.swift in Sources */ = {isa = PBXBuildFile; fileRef = D913D5C6B689C4EA4AC49236 /* V64/ProfileV82View.swift */; };
 		13AB85698114C6E0851F5F04 /* CKRecordConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */; };
 		16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8074893E58921F0B4509881 /* DesignSystemPreview.swift */; };
+		2B32E67B1159449C70952B9C /* DebugWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 860520ED2477CD6D28B8C7AA /* DebugWidgets.swift */; };
 		1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EFD2BE01B050559B5C12A7E /* DebugState.swift */; };
 		5CCB0FA934A2BF24EF1DDFA3 /* V64/HomeTourV95.swift in Sources */ = {isa = PBXBuildFile; fileRef = F546B117F76335334DBAE2EC /* V64/HomeTourV95.swift */; };
 		22916C5A6F5D88E05D39D26F /* V64/HomeNextV95.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B8E2911EFFED828CF900DD /* V64/HomeNextV95.swift */; };
@@ -350,6 +358,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetParts.swift; sourceTree = "<group>"; };
+		81817C779AF302109FD3B8F5 /* LattagWidgetsSmall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsSmall.swift; sourceTree = "<group>"; };
+		A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsLock.swift; sourceTree = "<group>"; };
 		F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetProvider.swift; sourceTree = "<group>"; };
 		F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotWriter.swift; sourceTree = "<group>"; };
 		F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetSnapshot.swift; sourceTree = "<group>"; };
@@ -391,6 +402,7 @@
 		49028997E3DBDE8B3B4B28F8 /* V64/TripHomeV83View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripHomeV83View.swift; sourceTree = "<group>"; };
 		4D9D4396C8C8475A92B50C4C /* CachedChekiImage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CachedChekiImage.swift; sourceTree = "<group>"; };
 		4EF54B9E52664A609C8C2408 /* FriendScreenV48.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendScreenV48.swift; sourceTree = "<group>"; };
+		860520ED2477CD6D28B8C7AA /* DebugWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugWidgets.swift; sourceTree = "<group>"; };
 		4EFD2BE01B050559B5C12A7E /* DebugState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugState.swift; sourceTree = "<group>"; };
 		4F2CF92F275B089847890306 /* ExposureHaptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExposureHaptics.swift; sourceTree = "<group>"; };
 		512B00F2AAA89453E3C98FD5 /* GroupUnlockPolicy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupUnlockPolicy.swift; sourceTree = "<group>"; };
@@ -714,6 +726,7 @@
 			isa = PBXGroup;
 			children = (
 				4EFD2BE01B050559B5C12A7E /* DebugState.swift */,
+				860520ED2477CD6D28B8C7AA /* DebugWidgets.swift */,
 				57F36AA1B5669102F3368268 /* DebugRouter.swift */,
 				D881D698B13AD2783A958080 /* DebugStateMenu.swift */,
 				769863F83DF8CA3E06CAE493 /* SampleData.swift */,
@@ -1235,6 +1248,9 @@
 				E1D000000000000000000009 /* LaterWidgetAccessory.swift */,
 				E1D000000000000000000006 /* LaterLiveActivity.swift */,
 				F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */,
+				A7284064DB2BEE0D9EDC392B /* LattagWidgetsLock.swift */,
+				81817C779AF302109FD3B8F5 /* LattagWidgetsSmall.swift */,
+				658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */,
 				E1D000000000000000000007 /* Info.plist */,
 				E1D000000000000000000008 /* LaterWidget.entitlements */,
 			);
@@ -1521,6 +1537,7 @@
 				7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */,
 				A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */,
 				1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */,
+				2B32E67B1159449C70952B9C /* DebugWidgets.swift in Sources */,
 				0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */,
 				A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */,
 				00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */,
@@ -1558,6 +1575,10 @@
 				E6ED73FB1405DA366C88B45C /* V64/HandleChangeSheetV94.swift in Sources */,
 				74E41292673F65D82CE75DE1 /* V64/HandleField.swift in Sources */,
 				1F6A1866991A120A5CDABE7D /* V64/ShutterIconV94.swift in Sources */,
+				19046F9F10D6A2E9E26075B8 /* LattagWidgetsLock.swift in Sources */,
+				F97C488B16039EDDED99F8C1 /* LattagWidgetsSmall.swift in Sources */,
+				75F3912B87D68D201AD6DF30 /* LattagWidgetParts.swift in Sources */,
+				55913463BB580C82514D7EEC /* LattagWidgetProvider.swift in Sources */,
 				CD5C4AB45B6A3503A0A779E1 /* V64/MondoWaitV95.swift in Sources */,
 				22916C5A6F5D88E05D39D26F /* V64/HomeNextV95.swift in Sources */,
 				5CCB0FA934A2BF24EF1DDFA3 /* V64/HomeTourV95.swift in Sources */,
@@ -1768,6 +1789,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				F96D6CC198B2707E6A8E698A /* LattagWidgetProvider.swift in Sources */,
+				10B6B6CDD11C3D57A1F2087D /* LattagWidgetsLock.swift in Sources */,
+				6EFC45EBE8FA556D2F50352B /* LattagWidgetsSmall.swift in Sources */,
+				9136131F60AB4354E54032EF /* LattagWidgetParts.swift in Sources */,
 				F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */,
 				E1D000000000000000000031 /* LaterWidgetShared.swift in Sources */,
 				E1D000000000000000000032 /* LaterWidgetTimeline.swift in Sources */,

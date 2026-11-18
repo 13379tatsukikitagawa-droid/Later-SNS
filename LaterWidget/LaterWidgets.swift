@@ -6,10 +6,15 @@ import WidgetKit
 @main
 struct LaterWidgetBundle: WidgetBundle {
     var body: some Widget {
-        LaterSceneWidget()
-        LaterTodayWidget()
-        LaterYesterdayWidget()
-        LaterWeekWidget()
+        // v96:新しい ウィジェット(S1〜S4 ・ ロック 4種)
+        LattagLensWidget()
+        LattagUntil9Widget()
+        LattagFriendWidget()
+        LattagMondoWidget()
+        LattagLockRingWidget()
+        LattagLockOpenWidget()
+        LattagLockRectWidget()
+        LattagLockInlineWidget()
         LaterLiveActivity()
         LaterShootControl()
         LaterOpenControl()
