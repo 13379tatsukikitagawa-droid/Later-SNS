@@ -74,4 +74,25 @@ struct DebugWidgetsView: View {
                               lockedPreviews: [c], mondoTag: "夕焼け", mondoCount: 1203, mondoCountries: 128, trip: nil, next: nil, myRecordName: nil, myName: "ゆい")
     }
 }
+
+/// DEBUG:ライブ アクティビティの 3つの 形(`-debugRoute live`)
+struct DebugLiveView: View {
+    var body: some View {
+        let now = Date()
+        let a = DebugWidgetsView.snapshot(shots: 2, now: now)
+        let night = LiveState(phase: .film, shotsTaken: 2, endsAt: now.addingTimeInterval(20 * 60 + 14), frameThumbs: a.shotBlurs, friendCount: 5, devPercent: 92)
+        var last = night; last.phase = .lastCall; last.endsAt = now.addingTimeInterval(8 * 60 + 42)
+        var morning = night; morning.phase = .opening; morning.endsAt = now.addingTimeInterval(29 * 60 + 46)
+        return ScrollView {
+            VStack(spacing: 14) {
+                card(Color.black.opacity(0.9)) { LiveFilmView(s: night) }
+                card(WColor.lime) { LiveLastCallView(s: last) }
+                card(Color.black.opacity(0.9)) { LiveOpeningView(s: morning) }
+            }.padding(16)
+        }.background(Color(hex6: 0x4A3F3A).ignoresSafeArea())
+    }
+    private func card<V: View>(_ bg: Color, @ViewBuilder _ v: () -> V) -> some View {
+        v().frame(width: 362, height: 160).background(bg).clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
 #endif

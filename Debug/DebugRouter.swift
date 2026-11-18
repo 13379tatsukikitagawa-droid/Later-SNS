@@ -34,6 +34,7 @@ enum DebugRouter {
         case "qr": showRaw(SelfQRChekiV92View(name: "ゆい", username: "yui_0612", link: "https://lattag.app/u/yui_0612", photo: SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型"], onClose: {}))
         case "shutter": showRaw(HStack(spacing: 8) { ForEach([0.0, 0.4, 0.75, 1.0], id: \.self) { k in ShutterIconV94(progress: k, holding: k > 0, video: false, recording: false, dead: false, late: false, snapToken: 0).frame(width: 104, height: 104) } }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.black))
         case "widgetguide": showRaw(WidgetGuideV96Sheet(onClose: {}))
+        case "live": showRaw(DebugLiveView())
         case "widgets": showRaw(DebugWidgetsView())
         case "settings": showRaw(SettingsV87Sheet(name: "ゆい", username: "yui_0612", avatar: SampleData.photo("f"), blockedCount: 0))
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))

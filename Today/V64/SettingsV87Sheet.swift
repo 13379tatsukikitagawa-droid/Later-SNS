@@ -23,6 +23,8 @@ struct SettingsV87Sheet: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("notify.friends") private var friendsOn = true
     @AppStorage("notify.recap") private var recapOn = true
+    @AppStorage("notify.liveNight") private var liveNightOn = true
+    @AppStorage("notify.liveMorning") private var liveMorningOn = true
     @AppStorage("appleUserID") private var appleUserID = ""
     @AppStorage("appleFullName") private var appleFullName = ""
     @AppStorage("firebaseUID") private var firebaseUID = ""
@@ -60,6 +62,10 @@ struct SettingsV87Sheet: View {
                     toggleRow("友だち", "申請 ・ リアクション ・ コメント", $friendsOn) { _ in Haptics.play(.click) }
                     divider
                     toggleRow("Recap", "月曜 9:00 に できた 時", $recapOn) { v in Haptics.play(.click); RecapNotifier.setEnabled(v) }
+                    divider
+                    toggleRow("ライブ アクティビティ ・ 夜", "23:00 から 消灯まで(のこりの こま)", $liveNightOn) { _ in Haptics.play(.click); LattagLive.sync(snapshot: WidgetSnapshot.load()) }
+                    divider
+                    toggleRow("ライブ アクティビティ ・ 朝", "8:30 から 9:00 まで", $liveMorningOn) { _ in Haptics.play(.click); LattagLive.sync(snapshot: WidgetSnapshot.load()) }
                 }
                 header("プライバシー")
                 group {

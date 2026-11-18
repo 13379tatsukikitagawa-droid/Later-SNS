@@ -164,6 +164,7 @@ enum WidgetSnapshotWriter {
             myName: input.me?.name ?? ""
         )
 
+        LattagLive.sync(snapshot: snapshot, now: now)
         var sig = snapshot
         sig.writtenAt = .distantPast
         let signature = (try? WidgetSnapshot.encoder().encode(sig)).map { String(decoding: $0, as: UTF8.self) } ?? UUID().uuidString
@@ -180,6 +181,7 @@ enum WidgetSnapshotWriter {
 
     /// 撮った すぐ あと(アプリの 画面を 待たずに こまの 数だけ 先に 反映)
     static func reloadAfterShot() {
+        LattagLive.sync(snapshot: WidgetSnapshot.load())
         WidgetCenter.shared.reloadTimelines(ofKind: LattagShared.Kind.lens)
         WidgetCenter.shared.reloadTimelines(ofKind: LattagShared.Kind.until9)
         WidgetCenter.shared.reloadTimelines(ofKind: LattagShared.Kind.lockRing)

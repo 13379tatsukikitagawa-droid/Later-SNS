@@ -228,10 +228,17 @@ enum LaterWidgetBridge {
             snapshot.save()
             WidgetCenter.shared.reloadAllTimelines()
         }
-        updateActivity(snapshot, now: now)
+        endLegacyActivities()
     }
 
     /// 撮った直後に始め、ひらいたとき・状態が変わったときに更新し、別の日・8時間を過ぎたら終える
+    /// P10 の ライブ アクティビティ(撮った 直後に 始まる 物)は やめた。v97 の 夜 / 朝の 形に おきかえ(`LattagLive`)
+    private static func endLegacyActivities() {
+        #if canImport(ActivityKit)
+        for a in Activity<LaterActivityAttributes>.activities { Task { await a.end(nil, dismissalPolicy: .immediate) } }
+        #endif
+    }
+
     private static func updateActivity(_ snapshot: LaterWidgetSnapshot, now: Date) {
         #if canImport(ActivityKit)
         let activities = Activity<LaterActivityAttributes>.activities

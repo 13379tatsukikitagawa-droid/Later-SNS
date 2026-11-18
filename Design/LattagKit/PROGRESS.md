@@ -275,3 +275,8 @@
 - ✓ B 小 4種(S1 レンズ ・ S2 9:00 まで ・ S3 友だちの 1枚 ・ S4 Mondo)+ ロック 4種(`LattagWidgetsSmall/Lock/Parts.swift`)。見た目は アプリの DEBUG ルート `widgets`(`-debugWShots N -debugWHour H -debugWPart small|mid|lock`)で 同じ View を 並べて 確認(拡張は シミュレータで ホームに 置けないため)。S1 の 字の 輪は ウィジェットでは 回らない(静止)・ S2 の 残りは 秒まで 動く 時計(h:mm だけには できない)
 - ✓ C 中 ・ 大(M1 Friends + `つつく` / M2 きのう / M3 Trip / L1 ボード)。`つつく` = `PokeFriendIntent` → `Shared/KnockSender.swift`(アプリの KnockStore と 同じ 書き方で CloudKit に ノック)。拡張に iCloud(CloudKit)の entitlement を 追加 → **実機は 署名の 更新が 必要**。失敗しても `lattag://friends` には 飛ばない(AppIntent の 型の 制約)
 - ✓ D 設定 › ウィジェット(3ステップ + 見本)・ はじめての 説明の さいごに 1回(`WidgetGuideV96.swift`)
+
+## P40 ・ v97 ライブ アクティビティ
+- ✓ A 形:`Shared/LattagLiveAttributes.swift`(Attributes ・ Phase ・ `OpenCameraIntent` ・ `LattagLiveClock`)・ `LaterWidget/LattagLiveViews.swift`(フィルム / ラストコール / 朝の 部 + Dynamic Island 小 ・ 最小 ・ ひらく)。古い(P10)ライブ アクティビティは バンドルから 外し、既存の 物は 終了。見た目は DEBUG ルート `live` で 確認(島は シミュレータで 未確認)
+- ✓ B 始め方 ・ 終わり方:`App/Services/LattagLiveManager.swift`(前面で 23:00 start → 23:50 ラストコール → 3枚 / 24:00 で end(+30分 / +1時間)・ 8:30 朝の 部)・ push-to-start トークンを 控える ・ 設定 › 通知に 夜 / 朝の オン オフ ・ 「撮る」ボタン = `OpenCameraIntent`(App Group の 旗 → 撮影)。`LattagLiveTests`(時間割)
+- ✓ C サーバー:`server/live-activity/`(Cloud Functions + APNs の ひな形 と README)。**未配備**。アプリに Firestore が 無く トークンを 送る 部分は 未実装

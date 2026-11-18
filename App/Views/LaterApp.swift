@@ -420,7 +420,12 @@ struct RootView: View {
         .preferredColorScheme(themeClock.mode == .night ? .dark : .light)
         .onAppear { themeClock.start() }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active { themeClock.refresh() }
+            if newPhase == .active {
+                themeClock.refresh()
+                LattagLive.startObserving()
+                LattagLive.sync(snapshot: WidgetSnapshot.load())
+                if LattagLive.consumeOpenCamera() { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { CaptureRequestStore.shared.pendingRequestID = UUID() } }
+            }
         }
     }
 

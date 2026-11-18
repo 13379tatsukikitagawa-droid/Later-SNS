@@ -19,7 +19,7 @@ struct LaterWidgetBundle: WidgetBundle {
         LattagLockOpenWidget()
         LattagLockRectWidget()
         LattagLockInlineWidget()
-        LaterLiveActivity()
+        LattagLiveWidget()
         LaterShootControl()
         LaterOpenControl()
     }
