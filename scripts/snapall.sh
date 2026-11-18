@@ -45,6 +45,9 @@ r Y10_mondo_globe yesterday $Y -debugTab 1 -debugMondo stage
 r Y12_mondo_ranking yesterday $Y -debugTab 1 -debugMondo open -debugScrollY 458
 r Y14_notifications yesterday $Y -debugNotices 1
 r Y15_my_yesterday yesterday $Y -debugMine 1
+r Y19_friends_first yesterday $Y -debugFriendsMode first
+r Y21_friends_no_friends yesterday $Y -debugFriendsMode nofriends
+r Y22_friends_no_own yesterday $Y -debugFriendsMode noown
 r Y06_photo_viewer yesterday -debugShots 2 -debugViewing m
 T="-debugBackdrop 1 -debugMock 1"
 r T01_new_trip trip $T -debugStep 0

@@ -64,48 +64,43 @@ struct YesterdayMondoView: View {
         }
     }
 
-    // MARK: 投稿が ない 日(Y08 Y09)
+    // MARK: 投稿が ない 日(Y08 Y09)v87:ぜんぶ まんなか そろえ。字は へらす。大きい 部品は 並びの 中に 置かない
 
     private var empty: some View {
-        ZStack(alignment: .topLeading) {
-            Stars().frame(height: 844)
-            // 夜の 地球(うすい)
-            Globe(spin: 0, tilt: 23, radius: 270, cities: [], lines: 0.16, rim: 0.2, glow: false).frame(width: 540, height: 540).offset(x: -75, y: 560)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("MONDO ・ \(m.dayLabel)").font(LF.mono(10.5)).tracking(2.2).foregroundStyle(.white.opacity(0.5)).padding(.top, 150)
-                Text("No Mondo").font(LF.serif(56)).foregroundStyle(.white).padding(.top, 14)
-                Text("today.").font(LF.serif(56, italic: true)).foregroundStyle(.white.opacity(0.4)).padding(.top, -10)
-                Text("今日の Mondo は ありません").font(LF.inter(900, 20)).foregroundStyle(.white).padding(.top, 14)
-                Text("きのう、世界の だれも 公開しなかった 日。\n地球は ひと休み して います。").font(LF.inter(500, 14)).foregroundStyle(.white.opacity(0.5)).lineSpacing(5).padding(.top, 8)
-            }.padding(.leading, 22)
-            countdown.padding(.horizontal, 16).offset(y: 582)
-        }.frame(height: 844 + 200, alignment: .topLeading)
+        let df: DateFormatter = { let f = DateFormatter(); f.dateFormat = "MM/dd"; return f }()
+        return VStack(spacing: 0) {
+            Globe(spin: 0, tilt: 23, radius: 150, cities: [], lines: 0.14, rim: 0.2, glow: false)
+                .frame(width: 300, height: 300).padding(.top, 130)
+            Text(m.dayLabel.isEmpty ? df.string(from: input.now) : m.dayLabel).font(LF.mono(10.5)).tracking(2.3).foregroundStyle(.white.opacity(0.45)).padding(.top, 28)
+            Text("No Mondo").font(LF.serif(46)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 6)
+            countdown.padding(.top, 22)
+            HStack(spacing: 10) {
+                Button { Haptics.play(.click); actions.shoot() } label: {
+                    HStack(spacing: 10) { Image(systemName: "camera").font(.system(size: 19, weight: .semibold)); Text("撮る").font(LF.inter(900, 17)) }.foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(HV.lime, in: Capsule())
+                }.buttonStyle(HVPress(scale: 0.97))
+                Button { Haptics.play(.success); notify.toggle() } label: {
+                    Image(systemName: notify ? "bell.fill" : "bell").font(.system(size: 20, weight: .semibold)).foregroundStyle(notify ? HV.ink : .white).frame(width: 56, height: 56)
+                        .background(notify ? HV.lime : Color.white.opacity(0.08), in: Circle()).overlay(Circle().strokeBorder(notify ? .clear : .white.opacity(0.2), lineWidth: 1))
+                }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("9:00 に 知らせる")
+            }.padding(.horizontal, 16).padding(.top, 26)
+            Color.clear.frame(height: 160)
+        }.frame(maxWidth: .infinity).clipped()
     }
 
     private var countdown: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             let cal = Calendar.current
             let next = cal.nextDate(after: input.now, matching: DateComponents(hour: 9, minute: 0, second: 0), matchingPolicy: .nextTime) ?? input.now
-            let s = max(0, Int(next.timeIntervalSince(input.now)) - Int(ctx.date.timeIntervalSince(startDate)))
-            let sec = m.nextOpenSeconds > 0 && UserDefaults.standard.bool(forKey: "debugMock") ? m.nextOpenSeconds - Int(ctx.date.timeIntervalSince(startDate)) : s
-            VStack(alignment: .leading, spacing: 0) {
-                Text("次の Mondo まで").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.5))
+            let el = Int(ctx.date.timeIntervalSince(startDate))
+            let sec = max(0, UserDefaults.standard.bool(forKey: "debugMock") ? 4 * 3600 + 36 * 60 + 48 - el : Int(next.timeIntervalSince(input.now)) - el)
+            VStack(spacing: 6) {
+                Text("NEXT").font(LF.mono(10)).tracking(2).foregroundStyle(HV.lime)
                 HStack(spacing: 0) {
                     Text("\(sec / 3600):\(String(format: "%02d", (sec % 3600) / 60))").foregroundStyle(.white)
                     Text(":\(String(format: "%02d", sec % 60))").foregroundStyle(.white.opacity(0.35))
-                }.font(LF.inter(700, 40)).monospacedDigit().padding(.top, 6)
-                ZStack(alignment: .leading) { Capsule().fill(.white.opacity(0.1)); Capsule().fill(HV.lime).frame(width: 358 * 0.16 + 0) }.frame(height: 6).padding(.top, 12)
-                HStack(spacing: 8) {
-                    Button { Haptics.play(.click); actions.shoot() } label: { Text("あなたの 1枚で はじめる").font(LF.inter(800, 14)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 48).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.96))
-                    Button { Haptics.play(.success); notify.toggle() } label: {
-                        HStack(spacing: 6) { Image(systemName: "bell").font(.system(size: 14, weight: .semibold)); Text(notify ? "知らせます ✓" : "9:00 に 知らせる").font(LF.inter(700, 14)) }
-                            .foregroundStyle(notify ? HV.lime : .white).frame(maxWidth: .infinity).frame(height: 48)
-                            .background(.white.opacity(0.06), in: Capsule()).overlay(Capsule().strokeBorder(notify ? HV.lime : .white.opacity(0.2), lineWidth: 1))
-                    }.buttonStyle(HVPress(scale: 0.96))
-                }.padding(.top, 14)
+                }.font(LF.inter(700, 44)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                ZStack(alignment: .leading) { Capsule().fill(.white.opacity(0.1)); Capsule().fill(HV.lime).frame(width: 230 * CGFloat(1 - Double(sec) / 86400)) }.frame(width: 230, height: 4).padding(.top, 6)
             }
-            .padding(16).background(Color(hex: "121314").opacity(0.94), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
         }
     }
     @State private var startDate = Date()

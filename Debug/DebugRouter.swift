@@ -205,6 +205,12 @@ struct YesterdayV64Preview: View {
             .init(id: "n5", kind: .mondo, name: "Mondo", avatar: nil, text: "#夕焼け が 世界 1位に", time: "9:00"),
             .init(id: "n6", name: "そら", avatar: ph("d"), text: "あなたの #帰り道 に リアクション", time: "きのう"),
         ]
+        switch d.string(forKey: "debugFriendsMode") ?? "" {
+        case "first": y.mine = []; y.posts = []; y.friendCount = 0
+        case "nofriends": y.posts = []; y.friendCount = 0
+        case "noown": y.mine = []; y.friendCount = 3
+        default: y.friendCount = 3
+        }
         var m = YesterdayMondoInput()
         let mode = d.string(forKey: "debugMondo") ?? "open"
         m.hasPosts = mode != "empty"; m.startOpened = mode == "open"; m.filterTag = d.string(forKey: "debugFilter")

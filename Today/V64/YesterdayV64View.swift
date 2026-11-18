@@ -94,6 +94,15 @@ struct YesterdayV64View: View {
 
     private var compact: Bool { scrollY > 24 }
 
+    private var hasMine: Bool { !input.mine.isEmpty }
+    private var noFriends: Bool { input.friendCount == 0 && input.posts.isEmpty }
+    /// 上の 題の 下:はじめて(両方 ない)= DAY 1 ・ 友だち 0人 = きのう
+    private var friendsSubtitle: String {
+        if !hasMine && noFriends { return "DAY 1" }
+        if noFriends { return "きのう" }
+        return "きのう ・ \(input.publishedCount)人が 公開 ・ \(input.pendingCount)人 まだ"
+    }
+
     private func scrollNow(_ v: CGFloat, forTab t: Int) {
         guard t == tab else { return }
         let was = compact
@@ -149,7 +158,7 @@ struct YesterdayV64View: View {
             VStack(spacing: 1) {
                 Text(tab == 0 ? "Friends" : "Mondo").font(LF.inter(900, compact ? 17 : 24)).tracking(compact ? -0.7 : -0.96).foregroundStyle(.white).frame(height: compact ? 22 : 30)
                 if !compact {
-                    Text(tab == 0 ? "きのう ・ \(input.publishedCount)人が 公開 ・ \(input.pendingCount)人 まだ" : "THE WORLD, YESTERDAY")
+                    Text(tab == 0 ? friendsSubtitle : "THE WORLD, YESTERDAY")
                         .font(tab == 0 ? LF.inter(600, 11.5) : LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.5)).frame(height: 16)
                 }
             }.frame(width: 250).offset(x: (w - 250) / 2, y: compact ? 58 : 52)
@@ -181,8 +190,9 @@ struct YesterdayV64View: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 Color.clear.frame(height: 120)
-                myBlock(w: w)
-                if input.locked { lockBand.padding(.horizontal, 16).padding(.top, 14) }
+                if hasMine { myBlock(w: w) } else { firstShot }
+                if noFriends { inviteBlock.padding(.top, hasMine ? 30 : 34) }
+                if input.locked && hasMine { lockBand.padding(.horizontal, 16).padding(.top, 14) }
                 VStack(spacing: 0) {
                     ForEach(input.posts) { post in postView(post, w: w) }
                 }.padding(.top, input.locked ? 14 : 22)
@@ -193,6 +203,69 @@ struct YesterdayV64View: View {
         .scrollPosition($pos)
         .onAppear { if let y = input.debugScrollY, tab == 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { pos.scrollTo(y: y) } } }
         .background(Color.black)
+    }
+
+    // ① はじめの 1枚(自分の きのう が ない 時)
+    @State private var floatUp = false
+    private var firstShot: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                ForEach(0..<3, id: \.self) { i in
+                    let mid = i == 1
+                    RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color(hex: "121315"))
+                        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(mid ? HV.lime : .white.opacity(0.14), lineWidth: mid ? 1.5 : 1))
+                        .overlay { if mid {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(HV.lime.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [5, 5])).padding(10)
+                            Image(systemName: "camera").font(.system(size: 36, weight: .regular)).foregroundStyle(HV.lime)
+                        } }
+                        .frame(width: 150, height: 200)
+                        .rotationEffect(.degrees(i == 0 ? -11 : (i == 2 ? 11 : 0)))
+                        .offset(x: i == 0 ? -78 : (i == 2 ? 78 : 0), y: mid ? (floatUp ? -7 : 0) : 12)
+                        .zIndex(mid ? 1 : 0)
+                }
+            }.frame(height: 230).padding(.top, 8)
+            .onAppear { withAnimation(.easeInOut(duration: 3.6).repeatForever(autoreverses: true)) { floatUp = true } }
+            Text("最初の 1枚を 撮ろう").font(LF.inter(900, 24)).foregroundStyle(.white).padding(.top, 18)
+            Text("あした 9:00 に、ここで ひらきます").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.5)).padding(.top, 6)
+            Button { Haptics.play(.click); actions.shoot() } label: {
+                HStack(spacing: 10) { Image(systemName: "camera").font(.system(size: 19, weight: .semibold)); Text("撮る").font(LF.inter(900, 17)) }.foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(HV.lime, in: Capsule())
+            }.buttonStyle(HVPress(scale: 0.98)).padding(.horizontal, 16).padding(.top, 20)
+        }.frame(maxWidth: .infinity)
+    }
+
+    // ② 友だちを よぶ(友だちが 0人の 時)
+    private var inviteBlock: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("友だちを よぶ").font(LF.inter(900, 19)).foregroundStyle(.white)
+                Spacer()
+                Text("0 FRIENDS").font(LF.mono(10.5)).tracking(1.5).foregroundStyle(.white.opacity(0.4))
+            }.padding(.horizontal, 16)
+            HStack(spacing: 8) {
+                inviteTile("qrcode", "QR を 見せる", green: true) { actions.addFriends() }
+                inviteTile("viewfinder", "QR を 読む", green: false) { actions.scanQR() }
+                inviteTile("link", "リンク", green: false) { actions.openFriends() }
+            }.padding(.horizontal, 16).padding(.top, 12)
+            VStack(spacing: 14) { ghostPost; ghostPost }.padding(.top, 22)
+                .mask(LinearGradient(colors: [.black, .black.opacity(0.4), .clear], startPoint: .top, endPoint: .bottom))
+        }
+    }
+    private func inviteTile(_ icon: String, _ t: String, green: Bool, _ a: @escaping () -> Void) -> some View {
+        Button { Haptics.play(.click); a() } label: {
+            VStack(spacing: 10) { Image(systemName: icon).font(.system(size: 24, weight: .semibold)); Text(t).font(LF.inter(800, 13)) }
+                .foregroundStyle(green ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 96)
+                .background(green ? HV.lime : Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(green ? 0 : 0.14), lineWidth: 1))
+        }.buttonStyle(HVPress(scale: 0.96))
+    }
+    private var ghostPost: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Circle().fill(.white.opacity(0.08)).frame(width: 34, height: 34)
+                VStack(alignment: .leading, spacing: 6) { Capsule().fill(.white.opacity(0.1)).frame(width: 90, height: 8); Capsule().fill(.white.opacity(0.07)).frame(width: 140, height: 7) }
+            }.padding(.horizontal, 16)
+            RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Color(hex: "121315")).frame(height: 300).overlay(Shimmer().clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))).padding(.horizontal, 8)
+        }
     }
 
     /// あなたの きのう(まんなかに 大きめ 1枚 + 「+2 more」+ キャプション + 丸い ボタン 3つ)
@@ -458,5 +531,20 @@ struct YesterdayV64View: View {
             }.buttonStyle(HVPress(scale: 0.96)).offset(x: 142, y: 732)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(Color(hex: "0A0A0B")).ignoresSafeArea()
+    }
+}
+
+
+/// 光が 左から 右へ ながれる(2.4秒)。見えない / Reduce Motion では 止める
+struct Shimmer: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: reduceMotion || scenePhase != .active)) { ctx in
+            GeometryReader { g in
+                let u = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.4) / 2.4
+                LinearGradient(colors: [.clear, .white.opacity(0.07), .clear], startPoint: .leading, endPoint: .trailing).frame(width: g.size.width * 0.5).offset(x: CGFloat(u) * g.size.width * 1.6 - g.size.width * 0.5)
+            }
+        }.allowsHitTesting(false)
     }
 }
