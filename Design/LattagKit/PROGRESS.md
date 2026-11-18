@@ -249,3 +249,10 @@
 - 1 ✓ ライブ パネル:ライム化 + オドメーター(開く時 0 → 値・毎秒 ころがる・:点滅・今の丸ドクッ・1分で光・バー走る光)。`develop` ボタン/`DEV` は 今の パネルに 無い ため 未対応。
 - 2 ✓ Yesterday ページ削除(4ページ ・ 目次 3つ + Camera ・ `/ 03`)。H16〜H18 を snapall から 外した。
 - 3 ◐ 現像画面:`DevelopV64View` 作りなおし(VStack ・ 横めくり ・ 7層の 窓 ・ Animatable の d 1本 ・ CHHapticEngine 1パターン ・ 自動再生なし)。実機の Hangs / 120fps は 未計測。
+
+## 2026-11-18 v94
+- A ✓ 撮影ボタン = アイコン(`ShutterIconV94`)・ 長押しの 目盛り 24 → クリック 6ごと(4段)。CaptureScreenV21 の 変更は 未コミット(元から 未コミットの 変更あり)。
+- B ◐ ID:`HandleRules`(テスト)・ `HandleService`(**CloudKit Public DB `UserHandle` で 予約**。仕様の Firebase / Cloud Functions は この アプリに 無い ため 置きかえ)・ はじめての 設定に ID 1ページ ・ ID を かえる シート(設定 / Friends)・ ID の 無い 人に 強制シート。CloudKit の 本番 スキーマ(`UserHandle` / `UserDirectory.nameSearch` `discoverableByName`)の デプロイは ユーザー作業。
+- C ◐ Friends = さがす 画面(検索欄 ・ 自分の ID カード ・ 3つの 道 ・ 結果 ・ プライバシー設定)。おすすめ(共通の 友だち / 連絡先)と `searchUsers` の 回数制限は 未実装(サーバー必要)。
+- D ✓ QR を 読む = Lattag カメラ(カード ・ 申請 ・ 写真から ・ Lattag 以外は 断る)。
+- E ◐ Friends タブ はじめての日:見本の 投稿(SAMPLE)+ さがす 入口。おすすめの 横スクロールは 未実装。

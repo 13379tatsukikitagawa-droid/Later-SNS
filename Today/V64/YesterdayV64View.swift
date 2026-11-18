@@ -256,8 +256,17 @@ struct YesterdayV64View: View {
                 inviteTile("viewfinder", "QR を 読む", green: false) { actions.scanQR() }
                 inviteTile("link", "リンク", green: false) { actions.openFriends() }
             }.padding(.horizontal, 16).padding(.top, 12)
-            VStack(spacing: 14) { ghostPost; ghostPost }.padding(.top, 22)
-                .mask(LinearGradient(colors: [.black, .black.opacity(0.4), .clear], startPoint: .top, endPoint: .bottom))
+            // 友だちを よぶ:名前 か @ID で さがす(押すと Friends の さがす 画面)
+            Button { Haptics.play(.click); actions.openFriends() } label: {
+                HStack(spacing: 10) { Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .bold)).foregroundStyle(HV.lime); Text("名前 か @ID で さがす").font(LF.inter(600, 15)).foregroundStyle(.white.opacity(0.5)); Spacer() }
+                    .padding(.horizontal, 18).frame(height: 52).background(Color(hex: "1C1C1F"), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1))
+            }.buttonStyle(HVPress(scale: 0.98)).padding(.horizontal, 16).padding(.top, 10)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("FRIENDS 見本").font(LF.mono(10.5)).tracking(2).foregroundStyle(HV.lime)
+                Text("友だちが できると、毎朝 9:00 に ここに ならぶ").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.55))
+            }.padding(.horizontal, 16).padding(.top, 26)
+            SamplePostV94().padding(.top, 12)
+            VStack(spacing: 14) { ghostPost }.padding(.top, 14).mask(LinearGradient(colors: [.black.opacity(0.5), .clear], startPoint: .top, endPoint: .bottom))
         }
     }
     private func inviteTile(_ icon: String, _ t: String, green: Bool, _ a: @escaping () -> Void) -> some View {
@@ -592,5 +601,54 @@ struct FriendMusicChip: View {
             }
             if let u { playback.setVolume(0.9); playback.start(key: key, url: u) }
         }
+    }
+}
+
+
+/// 見本の 投稿(友だちが できると 消える)。写真は 色の グラデーションの 見本(本物の 友だちの 写真は 使わない)
+struct SamplePostV94: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+    private let grads: [[Color]] = [[Color(hex: "F2B28C"), Color(hex: "C97A9E")], [Color(hex: "8EC5D6"), Color(hex: "5B7FB0")], [Color(hex: "E9D48A"), Color(hex: "D98C5F")]]
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 10) {
+                    Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).frame(width: 40, height: 40).overlay(Text("あ").font(LF.inter(900, 17)).foregroundStyle(.white))
+                    VStack(alignment: .leading, spacing: 2) { Text("あや").font(LF.inter(800, 16)).foregroundStyle(.white); Text("@aya_0612 ・ きのう 3こま").font(LF.mono(10)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7) }
+                    Spacer()
+                    Text("9:00 OPEN").font(LF.mono(9.5)).tracking(1).foregroundStyle(HV.lime).lineLimit(1).fixedSize().padding(.trailing, 70).padding(.top, 2)
+                }.padding(.horizontal, 16).padding(.top, 16)
+                ZStack {
+                    ForEach(0..<3, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color(hex: "F4F1EA"))
+                            .overlay(alignment: .top) { RoundedRectangle(cornerRadius: 2).fill(LinearGradient(colors: grads[i], startPoint: .top, endPoint: .bottom)).padding(.horizontal, 7).padding(.top, 7).frame(height: 138) }
+                            .frame(width: 118, height: 160).shadow(color: .black.opacity(0.5), radius: 8, y: 6)
+                            .rotationEffect(.degrees([-8.0, 2, 9][i])).offset(x: [-86, 0, 86][i] as CGFloat, y: shown || reduceMotion ? 0 : 40).opacity(shown || reduceMotion ? 1 : 0)
+                            .animation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.62).delay(0.09 * Double(i)), value: shown)
+                    }
+                    Text("#放課後").font(LF.inter(900, 12)).foregroundStyle(HV.ink).padding(.horizontal, 9).frame(height: 26).background(HV.lime, in: RoundedRectangle(cornerRadius: 9)).rotationEffect(.degrees(-6)).offset(x: -96, y: -64)
+                    Text("#カフェ").font(LF.inter(900, 12)).foregroundStyle(.white).padding(.horizontal, 9).frame(height: 26).background(Color(hex: "EE5E9C"), in: RoundedRectangle(cornerRadius: 9)).rotationEffect(.degrees(5)).offset(x: 98, y: 62)
+                }.frame(maxWidth: .infinity).frame(height: 210).padding(.top, 10)
+                HStack(spacing: 8) {
+                    Label("鎌倉市", systemImage: "mappin").font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.7))
+                    Label("夕焼けの 歌", systemImage: "music.note").font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.7))
+                    Spacer()
+                }.padding(.horizontal, 16).padding(.top, 4)
+                HStack(spacing: 14) {
+                    Image(systemName: "heart").font(.system(size: 19, weight: .semibold)); Image(systemName: "bubble.left").font(.system(size: 19, weight: .semibold))
+                    Spacer()
+                    Text("あや ・ ほか 2人が 見た").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.5))
+                }.foregroundStyle(.white).padding(.horizontal, 16).padding(.vertical, 14)
+            }
+            Text("SAMPLE").font(LF.mono(10)).fontWeight(.bold).tracking(1.6).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 24).background(HV.lime, in: Capsule()).padding(14)
+        }
+        .background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .padding(.horizontal, 8)
+        .offset(y: shown || reduceMotion ? 0 : 30).opacity(shown || reduceMotion ? 1 : 0)
+        .animation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.62), value: shown)
+        .onAppear { shown = true }
+        .accessibilityElement(children: .ignore).accessibilityLabel("見本の 投稿")
     }
 }
