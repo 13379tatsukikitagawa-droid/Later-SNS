@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import Photos
 import SwiftData
 
 // P08 + P27(v83):Trip を つくる = 1問ずつ(どこへ → いつ → だれと → 表紙)+ チケットの 見本 + パス。見本:T01 T02 T10 T11 T03。
@@ -129,7 +131,16 @@ struct TripNewV83View: View {
     @FocusState private var focus: Bool
     @State private var seeded = false
 
-    private var cover: UIImage? { photos.indices.contains(draft.coverIndex) ? photos[draft.coverIndex] : nil }
+    // v95-6:表紙は 写真ライブラリから(撮った 写真は 出さない)
+    @State private var picked: UIImage?
+    @State private var pickItem: PhotosPickerItem?
+    @State private var recent: [UIImage] = []
+    @State private var recentSel: Int?
+    @State private var coverOff: CGSize = .zero
+    @State private var coverScale: CGFloat = 1
+    @GestureState private var dragDelta: CGSize = .zero
+    @GestureState private var pinchDelta: CGFloat = 1
+    private var cover: UIImage? { picked }
     private var members: [(String, UIImage?)] {
         [("あなた", myAvatar)] + friends.filter { draft.invited.contains($0.id) }.map { ($0.name, $0.avatarData.flatMap { UIImage(data: $0) }) }
     }
@@ -158,7 +169,7 @@ struct TripNewV83View: View {
     @State private var sink = false
     @State private var lift = false
     @State private var coverKey = 0
-    private let titles = ["どこへ 行く?", "いつ 行く?", "だれと 行く?", "表紙を えらぶ"]
+    private let titles = ["どこへ 行く?", "いつ 行く?", "だれと 行く?", "写真を 設定"]
 
     private var wizard: some View {
         ZStack(alignment: .top) {
@@ -170,6 +181,7 @@ struct TripNewV83View: View {
                     .scaleEffect(sink ? 0.95 : 1).offset(y: lift ? -120 : (sink ? 6 : 0)).opacity(lift ? 0 : 1)
                 Text(titles[step]).font(.system(size: 30, weight: .black)).tracking(-1.2).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.top, 18).id("t\(step)")
+                if step == 3 { Text("Trip の 表紙に なる 1枚。あとで 変えられる").font(LF.inter(500, 13)).foregroundStyle(.white.opacity(0.55)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.top, 4) }
                 ZStack {
                     Group {
                         switch step {
@@ -341,22 +353,37 @@ struct TripNewV83View: View {
         }.padding(.horizontal, 16).padding(.top, 18)
     }
 
-    // 4 表紙(横に スナップ)
+    // 4 写真を 設定(ライブラリから 1枚)
     private var stepCover: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(Array(photos.prefix(8).enumerated()), id: \.offset) { i, p in
-                        let on = draft.coverIndex == i
-                        Button { Haptics.play(.sel); draft.coverIndex = i } label: {
-                            Color(hex: "2A2326").overlay { if let p { Image(uiImage: p).resizable().scaledToFill() } }.frame(width: 118, height: 157).clipped()
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(HV.lime, lineWidth: on ? 3 : 0))
-                                .overlay(alignment: .topTrailing) { if on { Image(systemName: "checkmark").font(.system(size: 11, weight: .black)).foregroundStyle(Color(hex: "0B0C0D")).frame(width: 22, height: 22).background(HV.lime, in: Circle()).padding(8) } }
-                        }.buttonStyle(.plain).offset(y: on ? -4 : 0).animation(.spring(response: 0.3, dampingFraction: 0.7), value: on).scrollTransition(axis: .horizontal) { c, _ in c }
+            HStack(alignment: .top, spacing: 12) {
+                PhotosPicker(selection: $pickItem, matching: .images, photoLibrary: .shared()) {
+                    VStack(spacing: 10) {
+                        Image(systemName: "photo.on.rectangle.angled").font(.system(size: 30, weight: .semibold)).foregroundStyle(HV.lime)
+                        Text("ライブラリから えらぶ").font(LF.inter(800, 14)).foregroundStyle(.white)
                     }
-                }.scrollTargetLayout().padding(.horizontal, 16).padding(.vertical, 8)
-            }.scrollTargetBehavior(.viewAligned)
+                    .frame(maxWidth: .infinity).frame(height: 157)
+                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(HV.lime.opacity(0.8), style: StrokeStyle(lineWidth: 2, dash: [6, 5])))
+                }.buttonStyle(.plain)
+                VStack(spacing: 6) {
+                    coverPreview.frame(width: 118, height: 157)
+                    Text("ドラッグで 位置").font(LF.inter(600, 11)).foregroundStyle(.white.opacity(0.5))
+                }
+            }.padding(.horizontal, 16).padding(.top, 8)
+            if !recent.isEmpty {
+                Text("最近の 写真").font(LF.inter(800, 13)).foregroundStyle(.white.opacity(0.7)).padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 8)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                    ForEach(Array(recent.enumerated()), id: \.offset) { i, img in
+                        let on = recentSel == i
+                        Button { Haptics.play(.sel); recentSel = i; setCover(img) } label: {
+                            Color(hex: "2A2326").aspectRatio(1, contentMode: .fit).overlay { Image(uiImage: img).resizable().scaledToFill() }.clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(HV.lime, lineWidth: on ? 3 : 0))
+                                .overlay(alignment: .topTrailing) { if on { Image(systemName: "checkmark").font(.system(size: 9, weight: .black)).foregroundStyle(Color(hex: "0B0C0D")).frame(width: 18, height: 18).background(HV.lime, in: Circle()).padding(4) } }
+                        }.buttonStyle(.plain)
+                    }
+                }.padding(.horizontal, 16)
+            }
             VStack(spacing: 0) {
                 summaryRow("mappin", draft.name, 0)
                 Rectangle().fill(.white.opacity(0.06)).frame(height: 1)
@@ -365,6 +392,60 @@ struct TripNewV83View: View {
                 summaryRow("star.fill", "\(members.count)人", 2)
             }.background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 22, style: .continuous)).padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 20)
         }.padding(.top, 4)
+    }
+
+    private var coverPreview: some View {
+        ZStack {
+            Color(hex: "2A2326")
+            if let picked {
+                Image(uiImage: picked).resizable().scaledToFill().frame(width: 118, height: 157)
+                    .scaleEffect(max(1, coverScale * pinchDelta))
+                    .offset(x: coverOff.width + dragDelta.width, y: coverOff.height + dragDelta.height)
+            } else { Image(systemName: "photo").font(.system(size: 22)).foregroundStyle(.white.opacity(0.3)) }
+        }
+        .frame(width: 118, height: 157).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(HV.lime, lineWidth: 3))
+        .gesture(DragGesture().updating($dragDelta) { v, st, _ in st = v.translation }.onEnded { v in coverOff.width += v.translation.width; coverOff.height += v.translation.height })
+        .simultaneousGesture(MagnifyGesture().updating($pinchDelta) { v, st, _ in st = v.magnification }.onEnded { v in coverScale = max(1, coverScale * v.magnification) })
+        .onChange(of: pickItem) { _, item in
+            guard let item else { return }
+            Task { if let d = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: d) { await MainActor.run { recentSel = nil; setCover(img) } } }
+        }
+        .task { await loadRecent() }
+    }
+
+    private func setCover(_ img: UIImage) {
+        picked = Self.downscale(img, maxSide: 1600); coverOff = .zero; coverScale = 1; draft.coverIndex += 1
+    }
+
+    private static func downscale(_ img: UIImage, maxSide: CGFloat) -> UIImage {
+        let m = max(img.size.width, img.size.height)
+        guard m > maxSide else { return img }
+        let k = maxSide / m
+        return UIGraphicsImageRenderer(size: CGSize(width: img.size.width * k, height: img.size.height * k)).image { _ in img.draw(in: CGRect(origin: .zero, size: CGSize(width: img.size.width * k, height: img.size.height * k))) }
+    }
+
+    /// 3:4 に 切りぬいた 表紙(1200 × 1600)。プレビューの 位置 ・ 拡大を そのまま 反映
+    @MainActor private func bakedCover() -> UIImage? {
+        guard let picked else { return nil }
+        let k: CGFloat = 400 / 157
+        let v = Image(uiImage: picked).resizable().scaledToFill().frame(width: 118 * k, height: 400)
+            .scaleEffect(coverScale).offset(x: coverOff.width * k, y: coverOff.height * k)
+            .frame(width: 118 * k, height: 400).clipped()
+        let r = ImageRenderer(content: v); r.scale = 4
+        return r.uiImage ?? picked
+    }
+
+    /// 写真の 許可が ある 時 だけ 最近の 8枚(許可は ここで 求めない)
+    private func loadRecent() async {
+        let st = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard st == .authorized || st == .limited, recent.isEmpty else { return }
+        let opts = PHFetchOptions(); opts.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]; opts.fetchLimit = 8
+        let assets = PHAsset.fetchAssets(with: .image, options: opts)
+        var out: [UIImage] = []
+        let mgr = PHImageManager.default(); let ro = PHImageRequestOptions(); ro.isSynchronous = true; ro.deliveryMode = .highQualityFormat; ro.isNetworkAccessAllowed = true
+        assets.enumerateObjects { a, _, _ in mgr.requestImage(for: a, targetSize: CGSize(width: 800, height: 800), contentMode: .aspectFill, options: ro) { img, _ in if let img { out.append(img) } } }
+        await MainActor.run { recent = out }
     }
 
     private func summaryRow(_ icon: String, _ v: String, _ to: Int) -> some View {
@@ -396,7 +477,7 @@ struct TripNewV83View: View {
         creating = true
         Haptics.play(.projector)
         Task { @MainActor in
-            let result = await TripCreator.create(draft: draft, cover: cover, friends: friends, context: modelContext, user: UserProfile.current(from: profiles))
+            let result = await TripCreator.create(draft: draft, cover: bakedCover(), friends: friends, context: modelContext, user: UserProfile.current(from: profiles))
             creating = false
             switch result {
             case .success(let made):
