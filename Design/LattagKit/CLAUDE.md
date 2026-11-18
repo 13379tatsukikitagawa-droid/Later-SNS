@@ -5,17 +5,17 @@
 
 ## 1. いま やって いる こと
 
-- HTML の モック(`Design/LattagKit/mock/lattag_v83.html`)を、**見た目 ・ 動き ・ バイブまで そのまま** SwiftUI の 実機アプリに 移す。
-- 範囲は **オープニング 〜 Trip を つくる まで ぜんぶ**。段階(フェーズ)ごとに 進める:`Design/LattagKit/prompts/P00〜P30`。
+- HTML の モック(`Design/LattagKit/mock/lattag_v90.html`)を、**見た目 ・ 動き ・ バイブまで そのまま** SwiftUI の 実機アプリに 移す。
+- 範囲は **オープニング 〜 Trip を つくる まで ぜんぶ**。段階(フェーズ)ごとに 進める:`Design/LattagKit/prompts/P00〜P40`。
 - 進み具合は `Design/LattagKit/PROGRESS.md` に 書く(フェーズ と 画面 ID に ✓)。
 
 ## 2. 正解の 順番(迷ったら 上が 勝つ)
 
 1. **見本画像** `Design/LattagKit/screens/<ID>.jpg` と **数値** `Design/LattagKit/spec/screens/<ID>.json`
    - JSON は モックを 実際に 動かして 測った **最終値**(CSS の 上書きを 計算した あと)。位置 ・ 大きさ ・ 書体 ・ 色 ・ 角丸 ・ 影 ・ ぼかしは **ここを 最優先**。
-2. **動いて いる モック** `mock/lattag_v83.html`(Safari で ひらける。上の デモボタンで 状態を 変えられる)
+2. **動いて いる モック** `mock/lattag_v90.html`(Safari で ひらける。上の デモボタンで 状態を 変えられる)
 3. **モックの 元コード** `mock/src/`(読む 順番は `mock/src/LOAD_ORDER.md`。**後の ファイルほど 優先**:CSS は 後勝ち、JS は 関数を 上書き)
-4. **詳しい 仕様** `prompts/reference/PROMPT_v54〜v87.md`(**番号が 大きい ほど 新しく、優先**)
+4. **詳しい 仕様** `prompts/reference/PROMPT_v54〜v97.md`(**番号が 大きい ほど 新しく、優先**)
 5. ここに ない ことは **作らない ・ 推測しない**。わからない ときは コードを 読むか、手を 止めて 聞く。
 
 ## 3. 名前と 中身の 名前
@@ -43,8 +43,24 @@
 - **重さ**:ぼかしは 小さな 画像を 1回だけ ぼかして 引きのばす(毎フレーム 計算しない)。ガラスは 1画面 8枚まで。画面の 外の 動きは 止める(`PROMPT_v68.md` 5章)。
 - **キャラクター(にこちゃんの 顔 ・ 人の 絵)は 使わない**。
 - **ME の 写真と Recap は 端末 + iCloud(CloudKit の 自分用 DB)に のこす**。Firebase の 写真は 7日で 消える ままで よい(`PROMPT_v86.md`)。
-- **今日 / きのう の 切りかえは 右上の アイコンを 2回 タップ**(1回 = プロフィール)。ロゴの 横に `TODAY` の 字は 置かない(v87)。
+- **今日 / きのう の 切りかえは 右上の アイコンを 2回 タップ**(1回 = プロフィール)。Home でも yesterday でも 同じ 部品(v87 / v88)。ロゴの 横に `TODAY` の 字は 置かない。
+- **アプリアイコンの 絵を アプリの 中で 出す 時は かならず 角丸**(`RoundedRectangle(cornerRadius: size * 0.224, style: .continuous)`)。影は 切った あと(v88)。
+- **Home の 上の かたまりに スクロールを 止める ジェスチャーを 付けない**(押す 物だけ `Button` ・ # の 帯は `.allowsHitTesting(false)`)。UI テストで 確かめる(v88 / v89 ・ 見本 `prompts/reference/swift/HomeHeroScroll_example.swift`)。
+- **動きは `scaleEffect` ・ `offset` ・ `opacity` ・ `rotationEffect` で**(大きさ ・ ぼかしの 半径を 毎コマ 変えない)。`Info.plist` に `CADisableMinimumFrameDurationOnPhone = YES`(120fps)。重い 読みこみは 動きの 間に しない(v89)。
+- **画面に デバッグの 字(`auth=…` など)を 出さない**(DEBUG の 状態メニュー の 中 だけ)。
 - **部品を 重ねて 置かない**(`offset` ・ 決めうちの 幅を 使わず、`VStack` / `HStack` で 並べる)。はみ出しそうな 字は `lineLimit(1)` + `minimumScaleFactor` + `ViewThatFits`(v87)。
+- **UI の 緑(`#24A03C` `#3BD35A` `#239E3C` `#7EE08F`)は 使わない → ライム `#C8F25A`**(v93)。数字が 変わる 所は **オドメーター / `.contentTransition(.numericText())`** で 動かす。
+- **現像画面は ぼかしを 1回 だけ 作り、不透明度 だけで 動かす**(半径を 毎コマ 変えない ・ 自動 再生 しない ・ バイブは `CHHapticEngine` の パターン 1つ)(v93)。
+- **Home の 横スライドは 4枚**(Camera ・ Friends ・ Trip ・ Mondo)。Yesterday ページは 作らない(v93)。
+- **撮影ボタンは Lattag の アイコン**(長押しで ライムが 下から たまり、完成で 撮れる)(v94)。
+- **ID(@ユーザー名)**:英小文字 ・ 数字 ・ `_` `.` ・ 3〜20文字 ・ 14日に 1回。とる / かえる は Cloud Functions の トランザクション だけ(`usernames/{id}`)。検索は callable `searchUsers` だけ(`users` を 自由に 読ませない)・ 名前で 見つかるのは `discoverableByName` の 人だけ(v94)。
+- **友だちを ふやす 入口は Friends の さがす 画面 1つ**(名前 か @ID)(v94)。
+- **キーボードが 出る 画面は `safeAreaInset(.bottom)` + `@FocusState` で 上を 小さく**(決めうちの 位置で 置かない)(v95)。
+- **ボタンは 書いて ある とおりの 画面へ**(リンク = 共有 ・ QR を 見せる = 自分の QR ・ QR を 読む = カメラ ・ @ID = さがす)。同じ 画面に まとめない(v95)。
+- **Home の まんなかに NEXT(いま やる こと)**・ はじめての 説明は 5つの スポットライト(1回 だけ)(v95)。
+- **ライブ アクティビティは v97**(夜 = フィルム → 最後の 10分 = ライム の ラストコール → 朝 8:30〜9:00 = 朝の 部 ・ 数字と 線は timerInterval で 自動)。
+- **ウィジェットは v96**(`widgets/lattag_widgets_v96.html`)。黒 + ライム + # の 帯 + チェキ ・ 数字は 太字 ・ **9:00 まえは 本物の 友だちの 写真を App Group に 置かない**(v96)。
+- **QR は かならず 読める こと**(誤り訂正 H ・ 角の 目の 角丸は 1マス まで ・ Vision の Unit テスト)。形は チェキ + # の 緑の 点(v92)。
 - **Shake(ふって つながる)は 作らない**(v85 で なくした)。友だちとは QR ・ リンク ・ ID で つながる。人は 写真の 丸(無ければ 名前の 1文字 + 色)。
 - ガラス:iOS 26 は `.glassEffect()`(押せる 物は `.interactive()`)、それ より 前は `.ultraThinMaterial` + 白 10〜14% + ふちの 白い 線。部品は `LGGlass` に まとめる。
 - バイブ:`spec/HAPTICS.md` の 15種類(`tick` `sel` `pop` `click` `soft` `thud` `warn` `success` `shutter` `land` `heart` `projector` `buzz` `rumble` `vui`)を `Haptics.play(.名前)` で。モックの `hap('名前', …)` と 1対1。
