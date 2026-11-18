@@ -225,6 +225,9 @@ struct HomeV64View: View {
                 if input.done { Haptics.play(.click); actions.openYesterday() } else { Haptics.play(.shutter); actions.shoot() }
             })
             .position(x: f.cx, y: 214)
+            // v95-8:NEXT(レンズの すぐ 下 ・ 画面の 上 514)
+            HVNextCapsule(input: input, actions: actions, onLive: { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showLive = true } })
+                .frame(width: 318).position(x: f.cx, y: 514 - 178 + 34)
         }
         .frame(width: f.w, height: 508, alignment: .topLeading)
     }
