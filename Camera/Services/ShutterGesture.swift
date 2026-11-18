@@ -156,7 +156,7 @@ final class ShutterGesture {
                 let want = ShutterRules.litTicks(progress: k)
                 while self.lit < want {
                     self.lit += 1
-                    if self.lit % 8 == 0 && self.lit < ShutterRules.ticks { Haptics.play(.click, gap: 0) } else { Haptics.play(.tick, gap: 0) }
+                    if self.lit % 6 == 0 && self.lit < ShutterRules.ticks { Haptics.play(.click, gap: 0) } else { Haptics.play(.tick, gap: 0) }
                 }
                 if k >= 1 {
                     self.finishPhoto()

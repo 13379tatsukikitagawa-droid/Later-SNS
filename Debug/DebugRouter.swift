@@ -32,6 +32,7 @@ enum DebugRouter {
         case "music": showRaw(MusicSheet(current: nil, onDone: { _ in }))
         case "reveal": showRaw(ReleaseRevealV89View(image: SampleData.photo("d"), ordinal: 1, count: 2, tag: "放課後", time: "17:42", place: "鎌倉市", playsReveal: true, onFinish: { _ in }))
         case "qr": showRaw(SelfQRChekiV92View(name: "ゆい", username: "yui_0612", link: "https://lattag.app/u/yui_0612", photo: SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型"], onClose: {}))
+        case "shutter": showRaw(HStack(spacing: 8) { ForEach([0.0, 0.4, 0.75, 1.0], id: \.self) { k in ShutterIconV94(progress: k, holding: k > 0, video: false, recording: false, dead: false, late: false, snapToken: 0).frame(width: 104, height: 104) } }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.black))
         case "settings": showRaw(SettingsV87Sheet(name: "ゆい", username: "yui_0612", avatar: SampleData.photo("f"), blockedCount: 0))
         case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
         default: return false
