@@ -132,7 +132,9 @@ struct HomeV64Host: View {
             var frames = [Int?](repeating: nil, count: 23)
             let todays = g.photos.filter { cal.isDate($0.captureDate, inSameDayAs: now) }
             for (i, p) in todays.prefix(23).enumerated() { frames[i] = g.members.firstIndex { $0.id == p.owner?.id } ?? 0 }
-            input.trip = HomeV64TripInfo(id: g.id, name: g.name, members: mem, frames: frames, cover: g.iconImageData.flatMap { UIImage(data: $0) })
+            let n = (cal.dateComponents([.day], from: cal.startOfDay(for: g.creationDate), to: cal.startOfDay(for: now)).day ?? 0) + 1
+            let sd = DateFormatter(); sd.dateFormat = "MM.dd"
+            input.trip = HomeV64TripInfo(id: g.id, name: g.name, members: mem, frames: frames, cover: g.iconImageData.flatMap { UIImage(data: $0) }, sub: "\(sd.string(from: g.creationDate)) ・ \(mem.count)人", dayText: "DAY \(n)")
         }
         input.isFirstDay = L.yesterday.isEmpty
         input.yesterdayPhoto = myYesterday.first
@@ -144,7 +146,7 @@ struct HomeV64Host: View {
         var low = HomeV64LowerData()
         low.trips = src.groups.filter { !$0.isPersonalSpace }.sorted { $0.creationDate > $1.creationDate }.map { g in
             let n = (Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: g.creationDate), to: Calendar.current.startOfDay(for: now)).day ?? 0) + 1
-            return (id: g.id as UUID?, name: g.name, sub: "DAY \(n) ・ \(g.members.count)人", cover: g.iconImageData.flatMap { UIImage(data: $0) })
+            return (id: g.id as UUID?, name: g.name, sub: "DAY \(n) ・ \(g.members.count)人", cover: g.iconImageData.flatMap { UIImage(data: $0) }, day: "DAY \(n)", unread: 0)
         }
         low.today = .init(thumbs: [], times: src.todayShots.map { df.string(from: $0.takenAt) })
         if let first = L.yesterday.first {

@@ -14,7 +14,7 @@ struct HomeV64LowerData {
     var mondo: [(tag: String, photo: UIImage?)] = []
     var albums: [Album] = []
     var onThisDay: (photo: UIImage?, daysLeft: Int, date: String)?
-    var trips: [(id: UUID?, name: String, sub: String, cover: UIImage?)] = []
+    var trips: [(id: UUID?, name: String, sub: String, cover: UIImage?, day: String, unread: Int)] = []
     var weekday = "SUN"
 }
 
@@ -99,15 +99,20 @@ struct HVActiveRow: View {
                 HStack(spacing: 10) {
                     ForEach(Array(data.trips.enumerated()), id: \.offset) { _, t in
                         Button { Haptics.play(.pop); if let id = t.id { actions.openTripHome(id) } else { actions.openTrip() } } label: {
-                            ZStack(alignment: .bottomLeading) {
+                            ZStack(alignment: .topLeading) {
                                 HVL.card
-                                if let c = t.cover { Image(uiImage: c).resizable().scaledToFill().frame(width: 170, height: 248).clipped() }
-                                LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom)
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(t.name).font(LF.serif(24)).foregroundStyle(.white).lineLimit(1)
-                                    Text(t.sub).font(LF.inter(600, 11)).foregroundStyle(.white.opacity(0.7))
-                                }.padding(16)
-                            }.frame(width: 170, height: 248).clipShape(RoundedRectangle(cornerRadius: 24))
+                                if let c = t.cover { Image(uiImage: c).resizable().scaledToFill().frame(width: 195, height: 248).clipped() }
+                                LinearGradient(colors: [.black.opacity(0.3), .clear, .black.opacity(0.8)], startPoint: .top, endPoint: .bottom)
+                                Text(t.day).font(LF.mono(10)).tracking(1.5).foregroundStyle(.white).padding(16)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Spacer()
+                                    Text(t.name).font(LF.serif(36)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
+                                    Text(t.sub).font(LF.mono(11)).foregroundStyle(.white.opacity(0.75))
+                                    HVTripFilm(trip: input.trip ?? HomeV64TripInfo(name: t.name, members: [], frames: []), height: 28, numbers: false).padding(.top, 6)
+                                    Text("\(input.trip?.frames.filter { $0 != nil }.count ?? 0)/23").font(LF.serif(15, italic: true)).foregroundStyle(.white.opacity(0.7))
+                                }.padding(14)
+                                if t.unread > 0 { Text("\(t.unread)").font(LF.inter(800, 12)).foregroundStyle(.white).frame(width: 24, height: 24).background(Color(hex: "E02B2B"), in: Circle()).frame(maxWidth: .infinity, alignment: .trailing).padding(16) }
+                            }.frame(width: 195, height: 248).clipShape(RoundedRectangle(cornerRadius: 24))
                                 .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                         }.buttonStyle(HVPress(scale: 0.97))
                     }

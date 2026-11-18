@@ -214,3 +214,9 @@
 - 作った 追加:Recap の BGAppRefreshTask(`app.lattag.recap`)・ Home 下の Active に 本物の Trip(押すと Trip の ホーム)・ Trip の ホームの QR から パス・ はじめての 設定の アイコンの 丸(O07)。
 - のこり:T04〜T09 の 横カード ・ 設定 ・ 部屋 ・ 招待 の 新デザイン化(今ある 画面の まま 動く)/ F05 F07 F08 F12 の 見た目あわせ / 実機の Instruments。
 - Release の 待機 CPU は 今回 測り なおして いない(Release は ログイン まえの 画面に なる ため。DEBUG の Home は ぼかし写真の 背景を なくした 分 かなり 軽い はず)。実機の 数字は ユーザー確認。
+
+## 2026-11-18 T04 ・ T09(Trip の ページ ・ Active の カード)✓
+
+- Trip ページ(`HVTripPage`):表紙の 写真 + TRIP ・ DAY + QR / ··· + 名前 + 今日の こま数 + 23こまの フィルム + `Shoot for trip` + チャット。T04 6.9。
+- Home 下の Active(`HVActiveRow`):表紙 + DAY + 赤い 数 + 名前 + フィルム + こま数。押すと Trip の ホーム。T09 10.3。
+- のこり:T05(パス あとから)は Trip の ホームの QR から 開く 形で つないだ(見た目は T03 と 同じ パス)。T06 設定 ・ T07 部屋 ・ T08 招待 は 今ある 画面の まま 動く。F05 F07 F08 F12 の 見た目あわせは まだ。

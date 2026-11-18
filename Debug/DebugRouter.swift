@@ -120,6 +120,10 @@ struct HomeV64Preview: View {
         input.requestFaces = SampleData.faces(count: input.requestCount > 0 ? 3 : 0)
         input.yesterdayThumbs = true ? [HomeV64Thumb(id: "t0", image: SampleData.photo("a"), time: "18:42"), HomeV64Thumb(id: "t1", image: SampleData.photo("b"), time: "16:05"), HomeV64Thumb(id: "t2", image: SampleData.photo("c"), time: "21:13")] : []
         input.tripSamples = ["f", "c", "e"].compactMap { SampleData.photo($0) }
+        if d.bool(forKey: "debugTrip") {
+            let faces = [("ゆ", "F4F1EA"), ("れ", "7FB0FF"), ("あ", "61DD7A"), ("そ", "61D278")].map { HomeV64Face(id: $0.0, initial: $0.0, color: Color(hex: $0.1)) }
+            input.trip = HomeV64TripInfo(id: UUID(), name: "Kyoto", members: faces, frames: [0, 1, 2, 1, 3, 2, 0, 1] + [Int?](repeating: nil, count: 15), cover: SampleData.photo("b"), sub: "京都 2泊3日 ・ 11.16 — 11.18", dayText: "DAY 2 / 3", unread: 2)
+        }
         input.debugScroll = CGFloat(d.integer(forKey: "debugScroll"))
         input.debugSection = d.string(forKey: "debugSection")
         var low = HomeV64LowerData()
@@ -130,6 +134,7 @@ struct HomeV64Preview: View {
         low.mondo = [("#散歩", P("a")), ("#放課後", P("f")), ("#夕焼け", P("a"))]
         low.albums = (1...6).map { k in .init(label: "Nov \(16 - k)", left: "\(7 - k)D LEFT · \(["SUN", "SAT", "FRI", "THU", "WED", "TUE"][k - 1])", tiles: [[P("c"), P("d"), P("e")], [P("e"), P("f"), nil], [P("a"), P("b"), P("c")], [P("d"), P("e"), P("f")], [P("a"), P("c"), P("e")], [P("b"), P("d"), P("f")]][k - 1], more: [8, 5, 12, 3, 9, 6][k - 1]) }
         low.onThisDay = (P("c"), 335, "'26 10 17")
+        if d.bool(forKey: "debugTrip") { low.trips = [(id: UUID(), name: "Kyoto", sub: "京都 2泊3日", cover: SampleData.photo("b"), day: "DAY 2 / 3", unread: 2)] }
         input.lower = low
         input.now = Calendar.current.date(bySettingHour: 11, minute: 54, second: 0, of: Date()) ?? Date()
         return HomeV64View(input: input).background(Color.black).ignoresSafeArea()

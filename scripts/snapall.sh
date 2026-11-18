@@ -22,7 +22,7 @@ r H16_page_yesterday home $H -debugPage 4 -debugPhoto d
 r H17_page_yesterday_open home $H -debugPage 4 -debugShots 1 -debugOpened 1 -debugPhoto d
 r H18_page_yesterday_firstday home $H -debugPage 4 -debugFirstDay 1 -debugPhoto d
 r H19_home_scrolled home $H -debugScroll 420 -debugPhoto d
-r L01_today home $H -debugSection sec-active:146
+r L01_today home $H -debugSection sec-active:128
 r L02_active home $H -debugSection sec-active:158
 r L03_yesterday home $H -debugSection sec-yesterday:80
 r L04_yesterday_open home $H -debugSection sec-yesterday:80 -debugShots 1 -debugOpened 1
@@ -52,6 +52,8 @@ r T02_new_trip_filled trip $T -debugStep 1 -debugTripName "京都 2泊3日"
 r T10_new_trip_who trip $T -debugStep 2 -debugTripName "京都 2泊3日"
 r T11_new_trip_cover trip $T -debugStep 3 -debugTripName "京都 2泊3日"
 r T03_trip_pass_new trip $T -debugStep 3 -debugTripName "京都 2泊3日" -debugPass 1
+r T04_trip_page_active home $H -debugTrip 1 -debugPage 2 -debugPhoto d
+r T09_active_card home $H -debugTrip 1 -debugSection sec-active:128
 r T12_trip_home triphome $T
 r T13_trip_home_days triphome $T -debugScrollY 445
 M="-debugBackdrop 1 -debugMock 1"
