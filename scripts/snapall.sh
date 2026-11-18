@@ -68,6 +68,7 @@ r F17_recap_end me $M -debugMePlay 1 -debugMePlayT 99
 r F08_profile profile $M
 r F12_profile_no_photo profile $M -debugNoPhoto 1
 r F07_dm_chat dm $M
+r F05_friend_card friendcard $M
 r C01_tag tag
 r F01_friend_empty friends -debugRequests 1
 r F02_friend_list friends -debugRequests 1 -debugFriends 3

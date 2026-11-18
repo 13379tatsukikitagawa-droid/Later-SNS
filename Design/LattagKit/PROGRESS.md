@@ -220,3 +220,10 @@
 - Trip ページ(`HVTripPage`):表紙の 写真 + TRIP ・ DAY + QR / ··· + 名前 + 今日の こま数 + 23こまの フィルム + `Shoot for trip` + チャット。T04 6.9。
 - Home 下の Active(`HVActiveRow`):表紙 + DAY + 赤い 数 + 名前 + フィルム + こま数。押すと Trip の ホーム。T09 10.3。
 - のこり:T05(パス あとから)は Trip の ホームの QR から 開く 形で つないだ(見た目は T03 と 同じ パス)。T06 設定 ・ T07 部屋 ・ T08 招待 は 今ある 画面の まま 動く。F05 F07 F08 F12 の 見た目あわせは まだ。
+
+## 2026-11-18 F05 ・ F07 ・ F08 ・ F12 ✓
+
+- F08/F12 プロフィール:`ProfileV82View`(背景 = 写真を ぼかした 緑 → 紫 → 黒 ・ チェキ + タグの シール + 名前 + 数字 + QR / Edit / Share / Scan)。Profile の 枠(`MainNavigationView`)に つないだ。☀ と「ME ・ 7 DAYS」から 今までの `ProfileShelfView`(設定 ・ 編集 ・ 通報 ・ 削除)を ひらく。F08 12.9 ・ F12 13.4。
+- F07 チャット:明るい ベージュの 地 ・ 2人の 丸 + 7日の 点 ・ きのうの カード ・ 吹き出し(`DirectMessageView`)。8.7。
+- F05 友だちの カード:`FriendCardV82Sheet`(Friends の 行を 押す)。Chat / つつく / Trip / more。14.1。
+- のこり:T06 設定 ・ T07 部屋 ・ T08 招待 の 新デザイン化(今ある 画面の まま 動く)。

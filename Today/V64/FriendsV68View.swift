@@ -30,6 +30,7 @@ struct FriendsV68View: View {
     @State private var shareItems: [Any]?
     @State private var chat: HomeFriend?
     @State private var actionFriend: HomeFriend?
+    @State private var cardFriend: HomeFriend?
     @State private var confirmingBlock: HomeFriend?
     @State private var reportingFriend: HomeFriend?
     @State private var toast: String?
@@ -92,7 +93,14 @@ struct FriendsV68View: View {
         .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
             ShareSheet(activityItems: shareItems ?? []) { done in shareItems = nil; if done { Haptics.play(.success) } }.presentationDetents([.medium, .large])
         }
-        .sheet(item: $chat) { f in DirectMessageView(friendID: f.id, friendName: f.name) }
+        .sheet(item: $chat) { f in DirectMessageView(friendID: f.id, friendName: f.name, friendAvatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 160)) }
+        .sheet(item: $cardFriend) { f in
+            let df = DateFormatter(); let _ = df.dateFormat = "HH:mm"
+            FriendCardV82Sheet(name: f.name, avatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 320), tag: f.tag, city: f.city, times: f.hasShot ? [""] : [], mosaics: [V64Images.image(key: "lw\(f.id)", data: f.mosaicTiny, maxPixel: 96)], canPoke: !f.hasShot,
+                              onChat: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { chat = f } }, onPoke: { cardFriend = nil; poke(f) },
+                              onTrip: { cardFriend = nil; onOpenInviteToGroup() }, onMore: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { actionFriend = f } }, onClose: { cardFriend = nil })
+                .presentationDetents([.fraction(0.72)]).presentationDragIndicator(.hidden)
+        }
         .confirmationDialog("", isPresented: Binding(get: { actionFriend != nil }, set: { if !$0 { actionFriend = nil } }), titleVisibility: .hidden) {
             if let f = actionFriend {
                 if !f.hasShot { Button("つつく") { poke(f) } }
@@ -316,7 +324,7 @@ struct FriendsV68View: View {
 
     private func friendRow(_ f: HomeFriend) -> some View {
         HStack(spacing: 0) {
-            Button { Haptics.play(.sel); actionFriend = f } label: {
+            Button { Haptics.play(.sel); cardFriend = f } label: {
                 HStack(spacing: 18) {
                     ZStack {
                         if f.hasShot {
