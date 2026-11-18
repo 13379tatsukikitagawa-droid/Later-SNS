@@ -25,6 +25,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>message</string>
+		<string>line</string>
 	</array>
 	<key>UIAppFonts</key>
 	<array>

@@ -234,7 +234,7 @@ struct ProfileV82Host: View {
             }
             .overlay { if editing { ProfileEditV88View(name: me?.name ?? "", tags: me?.selfTags ?? [], avatar: me?.profileImageData.flatMap { UIImage(data: $0) }, onPhoto: { showsIcon = true }, onSave: { saveProfile($0, $1) }, onClose: { withAnimation(.easeOut(duration: 0.25)) { editing = false } }).transition(.opacity) } }
             .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: me?.name ?? "", friendCount: 0) { _ in } }
-            .sheet(isPresented: $showsQR) { ProfileSelfQRSheet(name: me?.name ?? "", recordName: recordName) }
+            .fullScreenCover(isPresented: $showsQR) { SelfQRChekiHost(onScan: { showsQR = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showsScan = true } }, onClose: { showsQR = false }) }
             .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) { ShareSheet(activityItems: shareItems ?? []) { _ in shareItems = nil }.presentationDetents([.medium, .large]) }
             .sheet(isPresented: $showsIcon) {
                 let cur = me?.profileImageData.flatMap { UIImage(data: $0) }

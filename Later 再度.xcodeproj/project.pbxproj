@@ -72,6 +72,8 @@
 		25F834EB07CD5ED6F87873BD /* V64/DailyQuestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B88E59887E4FF3899F6B37 /* V64/DailyQuestion.swift */; };
 		77A916BDF86500D6406DB99B /* V64/MusicPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715D5217D6859EE7C88838FF /* V64/MusicPlayback.swift */; };
 		9B9CA0A65DDEB023656DE319 /* V64/ReleaseRevealV89View.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1466E54B13DB34B570489EA /* V64/ReleaseRevealV89View.swift */; };
+		B1307E84F5C33C19142EAD65 /* V64/StyledQR.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B147E4D0B3D978B16F0E16 /* V64/StyledQR.swift */; };
+		1FDDD83248CBA2F90AC65FAD /* V64/SelfQRChekiV92View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC1E46ADF9AC08558CBDAF /* V64/SelfQRChekiV92View.swift */; };
 		5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7259E737667BD9D41829457 /* HomeMoon.swift */; };
 		605EF09EAACE41EDB4BC64F8 /* ImageCacheLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0548D25953234EAF947739A5 /* ImageCacheLimits.swift */; };
 		60C5A0CFDCC62D982F0F1FCF /* GroupDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BA4D4C5BB926C8BB1A4A8A /* GroupDetailView.swift */; };
@@ -496,6 +498,8 @@
 		89B88E59887E4FF3899F6B37 /* V64/DailyQuestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/DailyQuestion.swift; sourceTree = "<group>"; };
 		715D5217D6859EE7C88838FF /* V64/MusicPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/MusicPlayback.swift; sourceTree = "<group>"; };
 		F1466E54B13DB34B570489EA /* V64/ReleaseRevealV89View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ReleaseRevealV89View.swift; sourceTree = "<group>"; };
+		D4B147E4D0B3D978B16F0E16 /* V64/StyledQR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/StyledQR.swift; sourceTree = "<group>"; };
+		8BDC1E46ADF9AC08558CBDAF /* V64/SelfQRChekiV92View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/SelfQRChekiV92View.swift; sourceTree = "<group>"; };
 		C7259E737667BD9D41829457 /* HomeMoon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMoon.swift; sourceTree = "<group>"; };
 		C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilmEmulation.swift; sourceTree = "<group>"; };
 		CF0F7F40C595276C07B370F9 /* HoldGauge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HoldGauge.swift; sourceTree = "<group>"; };
@@ -888,6 +892,8 @@
 				C41C00000000000000000002 /* ChicTheme.swift */,
 				C41C00000000000000000004 /* ChicHomeView.swift */,
 				C7259E737667BD9D41829457 /* HomeMoon.swift */,
+				8BDC1E46ADF9AC08558CBDAF /* V64/SelfQRChekiV92View.swift */,
+				D4B147E4D0B3D978B16F0E16 /* V64/StyledQR.swift */,
 				F1466E54B13DB34B570489EA /* V64/ReleaseRevealV89View.swift */,
 				715D5217D6859EE7C88838FF /* V64/MusicPlayback.swift */,
 				89B88E59887E4FF3899F6B37 /* V64/DailyQuestion.swift */,
@@ -1417,6 +1423,8 @@
 				C41C00000000000000000001 /* ChicTheme.swift in Sources */,
 				C41C00000000000000000003 /* ChicHomeView.swift in Sources */,
 				5DF8213CDA99A1564A0F0247 /* HomeMoon.swift in Sources */,
+				1FDDD83248CBA2F90AC65FAD /* V64/SelfQRChekiV92View.swift in Sources */,
+				B1307E84F5C33C19142EAD65 /* V64/StyledQR.swift in Sources */,
 				9B9CA0A65DDEB023656DE319 /* V64/ReleaseRevealV89View.swift in Sources */,
 				77A916BDF86500D6406DB99B /* V64/MusicPlayback.swift in Sources */,
 				25F834EB07CD5ED6F87873BD /* V64/DailyQuestion.swift in Sources */,
