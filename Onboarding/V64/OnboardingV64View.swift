@@ -60,6 +60,9 @@ struct OnboardingV64View: View {
     @State private var busy = false
     @State private var toast: String?
     @State private var legalLink: LegalLink?
+    @AppStorage("hideEmailOnApple") private var hideEmail = true
+    @State private var appleError = false
+    @State private var appleGlow = false
     @State private var showingShare = false
     @State private var isCheckingAccount = false
     @State private var holdLevel = 0.0
@@ -226,9 +229,14 @@ struct OnboardingV64View: View {
                     Circle().fill(OB.stamp).frame(width: 6, height: 6).shadow(color: OB.stamp, radius: 4)
                     Text("FILM FOR TOMORROW").font(LF.mono(10)).tracking(2.4).foregroundStyle(OB.kicker)
                 }
-                OBHeading(parts: [("撮る。\nあした、", false), ("ひらく。", true)])
+                VStack(spacing: 0) {
+                    Text("昨日を").foregroundColor(.white).frame(height: 50)
+                    (Text("共有する ").foregroundColor(.white) + Text("SNS").foregroundColor(HV.lime)).frame(height: 50)
+                }
+                .font(LGFont.mincho(46)).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 14)
+                .accessibilityElement(children: .ignore).accessibilityLabel("昨日を 共有する SNS")
             }
-            .frame(width: W).offset(y: 424 + mid)
+            .frame(width: W).offset(y: 372 + mid)
         case .mail:
             heading([("メールアドレス", false)]).offset(y: 448 + mid)
             VStack(spacing: 0) {
@@ -427,18 +435,24 @@ struct OnboardingV64View: View {
             Group {
                 switch step {
                 case .signin:
-                    VStack(spacing: 10) {
-                        Button { startApple() } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "apple.logo").font(.system(size: 18, weight: .semibold)).offset(y: -1)
-                                Text("Apple で つづける")
-                            }
-                            .font(LF.inter(800, 16.5)).tracking(0.165).foregroundStyle(Color(hex: "111111"))
-                            .frame(maxWidth: .infinity).frame(height: 60).background(Color.white, in: Capsule())
+                    VStack(spacing: 0) {
+                        OBAppleCircle(busy: busy, glow: appleGlow, reduceMotion: reduceMotion) { startApple() }
+                        Text("Apple で つづける").font(LF.inter(800, 16)).foregroundStyle(.white).padding(.top, 10)
+                        HStack(spacing: 10) {
+                            Image(systemName: "eye.slash").font(.system(size: 15, weight: .semibold)).foregroundStyle(HV.lime)
+                            Text("メールは かくす").font(LF.inter(800, 13)).foregroundStyle(.white)
+                            Toggle("", isOn: $hideEmail).labelsHidden().tint(HV.lime).scaleEffect(0.85)
+                                .onChange(of: hideEmail) { _, _ in Haptics.play(.sel) }
                         }
-                        .buttonStyle(OBPressStyle()).accessibilityLabel("Apple で つづける")
-                        Button { googleSignIn() } label: { Text("Google で つづける") }.buttonStyle(OBButtonStyle(kind: .secondary))
-                        Button { Haptics.play(.sel); go(.mail) } label: { Text("メールで つづける") }.buttonStyle(OBButtonStyle(kind: .secondary))
+                        .padding(.leading, 16).padding(.trailing, 8).frame(height: 44)
+                        .background(HV.lime.opacity(0.08), in: Capsule())
+                        .overlay(Capsule().strokeBorder(HV.lime.opacity(0.3), lineWidth: 1))
+                        .padding(.top, 14)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("メールは かくす").accessibilityValue(hideEmail ? "オン" : "オフ")
+                        .accessibilityAddTraits(.isButton).accessibilityAction { hideEmail.toggle() }
+                        Text(appleError ? "サインインできませんでした。もう一度 どうぞ" : (hideEmail ? "Lattag は メールアドレスを うけとりません" : "Apple の 画面で メールの あつかいを えらべます"))
+                            .font(LF.inter(500, 11.5)).foregroundStyle(appleError ? Color(hex: "FF453A") : OB.sub).multilineTextAlignment(.center).padding(.top, 10).frame(minHeight: 16)
                         HStack(spacing: 0) {
                             Text("つづけると ")
                             Button { legalLink = .terms } label: { Text("利用規約").underline().frame(minHeight: 44).contentShape(Rectangle()) }
@@ -448,9 +462,9 @@ struct OnboardingV64View: View {
                                 .accessibilityAddTraits(.isLink).accessibilityLabel("プライバシー")
                             Text(" に 同意(13歳以上)")
                         }
-                        .font(LF.inter(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2).frame(height: 44).padding(.vertical, -14.5)
+                        .font(LF.inter(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).frame(height: 44).padding(.vertical, -10)
                     }
-                    .padding(.bottom, 44)
+                    .padding(.bottom, 28)
                 case .mail:
                     VStack(spacing: 10) {
                         Button { sendLink() } label: { Text("リンクを おくる") }
@@ -587,10 +601,13 @@ struct OnboardingV64View: View {
             if let message = AppleSignInView.applySignIn(result, modelContext: modelContext) {
                 print("[AppleSignIn] 結果の保存に失敗: \(message)")
                 Haptics.play(.warn); say(OnboardingCopy.appleSignInFailed)
-            } else { Haptics.play(.success) }
+            } else { Haptics.play(.success); withAnimation(.easeOut(duration: 0.46)) { appleGlow = true } }
         case .failure(let error):
-            if (error as? ASAuthorizationError)?.code == .canceled { return }
-            Haptics.play(.warn); say(OnboardingCopy.appleSignInFailed)
+            if (error as? ASAuthorizationError)?.code == .canceled { Haptics.play(.soft); return }
+            Haptics.play(.warn); appleError = true
+            #if DEBUG
+            print("[AppleSignIn] failed: \((error as NSError).domain) \((error as NSError).code)")
+            #endif
         }
     }
 
@@ -598,7 +615,9 @@ struct OnboardingV64View: View {
     private func startApple() {
         guard !busy else { return }
         Haptics.play(.click)
-        let c = OBAppleCoordinator { result in appleDone(result); apple = nil }
+        appleError = false
+        busy = true
+        let c = OBAppleCoordinator(hideEmail: hideEmail) { result in busy = false; appleDone(result); apple = nil }
         apple = c
         c.start()
     }
@@ -874,11 +893,13 @@ private struct OBPressStyle: ButtonStyle {
 /// Sign in with Apple を コードから 出す(名前だけ もらう)
 final class OBAppleCoordinator: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     private let done: (Result<ASAuthorization, Error>) -> Void
-    init(done: @escaping (Result<ASAuthorization, Error>) -> Void) { self.done = done }
+    private let hideEmail: Bool
+    init(hideEmail: Bool = true, done: @escaping (Result<ASAuthorization, Error>) -> Void) { self.hideEmail = hideEmail; self.done = done }
 
     @MainActor func start() {
         let request = ASAuthorizationAppleIDProvider().createRequest()
-        request.requestedScopes = [.fullName]
+        // メールを かくす = 何も もらわない(名前は つぎの 画面で 自分で 書く)/ オフ = 本人が Apple の 画面で えらぶ
+        request.requestedScopes = hideEmail ? [] : [.email]
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.delegate = self
         controller.presentationContextProvider = self
@@ -1017,5 +1038,59 @@ struct OBFinishView: View {
         guard !done else { return }
         done = true
         onDone()
+    }
+}
+
+
+// MARK: - v104 O04:Apple の 丸い ボタン(丸の 中は かえない ・ 動きは 丸の 外だけ)
+
+struct OBAppleCircle: View {
+    var busy: Bool
+    var glow: Bool
+    var reduceMotion: Bool
+    var action: () -> Void
+    @State private var entered = false
+    @State private var spin = 0.0
+    @State private var spinStart = Date()
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                // 丸の 外:点線の 輪 ・ 波紋(`transform` と `opacity` だけ)
+                TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: reduceMotion)) { ctx in
+                    let t = ctx.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        if !reduceMotion {
+                            ForEach(0..<2, id: \.self) { k in
+                                let q = (t / 2.8 + Double(k) * 0.5).truncatingRemainder(dividingBy: 1)
+                                Circle().strokeBorder(HV.lime.opacity(0.55 * (1 - q)), lineWidth: 1.5).frame(width: 88, height: 88).scaleEffect(1 + 0.62 * q)
+                            }
+                        }
+                        Circle().strokeBorder(HV.lime.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [3, 4])).frame(width: 106, height: 106)
+                            .rotationEffect(.degrees(reduceMotion ? 0 : t / (busy ? 1.1 : 14) * 360))
+                        if busy {
+                            Circle().trim(from: 0, to: 0.22).stroke(HV.lime, style: StrokeStyle(lineWidth: 3, lineCap: .round)).frame(width: 106, height: 106)
+                                .rotationEffect(.degrees(t / 0.9 * 360))
+                        }
+                    }
+                }
+                if glow { Circle().strokeBorder(HV.lime, lineWidth: 4).frame(width: 96, height: 96).blur(radius: 3).transition(.opacity) }
+                // 丸の 中:白い 面 + 黒い ロゴ(かえない)
+                Circle().fill(Color.white).frame(width: 88, height: 88)
+                Image(systemName: "apple.logo").font(.system(size: 42)).foregroundStyle(Color.black).opacity(busy ? 0.35 : 1)
+            }
+            .frame(width: 112, height: 112)
+            .scaleEffect(entered || reduceMotion ? 1 : 0.6).opacity(entered || reduceMotion ? 1 : 0)
+        }
+        .buttonStyle(OBApplePress())
+        .disabled(busy)
+        .accessibilityLabel("Apple で つづける").accessibilityAddTraits(.isButton)
+        .onAppear { withAnimation(.spring(response: 0.7, dampingFraction: 0.72)) { entered = true } }
+    }
+}
+
+private struct OBApplePress: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.scaleEffect(configuration.isPressed ? 0.93 : 1).animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }

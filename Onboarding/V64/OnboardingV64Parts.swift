@@ -52,7 +52,7 @@ enum OBStep: String, CaseIterable {
     var pageLabel: String { ["", "YOU", "TAG", "FRIENDS", "NOTICE"][page ?? 0] }
     /// チェキの 上の 位置・かたむき・大きさ(`.obc`)
     var chekiTop: CGFloat {
-        switch self { case .signin, .mail, .sent: return 150; case .nt: return 206; case .go: return 150; default: return 128 }
+        switch self { case .mail, .sent: return 150; case .signin: return 128; case .nt: return 206; case .go: return 150; default: return 128 }
     }
     var chekiRotation: Double { self == .nt ? 2 : (self == .go ? -2 : -3) }
     var chekiScale: CGFloat { self == .nt ? 0.92 : (self == .go ? 1.22 : 1) }

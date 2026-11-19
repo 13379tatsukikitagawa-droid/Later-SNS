@@ -324,3 +324,5 @@
 ## P47 ・ v104(Apple だけ ・ Name / ID / 招待シート ・ ウィジェット)
 - 0 しらべ ✓。A サインイン ☐(Firebase の Apple 設定 待ち)B O04 ☐ C Name ・ ID ・ 招待シート ✓(`SheetFitsContent` = 中身の 高さ ・ Name は キーボード中も 写真の 行)D ウィジェット ✓(えらぶ → 5場面の 案内 → `WidgetCenter` で 自動たしかめ)。
 - 実機: 置けたかの 自動確認 ・ ID / 招待シートの 高さ ・ iPhone SE。旧 `WidgetSetupFlow` は 旧設定 / 旧初回設定 から のみ(のこし)
+
+- v104 B(O04 見た目)✓:見出し「昨日を / 共有する SNS」・ 白い 丸の Apple ボタン(輪 ・ 波紋 ・ 待つ 間 ・ 入れた 光)・「メールは かくす」(`requestedScopes = [] / [.email]`)・ Google / メールの ボタンを O04 から 外した(コードは A で 消す)。
