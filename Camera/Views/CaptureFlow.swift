@@ -141,7 +141,7 @@ struct CaptureFlow: View {
                     musicTitle: shotMusic?.shortTitle,
                     playsEntrance: playsCaptureEntrance,
                     mode: $mode,
-                    onBack: cancel,
+                    onBack: backToTags,
                     onEditTags: backToTags,
                     onPhoto: { source in shutter(layout: layout, source: source) },
                     onRecorded: { video in recorded(video, layout: layout) }
@@ -250,6 +250,7 @@ struct CaptureFlow: View {
         navBusy = true
         shotTags = withTags ? tags : []
         shotMusic = MusicDraft.load()
+        camera.useBackCameraIfNeeded()
         camera.start()   // 映像が早く来るよう、ひろがり始めに起動する(sessionQueue で)
 
         let token = UUID()

@@ -38,6 +38,11 @@ struct CaptureScreenV21: View {
     @State private var countFlick = 0
     @State private var snapRing = false
     @State private var pressedScreen = false
+    @State private var flipRot = 0.0
+    @State private var flipIcon = 0.0
+    @State private var flipBlur = 0.0
+    @State private var screenFlash = false
+    private var front: Bool { camera.cameraPosition == .front }
 
     private var ky: CGFloat { layout.ky }
     private var win: CGRect { layout.finder }
@@ -56,7 +61,12 @@ struct CaptureScreenV21: View {
             .opacity(camera.status == .ready ? 1 : 0)
             .scaleEffect(reduceMotion ? 1 : 1 + 0.045 * photoEase, anchor: UnitPoint(x: 0.5, y: 0.42))
             .brightness(switchGlow)
+            .rotation3DEffect(.degrees(flipRot), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+            .scaleEffect(1 - 0.1 * abs(flipRot) / 86)
+            .blur(radius: flipBlur)
+            .onTapGesture(count: 2) { flipCamera() }
             windowMask
+            if screenFlash { Color.white.ignoresSafeArea().allowsHitTesting(false).transition(.opacity) }
             corners
             windowLabels
             topBar
@@ -91,6 +101,7 @@ struct CaptureScreenV21: View {
         }
         .onChange(of: gesture.snapToken) { _, _ in
             snapRing = true
+            if front { fireScreenFlash() }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { snapRing = false }
         }
         // ファインダーを よこになぞって切りかえ(左へ = 動画)
@@ -104,6 +115,30 @@ struct CaptureScreenV21: View {
     }
 
     // MARK: 窓
+
+    /// カメラを うらがえす(0.44秒):横に 86°(0.19秒)→ 入れかえ → もどる(0.25秒)。動画の 間は 切りかえない。外カメは ひらく たびに もどる(ExposureCameraView)
+    private func flipCamera() {
+        guard !gesture.isRecording else { return }
+        Haptics.play(.sel)
+        let next: AVCaptureDevice.Position = front ? .back : .front
+        if reduceMotion { camera.setCameraPosition(next); Haptics.play(.tick); return }
+        withAnimation(.easeIn(duration: 0.19)) { flipRot = 86; flipBlur = 8; switchGlow = -0.3 }
+        withAnimation(.easeInOut(duration: 0.44)) { flipIcon += 180 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.19) {
+            camera.setCameraPosition(next)
+            Haptics.play(.tick)
+            flipRot = -86
+            withAnimation(.easeOut(duration: 0.25)) { flipRot = 0; flipBlur = 0; switchGlow = 0 }
+        }
+    }
+
+    /// インカメの フラッシュ = 画面を 白く(0.25秒 ・ 明るさ 最大 → もどす)
+    private func fireScreenFlash() {
+        let old = UIScreen.main.brightness
+        UIScreen.main.brightness = 1
+        withAnimation(.easeOut(duration: 0.05)) { screenFlash = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { withAnimation(.easeOut(duration: 0.2)) { screenFlash = false }; UIScreen.main.brightness = old }
+    }
 
     private var windowMask: some View {
         let shape = RoundedRectangle(cornerRadius: 30, style: .continuous)
@@ -165,15 +200,14 @@ struct CaptureScreenV21: View {
             Spacer()
             HStack(alignment: .top, spacing: -2) {
                 Text("Lattag").font(.system(size: 22, weight: .black)).tracking(-0.05 * 22).foregroundStyle(.white)
-                Text("today").font(.system(size: 12, design: .serif).italic()).foregroundStyle(Color(hex: "8E8E95")).offset(y: -6)
             }
             Spacer()
             // のこりの 7セグ(薄い 8 が下に見える)+「のこり / EXP」
             HStack(spacing: 8) {
                 ZStack {
-                    SevenSegmentText(text: "8", height: 26, color: Color(hex: "2A1B12"))
-                    SevenSegmentText(text: "\(max(0, left))", height: 26, color: Color(hex: "FF8A2A"))
-                        .shadow(color: Color(hex: "FF8A2A").opacity(0.6), radius: 4)
+                    SevenSegmentText(text: "8", height: 26, color: Color(hex: "1A2010"))
+                    SevenSegmentText(text: "\(max(0, left))", height: 26, color: Color(hex: "C8F25A"))
+                        .shadow(color: Color(hex: "C8F25A").opacity(0.75), radius: 5)
                         .keyframeAnimator(initialValue: 1.0, trigger: countFlick) { content, o in content.opacity(o) } keyframes: { _ in
                             KeyframeTrack { LinearKeyframe(0.2, duration: 0.08); LinearKeyframe(1, duration: 0.08); LinearKeyframe(0.3, duration: 0.08); LinearKeyframe(1, duration: 0.08) }
                         }
@@ -181,7 +215,7 @@ struct CaptureScreenV21: View {
                 .frame(width: 18, height: 28)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("のこり").font(.system(size: 8, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(Color(hex: "7A7A82"))
-                    Text("EXP").font(.system(size: 8, weight: .bold, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(Color(hex: "FF8A2A"))
+                    Text("EXP").font(.system(size: 8, weight: .bold, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(Color(hex: "C8F25A"))
                 }
             }
             .padding(.leading, 10).padding(.trailing, 12)
@@ -226,7 +260,7 @@ struct CaptureScreenV21: View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
             Text(Self.stampText(context.date))
                 .font(.system(size: 14, weight: .bold, design: .monospaced)).tracking(0.06 * 14)
-                .foregroundStyle(Color(hex: "FF8A2A"))
+                .foregroundStyle(Color(hex: "C8F25A"))
                 .shadow(color: Color(red: 1, green: 0.47, blue: 0.16).opacity(0.7), radius: 5)
         }
         .fixedSize()
@@ -335,42 +369,30 @@ struct CaptureScreenV21: View {
                 VStack(spacing: 5) {
                     Image(systemName: flashAuto ? "bolt.fill" : "bolt.slash")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(flashAuto ? Color(hex: "FFD60A") : .white)
+                        .foregroundStyle(flashAuto ? Color(hex: "C8F25A") : .white)
                         .frame(width: 50, height: 50)
-                        .background(Circle().fill(flashAuto ? Color(red: 1, green: 0.84, blue: 0.04).opacity(0.16) : .white.opacity(0.08)))
-                        .overlay(Circle().strokeBorder(flashAuto ? Color(red: 1, green: 0.84, blue: 0.04).opacity(0.45) : .white.opacity(0.12), lineWidth: 1))
-                    Text(flashAuto ? "AUTO" : "OFF").font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
+                        .background(Circle().fill(flashAuto ? Color(hex: "C8F25A").opacity(0.16) : .white.opacity(0.08)))
+                        .overlay(Circle().strokeBorder(flashAuto ? Color(hex: "C8F25A").opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
+                    Text(front ? "SCREEN" : (flashAuto ? "AUTO" : "OFF")).font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
                 }
             }
             .buttonStyle(.plain)
             .accessibilityLabel("フラッシュ、\(flashAuto ? "オート" : "オフ")")
             .position(x: 52 + 29, y: y)
-            // 右:今日撮ったチェキの山(0 / 3)
-            Button {
-                Haptics.play(.soft)
-                show(shots > 0 ? "あしたの朝、仕上がります" : "まだ 撮っていません")
-            } label: {
+            // 右:カメラ切りかえ(BACK / FRONT)。0 / 3 は 消した(のこり枚数は 右上)
+            Button { flipCamera() } label: {
                 VStack(spacing: 5) {
-                    ZStack {
-                        if shots == 0 {
-                            RoundedRectangle(cornerRadius: 5).strokeBorder(Color(hex: "4A4A52"), style: StrokeStyle(lineWidth: 1.4, dash: [3, 2]))
-                                .frame(width: 34, height: 42)
-                        }
-                        ForEach(0..<shots, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 2).fill(Color(hex: "F6F3EC"))
-                                .overlay(RoundedRectangle(cornerRadius: 1).fill(LinearGradient(colors: [Color(hex: "D6DFE0"), Color(hex: "C6CFDC")], startPoint: .topLeading, endPoint: .bottomTrailing)).padding(EdgeInsets(top: 3, leading: 3, bottom: 9, trailing: 3)))
-                                .frame(width: 32, height: 42)
-                                .shadow(color: .black.opacity(0.5), radius: 5, y: 4)
-                                .rotationEffect(.degrees([-8.0, 4, -2][i % 3]))
-                                .offset(x: CGFloat(i) * 2, y: CGFloat(-i) * 2)
-                        }
-                    }
-                    .frame(width: 50, height: 50)
-                    Text("\(shots) / 3").font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
+                    Image(systemName: "arrow.triangle.2.circlepath.camera").font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(front ? Color(hex: "C8F25A") : .white)
+                        .rotationEffect(.degrees(flipIcon)).frame(width: 50, height: 50)
+                        .background(Circle().fill(front ? Color(hex: "C8F25A").opacity(0.16) : .white.opacity(0.08)))
+                        .overlay(Circle().strokeBorder(front ? Color(hex: "C8F25A").opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
+                    Text(front ? "FRONT" : "BACK").font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("今日 \(shots)こま")
+            .disabled(gesture.isRecording)
+            .accessibilityLabel("カメラを きりかえる。いま \(front ? "インカメ" : "外カメ")")
             .position(x: layout.size.width - 52 - 29, y: y)
         }
         .opacity(appearOpacity)
@@ -403,40 +425,20 @@ struct CaptureScreenV21: View {
                 .opacity(max(e * 0.95, recording ? 0.6 : 0))
                 .allowsHitTesting(false)
             ZStack {
-                Circle().stroke(.white.opacity(0.28), lineWidth: 2).frame(width: 98, height: 98)
-                Circle().trim(from: 0, to: ringProgress)
-                    .stroke(late ? AnyShapeStyle(Color(hex: "FF3B30")) : (video ? AnyShapeStyle(Color(hex: "FF7A5A")) : AnyShapeStyle(LinearGradient(colors: [Color(hex: "FFD08A"), Color(hex: "FF7A4A"), Color(hex: "C98CFF")], startPoint: .topLeading, endPoint: .bottomTrailing))),
-                            style: StrokeStyle(lineWidth: 4.5, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: 98, height: 98)
-                ShutterTicks(lit: gesture.lit, video: video, late: late)
-                // のこりの3つの点(輪の上)
+                ShutterIconV94(progress: video ? 0.06 * gesture.progress : gesture.progress, holding: gesture.phase != .idle && !recording, video: video, recording: recording, dead: dead, late: late, snapToken: gesture.snapToken, recordingProgress: ringProgress)
+                // のこりの3つの点(アイコンの 上)
                 ForEach(0..<3, id: \.self) { i in
                     let on = i < left
-                    Circle().fill(on ? Color(hex: "FF8A2A") : Color(hex: "4A4A52"))
+                    Circle().fill(on ? Color(hex: "C8F25A") : Color(hex: "4A4A52"))
                         .frame(width: on ? 6.8 : 4.8, height: on ? 6.8 : 4.8)
-                        .offset(y: -49)
+                        .offset(y: -56)
                         .rotationEffect(.degrees(Double(i - 1) * 14))
                 }
-                // 芯(白・上から光)。動画は珊瑚。録画中は まるい四角にしぼむ
-                RoundedRectangle(cornerRadius: recording ? 22 : 38, style: .continuous)
-                    .fill(dead
-                        ? AnyShapeStyle(RadialGradient(colors: [Color(hex: "3A3A40"), Color(hex: "222226")], center: UnitPoint(x: 0.5, y: 0.3), startRadius: 0, endRadius: 40))
-                        : video
-                            ? AnyShapeStyle(RadialGradient(colors: [Color(hex: "FF9A7A"), Color(hex: "FF5A3C"), Color(hex: "D63A26")], center: UnitPoint(x: 0.5, y: 0.3), startRadius: 0, endRadius: 40))
-                            : AnyShapeStyle(RadialGradient(colors: [.white, Color(hex: "F2F2F4"), Color(hex: "DADADF")], center: UnitPoint(x: 0.5, y: 0.3), startRadius: 0, endRadius: 40)))
-                    .frame(width: 76, height: 76)
-                    .shadow(color: video ? Color(red: 1, green: 0.27, blue: 0.16).opacity(0.35) : .black.opacity(0.5), radius: 11, y: 8)
-                    .scaleEffect(recording ? 0.46 : (video ? 1 - 0.3 * gesture.progress : 1 - 0.64 * e))
-                    .offset(jitter)
-                    .keyframeAnimator(initialValue: 1.0, trigger: gesture.snapToken) { content, s in content.scaleEffect(s) } keyframes: { _ in
-                        KeyframeTrack { LinearKeyframe(0.1, duration: 0.1); CubicKeyframe(1.1, duration: 0.14); CubicKeyframe(1, duration: 0.08) }
-                    }
                 // 光の輪が1つ はじける
-                Circle().strokeBorder(Color(hex: "FFC08A"), lineWidth: 2)
+                Circle().strokeBorder(Color(hex: "C8F25A"), lineWidth: 2)
                     .frame(width: 112, height: 112)
                     .scaleEffect(snapRing ? 2.4 : 0.6)
-                    .opacity(snapRing ? 0 : (gesture.snapToken > 0 ? 0 : 0))
+                    .opacity(snapRing ? 0 : 0)
                     .animation(snapRing ? .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.52) : nil, value: snapRing)
             }
             .frame(width: 104, height: 104)
@@ -477,7 +479,7 @@ struct CaptureScreenV21: View {
         }()
         return Text(text)
             .font(.system(size: 9.5, design: .monospaced)).tracking(0.18 * 9.5)
-            .foregroundStyle(hintOverride != nil ? Color(hex: "FF8A2A") : Color(hex: "6A6A72"))
+            .foregroundStyle(hintOverride != nil ? Color(hex: "C8F25A") : Color(hex: "6A6A72"))
             .multilineTextAlignment(.center)
             .frame(width: layout.size.width - 20)
             .position(x: layout.size.width / 2, y: min(layout.size.height - max(layout.safeBottom, 12) - 8, layout.y(792) + 6))
@@ -579,7 +581,7 @@ private struct ShutterTicks: View {
                 p.addLine(to: CGPoint(x: c.x + r2 * cos(a), y: c.y + r2 * sin(a)))
                 let on = i < lit
                 let color: Color = on
-                    ? (late ? Color(hex: "FF3B30") : (video ? (big ? Color(hex: "FFC2A8") : Color(hex: "FF7A5A")) : (big ? Color(hex: "FFD08A") : Color(hex: "FF8A2A"))))
+                    ? (late ? Color(hex: "FF3B30") : (video ? (big ? Color(hex: "FFC2A8") : Color(hex: "FF7A5A")) : (big ? Color(hex: "E2FF9A") : Color(hex: "C8F25A"))))
                     : .white.opacity(big ? 0.42 : 0.2)
                 ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: big ? 2.6 : 1.6, lineCap: .round))
             }

@@ -357,6 +357,8 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
             if self.queuePosition == .back, self.photoOutput.supportedFlashModes.contains(.auto) {
                 settings.flashMode = .auto
             }
+            // インカメは 見えた とおりに 保存(鏡)
+            self.photoOutput.connection(with: .video)?.isVideoMirrored = (self.queuePosition == .front)
             self.photoOutput.capturePhoto(with: settings, delegate: self)
         }
     }

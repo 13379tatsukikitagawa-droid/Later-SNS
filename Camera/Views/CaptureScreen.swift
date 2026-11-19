@@ -95,7 +95,9 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
     }
 
     /// 外カメラ(背面)だけを使う。切りかえはない
-    private let position: AVCaptureDevice.Position = .back
+    /// v87:内カメラ。sessionQueue の 中だけで 読み書き
+    private var position: AVCaptureDevice.Position = .back
+    @Published private(set) var cameraPosition: AVCaptureDevice.Position = .back
     /// 起動してから、これだけ待っても動かなければ「開けませんでした」
     static let startTimeout: TimeInterval = 3
     /// 撮影の時間切れ
@@ -299,6 +301,25 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
             completion(self.audioConfigured)
         }
     }
+
+    /// 外カメ ⇄ 内カメ(sessionQueue の 上で 入れかえる。メインでは 待たない)。撮影画面を ひらく たびに 外カメから
+    func setCameraPosition(_ new: AVCaptureDevice.Position) {
+        DispatchQueue.main.async { [weak self] in if self?.cameraPosition != new { self?.cameraPosition = new } }
+        sessionQueue.async { [weak self] in
+            guard let self, self.position != new else { return }
+            self.position = new
+            guard self.configured || self.session.inputs.contains(where: { ($0 as? AVCaptureDeviceInput)?.device.hasMediaType(.video) == true }) else { return }
+            self.session.beginConfiguration()
+            for input in self.session.inputs where (input as? AVCaptureDeviceInput)?.device.hasMediaType(.video) == true { self.session.removeInput(input) }
+            if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: new), let input = try? AVCaptureDeviceInput(device: device), self.session.canAddInput(input) { self.session.addInput(input) }
+            for out in [self.photoOutput as AVCaptureOutput, self.videoOutput] {
+                if let c = out.connection(with: .video) { if c.isVideoRotationAngleSupported(90) { c.videoRotationAngle = 90 }; if c.isVideoMirroringSupported { c.automaticallyAdjustsVideoMirroring = false; c.isVideoMirrored = (new == .front) } }
+            }
+            self.session.commitConfiguration()
+        }
+    }
+
+    func useBackCameraIfNeeded() { setCameraPosition(.back) }
 
     func snapshotLatestFrame(completion: @escaping (UIImage?) -> Void) {
         frameQueue.async { [weak self] in
