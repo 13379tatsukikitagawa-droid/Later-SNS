@@ -341,4 +341,6 @@
 ## v107 P50
 - ✓ A 写真:`FilmLook.chekiJPEG`(撮った 時に 1回 ・ 1440px ・ LUT ・ にじみ ・ ビネット ・ 粒子 ・ EXIF なし)・ `filmVersion = 2`(LaterPhoto ・ CKRecord `filmVersion` ・ PendingShot)・ 解禁の 直前に もう 焼かない(filmVersion が ない 写真だけ 旧 FilmEmulation を 1回 → `filmVersion = 1`)・ 古い 写真への 遡り 焼きこみは やめた。LUT の 色見本テスト(±3)。
 - 移行の 処理(`ChekiColorGrade.bakeIntoImageData` の 旧 FilmEmulation 分)は 2026-11-27 以降に 消す(P50 B)。
-- ☐ B 送る ・ 見せる / ☐ C 動画 / ☐ D はかる
+- ✓ B(外共有の 白い 枠 `InstaxShareFrame` + テスト ・ 遡り 焼きこみを 削除。**表示時の フィルターは もともと 写真に かけて いない**ので 削る もの なし)
+- △ C 動画:書き出しを `FilmLook.retro8Frame`(LUT + シャープ + 動く 粒子)に 置きかえ ・ `filmVersion = 2`。1080p 6Mbps は 10秒 約 9MB(前 1.45MB の 約 6倍)→ 規則どおり 720p30 3.5Mbps(約 4.7MB ・ 約 3.2倍)。撮る 設定(1080p30 ・ HDR オフ ・ sRGB ・ H.264)は **写真と 同じ セッション(.photo)の ため 未実施**(確認待ち)
+- ☐ D はかる

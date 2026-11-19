@@ -106,6 +106,21 @@ nonisolated final class FilmLook: @unchecked Sendable {
         return CIImage(bitmapData: data, bytesPerRow: n * 4, size: CGSize(width: n, height: n), format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
     }()
 
+    // MARK: 動画:iPhone 8 風(撮った あと 1回 書き出す ・ 1こま ずつ GPU)
+    enum Retro8 {
+        static let sharpness: Double = 0.35
+        static let sharpRadius: Double = 1.2
+        static let grainAlpha: CGFloat = 0.30
+    }
+
+    /// 1こま:LUT(色)→ うすい シャープ → 粒子(こまごとに ずらす)。向き ・ 大きさは 呼ぶ 側で そろえて ある
+    func retro8Frame(_ input: CIImage, frame: Int) -> CIImage {
+        let ext = input.extent
+        var img = lut(input, retro8LUT)
+        img = img.applyingFilter("CISharpenLuminance", parameters: [kCIInputSharpnessKey: Retro8.sharpness, kCIInputRadiusKey: Retro8.sharpRadius]).cropped(to: ext)
+        return grain(over: img, alpha: Retro8.grainAlpha, seed: UInt64(max(0, frame))).cropped(to: ext).settingAlphaOne(in: ext)
+    }
+
     // MARK: 部品
     private func lut(_ img: CIImage, _ data: Data) -> CIImage {
         let f = CIFilter.colorCubeWithColorSpace()

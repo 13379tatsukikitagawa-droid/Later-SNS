@@ -23,12 +23,13 @@ struct RecordedVideo: Sendable {
 
 enum VideoRules {
     /// 書き出し(RETRO-8)
-    static let width = 540
-    static let height = 720
+    // v107:1080p(1080 × 1440 ・ 約 6Mbps)で 測ったら 10秒で 約 9MB(これまでの 約 6倍)。2倍を こえた ので、決めた とおり 720p30 ・ 約 3.5Mbps に 下げた
+    static let width = 720
+    static let height = 960
     static let fps: Int32 = 30
-    static let bitRate = 1_200_000
+    static let bitRate = 3_500_000
     static let keyFrameInterval = 30
-    static let audioBitRate = 64_000
+    static let audioBitRate = 128_000   // v107:AAC 128kbps
     /// もとの映像
     static let rawWidth = 720
     static let rawHeight = 960

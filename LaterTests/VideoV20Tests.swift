@@ -9,8 +9,8 @@ import UIKit
 /// v20 動画・v18.2 撮ったあと の決めごと
 struct VideoV20Tests {
     @Test func 動画の数字() {
-        #expect(VideoRules.width == 540 && VideoRules.height == 720)
-        #expect(VideoRules.bitRate == 1_200_000 && VideoRules.keyFrameInterval == 30)
+        #expect(VideoRules.width == 720 && VideoRules.height == 960)
+        #expect(VideoRules.bitRate == 3_500_000 && VideoRules.keyFrameInterval == 30)
         #expect(VideoRules.rawWidth == 720 && VideoRules.rawHeight == 960)
         #expect(VideoRules.maxDuration == 10)
         #expect(abs(VideoRules.tickInterval - 10.0 / 24) < 0.0001)
@@ -107,10 +107,12 @@ struct VideoV20Tests {
         let result = try await RetroExporter.export(raw: video.url, to: out, velocities: video.velocities, captureDate: Date(), light: false)
         let seconds = Date().timeIntervalSince(start)
         print(String(format: "[RetroExport] 10秒の動画を %.1f秒で書き出し(1コマ %.1fms)", seconds, seconds * 1000 / 300))
+        let sz = (try? FileManager.default.attributesOfItem(atPath: out.path)[.size] as? Int) ?? 0
+        print("[RetroExport] 書き出しの大きさ \(sz) bytes(\(Double(sz) / 1_048_576) MB)")
         #expect(!result.poster.isEmpty)
         #expect(result.duration > 9.5 && result.duration <= 10.1)
         let tracks = try await AVURLAsset(url: out).loadTracks(withMediaType: .video)
-        #expect(try await tracks.first!.load(.naturalSize) == CGSize(width: 540, height: 720))
+        #expect(try await tracks.first!.load(.naturalSize) == CGSize(width: 720, height: 960))
         try? FileManager.default.removeItem(at: video.url)
         try? FileManager.default.removeItem(at: out)
     }

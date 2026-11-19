@@ -75,8 +75,7 @@ nonisolated enum RetroExporter {
         guard reader.startReading(), writer.startWriting() else { throw ExportError.reader }
         writer.startSession(atSourceTime: .zero)
 
-        let look = RetroLook()
-        let stamp = RetroSettings.stampOn ? RetroStamp.text(for: captureDate) : nil
+        let film = FilmLook.shared   // v107:iPhone 8 風(LUT + うすい シャープ + 動く 粒子)。日付の 焼きこみは しない
         let box = ExportBox()
         let group = DispatchGroup()
 
@@ -97,15 +96,15 @@ nonisolated enum RetroExporter {
                 image = image.transformed(by: CGAffineTransform(scaleX: CGFloat(VideoRules.width) / image.extent.width, y: CGFloat(VideoRules.height) / image.extent.height))
                 image = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY))
                     .cropped(to: CGRect(x: 0, y: 0, width: VideoRules.width, height: VideoRules.height))
-                let velocity = box.frame < velocities.count ? velocities[box.frame] : 0
+                _ = t
+                let processed = film.retro8Frame(image, frame: box.frame)
                 box.frame += 1
-                let processed = look.process(image, time: t, velocityX: velocity, stampText: stamp, light: light)
                 guard let pool = adaptor.pixelBufferPool else { continue }
                 var out: CVPixelBuffer?
                 CVPixelBufferPoolCreatePixelBuffer(nil, pool, &out)
                 guard let out else { continue }
-                look.context.render(processed, to: out, bounds: CGRect(x: 0, y: 0, width: VideoRules.width, height: VideoRules.height), colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
-                if box.poster == nil, let cg = look.context.createCGImage(processed, from: processed.extent) {
+                film.context.render(processed, to: out, bounds: CGRect(x: 0, y: 0, width: VideoRules.width, height: VideoRules.height), colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
+                if box.poster == nil, let cg = film.context.createCGImage(processed, from: processed.extent) {
                     box.poster = UIImage(cgImage: cg).jpegData(compressionQuality: 0.85)
                 }
                 adaptor.append(out, withPresentationTime: CMTimeSubtract(pts, box.first ?? pts))
@@ -300,6 +299,8 @@ enum RetroExportQueue {
             photo.videoFileName = fileName
             photo.imageData = poster
             photo.mosaicTiny = mosaic
+            photo.filmVersion = FilmLook.version   // v107:焼いた ファイルの しるし(動画)
+            photo.isColorGraded = true
         }
         try? context.save()
         // すでに「投稿する」を選んでいたら、もう一度送る(レトロ済みの動画だけが届く)
