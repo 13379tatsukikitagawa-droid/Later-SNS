@@ -206,6 +206,7 @@ struct YesterdayV64View: View {
                 VStack(spacing: 0) {
                     ForEach(input.posts) { post in postView(post, w: w).hapticSection(post.id, locked: input.locked) }
                 }.padding(.top, input.locked ? 14 : 22)
+                FeedEndV106(empty: noFriends, shotToday: input.shotsUsed > 0, onAdd: { actions.openFriends() }, onShoot: { actions.shoot() })
                 Color.clear.frame(height: 150)
             }
         }
@@ -384,6 +385,13 @@ struct YesterdayV64View: View {
 
     // MARK: 投稿(1人 = 1つ)
 
+    private var lockedLabel: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "lock.fill").font(.system(size: 26, weight: .semibold)).foregroundStyle(.white)
+            Text("あした 9:00 に ひらく").font(LF.inter(800, 15)).foregroundStyle(.white)
+        }.shadow(color: .black.opacity(0.4), radius: 6)
+    }
+
     private func postView(_ post: YesterdayV64Input.Post, w: CGFloat) -> some View {
         let idx = min(swapped[post.id] ?? 0, max(0, post.photos.count - 1))
         let big = post.photos.indices.contains(idx) ? post.photos[idx] : nil
@@ -404,8 +412,18 @@ struct YesterdayV64View: View {
                 ZStack {
                     Color(hex: "111111")
                     if let img = big?.image {
-                        if hidden { Image(uiImage: V64Images.blurred(key: "yb\(post.id)\(idx)", source: img, maxPixel: 48, radius: 14, saturation: 1.0, brightness: 0.6)).resizable().scaledToFill() }
-                        else { Image(uiImage: img).resizable().scaledToFill() }
+                        // ひらく まえ(ぼかした 写真 + 鍵)/ ひらいた(写真)
+                        if hidden {
+                            Image(uiImage: V64Images.blurred(key: "yb\(post.id)\(idx)", source: img, maxPixel: 48, radius: 14, saturation: 1.0, brightness: 0.6)).resizable().scaledToFill()
+                            lockedLabel
+                        } else { Image(uiImage: img).resizable().scaledToFill() }
+                    } else if hidden {
+                        // ひらく まえ(写真が まだ 無い):鍵 +「あした 9:00 に ひらく」。何も 出ない 面は 作らない(v106 §3-1)
+                        LinearGradient(colors: [Color(hex: "1B1C1F"), Color(hex: "101012")], startPoint: .top, endPoint: .bottom)
+                        lockedLabel
+                    } else {
+                        // 読みこみ中(光が 流れる)
+                        Shimmer()
                     }
                 }
                 .frame(width: w - 16, height: (w - 16) * 4 / 3).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
