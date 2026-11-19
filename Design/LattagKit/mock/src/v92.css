@@ -1,0 +1,21 @@
+/* ===== v92(モック v92 ・ PROMPT v102):利用規約 ・ プライバシーを アプリ内ブラウザ風 シートで ひらく ===== */
+.b9sf{position:absolute;inset:0;z-index:460;pointer-events:none;visibility:hidden;transition:visibility 0s .5s}
+.b9sf.on{pointer-events:auto;visibility:visible;transition:none}
+.b9bk{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .35s}
+.b9sf.on .b9bk{opacity:1}
+.b9pn{position:absolute;left:0;right:0;bottom:0;top:46px;background:#1C1C1E;border-radius:14px 14px 0 0;transform:translateY(102%);transition:transform .5s cubic-bezier(.2,.9,.25,1);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -10px 40px rgba(0,0,0,.45)}
+.b9sf.on .b9pn{transform:none}
+.b9tb{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 0 4px;height:52px;flex:none;background:#2C2C2E;border-bottom:1px solid rgba(255,255,255,.08)}
+.b9dn{min-width:64px;height:44px;border:0;background:none;color:#C8F25A;font:600 16px Inter,var(--sans);text-align:left;padding:0 10px}
+.b9ad{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;color:#fff;font:500 12px/1 Inter,var(--sans);opacity:.88}
+.b9ad svg{width:11px;height:11px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.b9ad span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b9ex{width:44px;height:44px;border:0;background:none;color:#fff;display:grid;place-items:center}
+.b9ex svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.b9bd{position:relative;flex:1;background:#fff;min-height:0}
+.b9bd iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent}
+.b9ld{position:absolute;inset:0;display:grid;place-items:center;margin:0;color:#8E8E95;font:500 13px var(--sans)}
+.ob .obtm .b9l{cursor:pointer;padding:8px 1px;text-decoration-color:rgba(255,255,255,.55)}
+.ob .obtm .b9l:focus-visible{outline:2px solid #C8F25A;outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){.b9pn,.b9bk{transition:none}}
+.b9dn:focus,.b9dn:focus-visible{outline:none}

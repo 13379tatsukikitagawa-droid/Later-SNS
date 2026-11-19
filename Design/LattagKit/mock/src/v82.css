@@ -1,0 +1,152 @@
+
+/* ================= v82(PROMPT v89)・ お題 ・ 音楽 ・ 前日の 写真が ひらく ・ アイコン 56 ================= */
+/* A. お題:太い ゴシック */
+#tag .th{font:900 28px/1.22 var(--sans)!important;letter-spacing:-.035em!important;right:84px;max-width:290px;text-wrap:balance;word-break:keep-all;overflow-wrap:anywhere}
+
+/* B. 音楽の チップ(タグ画面):流れて いる 間 */
+#tag .msc.mu8on{box-shadow:inset 0 0 0 1.5px rgba(200,242,90,.7),0 0 22px -6px rgba(200,242,90,.6)!important}
+#tag .msc.mu8on .meq s{animation:mu8eq .9s ease-in-out infinite!important;background:#C8F25A!important}
+#tag .msc.mu8on .meq s:nth-child(2){animation-delay:-.3s!important}
+#tag .msc.mu8on .meq s:nth-child(3){animation-delay:-.6s!important}
+#tag .msc.mu8on .mdisc{animation:mu8spin 3.2s linear infinite!important}
+#tag .msc.mu8ps .meq s{animation:none!important;height:3px!important;opacity:.5}
+@keyframes mu8eq{0%,100%{height:3px}50%{height:13px}}
+@keyframes mu8spin{to{transform:rotate(360deg)}}
+
+/* B. 音楽の シート(黒)*/
+.mu8{position:absolute;inset:0;z-index:120;visibility:hidden;transition:visibility 0s .5s}
+.mu8.on{visibility:visible;transition:none}
+.mu8 .mu8bk{position:absolute;inset:0;background:rgba(0,0,0,.6);opacity:0;transition:opacity .35s;display:block}
+.mu8.on .mu8bk{opacity:1}
+.mu8 .mu8s{position:absolute;left:0;right:0;bottom:0;top:58px;border-radius:34px 34px 0 0;background:#0F1011;color:#fff;box-shadow:0 -1px 0 rgba(255,255,255,.1),0 -30px 80px rgba(0,0,0,.6);transform:translateY(102%);transition:transform .5s cubic-bezier(.2,.9,.25,1);display:flex;flex-direction:column;overflow:hidden}
+.mu8.on .mu8s{transform:none}
+.mu8 .mu8gr{height:22px;flex:none;display:grid;place-items:center;touch-action:none;cursor:grab}
+.mu8 .mu8gr i{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);display:block}
+.mu8 .mu8t{flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 20px 0 22px}
+.mu8 .mu8t b{font:900 26px var(--sans);letter-spacing:-.03em}
+.mu8 .mu8sv{display:flex;align-items:center;gap:6px;font:700 11px var(--mono);letter-spacing:.06em;color:rgba(255,255,255,.55)}
+.mu8 .mu8sv i{width:7px;height:7px;border-radius:50%;background:#C8F25A;box-shadow:0 0 8px rgba(200,242,90,.8);display:block}
+.mu8 .mu8q{flex:none;margin:14px 16px 0;height:46px;border-radius:23px;background:rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;padding:0 16px}
+.mu8 .mu8q svg{width:19px;height:19px;fill:none;stroke:rgba(255,255,255,.5);stroke-width:2;stroke-linecap:round}
+.mu8 .mu8q input{flex:1;min-width:0;border:0;outline:0;background:none;color:#fff;font:700 15px var(--sans);caret-color:#C8F25A}
+.mu8 .mu8q input::placeholder{color:rgba(255,255,255,.35)}
+.mu8 .mu8sg{position:relative;flex:none;display:grid;grid-template-columns:repeat(3,1fr);margin:12px 16px 0;height:40px;padding:3px;border-radius:20px;background:rgba(255,255,255,.07);box-sizing:border-box}
+.mu8 .mu8sg>i{position:absolute;left:3px;top:3px;bottom:3px;width:calc((100% - 6px) / 3);border-radius:17px;background:#fff;transition:transform .34s cubic-bezier(.3,1.25,.5,1);display:block}
+.mu8 .mu8sg[data-t="rc"]>i{transform:translateX(100%)}
+.mu8 .mu8sg[data-t="lib"]>i{transform:translateX(200%)}
+.mu8 .mu8sg button{position:relative;border:0;background:none;font:800 13px var(--sans);color:rgba(255,255,255,.65);cursor:pointer;transition:color .2s}
+.mu8 .mu8sg button.on{color:#0B0C0D}
+.mu8 .mu8b{flex:1;overflow-y:auto;scrollbar-width:none;padding:4px 16px 130px}
+.mu8 .mu8b::-webkit-scrollbar{display:none}
+.mu8 .mu8h{margin:18px 2px 8px;font:800 14px var(--sans);color:rgba(255,255,255,.6)}
+.mu8 .mu8no{margin-top:40px;text-align:center;font:600 13px var(--sans);color:rgba(255,255,255,.4)}
+.mu8 .mu8big{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px}
+.mu8 .mu8big::-webkit-scrollbar{display:none}
+.mu8 .mu8c{flex:none;width:132px;border:0;background:none;padding:0;color:#fff;text-align:left;cursor:pointer}
+.mu8 .mu8c>i{position:relative;display:block;width:132px;height:132px;border-radius:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);transition:transform .25s cubic-bezier(.3,1.4,.5,1),box-shadow .2s}
+.mu8 .mu8c:active>i{transform:scale(.95)}
+.mu8 .mu8c.on>i{box-shadow:0 0 0 3px #0F1011,0 0 0 5.5px #C8F25A}
+.mu8 .mu8c b{display:block;margin-top:8px;font:800 13.5px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu8 .mu8c small{display:block;margin-top:2px;font:600 11.5px var(--sans);color:rgba(255,255,255,.5)}
+.mu8 .mu8r{width:100%;min-height:64px;border:0;background:none;display:flex;align-items:center;gap:12px;padding:6px 4px;color:#fff;text-align:left;cursor:pointer;border-radius:16px;transition:background .2s}
+.mu8 .mu8r:active{background:rgba(255,255,255,.05)}
+.mu8 .mu8r>i{position:relative;width:52px;height:52px;border-radius:12px;flex:none;display:block;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.mu8 .mu8r.on>i{box-shadow:0 0 0 2.5px #0F1011,0 0 0 4.5px #C8F25A}
+.mu8 .mu8r span{flex:1;min-width:0;display:grid;gap:2px}
+.mu8 .mu8r b{font:800 15px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu8 .mu8r.on b{color:#C8F25A}
+.mu8 .mu8r small{font:600 12px var(--sans);color:rgba(255,255,255,.5)}
+.mu8 .mu8r em{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:rgba(255,255,255,.08)}
+.mu8 .mu8r.pl em{background:#C8F25A}
+.mu8 .mu8r em svg{width:16px;height:16px;fill:#fff}
+.mu8 .mu8r.pl em svg{fill:#0B0C0D}
+/* 流れて いる 曲の ジャケットに 波 */
+.mu8 i>u{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.42);display:none;align-items:flex-end;justify-content:center;gap:3px;padding-bottom:30%}
+.mu8 .pl>i>u,.mu8 .mu8m.pl>i>u{display:flex}
+.mu8 i>u s{width:4px;height:6px;border-radius:2px;background:#C8F25A;text-decoration:none;animation:mu8eq .9s ease-in-out infinite;display:block}
+.mu8 i>u s:nth-child(2){animation-delay:-.3s}.mu8 i>u s:nth-child(3){animation-delay:-.6s}
+/* 下の バー(えらんだ 曲 + 決める)*/
+.mu8 .mu8ft{position:absolute;left:0;right:0;bottom:0;padding:12px 16px 30px;background:linear-gradient(rgba(15,16,17,0),#0F1011 26%);display:flex;flex-direction:column;gap:10px}
+.mu8 .mu8m{display:none;align-items:center;gap:10px;height:58px;padding:0 12px 0 8px;border-radius:18px;background:#1A1B1E;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);position:relative;overflow:hidden}
+.mu8 .mu8ft.on .mu8m{display:flex}
+.mu8 .mu8m>i{position:relative;width:42px;height:42px;border-radius:10px;flex:none;display:block}
+.mu8 .mu8m span{flex:1;min-width:0;display:grid;gap:1px}
+.mu8 .mu8m b{font:800 14px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu8 .mu8m small{font:600 11.5px var(--sans);color:rgba(255,255,255,.5)}
+.mu8 .mu8pp{position:absolute;left:0;right:0;bottom:0;height:2.5px;background:rgba(255,255,255,.08);display:block}
+.mu8 .mu8pp i{display:block;height:100%;width:0;background:#C8F25A}
+.mu8 .mu8go{height:56px;border:0;border-radius:28px;background:#C8F25A;color:#0B0C0D;font:900 16px var(--sans);cursor:pointer;box-shadow:0 16px 34px -16px rgba(200,242,90,.7)}
+.mu8 .mu8go:disabled{background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);box-shadow:none;cursor:default}
+.mu8 .mu8rm{height:40px;border:0;border-radius:20px;background:none;color:rgba(255,255,255,.55);font:700 13px var(--sans);cursor:pointer}
+/* つなぐ 前 */
+.mu8 .mu8cn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 28px 60px}
+.mu8 .mu8cd{position:relative;width:170px;height:150px}
+.mu8 .mu8cd i{position:absolute;top:10px;width:120px;height:120px;border-radius:22px;display:block;box-shadow:0 20px 40px -18px rgba(0,0,0,.8)}
+.mu8 .mu8cd .a{left:0;transform:rotate(-10deg);background:linear-gradient(135deg,#9ED8FF,#9B8CFF)}
+.mu8 .mu8cd .b{right:0;transform:rotate(10deg);background:linear-gradient(135deg,#63DC7B,#FFD25A)}
+.mu8 .mu8cd .c{left:25px;top:0;background:linear-gradient(135deg,#C8F25A,#18FA45);box-shadow:0 0 0 3px #0F1011,0 24px 50px -16px rgba(200,242,90,.5)}
+.mu8 .mu8cn>b{margin-top:22px;font:900 22px var(--sans);letter-spacing:-.02em}
+.mu8 .mu8cn p{margin:8px 0 0;font:600 13.5px/1.6 var(--sans);color:rgba(255,255,255,.55)}
+.mu8 .mu8con{margin-top:24px;width:100%;height:56px;border:0;border-radius:28px;background:#fff;color:#0B0C0D;font:900 16px var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.mu8 .mu8con svg{width:20px;height:20px;fill:#0B0C0D}
+.mu8 .mu8con.ld{opacity:.6}
+.mu8 .mu8cn small{margin-top:12px;font:600 11px/1.5 var(--sans);color:rgba(255,255,255,.35)}
+
+/* C. 前日の 写真が ひらく */
+.rv8{position:absolute;inset:0;z-index:84;color:#fff;visibility:hidden;opacity:0;transition:opacity .35s,visibility 0s .35s;overflow:hidden}
+.rv8.on{visibility:visible;opacity:1;transition:opacity .35s}
+.rv8 .rv8bg{position:absolute;inset:0;background:radial-gradient(70% 40% at 50% 44%,rgba(200,242,90,.12),rgba(200,242,90,0) 70%),radial-gradient(130% 40% at 50% 108%,rgba(36,160,60,.32),rgba(36,160,60,0) 70%),#0B0C0D;display:block}
+.rv8.rare .rv8bg{background:radial-gradient(70% 40% at 50% 44%,rgba(238,94,156,.16),rgba(238,94,156,0) 70%),radial-gradient(130% 40% at 50% 108%,rgba(200,242,90,.3),rgba(200,242,90,0) 70%),#0B0C0D}
+.rv8 .rv8hd{position:absolute;left:0;right:0;top:62px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.rv8 .rv8hd small{font:700 10.5px var(--mono);letter-spacing:.22em;color:rgba(255,255,255,.55)}
+.rv8 .rv8dt{display:flex;gap:6px}
+.rv8 .rv8dt i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.25);display:block;transition:width .3s}
+.rv8 .rv8dt i.on{width:20px;background:#C8F25A}
+.rv8 .rv8dt i.d{background:rgba(200,242,90,.5)}
+.rv8 .rv8st{position:absolute;left:0;right:0;top:132px;display:flex;justify-content:center}
+.rv8 .rv8cd{position:relative;width:300px;height:400px;border:0;padding:0;border-radius:26px;background:#0B0C0D;cursor:pointer;box-shadow:0 30px 70px -26px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.08)}
+.rv8 .rv8ph{position:absolute;inset:0;border-radius:26px;overflow:hidden;background:#000}
+.rv8 .rv8ph img{width:100%;height:100%;object-fit:cover;display:block;will-change:filter,transform}
+.rv8 .rv8lk{position:absolute;top:-10%;bottom:-10%;left:0;width:60%;background:linear-gradient(90deg,rgba(255,170,90,0),rgba(255,190,110,.55),rgba(200,242,90,.35),rgba(255,170,90,0));mix-blend-mode:screen;opacity:0;display:block}
+.rv8.rare .rv8lk{background:linear-gradient(90deg,rgba(238,94,156,0),rgba(238,94,156,.7),rgba(200,242,90,.5),rgba(238,94,156,0))}
+.rv8 .rv8ir{position:absolute;inset:0;width:300px;height:400px;border-radius:26px;pointer-events:none}
+.rv8 .rv8tm{position:absolute;right:16px;bottom:14px;font:700 15px var(--mono);letter-spacing:.06em;color:#C8F25A;text-shadow:0 0 10px rgba(200,242,90,.6);opacity:0;transition:opacity .4s .2s}
+.rv8 .rv8tg{position:absolute;left:-10px;top:-14px;padding:7px 13px;border-radius:13px;background:#C8F25A;color:#0B0C0D;font:900 15px var(--sans);box-shadow:3px 4px 0 rgba(0,0,0,.45);opacity:0;transform:rotate(6deg)}
+.rv8 .rv8rr{position:absolute;right:-8px;top:-12px;padding:6px 11px;border-radius:12px;background:#EE5E9C;color:#fff;font:900 12px var(--mono);letter-spacing:.14em;transform:rotate(-8deg);opacity:0;transition:opacity .3s .5s}
+.rv8.dn .rv8tm,.rv8.dn .rv8rr{opacity:1}
+.rv8 .rv8hi{position:absolute;left:0;right:0;top:552px;margin:0;display:flex;align-items:center;justify-content:center;gap:6px;font:700 12px var(--sans);color:rgba(255,255,255,.5);opacity:0;transition:opacity .4s .4s}
+.rv8 .rv8hi svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.rv8.dn .rv8hi{opacity:1}
+.rv8 .rv8ac{position:absolute;left:16px;right:16px;bottom:44px;display:grid;gap:10px;opacity:0;transform:translateY(24px);transition:opacity .45s .55s,transform .55s .55s cubic-bezier(.2,.9,.25,1);pointer-events:none}
+.rv8.dn .rv8ac{opacity:1;transform:none;pointer-events:auto}
+.rv8 .rv8ac button,.rv8 .rv8ac2 button{height:56px;border:0;border-radius:28px;font:900 16px var(--sans);cursor:pointer}
+.rv8 .rv8y{background:#C8F25A;color:#0B0C0D;box-shadow:0 16px 34px -16px rgba(200,242,90,.7)}
+.rv8 .rv8n{background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 0 0 .8px rgba(255,255,255,.22)}
+/* 全画面 */
+.rv8 .rv8fv{position:absolute;inset:0;z-index:3;visibility:hidden;--fa:1}
+.rv8 .rv8fv.on{visibility:visible}
+.rv8 .rv8fv::before{content:'';position:absolute;inset:0;background:#000;opacity:var(--fa)}
+.rv8 .rv8fz{position:absolute;inset:0;overflow:hidden;transform-origin:0 0;touch-action:none}
+.rv8 .rv8fz img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s cubic-bezier(.2,.9,.25,1)}
+.rv8 .rv8fs{position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0) 20%,rgba(0,0,0,0) 62%,rgba(0,0,0,.8));display:block;opacity:var(--fa)}
+.rv8 .rv8fh{position:absolute;left:0;right:0;top:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;opacity:var(--fa)}
+.rv8 .rv8fh button{width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.3);display:grid;place-items:center;cursor:pointer}
+.rv8 .rv8fh svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}
+.rv8 .rv8fh span{text-align:center;display:grid;gap:2px}
+.rv8 .rv8fh b{font:700 15px var(--mono);color:#C8F25A}
+.rv8 .rv8fh small{font:700 11px var(--sans);color:rgba(255,255,255,.7)}
+.rv8 .rv8fh>i{width:44px;display:block}
+.rv8 .rv8ff{position:absolute;left:16px;right:16px;bottom:44px;display:grid;gap:14px;opacity:var(--fa)}
+.rv8 .rv8fg{display:flex;gap:6px}
+.rv8 .rv8fg span{padding:6px 12px;border-radius:13px;background:#C8F25A;color:#0B0C0D;font:900 14px var(--sans)}
+.rv8 .rv8fg span.r{background:#EE5E9C;color:#fff}
+.rv8 .rv8ac2{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+
+/* D. アイコンを 大きく(Home ・ yesterday とも 56)*/
+#hhd .av{width:56px!important;height:56px!important;right:16px!important;top:47px!important}
+#hhd .av .x8tip{top:64px}
+#yst .y72 .ztd.zava{width:60px;height:60px;margin-top:-8px;margin-right:-4px}
+#yst .y72 .ztd.zava>i{width:56px!important;height:56px!important;font-size:20px!important}
+#yst .y72 .ztd.zava .tip{top:64px}
+#yst .y72 .zhd2.cp .ztd.zava{transform:scale(.72)!important}
+@media (prefers-reduced-motion:reduce){.mu8 i>u s,#tag .msc.mu8on .meq s,#tag .msc.mu8on .mdisc{animation:none!important}}

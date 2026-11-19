@@ -1,0 +1,17 @@
+/* ===== v90(モック v91):バイブ ===== */
+/* 「ひらくまで」を 長押し 中:ライムの 輪が 1秒ごとに 脈 */
+#hst.h9beat{outline:2px solid #C8F25A;outline-offset:2px}
+/* 9:00 / 24:00 の カウントダウン(モックで 見せる ため)*/
+.h9cd{position:absolute;left:50%;top:41%;width:176px;height:176px;margin:-88px 0 0 -88px;z-index:400;display:grid;place-items:center;border-radius:50%;background:rgba(11,11,12,.8);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18),0 20px 50px -10px rgba(0,0,0,.8);font:400 104px/1 var(--ttl);font-style:italic;color:#fff;pointer-events:none;opacity:0}
+.h9cd.hot{color:#C8F25A;box-shadow:inset 0 0 0 2px #C8F25A,0 0 50px -6px rgba(200,242,90,.6)}
+.h9cd:not(.hot){font-size:96px}
+.h9cd.dk{color:#fff}
+.h9cd.on{animation:h9cd .9s cubic-bezier(.3,1.3,.5,1) both}
+@keyframes h9cd{0%{opacity:0;transform:scale(1.6)}25%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(.92)}}
+/* 設定:バイブの 3つ */
+.h9sg{position:relative;display:grid;grid-template-columns:repeat(3,1fr);height:34px;min-width:216px;padding:3px;border-radius:17px;background:rgba(127,127,127,.16)}
+.h9sg i{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:14px;background:#C8F25A;transition:transform .32s cubic-bezier(.3,1.3,.5,1)}
+.h9sg[data-v="low"] i{transform:translateX(100%)}.h9sg[data-v="off"] i{transform:translateX(200%)}
+.h9sg button{position:relative;z-index:1;border:0;background:none;font:700 12px var(--sans);color:inherit;opacity:.7;cursor:pointer}
+.h9sg[data-v="std"] button[data-h="std"],.h9sg[data-v="low"] button[data-h="low"],.h9sg[data-v="off"] button[data-h="off"]{color:#111;opacity:1}
+@media (prefers-reduced-motion:reduce){.h9cd.on{animation-duration:1ms}.h9sg i{transition:none}}

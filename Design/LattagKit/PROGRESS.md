@@ -310,3 +310,13 @@
 - 送る(`KnockStore`)・ ウィジェットの `PokeFriendIntent` / `KnockSender` ・ 全画面の ボタン(Friends / 友だちカード / チャット / Home / 旧 Home)・ NEXT の poke ・ 設定の「ノックを受けとる」を 削除。
 - 古い版が 書いた knock レコードは `KnockInbox` が 黙って 捨てる(通知も 出さない)。
 - のこした:`knockOff` フィールド(SwiftData / CloudKit の 形を 変えない)・ `Haptics.knock`(スクロールの かぎ用)・ ウィジェットの iCloud 権限 ・ `Localizable.xcstrings` の `notification.poke.*`(ユーザーの 未コミット変更の ため 触らず)。
+
+
+## P44 ・ v101(Google ・ メールの サインイン / Apple を Firebase に)
+- 0 しらべ ✓(報告 済み)。設定(FIREBASE_SETUP_v101)待ち。A〜D ☐
+
+## P45 ・ v102(規約 ・ プライバシー)
+- ✓ 0 ・ A ・ B(`LegalLink` ・ O04 ・ 設定)。
+
+## P46 ・ v103(友だちまわりを Cloudflare + Firebase 認証へ)
+- 0 ✓(決定 済み)。A ☐ A2 ☐ B ☐ C ☐ D ☐ E ☐(P44 の あと)

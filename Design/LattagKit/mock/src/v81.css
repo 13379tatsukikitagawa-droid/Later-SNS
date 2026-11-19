@@ -1,0 +1,27 @@
+
+/* ================= v81(PROMPT v88)・ プロフィールの 編集 = 新しい 見た目(黒 + 黄緑)================= */
+#prf.x8p.ed .phe{height:104px;padding:0 16px 10px;align-items:flex-end;background:linear-gradient(#0B0C0D 62%,rgba(11,12,13,0))}
+#prf.x8p.ed .phe b{padding-bottom:12px;font:900 17px/1 Inter,var(--sans);letter-spacing:-.01em}
+#prf.x8p.ed .phe button{height:44px;padding:0 18px;border:0;border-radius:22px;font:800 14px var(--sans);cursor:pointer}
+#prf.x8p.ed .phe .cx{background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 0 0 .8px rgba(255,255,255,.22)}
+#prf.x8p.ed .phe .ok{background:rgba(255,255,255,.08);color:rgba(255,255,255,.35)}
+#prf.x8p.ed .phe .ok.on{background:#C8F25A;color:#0B0C0D;box-shadow:0 12px 26px -12px rgba(200,242,90,.8)}
+#prf.x8p.ed .x8mn{display:none}
+#prf.x8p.ed .ped{gap:10px;margin:22px 16px 0}
+#prf.x8p.ed .pes{padding:14px 14px 16px;border-radius:22px;background:#121315;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+#prf.x8p.ed .peh{margin-bottom:12px}
+#prf.x8p.ed .peh b{font:800 15px var(--sans);letter-spacing:-.01em}
+#prf.x8p.ed .peh em{font:700 10px var(--mono);letter-spacing:.14em;color:rgba(255,255,255,.4)}
+#prf.x8p.ed .pep .cam{background:#C8F25A}
+#prf.x8p.ed .pep .cam svg{stroke:#0B0C0D}
+#prf.x8p.ed .pep .on{box-shadow:0 0 0 3px #121315,0 0 0 5.5px #C8F25A}
+#prf.x8p.ed .pen{height:54px;border-radius:16px;background:rgba(255,255,255,.07);transition:box-shadow .2s}
+#prf.x8p.ed .pen:focus-within{box-shadow:inset 0 0 0 1.5px #C8F25A}
+#prf.x8p.ed .pen input{font:800 19px var(--sans);caret-color:#C8F25A}
+#prf.x8p.ed .pet .tc.e{border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.4)}
+#prf.x8p.ed .pesg button{height:34px;padding:0 13px;border:0;border-radius:17px;background:rgba(255,255,255,.07);color:#fff;font:700 13px var(--sans);cursor:pointer}
+#prf.x8p.ed .pesg .cu{height:34px;border:1.5px dashed rgba(200,242,90,.5);color:#C8F25A}
+#prf.x8p.ed .pesg .cu input{caret-color:#C8F25A}
+#prf.x8p.ed .pbg1{background:#C8F25A}
+#prf.x8p.ed .pbg1 svg{stroke:#0B0C0D}
+#prf.x8p.ed .pnm .mood{opacity:.6}

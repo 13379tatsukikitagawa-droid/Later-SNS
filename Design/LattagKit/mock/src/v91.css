@@ -1,0 +1,30 @@
+/* ===== v91(モック v91):サインインの 状態 ===== */
+.a9k{color:#C8F25A!important}
+.a9ic{display:grid;place-items:center;width:52px;height:52px;margin-bottom:16px;border-radius:50%;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);color:#fff}
+.a9ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+/* はいって いる */
+.a9sp{position:relative;width:64px;height:64px;margin:18px 0 18px;display:grid;place-items:center}
+.a9sp i{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(200,242,90,.18);border-top-color:#C8F25A;animation:a9spin .9s linear infinite}
+.a9sp b{font:900 24px var(--sans);color:#C8F25A}
+@keyframes a9spin{to{transform:rotate(360deg)}}
+/* まちがい */
+.a9er{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font:700 13px/1.5 var(--sans);color:#FF7A2F;text-align:left}
+.a9er svg{flex:none;width:18px;height:18px;margin-top:1px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round}
+.a9er small{display:block;margin-top:2px;font:700 10px var(--mono);color:rgba(255,255,255,.45)}
+.obin.a9bad{border-bottom-color:#FF7A2F!important}
+/* おくって います */
+.a9dot{display:inline-block;width:14px;height:14px;margin-right:9px;vertical-align:-2px;border-radius:50%;border:2px solid rgba(17,17,17,.25);border-top-color:#111;animation:a9spin .8s linear infinite}
+.a9dot.dk{border-color:rgba(255,255,255,.25);border-top-color:#fff}
+/* もういちど(60秒)・ まちがえた */
+.a9rs[disabled]{opacity:.55}.a9rs em{font:700 12px var(--mono);font-style:normal;margin-left:4px;opacity:.8}
+.a9fix{margin-top:10px;padding:10px 4px;border:0;background:none;color:#fff;font:700 13px var(--sans);text-decoration:underline;text-underline-offset:3px;opacity:.85;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.a9sp i,.a9dot{animation-duration:2.4s}}
+/* 新しい 状態も メールの 画面と 同じ 置き方(上に ロゴ ・ ページ番号は 出さない)*/
+.ob.s-back .obp,.ob.s-ask .obp,.ob.s-old .obp,.ob.s-exists .obp,.ob.s-wb .obp{opacity:0}
+.ob.s-back .obl,.ob.s-ask .obl,.ob.s-old .obl,.ob.s-exists .obl,.ob.s-wb .obl{opacity:1}
+.ob.s-back .obc,.ob.s-ask .obc,.ob.s-old .obc,.ob.s-exists .obc,.ob.s-wb .obc{top:150px}
+.ob.s-back .obx,.ob.s-ask .obx,.ob.s-old .obx,.ob.s-exists .obx,.ob.s-wb .obx{top:424px}
+.ob.s-back .obwall,.ob.s-ask .obwall,.ob.s-old .obwall,.ob.s-exists .obwall{opacity:.12}
+.ob.s-ask .obc{top:118px;scale:.82}.ob.s-ask .obx{top:384px}
+.a9ic{width:40px;height:40px;margin:0 auto 12px}.a9ic svg{width:20px;height:20px}
+.a9sp{margin:0 auto 14px}

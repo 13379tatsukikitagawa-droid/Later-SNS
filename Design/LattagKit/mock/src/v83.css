@@ -1,0 +1,120 @@
+
+/* ================= v83(PROMPT v90)・ Trip を つくる:ブラッシュアップ ================= */
+.tw77.tw8{background:#0B0C0D;overflow:hidden}
+.tw8 .tw8bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 30% at 50% 18%,rgba(200,242,90,.12),rgba(200,242,90,0) 70%),radial-gradient(130% 34% at 50% 108%,rgba(36,160,60,.3),rgba(36,160,60,0) 70%);display:block}
+.tw8 .tw8h{position:relative;display:flex;align-items:center;gap:12px;padding:52px 16px 0}
+.tw8 .tw8h button{width:44px;height:44px;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.22);display:grid;place-items:center;cursor:pointer}
+.tw8 .tw8h button svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.tw8 .tw8h .tw8pg{flex:1;display:flex;gap:5px}
+.tw8 .tw8h .tw8pg i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.12);display:block;transition:background .3s}
+.tw8 .tw8h .tw8pg i.d{background:rgba(200,242,90,.5)}
+.tw8 .tw8h .tw8pg i.on{background:#C8F25A;box-shadow:0 0 10px rgba(200,242,90,.6)}
+.tw8 .tw8h>span{flex:none;min-width:36px;text-align:right;font:900 15px Inter,var(--sans)}
+.tw8 .tw8h>span small{font:700 10px var(--mono);color:rgba(255,255,255,.4)}
+/* パス(搭乗券)*/
+.tw8 .tw8p{position:relative;display:flex;margin:14px 16px 0;height:148px;border-radius:22px;background:#F4EFE6;color:#111;box-shadow:0 22px 40px -22px rgba(0,0,0,.95);overflow:hidden}
+.tw8 .tw8p .tw8s{position:relative;flex:none;width:98px;background:#222 center/cover}
+.tw8 .tw8p .tw8s i{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.6));display:block}
+.tw8 .tw8p .tw8s span{position:absolute;left:10px;bottom:10px;font:900 11px Inter,var(--sans);letter-spacing:-.02em;color:#fff}
+.tw8 .tw8p .tw8pf{position:absolute;left:98px;top:0;bottom:0;width:0;border-left:2px dashed rgba(17,17,17,.22);display:block}
+.tw8 .tw8p .tw8pf::before,.tw8 .tw8p .tw8pf::after{content:'';position:absolute;left:-10px;width:18px;height:18px;border-radius:50%;background:#0B0C0D}
+.tw8 .tw8p .tw8pf::before{top:-9px}.tw8 .tw8p .pf::after{bottom:-9px}
+.tw8 .tw8p .tw8b{flex:1;min-width:0;padding:13px 22px 12px 16px;display:flex;flex-direction:column}
+.tw8 .tw8p .tw8r1{display:flex;justify-content:space-between;font:700 8.5px var(--mono);letter-spacing:.18em;color:rgba(17,17,17,.5)}
+.tw8 .tw8p .tw8r1 em{font-style:normal;letter-spacing:.08em}
+.tw8 .tw8p .tw8tt{margin-top:5px;height:32px;font:900 27px/32px Inter,var(--sans);letter-spacing:-.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.tw8 .tw8p .tw8tt span{display:inline-block;transform-origin:50% 60%}
+.tw8 .tw8p .tw8tt.tw8ph{color:rgba(17,17,17,.24)}
+.tw8 .tw8p .tw8r2{display:flex;align-items:flex-end;gap:10px;margin-top:6px}
+.tw8 .tw8p .tw8r2>div{display:grid}
+.tw8 .tw8p .tw8r2 small{font:700 7.5px var(--mono);letter-spacing:.16em;color:rgba(17,17,17,.45)}
+.tw8 .tw8p .tw8r2 b{font:900 17px/1.1 Inter,var(--sans);letter-spacing:-.02em}
+.tw8 .tw8p .tw8r2 em{font:700 8px var(--mono);font-style:normal;letter-spacing:.1em;color:rgba(17,17,17,.5)}
+.tw8 .tw8p .tw8r2 .tw8ar{font:900 15px var(--sans);color:rgba(17,17,17,.35);padding-bottom:12px;font-style:normal}
+.tw8 .tw8p .tw8r2 .tw8dy{margin-left:auto;text-align:right}
+.tw8 .tw8p .tw8r2 .tw8dy b{font-size:22px}
+.tw8 .tw8p .tw8r3{display:flex;align-items:center;margin-top:auto}
+.tw8 .tw8p .tw8r3 .tw8mm{display:flex}
+.tw8 .tw8p .tw8r3 .av77{margin-right:-5px;box-shadow:0 0 0 2px #F4EFE6}
+.tw8 .tw8p .tw8r3 em{margin-left:12px;font:700 9.5px var(--mono);font-style:normal;color:rgba(17,17,17,.55)}
+.tw8 .tw8p .tw8nt{position:absolute;right:0;top:0;bottom:0;width:8px;background:repeating-linear-gradient(180deg,#24A03C 0 10px,#C8F25A 10px 20px);display:block}
+/* 質問 */
+.tw8 .tw8q{position:relative;flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 0 110px}
+.tw8 .tw8q::-webkit-scrollbar{display:none}
+.tw8 .tw8q h2{margin:24px 22px 0;font:900 30px/1.15 var(--sans);letter-spacing:-.04em}
+/* どこへ */
+.tw8 .tw8in{display:flex;align-items:center;gap:10px;margin:16px 16px 0;height:60px;padding:0 10px 0 16px;border-radius:20px;background:#121315;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);transition:box-shadow .2s}
+.tw8 .tw8in:focus-within{box-shadow:inset 0 0 0 1.5px #C8F25A}
+.tw8 .tw8in>i{width:22px;height:22px;flex:none;display:block}
+.tw8 .tw8in svg{width:22px;height:22px;fill:none;stroke:#C8F25A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tw8 .tw8in input{flex:1;min-width:0;border:0;outline:0;background:none;color:#fff;font:900 20px var(--sans);letter-spacing:-.02em;caret-color:#C8F25A}
+.tw8 .tw8in input::placeholder{color:rgba(255,255,255,.28)}
+.tw8 .tw8in button{width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font:700 15px/1 var(--sans);cursor:pointer}
+.tw8 .tw8mq{position:relative;margin-top:14px;height:50px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
+.tw8 .tw8mq.tw8r2{margin-top:8px}
+.tw8 .tw8mt{display:flex;gap:8px;width:max-content;padding:3px 0;animation:mq 46s linear infinite}
+.tw8 .tw8mq.tw8r2 .tw8mt{animation-direction:reverse;animation-duration:54s}
+.tw8 .tw8mq.hold .tw8mt{animation-play-state:paused}
+.tw8 .tw8c{height:44px;flex:none;border:0;border-radius:22px;padding:0 16px 0 12px;background:#17181B;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;gap:6px;font:800 15px var(--sans);white-space:nowrap;cursor:pointer;transition:transform .2s}
+.tw8 .tw8c:active{transform:scale(.94)}
+.tw8 .tw8c svg{width:15px;height:15px;fill:none;stroke:#C8F25A;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tw8 .tw8c.ev svg{stroke:#EE5E9C}
+.tw8 .tw8c.on{background:#C8F25A;color:#0B0C0D;box-shadow:none}
+.tw8 .tw8c.on svg{stroke:#0B0C0D}
+.tw8fly{border:0;border-radius:22px;padding:0 16px 0 12px;background:#C8F25A!important;color:#0B0C0D!important;display:flex;align-items:center;gap:6px;font:800 15px var(--sans);white-space:nowrap;pointer-events:none;box-shadow:0 14px 30px -10px rgba(200,242,90,.8)}
+.tw8fly svg{width:15px;height:15px;fill:none;stroke:#0B0C0D;stroke-width:2.2}
+/* いつ */
+.tw8 .tw8sg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin:16px 16px 0;height:44px;padding:3px;border-radius:22px;background:rgba(255,255,255,.07);box-sizing:border-box}
+.tw8 .tw8sg>i{position:absolute;left:3px;top:3px;bottom:3px;width:calc((100% - 6px) / 4);border-radius:19px;background:#C8F25A;transform:translateX(calc(var(--k) * 100%));transition:transform .34s cubic-bezier(.3,1.25,.5,1);display:block}
+.tw8 .tw8sg button{position:relative;border:0;background:none;font:800 13.5px var(--sans);color:rgba(255,255,255,.7);cursor:pointer}
+.tw8 .tw8sg button.on{color:#0B0C0D}
+.tw8 .tw8cal{margin:12px 16px 0;padding:12px 10px 10px;border-radius:22px;background:#121315;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.tw8 .tw8cal .tw8wd,.tw8 .tw8cal .tw8gd{display:grid;grid-template-columns:repeat(7,1fr)}
+.tw8 .tw8cal .tw8wd span{text-align:center;font:700 9.5px var(--mono);color:rgba(255,255,255,.35);padding-bottom:6px}
+.tw8 .tw8cal .tw8gd{row-gap:4px}
+.tw8 .tw8cal .tw8gd button{position:relative;height:40px;border:0;background:none;color:#fff;font:800 15px Inter,var(--sans);cursor:pointer}
+.tw8 .tw8cal .tw8gd button small{position:absolute;left:0;right:0;top:-1px;font:700 8px var(--mono);color:#C8F25A}
+.tw8 .tw8cal .tw8gd button.td::after{content:'';position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#C8F25A}
+.tw8 .tw8cal .tw8gd button.r{background:rgba(200,242,90,.16)}
+.tw8 .tw8cal .tw8gd button.a{background:linear-gradient(90deg,transparent 50%,rgba(200,242,90,.16) 50%)}
+.tw8 .tw8cal .tw8gd button.b{background:linear-gradient(90deg,rgba(200,242,90,.16) 50%,transparent 50%)}
+.tw8 .tw8cal .tw8gd button.ab{background:none}
+.tw8 .tw8cal .tw8gd button.a::before,.tw8 .tw8cal .tw8gd button.b::before{content:'';position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px;border-radius:50%;background:#C8F25A;z-index:-1}
+.tw8 .tw8cal .tw8gd button.a,.tw8 .tw8cal .tw8gd button.b{color:#0B0C0D;z-index:0;isolation:isolate}
+.tw8 .tw8ht{margin:12px 22px 0;font:600 12.5px var(--sans);color:rgba(255,255,255,.5)}
+.tw8 .tw8ht b{color:#fff}
+/* だれと */
+.tw8 .tw8fr{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px;margin:20px 16px 0}
+.tw8 .tw8fr button{position:relative;border:0;background:none;color:#fff;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+.tw8 .tw8fr .av77{display:grid!important;place-items:center;font:900 22px var(--sans);box-shadow:0 0 0 2px #0B0C0D,0 0 0 2px rgba(255,255,255,.1);transition:box-shadow .25s,transform .3s cubic-bezier(.3,1.5,.5,1)}
+.tw8 .tw8fr button.on .av77{box-shadow:0 0 0 3px #0B0C0D,0 0 0 5.5px #C8F25A}
+.tw8 .tw8fr button:active .av77{transform:scale(.9)}
+.tw8 .tw8fr u{position:absolute;top:42px;left:50%;margin-left:14px;width:22px;height:22px;border-radius:50%;background:#C8F25A;box-shadow:0 0 0 2.5px #0B0C0D;display:grid;place-items:center;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.tw8 .tw8fr button.on u{transform:scale(1)}
+.tw8 .tw8fr u svg{width:13px;height:13px;fill:none;stroke:#0B0C0D;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.tw8 .tw8fr b{font:800 12.5px var(--sans)}
+.tw8 .tw8fr .tw8ln i{width:60px;height:60px;border-radius:50%;border:1.5px dashed rgba(200,242,90,.6);display:grid;place-items:center}
+.tw8 .tw8fr .tw8ln svg{width:24px;height:24px;fill:none;stroke:#C8F25A;stroke-width:2;stroke-linecap:round}
+.tw8 .tw8fr .tw8ln b{color:#C8F25A}
+/* 表紙 */
+.tw8 .tw8cv{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin-top:16px;padding:6px 16px 10px}
+.tw8 .tw8cv::-webkit-scrollbar{display:none}
+.tw8 .tw8cv button{position:relative;flex:none;width:118px;aspect-ratio:3/4;border:0;border-radius:18px;background:#222 center/cover;scroll-snap-align:start;cursor:pointer;transition:transform .3s cubic-bezier(.3,1.4,.5,1),box-shadow .2s}
+.tw8 .tw8cv button.on{box-shadow:0 0 0 3px #0B0C0D,0 0 0 5.5px #C8F25A;transform:translateY(-4px)}
+.tw8 .tw8cv u{position:absolute;right:8px;top:8px;width:24px;height:24px;border-radius:50%;background:#C8F25A;display:grid;place-items:center;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.tw8 .tw8cv button.on u{transform:scale(1)}
+.tw8 .tw8cv u svg{width:14px;height:14px;fill:none;stroke:#0B0C0D;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.tw8 .tw8sm{margin:8px 16px 0;border-radius:22px;background:#121315;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.tw8 .tw8sm button{width:100%;min-height:56px;border:0;background:none;display:flex;align-items:center;gap:12px;padding:0 16px;color:#fff;text-align:left;cursor:pointer}
+.tw8 .tw8sm button+button{box-shadow:inset 0 .5px 0 rgba(255,255,255,.09)}
+.tw8 .tw8sm i{width:20px;height:20px;flex:none;display:block}
+.tw8 .tw8sm svg{width:20px;height:20px;fill:none;stroke:#C8F25A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tw8 .tw8sm b{flex:1;min-width:0;font:800 15px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tw8 .tw8sm em{font:700 12.5px var(--sans);font-style:normal;color:#C8F25A}
+/* 下の ボタン */
+.tw8 .tw8f{position:absolute;left:0;right:0;bottom:0;padding:16px 16px 34px;background:linear-gradient(rgba(11,12,13,0),#0B0C0D 32%)}
+.tw8 .tw8f .nx{width:100%;height:58px;border:0;border-radius:29px;background:#fff;color:#0B0C0D;font:900 17px var(--sans);cursor:pointer;transition:background .2s,color .2s,transform .2s}
+.tw8 .tw8f .nx:active{transform:scale(.98)}
+.tw8 .tw8f .nx:disabled{background:rgba(255,255,255,.08);color:rgba(255,255,255,.3);cursor:default}
+.tw8 .tw8f .nx.go{background:#C8F25A;box-shadow:0 18px 38px -16px rgba(200,242,90,.75)}
+@media (prefers-reduced-motion:reduce){.tw8 .tw8mt{animation:none}.tw8 .tw8mq{overflow-x:auto}}

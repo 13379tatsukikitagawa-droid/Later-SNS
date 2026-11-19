@@ -1,0 +1,105 @@
+/* ===== v85(モック v88):ライブ パネルを ライム + 動く 数字 / Yesterday ページを なくす / 現像画面を 作りなおし ===== */
+
+/* ---------- 1. ライブ パネル(消灯まで / ひらくまで):緑 → ライム ---------- */
+.lpk{background:#070708}
+.lph .lv{background:rgba(200,242,90,.12);color:#C8F25A}
+.lph .lv i{background:#C8F25A;animation:v85dot 1.6s ease-out infinite}
+@keyframes v85dot{0%{box-shadow:0 0 0 0 rgba(200,242,90,.55)}75%,100%{box-shadow:0 0 0 7px rgba(200,242,90,0)}}
+.lpm .big{font-variant-numeric:tabular-nums}
+.lpm .big em{animation:v85col 1s steps(1) infinite}
+@keyframes v85col{0%{opacity:.85}50%{opacity:.22}}
+.lpm .big small{color:#C8F25A;display:inline-block;transform-origin:50% 80%}
+.lpm .k2 b{color:#E6E6EA}
+/* 数字は 下から ころがって 止まる(ばね) */
+.lpk .big .rs{transition:transform .7s cubic-bezier(.2,1.35,.35,1)}
+.lpk.v85i .big .rd .rs{transition:transform 1.25s cubic-bezier(.16,1.2,.3,1)!important}
+.lpk.v85i .big b .rd:nth-child(1) .rs{transition-delay:.18s!important}
+.lpk.v85i .big b .rd:nth-child(2) .rs{transition-delay:.26s!important}
+.lpk.v85i .big b+em+b .rd:nth-child(1) .rs{transition-delay:.36s!important}
+.lpk.v85i .big b+em+b .rd:nth-child(2) .rs{transition-delay:.44s!important}
+.lpk.v85i .big small .rd:nth-child(1) .rs{transition-delay:.52s!important}
+.lpk.v85i .big small .rd:nth-child(2) .rs{transition-delay:.58s!important}
+/* 1分 かわった 時 = ライムの 光が 走る */
+.lpm .big{position:relative}
+.lpm .big::after{content:"";position:absolute;inset:-6px -10px;background:linear-gradient(100deg,transparent 30%,rgba(200,242,90,.28) 50%,transparent 70%);transform:translateX(-120%);opacity:0;pointer-events:none}
+.lpm .big.v85sw::after{animation:v85sweep .9s cubic-bezier(.3,.7,.3,1)}
+@keyframes v85sweep{0%{transform:translateX(-120%);opacity:1}100%{transform:translateX(120%);opacity:1}}
+/* バー */
+.lptr .z1{background:linear-gradient(90deg,#171B0C,#27310F)}
+.lptr .fill{transform-origin:0 50%;background:linear-gradient(90deg,rgba(200,242,90,.18),rgba(200,242,90,.85));box-shadow:0 0 14px rgba(200,242,90,.32)}
+.lptr .fill::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:v85run 2.4s linear infinite}
+@keyframes v85run{0%{background-position:-40% 0}100%{background-position:140% 0}}
+.lptr .sh{background:#C8F25A;box-shadow:0 0 8px rgba(200,242,90,.7)}
+.lptr .now{background:#fff;box-shadow:0 0 0 4px rgba(200,242,90,.22),0 0 18px rgba(200,242,90,.65)}
+.lptr .now.v85b{animation:v85beat .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes v85beat{0%{transform:scale(1.35)}100%{transform:scale(1)}}
+.lptr .lbs .e{color:#C8F25A}
+.lpgo.dv{background:#C8F25A;color:#111}.lpgo.dv small{color:rgba(17,17,17,.55)}
+.lf.on span{color:#C8F25A}
+@media (prefers-reduced-motion:reduce){.lpm .big em,.lptr .fill::after,.lph .lv i{animation:none}}
+
+/* ---------- 2. Yesterday ページは なし(目次は 4つ) ---------- */
+.v85hide{display:none!important}
+
+/* ---------- 3. 現像画面(#dvx):配置を 作りなおし ・ ライム ・ 軽く ---------- */
+#dvx .dxh{top:52px;height:56px;padding:0 16px}
+#dvx .dxh .fback{width:44px;height:44px;border-radius:22px;background:#17171A;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+#dvx .ftl em{font-size:24px}
+#dvx .ftl span{font:700 10px var(--mono);letter-spacing:.2em;color:#6E6E75}
+#dvx .dxsp{width:44px}
+#dvx .dxs{top:118px;height:446px}
+#dvx .dxp{align-items:center}
+/* チェキ */
+#dvx .dxc.v85c{flex:none;width:298px;margin:0;padding:12px 12px 58px;background:#F4F1EA;border-radius:6px;box-shadow:0 34px 60px -26px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.04);transform:translateX(var(--tx,0)) rotate(var(--r,0deg)) scale(var(--sc,1))!important;will-change:transform}
+#dvx .v85c .dxw{height:360px;border-radius:2px;background:#E4E8DF;overflow:hidden}
+/* 写真は 1回だけ ぼかした 物を 置き、動かすのは 不透明度 だけ */
+#dvx .v85c .dxim{filter:blur(14px) saturate(1.1) contrast(.95);transform:scale(1.12);opacity:calc(.08 + var(--v,0) * .92)}
+#dvx .v85c .v85tn{position:absolute;inset:0;background:linear-gradient(170deg,#5E8F86,#2E4F57);mix-blend-mode:multiply;opacity:var(--tn,0)}
+#dvx .v85c .v85wm{position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 100%,#E8A55A,transparent 70%);mix-blend-mode:soft-light;opacity:calc(var(--v,0) * .7)}
+#dvx .v85c .fog{background:linear-gradient(170deg,#F1F3EC,#DCE3DA 55%,#E6E9E1);opacity:calc(1 - var(--v,0) * .84)}
+#dvx .v85c .gr{inset:0;opacity:.22;animation:none;background-size:120px 120px;mix-blend-mode:multiply}
+/* 押して いる 間:薬品が 上から 下へ ながれる(transform だけ) */
+#dvx .v85c .v85wv{position:absolute;left:0;right:0;top:0;height:60%;background:linear-gradient(transparent,rgba(200,242,90,.0) 10%,rgba(200,242,90,.28) 50%,transparent);transform:translateY(-100%);opacity:0;pointer-events:none}
+#dvx .v85c.v85run .v85wv{opacity:1;animation:v85wave 1.15s cubic-bezier(.4,0,.6,1) infinite}
+@keyframes v85wave{0%{transform:translateY(-100%)}100%{transform:translateY(175%)}}
+#dvx .v85c .v85fl{position:absolute;inset:0;background:#C8F25A;mix-blend-mode:overlay;opacity:0;pointer-events:none}
+#dvx .v85c .dxsh{display:none}
+#dvx .v85c .dxpt{display:none}
+#dvx .v85c .dxtm{position:absolute;left:16px;bottom:20px;font:700 11px var(--mono);color:#E0481A;letter-spacing:.06em;text-shadow:0 0 6px rgba(255,120,40,.45)}
+#dvx .v85c .dxkd{position:absolute;right:16px;bottom:21px;color:#8A857B;font:700 9px var(--mono);letter-spacing:.2em}
+#dvx .v85c .v85lk{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;font:400 19px var(--hand);color:#3a362f;white-space:nowrap}
+#dvx .v85c .v85lk svg{width:11px;height:11px;fill:none;stroke:#8A857B;stroke-width:2.4;stroke-linecap:round}
+/* まだ / つぎ の こま */
+#dvx .dxc.nx.v85c,#dvx .dxc.no.v85c{background:none;box-shadow:none;padding:0}
+#dvx .dxc.nx.v85c .dxw,#dvx .dxc.no.v85c .dxw{height:430px;width:298px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+#dvx .dxdots{top:576px}
+#dvx .dxdots i.on{background:#C8F25A}
+/* 下の かたまり:左右 20pt の 中に すべて おさめる */
+#dvx .dxctl{top:602px;left:20px;right:20px;gap:0}
+#dvx .dxpc{display:flex;align-items:center;height:46px}
+#dvx .dxpc b{font:italic 400 46px/1 var(--serif);color:#fff;min-width:0}
+#dvx .dxpc span{font:italic 400 22px var(--serif);color:#6E6E75;margin-left:2px;align-self:flex-end;margin-bottom:6px}
+#dvx .dxpc em{margin-left:auto;display:flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:13px;background:rgba(200,242,90,.1);color:#C8F25A;font:700 9.5px var(--mono);letter-spacing:.18em;white-space:nowrap}
+#dvx .dxpc em::before{content:"";width:6px;height:6px;border-radius:50%;background:#C8F25A}
+#dvx .dxtr{height:28px;margin-top:8px;overflow:visible}
+#dvx .dxtr::before{top:12px;height:4px;border-radius:2px;background:#1C1C1F}
+#dvx .dxtr .fill{top:12px;height:4px;border-radius:2px;background:linear-gradient(90deg,rgba(200,242,90,.25),#C8F25A);box-shadow:0 0 10px rgba(200,242,90,.35)}
+#dvx .dxtr .lock{top:12px;height:4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.14) 0 3px,transparent 3px 7px)}
+#dvx .dxtr .now{top:6px;width:2px;height:16px;margin-left:-1px;background:#C8F25A;opacity:.7}
+#dvx .dxtr .th{top:6px;width:16px;height:16px;margin-left:-8px;background:#C8F25A;box-shadow:0 0 0 5px rgba(200,242,90,.16),0 0 12px rgba(200,242,90,.7)}
+#dvx .dxtl{margin-top:2px;color:#5D5D63;font-size:9px;letter-spacing:.18em}
+#dvx .dxtl span:last-child{color:#C8F25A}
+/* 現像ボタン:押すと ライムが たまって いく */
+#dvx .dxplay{position:relative;overflow:hidden;height:58px;border-radius:29px;margin-top:16px;background:#C8F25A;color:#111;font:800 16px var(--sans);letter-spacing:-.01em;gap:10px;isolation:isolate;transition:transform .2s cubic-bezier(.3,1.6,.5,1),background .3s,color .3s}
+#dvx .dxplay svg{fill:#111;width:15px;height:15px;transition:fill .3s}
+#dvx .dxplay small{font:700 9.5px var(--mono);letter-spacing:.14em;opacity:.55}
+#dvx .dxplay.v85dn{transform:scale(.96)}
+#dvx .dxplay .v85bf{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(200,242,90,.18),rgba(200,242,90,.42));transform-origin:0 50%;transform:scaleX(var(--p,0))}
+#dvx .dxplay .v85bf::after{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:#C8F25A;box-shadow:0 0 14px 3px rgba(200,242,90,.75)}
+#dvx .dxplay.v85run{background:#141416;color:#fff;box-shadow:inset 0 0 0 1px rgba(200,242,90,.35)}
+#dvx .dxplay.v85run svg{fill:#C8F25A}
+#dvx .dxplay.v85ok{background:#1A1A1D;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+#dvx .dxplay.v85ok svg{fill:#fff}
+#dvx .dxplay:not(.v85run) .v85bf{opacity:0}
+#dvx .dxnote{margin-top:12px;color:#5D5D63;font-size:9.5px}
+@media (prefers-reduced-motion:reduce){#dvx .v85c.v85run .v85wv{animation:none;opacity:0}}

@@ -1,0 +1,274 @@
+/* ===== v89(モック v91):はじめて ひらいた 時の 説明(Friends ・ Trip ・ Mondo)===== */
+.z9{position:absolute;inset:0;z-index:97;background:#0B0B0C;color:#fff;overflow:hidden;opacity:0;visibility:hidden;transition:opacity .28s,visibility 0s .28s;-webkit-user-select:none;user-select:none;touch-action:none}
+.z9.on{opacity:1;visibility:visible;transition:opacity .28s}
+.z9::before{content:"";position:absolute;inset:0;background:radial-gradient(90% 46% at 50% 40%,rgba(200,242,90,.14),transparent 70%);pointer-events:none;transition:opacity .6s}
+.z9.nt::before{opacity:.25}
+.z9 svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.z9.pz *{animation-play-state:paused!important}
+/* 上:進み具合 ・ 名前 ・ スキップ */
+.z9bar{position:absolute;left:20px;right:20px;top:54px;display:flex;gap:5px;z-index:4}
+.z9bar i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.18);overflow:hidden}
+.z9bar b{display:block;height:100%;width:0;background:#C8F25A;border-radius:2px}
+.z9bar i.dn b{width:100%}
+.z9bar i.on b{animation:z9fill 3600ms linear forwards}
+.z9.last .z9bar i.on b{animation:none;width:100%}
+@keyframes z9fill{to{width:100%}}
+.z9top{position:absolute;left:20px;right:8px;top:64px;height:44px;display:flex;align-items:center;justify-content:space-between;z-index:4}
+.z9tg{display:flex;align-items:center;gap:9px;animation:z9fade .4s .55s both}
+.z9tg .ic{width:28px;height:28px;border-radius:50%;background:#C8F25A;color:#111;display:grid;place-items:center}
+.z9tg .ic svg{width:16px;height:16px}
+.z9tg b{font:400 25px var(--ttl);font-style:italic;letter-spacing:-.01em}
+.z9skip{height:44px;padding:0 8px;display:flex;align-items:center;background:none;border:0;color:inherit;cursor:pointer}
+.z9skip span{height:32px;padding:0 12px 0 14px;border-radius:16px;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);display:flex;align-items:center;gap:5px;font:700 12.5px var(--sans);color:rgba(255,255,255,.88)}
+.z9skip svg{width:13px;height:13px;stroke-width:2.2}
+/* はじめの 題字(0.9秒)*/
+.z9ttl{position:absolute;inset:0;display:grid;place-items:center;z-index:5;pointer-events:none;font:400 96px var(--ttl);font-style:italic;color:#C8F25A;letter-spacing:-.02em;animation:z9ttl .9s cubic-bezier(.5,0,.3,1) both}
+@keyframes z9ttl{0%{opacity:0;transform:scale(.72)}30%{opacity:1;transform:scale(1)}66%{opacity:1;transform:scale(1.03)}100%{opacity:0;transform:translate(-120px,-330px) scale(.26)}}
+/* まんなか:場面 ・ 1行 */
+.z9st{position:absolute;left:0;right:0;top:122px;height:440px;z-index:1}
+.z9sc{position:absolute;inset:0;animation:z9fade .3s both}
+.z9cap{position:absolute;left:26px;right:26px;top:580px;z-index:2;text-align:center;pointer-events:none}
+.z9cap small{display:block;font:700 10px var(--mono);letter-spacing:.3em;color:#C8F25A;animation:z9fade .4s .1s both}
+.z9cap b{display:block;margin-top:10px;font:900 27px/1.28 var(--sans);letter-spacing:-.02em;text-wrap:balance;animation:z9up .55s cubic-bezier(.3,1.3,.5,1) .15s both}
+/* 下 */
+.z9ft{position:absolute;left:20px;right:20px;bottom:30px;height:110px;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;pointer-events:none}
+.z9tp{position:absolute;bottom:40px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center}
+.z9tp b{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.5)}
+.z9tp::before,.z9tp::after{content:"";position:absolute;inset:8px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);animation:z9tap 1.8s ease-out infinite}
+.z9tp::after{animation-delay:.6s}
+@keyframes z9tap{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.5);opacity:0}}
+.z9.last .z9tp{display:none}
+.z9go,.z9re{opacity:0;pointer-events:none}
+.z9go{width:100%;height:58px;border-radius:29px;background:#C8F25A;color:#111;border:0;font:800 17px var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 14px 30px -12px rgba(200,242,90,.55);cursor:pointer}
+.z9go svg{width:20px;height:20px;stroke-width:2.4}
+.z9re{height:44px;padding:0 14px;background:none;border:0;color:rgba(255,255,255,.62);font:700 12.5px var(--sans);display:flex;align-items:center;gap:6px;cursor:pointer}
+.z9re svg{width:15px;height:15px}
+.z9.last .z9go{animation:z9up .5s cubic-bezier(.3,1.3,.5,1) 1.2s both;pointer-events:auto}
+.z9.last .z9re{animation:z9fade .4s 1.45s both;pointer-events:auto}
+.z9tap{position:absolute;top:110px;bottom:150px;z-index:3;cursor:pointer}
+.z9tap.l{left:0;width:32%}.z9tap.r{right:0;width:68%}
+.z9.last .z9tap{bottom:150px}
+@keyframes z9fade{from{opacity:0}to{opacity:1}}
+@keyframes z9up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes z9pop{0%{opacity:0;transform:scale(.3)}60%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:none}}
+@keyframes z9spin{to{transform:rotate(360deg)}}
+
+/* 部品:人の 丸 ・ チェキ */
+.z9 .av{position:absolute;border-radius:50%;display:grid;place-items:center;font-weight:800;font-family:var(--sans);font-style:normal;color:#111;background:center/cover #C8F25A;box-shadow:0 0 0 3px #0B0B0C,0 0 0 5px rgba(255,255,255,.2)}
+.z9 .av.me{box-shadow:0 0 0 3px #0B0B0C,0 0 0 6px #C8F25A}
+.z9 .z9pop{animation:z9pop .5s cubic-bezier(.3,1.4,.5,1) both}
+.z9 .ck{position:absolute;display:block;padding:5% 5% 15%;background:#F4F1EA;border-radius:3px;box-shadow:0 12px 26px -10px rgba(0,0,0,.85)}
+.z9 .ck i{display:block;aspect-ratio:1;background:center/cover #222;border-radius:1px}
+
+/* ===== Friends ===== */
+/* 1 撮る */
+.f1 .zorb{position:absolute;left:85px;top:116px;width:220px;height:220px;border-radius:50%;border:1.5px dashed rgba(200,242,90,.35);animation:z9spin 18s linear infinite}
+.f1 .zorb.o2{left:35px;top:66px;width:320px;height:320px;border-color:rgba(255,255,255,.1);animation-duration:30s;animation-direction:reverse}
+.f1 .fx{position:absolute;width:58px;height:58px}
+.f1 .fl{position:absolute;inset:-4px;border-radius:50%;border:3px solid #fff;opacity:0;animation:z9flash .55s var(--d) ease-out both}
+@keyframes z9flash{0%{opacity:0;transform:scale(.6)}20%{opacity:1}100%{opacity:0;transform:scale(2)}}
+.f1 .ck.out{opacity:0;animation:z9ckout .7s calc(var(--d) + .08s) cubic-bezier(.3,1.4,.5,1) both}
+@keyframes z9ckout{0%{opacity:0;transform:translateY(18px) scale(.2)}100%{opacity:1;transform:translateY(-58px) rotate(-8deg)}}
+.f1 .fx:nth-child(even) .ck.out{animation-name:z9ckout2}
+@keyframes z9ckout2{0%{opacity:0;transform:translateY(18px) scale(.2)}100%{opacity:1;transform:translateY(-58px) rotate(9deg)}}
+/* 2 夜は ひみつ */
+.f2 .sky{position:absolute;inset:-130px 0 -200px;background:linear-gradient(180deg,#050506,rgba(5,5,6,0) 70%);animation:z9fade .8s both}
+.f2 .moon{position:absolute;left:300px;top:6px;width:44px;height:44px;border-radius:50%;box-shadow:inset -11px 5px 0 0 #C8F25A;transform:rotate(-20deg);animation:z9moon 1.2s cubic-bezier(.3,1.2,.5,1) .2s both}
+@keyframes z9moon{from{opacity:0;transform:translate(30px,80px) rotate(-20deg)}to{opacity:1;transform:rotate(-20deg)}}
+.f2 .clk{position:absolute;left:0;right:0;top:20px;display:flex;justify-content:center}
+.f2 .clk span{height:40px;overflow:hidden;display:block}
+.f2 .clk b{display:block;height:40px;font:700 34px/40px var(--mono);color:#fff;letter-spacing:.02em;text-align:center;animation:z9roll .5s 1.05s cubic-bezier(.5,0,.3,1.3) both}
+.f2 .clk b+b{color:#C8F25A}
+@keyframes z9roll{from{transform:none}to{transform:translateY(-40px)}}
+.f2 .zstk,.f3 .zfan{position:absolute;left:195px;top:240px;width:0;height:0;perspective:900px}
+.z9 .c3{position:absolute;left:-56px;top:-70px;width:112px}
+.z9 .c3 .in{position:relative;transform-style:preserve-3d}
+.z9 .c3 .zfr,.z9 .c3 .bk{display:block;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.z9 .c3 .bk{position:absolute;inset:0;transform:rotateY(180deg);border-radius:3px;background:#161618;box-shadow:inset 0 0 0 1.5px rgba(200,242,90,.35),0 12px 26px -10px rgba(0,0,0,.85);display:grid;place-items:center}
+.z9 .c3 .bk b{font:900 44px var(--sans);color:#C8F25A;opacity:.85}
+.f2 .c3{animation:z9gather .9s cubic-bezier(.3,1.1,.4,1) calc(.15s + var(--j)*.08s) both}
+@keyframes z9gather{from{transform:translate(var(--x0),var(--y0)) rotate(calc(var(--r)*-2)) scale(.5);opacity:0}to{transform:translate(calc(var(--j)*6px - 6px),calc(var(--j)*-5px)) rotate(var(--r));opacity:1}}
+.f2 .c3 .in{animation:z9flip .6s cubic-bezier(.5,0,.3,1) calc(1.3s + var(--j)*.15s) both}
+@keyframes z9flip{from{transform:none}to{transform:rotateY(180deg)}}
+/* 3 9:00 に ひらく */
+.z9 .hz{position:absolute;left:0;right:0;top:0;height:300px;overflow:hidden;border-bottom:1px solid rgba(200,242,90,.35)}
+.z9 .hz .sun{position:absolute;left:135px;top:300px;width:120px;height:120px;border-radius:50%;background:#C8F25A;box-shadow:0 0 60px 10px rgba(200,242,90,.45);animation:z9sun 1.1s cubic-bezier(.3,1,.4,1) .1s both}
+@keyframes z9sun{to{transform:translateY(-100px)}}
+.z9 .nine{position:absolute;left:0;right:0;top:14px;text-align:center;font:700 34px var(--mono);font-style:normal;color:#C8F25A;animation:z9pop .5s cubic-bezier(.3,1.4,.5,1) .6s both}
+.f3 .zfan{top:296px}
+.f3 .hz .sun{animation-name:z9sun3}
+@keyframes z9sun3{to{transform:translateY(-128px)}}
+.f3 .c3{left:-52px;width:104px;animation:z9fanout .7s cubic-bezier(.3,1.3,.5,1) .85s both}
+@keyframes z9fanout{from{transform:none}to{transform:translate(var(--x),var(--y)) rotate(var(--r))}}
+.f3 .c3 .in{transform-style:flat;animation:z9flip2 .5s cubic-bezier(.5,0,.5,1) calc(1.3s + var(--j)*.15s) both}
+.f3 .c3 .zfr{backface-visibility:visible;-webkit-backface-visibility:visible}
+.f3 .c3 .bk{transform:none;backface-visibility:visible;-webkit-backface-visibility:visible;animation:z9hide .5s steps(1,end) calc(1.3s + var(--j)*.15s) both}
+@keyframes z9flip2{0%{transform:none}50%{transform:scaleX(0)}100%{transform:none}}
+@keyframes z9hide{0%{opacity:1}50%{opacity:0}100%{opacity:0}}
+.f3 .ck.dv i{animation:z9dev 1.6s ease-out calc(1.5s + var(--j)*.15s) both}
+@keyframes z9dev{from{filter:blur(6px) grayscale(1) brightness(.5)}to{filter:none}}
+.z9 .ht{position:absolute;top:300px;width:30px;height:30px;color:#C8F25A;opacity:0;animation:z9heart 1.2s ease-out var(--d) both}
+.z9 .ht svg{width:100%;height:100%;fill:#C8F25A;stroke:none}
+.z9 .ht.sm{width:22px;height:22px}
+@keyframes z9heart{0%{opacity:0;transform:scale(.3)}25%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:translateY(-110px) scale(.9)}}
+/* 4 @ID で つながる */
+.f4 .srch{position:absolute;left:40px;right:40px;top:30px;height:52px;border-radius:26px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);display:flex;align-items:center;gap:10px;padding:0 18px;animation:z9up .4s both}
+.f4 .srch svg{width:18px;height:18px;color:rgba(255,255,255,.6)}
+.f4 .ty{font:700 18px var(--mono);color:#fff;overflow:hidden;white-space:nowrap;width:0;animation:z9type .72s steps(6,end) .2s both}
+@keyframes z9type{to{width:6ch}}
+.f4 .cr{width:2px;height:22px;background:#C8F25A;animation:z9blink .5s steps(2) infinite}
+@keyframes z9blink{50%{opacity:0}}
+.f4 .res{position:absolute;left:40px;right:40px;top:100px;height:84px;border-radius:24px;background:#161618;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);animation:z9up .5s cubic-bezier(.3,1.3,.5,1) 1.1s both}
+.f4 .res>span{position:absolute;left:88px;top:20px;display:flex;flex-direction:column;gap:3px}
+.f4 .res>span b{font:800 18px var(--sans)}.f4 .res>span small{font:700 11.5px var(--mono);color:rgba(255,255,255,.55)}
+.f4 .zadd{position:absolute;right:18px;top:20px;width:44px;height:44px;border-radius:50%;background:#C8F25A;color:#111;animation:z9press .4s 1.9s both}
+.f4 .zadd em{position:absolute;inset:0;display:grid;place-items:center}
+.f4 .zadd svg{width:20px;height:20px;stroke-width:2.6}
+.f4 .zadd .p{animation:z9out .2s 2.05s both}.f4 .zadd .o{opacity:0;animation:z9pop .4s cubic-bezier(.3,1.5,.5,1) 2.1s both}
+@keyframes z9press{50%{transform:scale(.8)}100%{transform:none}}
+@keyframes z9out{to{opacity:0;transform:scale(.4)}}
+.f4 .ln{position:absolute;inset:0;width:390px;height:440px}
+.f4 .ln path{stroke:#C8F25A;stroke-width:3;stroke-dasharray:4 7;stroke-dashoffset:0;opacity:0;animation:z9fade .3s 2.2s both,z9march 1s linear 2.2s infinite}
+@keyframes z9march{to{stroke-dashoffset:-22}}
+.f4 .pl{position:absolute;width:72px;height:72px;border-radius:50%;border:2px solid #C8F25A;opacity:0;animation:z9ring 1.2s ease-out 2.6s 2}
+@keyframes z9ring{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
+
+/* ===== Trip ===== */
+/* 1 パスを つくる */
+.t1 .slot{position:absolute;left:45px;right:45px;top:12px;height:26px;z-index:2;border-radius:13px;background:#1A1A1D;box-shadow:inset 0 -3px 0 #050506,0 6px 14px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+.t1 .slot .lt{width:7px;height:7px;border-radius:50%;background:#FF7A2F;box-shadow:0 0 8px #FF7A2F;animation:p9blink .5s steps(2) 5,z9lime .01s 2.4s both}
+@keyframes z9lime{to{background:#C8F25A;box-shadow:0 0 8px #C8F25A}}
+.t1 .zwin{position:absolute;left:62px;right:62px;top:26px;height:410px;overflow:hidden;padding-top:10px}
+.t1 .pass{position:relative;border-radius:18px;overflow:hidden;background:#F4F1EA;color:#111;animation:z9print 1.3s steps(6,end) both;box-shadow:0 26px 50px -20px rgba(0,0,0,.9)}
+@keyframes z9print{from{transform:translateY(-102%)}to{transform:none}}
+.t1 .top{position:relative;height:180px;padding:12px 14px;background:center/cover;color:#fff}
+.t1 .top .zsh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.05) 40%,rgba(0,0,0,.75))}
+.t1 .top>*:not(.zsh){position:relative}
+.t1 .top small{display:block;font:700 8px var(--mono);letter-spacing:.2em}
+.t1 .top b{display:block;margin-top:82px;font:400 34px/1 var(--ttl);font-style:italic}
+.t1 .avs{display:flex;margin-top:8px}.t1 .avs i{width:20px;height:20px;border-radius:50%;margin-left:-5px;background:center/cover;box-shadow:0 0 0 2px #111}.t1 .avs i:first-child{margin-left:0}
+.t1 .perf{position:relative;height:0;border-top:2px dashed rgba(0,0,0,.2)}
+.t1 .perf::before,.t1 .perf::after{content:"";position:absolute;top:-10px;width:18px;height:18px;border-radius:50%;background:#0B0B0C}
+.t1 .perf::before{left:-9px}.t1 .perf::after{right:-9px}
+.t1 .bt{position:relative;display:flex;align-items:center;gap:12px;padding:14px 14px 16px}
+.t1 .qw{width:104px;height:104px;flex:none}.t1 .qw svg{width:100%;height:100%}
+.t1 .qw .p9q circle[style]{animation:z9dot .26s cubic-bezier(.3,1.6,.5,1) calc(1.3s + var(--k)*.5s) both}
+@keyframes z9dot{from{opacity:0;transform:scale(0)}to{opacity:1;transform:none}}
+.t1 .p9q circle{transform-box:fill-box;transform-origin:center}
+.t1 .ky{font:700 8px var(--mono);letter-spacing:.2em;color:#555}
+.t1 .ky b{display:block;margin-top:4px;font:900 19px var(--sans);letter-spacing:-.02em;color:#111}.t1 .ky em{font-style:normal;color:#5E8A12}
+.t1 .stub{position:absolute;right:0;top:0;bottom:0;width:10px;background:repeating-linear-gradient(-45deg,#C8F25A 0 5px,#111 5px 10px)}
+.t1 .zstamp{position:absolute;right:6px;top:64px;padding:6px 10px;border:2.5px solid #C8F25A;border-radius:8px;font:900 15px var(--mono);font-style:normal;letter-spacing:.14em;color:#C8F25A;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:z9stamp .38s cubic-bezier(.5,0,.3,1) 2.1s both}
+@keyframes z9stamp{0%{opacity:0;transform:rotate(-14deg) scale(2.2)}70%{opacity:1;transform:rotate(-14deg) scale(.92)}100%{opacity:1;transform:rotate(-14deg)}}
+/* 2 リンクで のせる */
+.t2 .bub{position:absolute;left:24px;top:22px;width:200px;height:64px;border-radius:20px 20px 20px 6px;background:#1E1E21;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;padding:8px;animation:z9send .5s cubic-bezier(.3,1.3,.5,1) .1s both}
+@keyframes z9send{from{opacity:0;transform:translateX(-60px) scale(.8)}to{opacity:1;transform:none}}
+.t2 .bub i{width:48px;height:48px;border-radius:12px;background:center/cover;flex:none;box-shadow:inset 0 0 0 1.5px #C8F25A}
+.t2 .bub span{display:flex;flex-direction:column;gap:4px}
+.t2 .bub em{font:700 8px var(--mono);font-style:normal;letter-spacing:.2em;color:#C8F25A}.t2 .bub b{font:700 11.5px var(--mono);color:rgba(255,255,255,.8)}
+.t2 .seats{position:absolute;inset:0}
+.t2 .nose{position:absolute;left:87px;width:216px;top:120px;text-align:center;font:700 8.5px var(--mono);letter-spacing:.3em;color:rgba(255,255,255,.4)}
+.t2 .se{position:absolute;width:46px;height:46px;border-radius:14px;border:1.5px dashed rgba(255,255,255,.25);display:grid;place-items:center;font-style:normal}
+.t2 .se b{font:700 10px var(--mono);color:rgba(255,255,255,.35)}
+.t2 .se.fill{animation:z9seat .3s var(--d) both}
+@keyframes z9seat{to{border-style:solid;border-color:#C8F25A;background:rgba(200,242,90,.12)}}
+.t2 .se.fill b{animation:z9out .2s var(--d) both}
+.t2 .zfly{position:absolute;left:0;top:0;width:390px;height:440px;pointer-events:none;animation:z9flx .5s cubic-bezier(.4,0,.6,1) var(--d) both}
+.t2 .zfly .fy{position:absolute;inset:0;animation:z9fly .5s cubic-bezier(.3,-.6,.6,1) var(--d) both}
+.t2 .zfly .av{animation:z9pop .35s cubic-bezier(.3,1.4,.5,1) var(--d) both}
+@keyframes z9flx{from{transform:none}to{transform:translateX(var(--dx))}}
+@keyframes z9fly{from{transform:none}to{transform:translateY(var(--dy))}}
+.t2 .zcnt{position:absolute;right:87px;top:96px;font:700 11px var(--mono);color:rgba(255,255,255,.6)}
+.t2 .zcnt b{display:inline-block;color:#C8F25A;font-size:15px}
+/* 3 1日 23枚 */
+.t3 .row{position:absolute;inset:0}
+.t3 .big{position:absolute;left:0;right:0;top:78px;text-align:center;font:400 128px/1 var(--ttl);font-style:italic;color:#C8F25A;letter-spacing:-.03em}
+.t3 .bigs{position:absolute;left:0;right:0;top:214px;text-align:center;font:700 9.5px var(--mono);letter-spacing:.3em;color:rgba(255,255,255,.45)}
+.t3 .film{position:absolute;left:-6px;right:-6px;top:268px;height:104px;background:#161618;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.t3 .film::before,.t3 .film::after{content:"";position:absolute;left:0;right:0;height:8px;background:repeating-linear-gradient(90deg,transparent 0 6px,#0B0B0C 6px 14px,transparent 14px 20px)}
+.t3 .film::before{top:5px}.t3 .film::after{bottom:5px}
+.t3 .zfs{position:absolute;top:20px;width:56px;height:64px;border-radius:3px;border:1.5px dashed rgba(255,255,255,.18)}
+.t3 .drop{position:absolute;top:20px;width:56px;height:64px;animation:z9dropx .42s cubic-bezier(.4,0,.6,1) var(--d) both}
+.t3 .drop .ck{animation:z9dropy .42s cubic-bezier(.5,-.4,.7,1) var(--d) both}
+@keyframes z9dropx{from{transform:translateX(var(--dx))}to{transform:none}}
+@keyframes z9dropy{0%{opacity:0;transform:translateY(-238px) scale(.4)}20%{opacity:1}100%{opacity:1;transform:none}}
+.t3 .ck{padding:4px 4px 8px}
+/* 4 あした 現像 */
+.z9 .hz.t4{height:400px}
+.z9 .hz.t4 .sun{top:400px;width:150px;height:150px;left:120px;animation-name:z9sun4}
+@keyframes z9sun4{to{transform:translateY(-62px)}}
+.t4 .nine{top:0;font-size:13px;letter-spacing:.3em}
+.t4 .grid{position:absolute;left:79px;top:44px;width:232px;display:grid;grid-template-columns:repeat(3,72px);gap:8px}
+.t4 .tl{position:relative;width:72px;height:72px;border-radius:10px;background:#161618;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);overflow:hidden;display:grid;place-items:center;font-style:normal;animation:z9pop .4s cubic-bezier(.3,1.4,.5,1) calc(var(--d) - .9s) both}
+.t4 .tl b{font:900 22px var(--sans);color:rgba(200,242,90,.5)}
+.t4 .tl em{position:absolute;inset:0;background:center/cover;opacity:0;animation:z9dev2 1s ease-out var(--d) both}
+@keyframes z9dev2{0%{opacity:0;filter:blur(8px) grayscale(1) brightness(.4)}30%{opacity:1}100%{opacity:1;filter:none}}
+.t4 .day{position:absolute;right:-26px;bottom:-22px;padding:6px 10px;border:2.5px solid #C8F25A;border-radius:8px;font:900 14px var(--mono);font-style:normal;letter-spacing:.14em;color:#C8F25A;background:rgba(0,0,0,.6);animation:z9stamp .38s cubic-bezier(.5,0,.3,1) 2.4s both}
+
+/* ===== Mondo ===== */
+/* 1 世界の きのう */
+.m1 .gl{position:absolute;left:65px;top:84px;width:260px;height:260px;border-radius:50%;overflow:hidden;background:#0F1210;box-shadow:0 0 0 1px rgba(200,242,90,.25),0 0 60px -10px rgba(200,242,90,.35);animation:z9pop .7s cubic-bezier(.3,1.3,.5,1) both}
+.m1 .dots{position:absolute;left:0;top:0;width:520px;height:260px;background:radial-gradient(circle,rgba(200,242,90,.55) 1.6px,transparent 2px) 0 0/13px 13px;animation:z9rot 9s linear infinite}
+@keyframes z9rot{to{transform:translateX(-260px)}}
+.m1 .shd{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 36% 30%,transparent 30%,rgba(11,11,12,.55) 62%,#0B0B0C 82%)}
+.m1 .zring{position:absolute;left:25px;top:194px;width:340px;height:40px;border-radius:50%;border:1.5px solid rgba(200,242,90,.3);transform:rotate(-12deg);clip-path:inset(50% 0 0 0);z-index:1}
+.m1 .zring.r2{z-index:0;clip-path:inset(0 0 50% 0);border-color:rgba(200,242,90,.14)}
+.m1 .zpin{position:absolute;width:0;height:0;z-index:2}
+.m1 .pd{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:#C8F25A;animation:z9pop .3s var(--d) both}
+.m1 .pd::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:1.5px solid #C8F25A;animation:z9ring 1.4s ease-out var(--d) infinite}
+.m1 .ck.up{opacity:0;animation:z9ckup .55s cubic-bezier(.3,1.5,.5,1) calc(var(--d) + .1s) both}
+@keyframes z9ckup{from{opacity:0;transform:translateY(30px) scale(.2)}to{opacity:1;transform:rotate(-4deg)}}
+.m1 .zpin small{position:absolute;left:10px;top:4px;font:700 8.5px var(--mono);letter-spacing:.16em;color:#fff;white-space:nowrap;animation:z9fade .3s calc(var(--d) + .3s) both}
+/* 2 同じ # */
+.m2 .sp{position:absolute;inset:0;width:390px;height:440px}
+.m2 .sp path{stroke:rgba(200,242,90,.45);stroke-width:1.5;stroke-dasharray:200;stroke-dashoffset:200;animation:z9draw .5s ease-out var(--d) forwards}
+@keyframes z9draw{to{stroke-dashoffset:0}}
+.m2 .ph{position:absolute;width:60px;animation:z9in .6s cubic-bezier(.3,1.3,.5,1) var(--d) both}
+@keyframes z9in{from{opacity:0;transform:translate(var(--fx),var(--fy)) scale(.5) rotate(40deg)}to{opacity:1;transform:rotate(var(--r))}}
+.m2 .ph small{display:block;margin-top:6px;text-align:center;font:700 8px var(--mono);letter-spacing:.16em;color:rgba(255,255,255,.7)}
+.m2 .tag{position:absolute;left:50%;top:214px;transform:translate(-50%,-50%);padding:12px 20px;border-radius:24px;background:#C8F25A;color:#111;font:900 22px var(--sans);font-style:normal;letter-spacing:-.01em;box-shadow:0 0 0 8px rgba(200,242,90,.12),0 0 40px rgba(200,242,90,.5);animation:z9tag .55s cubic-bezier(.3,1.5,.5,1) .1s both,z9beat 1.6s ease-in-out 2.1s infinite}
+@keyframes z9tag{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}to{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes z9beat{50%{transform:translate(-50%,-50%) scale(1.06)}}
+/* 3 TOP 5 */
+.m3 .rk{position:absolute;left:24px;right:24px;top:22px;height:380px}
+.m3 .r{position:absolute;left:0;right:0;height:62px;border-radius:20px;background:#161618;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);overflow:hidden;display:flex;align-items:center;gap:12px;padding:0 16px 0 14px;animation:z9up .45s cubic-bezier(.3,1.3,.5,1) var(--d) both;transition:transform .6s cubic-bezier(.4,1.4,.5,1)}
+.m3 .r .bar{position:absolute;left:0;top:0;bottom:0;width:calc(var(--w)*100%);background:linear-gradient(90deg,rgba(200,242,90,.05),rgba(200,242,90,.2));transform-origin:left;animation:z9bar 1.5s cubic-bezier(.3,1,.4,1) .3s both;z-index:0}
+.m3 .r1 .bar{animation-name:z9bar1}
+@keyframes z9bar{from{transform:scaleX(0)}}
+@keyframes z9bar1{from{transform:scaleX(0)}75%{transform:scaleX(1)}to{transform:scaleX(1.27)}}
+.m3 .r>*:not(.bar){position:relative;z-index:1}
+.m3 .n{font:700 13px var(--mono);color:rgba(255,255,255,.5);width:20px}
+.m3 .cv{width:38px;height:38px;border-radius:10px;background:center/cover;flex:none}
+.m3 .t{font:800 17px var(--sans);flex:1}
+.m3 .v{font:700 13px var(--mono);font-style:normal;color:rgba(255,255,255,.75);font-variant-numeric:tabular-nums}
+.m3 .r0{box-shadow:inset 0 0 0 1.5px rgba(200,242,90,.5)}.m3 .r0 .n{color:#C8F25A}
+.m3 .r.dn{transform:translateY(74px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}.m3 .r.dn .n{color:rgba(255,255,255,.5)}
+.m3 .r.up{transform:translateY(-74px);box-shadow:inset 0 0 0 1.5px #C8F25A,0 0 30px -6px rgba(200,242,90,.5)}.m3 .r.up .n{color:#C8F25A}
+.m3 .r3,.m3 .r4{opacity:.55}
+/* 4 1枚 撮ると ひらく */
+.m4 .g4{position:absolute;left:75px;top:10px;width:240px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.m4 .g4>i{aspect-ratio:1;border-radius:14px;overflow:hidden;display:block}
+.m4 .g4>i b{display:block;width:100%;height:100%;background:center/cover;transform:scale(1.15);filter:blur(9px) brightness(.55);animation:z9clear .7s ease-out var(--d) both}
+@keyframes z9clear{to{filter:none;transform:none}}
+.m4 .g4{border-radius:14px}
+.m4 .lk{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:#0B0B0C;box-shadow:0 0 0 1.5px rgba(200,242,90,.5);display:grid;place-items:center;color:#C8F25A;animation:z9out .3s 2.15s both}
+.m4 .lk svg{width:28px;height:28px;stroke-width:2.2;overflow:visible}
+.m4 .lk .sk{transform-box:fill-box;transform-origin:100% 100%;animation:z9shk .3s cubic-bezier(.3,1.6,.5,1) 1.85s both}
+@keyframes z9shk{to{transform:translateY(-3px) rotate(35deg)}}
+.m4 .zsh{position:absolute;left:153px;top:290px;width:84px;height:84px}
+.m4 .zsh span{position:absolute;inset:0;border-radius:22.4%;display:grid;place-items:center}
+.m4 .zsh svg{width:70%;height:70%;stroke:none}
+.m4 .ic0{background:#1A1A1D;box-shadow:inset 0 0 0 1.5px rgba(200,242,90,.35)}.m4 .ic0 svg{fill:rgba(200,242,90,.35)}
+.m4 .ic1{background:#C8F25A;clip-path:inset(100% 0 0 0);animation:z9fillup 1.2s cubic-bezier(.4,0,.6,1) .45s both}.m4 .ic1 svg{fill:#111}
+@keyframes z9fillup{to{clip-path:inset(0 0 0 0)}}
+.m4 .zsh::after{content:"";position:absolute;inset:-10px;border-radius:30%;border:2px solid #C8F25A;opacity:0;animation:z9ring .8s ease-out 1.7s both}
+.m4 .flash{position:absolute;inset:-130px 0 -200px;background:#fff;opacity:0;pointer-events:none;animation:z9fl .45s ease-out 1.7s both}
+@keyframes z9fl{0%{opacity:0}15%{opacity:.85}100%{opacity:0}}
+
+/* ページの 「?」 */
+.z9q{position:relative;display:inline-grid;place-items:center;width:20px;height:20px;margin:-5px 0 -5px 8px;letter-spacing:0;padding:0;border-radius:50%;border:0;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);color:rgba(255,255,255,.8);vertical-align:middle;cursor:pointer}
+.z9q::after{content:"";position:absolute;inset:-11px}
+.z9q svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+
+/* Reduce Motion:動かさず、最後の 形で 見せる */
+@media (prefers-reduced-motion:reduce){.z9 .z9sc *,.z9 .z9cap *,.z9 .z9tg{animation-duration:1ms!important;animation-delay:0s!important;animation-iteration-count:1!important}.z9 .z9tp::before,.z9 .z9tp::after{animation:none}}

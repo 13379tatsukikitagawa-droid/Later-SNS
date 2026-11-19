@@ -1,0 +1,51 @@
+
+/* ================= v84(PROMPT v92)・ QR = チェキ + # の 形 ================= */
+.q9{position:absolute;inset:0;z-index:88;color:#fff;visibility:hidden;opacity:0;transition:opacity .3s,visibility 0s .3s;overflow:hidden}
+.q9.on{visibility:visible;opacity:1;transition:opacity .3s}
+.q9 .q9bg{position:absolute;inset:0;display:block;background:radial-gradient(80% 36% at 50% 38%,rgba(200,242,90,.14),rgba(200,242,90,0) 70%),radial-gradient(130% 34% at 50% 108%,rgba(36,160,60,.32),rgba(36,160,60,0) 70%),#0B0C0D}
+.q9 .q9h{position:absolute;left:16px;right:16px;top:52px;display:flex;justify-content:space-between;z-index:3}
+.q9 .q9h button{width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.28);display:grid;place-items:center;cursor:pointer}
+.q9 .q9h svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.q9 .q9st{position:absolute;left:0;right:0;top:112px;height:560px;display:flex;justify-content:center;perspective:1100px}
+/* チェキ */
+.q9 .q9c{position:relative;width:310px;height:452px;margin-top:58px;transform-style:preserve-3d;transform:rotate(-2deg) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .55s cubic-bezier(.3,1.2,.4,1);cursor:pointer}
+.q9 .q9c.fl{transform:rotate(1.5deg) rotateY(180deg)}
+.q9 .q9f,.q9 .q9b{position:absolute;inset:0;border-radius:8px;background:#F4F1EA;box-shadow:0 34px 60px -26px rgba(0,0,0,.95),0 2px 0 rgba(255,255,255,.6) inset;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.q9 .q9f::before,.q9 .q9b::before{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;background:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1.2px) 0 0/5px 5px,linear-gradient(160deg,rgba(255,255,255,.5),rgba(255,255,255,0) 40%)}
+.q9 .q9b{transform:rotateY(180deg)}
+.q9 .q9tp{position:absolute;left:-18px;top:16px;width:92px;height:28px;background:rgba(200,242,90,.82);transform:rotate(-38deg);box-shadow:0 2px 4px rgba(0,0,0,.15);display:block;z-index:2}
+.q9 .q9av{position:absolute;left:50%;top:-52px;width:104px;height:104px;transform:translateX(-50%);border-radius:50%;background:#333 center/cover;box-shadow:0 0 0 6px #F4F1EA,0 0 0 7.5px rgba(0,0,0,.06),0 14px 30px -10px rgba(0,0,0,.6);z-index:2}
+.q9 .q9win{position:absolute;left:18px;right:18px;top:66px;height:274px;border-radius:4px;background:#FBFAF6;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),inset 0 3px 10px rgba(0,0,0,.06);overflow:hidden;display:grid;place-items:center}
+.q9 .q9q{width:232px;height:232px;display:block}
+.q9 .q9q .dk circle{fill:#0B0C0D}
+.q9 .q9q .gr circle{fill:#1F8F37}
+.q9 .q9q circle[style]{transform-box:fill-box;transform-origin:center}
+.q9 .q9q>g{transform-box:fill-box;transform-origin:center}
+.q9 .q9gl{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.3) var(--gx,40%),transparent calc(var(--gx,40%) + 18%));mix-blend-mode:soft-light;display:block}
+.q9 .q9ft{position:absolute;left:22px;right:22px;bottom:18px;display:flex;align-items:flex-end;justify-content:space-between;color:#1A1A1D}
+.q9 .q9ft b{display:block;font:700 30px/1 var(--hand);transform:rotate(-2deg);transform-origin:0 100%}
+.q9 .q9ft small{display:block;margin-top:8px;font:700 11px var(--mono);letter-spacing:.08em;color:rgba(26,26,29,.55)}
+.q9 .q9dt{font:700 12px var(--mono);letter-spacing:.06em;color:#1F8F37}
+.q9 .q9ph{position:absolute;left:18px;right:18px;top:22px;height:318px;border-radius:4px;background:#333 center/cover;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.q9 .q9tg{position:absolute;left:10px;right:10px;top:250px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.q9 .q9tg span{padding:6px 12px;border-radius:12px;background:var(--bg);color:var(--fg);font:900 15px var(--sans);transform:rotate(var(--r));box-shadow:3px 4px 0 rgba(0,0,0,.35)}
+.q9 .q9hi{position:absolute;left:0;right:0;top:686px;margin:0;text-align:center;font:700 12px var(--sans);color:rgba(255,255,255,.45)}
+/* コピーしました */
+.q9 .q9ok{position:absolute;left:50%;top:640px;transform:translate(-50%,10px);display:flex;align-items:center;gap:8px;height:46px;padding:0 20px 0 14px;border-radius:23px;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.3);opacity:0;pointer-events:none;z-index:4;transition:opacity .25s,transform .35s cubic-bezier(.3,1.4,.5,1)}
+.q9 .q9ok.on{opacity:1;transform:translate(-50%,0)}
+.q9 .q9ok i{width:22px;height:22px;display:block}
+.q9 .q9ok svg{width:22px;height:22px;fill:none;stroke:#C8F25A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.q9 .q9ok span{font:800 15px var(--sans);white-space:nowrap}
+/* 下の 5つ */
+.q9 .q9ac{position:absolute;left:10px;right:10px;bottom:40px;display:grid;grid-template-columns:repeat(5,1fr)}
+.q9 .q9ac button{border:0;background:none;color:#fff;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+.q9 .q9ac i{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 .8px rgba(255,255,255,.2);display:grid;place-items:center;transition:transform .2s}
+.q9 .q9ac button:active i{transform:scale(.9)}
+.q9 .q9ac svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.q9 .q9ac .ln i{background:#06C755;box-shadow:none}
+.q9 .q9ac .ms i{background:#34C759;box-shadow:none}
+.q9 .q9ac .ln svg,.q9 .q9ac .ms svg{fill:#fff;stroke:none}
+.q9 .q9ac [data-a="more"] svg{fill:#fff;stroke:none}
+.q9 .q9ac span{font:700 12px var(--sans);color:rgba(255,255,255,.85)}
+.q9 .q9fl{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5;display:block}
+@media (prefers-reduced-motion:reduce){.q9 .q9c{transition:none}}
