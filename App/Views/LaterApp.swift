@@ -358,6 +358,14 @@ struct RootView: View {
                 NotificationCenter.default.post(name: .friendLinkOpened, object: friend)
                 return
             }
+            // v98:Trip の パスの QR / リンク(https://lattag.app/t/<key>):KEY から グループを 探して 入る
+            if let key = TripKeyLink.key(from: url.absoluteString) {
+                Task { @MainActor in
+                    if let shareURL = try? await GroupInviteService.resolve(passphrase: key, timeout: 10) { handleInviteLink(shareURL) }
+                    else { presentGroupJoinAlert(title: "見つかりませんでした", message: "KEY を もう一度 たしかめて ください") }
+                }
+                return
+            }
             // 招待リンク(later://join)・素の CKShare URL(LINE などから、OS の受け入れ経路が動かなかったとき)
             if let shareURL = InviteConfig.shareURL(from: url) {
                 handleInviteLink(shareURL)

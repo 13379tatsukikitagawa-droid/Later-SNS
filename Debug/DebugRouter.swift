@@ -33,6 +33,9 @@ enum DebugRouter {
         case "reveal": showRaw(ReleaseRevealV89View(image: SampleData.photo("d"), ordinal: 1, count: 2, tag: "放課後", time: "17:42", place: "鎌倉市", playsReveal: true, onFinish: { _ in }))
         case "qr": showRaw(SelfQRChekiV92View(name: "ゆい", username: "yui_0612", link: "https://lattag.app/u/yui_0612", photo: SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型"], onClose: {}))
         case "shutter": showRaw(HStack(spacing: 8) { ForEach([0.0, 0.4, 0.75, 1.0], id: \.self) { k in ShutterIconV94(progress: k, holding: k > 0, video: false, recording: false, dead: false, late: false, snapToken: 0).frame(width: 104, height: 104) } }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.black))
+        case "trippass": showRaw(TripPassView(data: DebugTripV98.pass, newlyMade: UserDefaults.standard.object(forKey: "debugNew") as? Bool ?? true, onStart: {}, onClose: {}))
+        case "tripboard": showRaw(TripBoardingView(name: "京都 2泊3日", date: "11/18", key: "meadow95", cover: SampleData.photo("d"), me: "ゆい", people: [TripSeatPerson(id: "1", name: "ゆい", image: SampleData.photo("f"))], onSend: {}, onQR: {}))
+        case "tripseats": showRaw(VStack { TripSeatMap(people: DebugTripV98.people, small: true).padding(16) }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color(hex: "111113")))
         case "widgetguide": showRaw(WidgetGuideV96Sheet(onClose: {}))
         case "live": showRaw(DebugLiveView())
         case "widgets": showRaw(DebugWidgetsView())
@@ -348,4 +351,15 @@ struct FriendsV68Preview: View {
     var body: some View { screen }
 }
 
+#endif
+
+
+#if DEBUG
+enum DebugTripV98 {
+    static var people: [TripSeatPerson] { [("ゆい", "f"), ("れな", "d"), ("そら", "f"), ("みお", "d")].enumerated().map { TripSeatPerson(id: "\($0.offset)", name: $0.element.0, image: SampleData.photo($0.element.1)) } }
+    static var pass: TripPassData {
+        TripPassData(name: "京都 2泊3日", sub: "Kyoto trip", from: "NOV 18", to: "NOV 20", days: 3, key: "meadow95", link: "https://lattag.app/t/meadow95",
+                     cover: SampleData.photo("d"), members: people.map(\.image), names: people.map(\.name))
+    }
+}
 #endif

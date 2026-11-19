@@ -74,6 +74,8 @@ enum GroupTogether {
 
 // MARK: - 画面
 
+struct PassBox: Identifiable { let id = UUID(); let data: TripPassData }
+
 struct GroupChatRoomView: View {
     let group: LaterGroup
     /// つつく 相手(ホームの ともだち)
@@ -85,6 +87,9 @@ struct GroupChatRoomView: View {
     /// v28:はじめから この 写真への 返信に する
     var initialReply: LaterPhoto? = nil
     @State private var showsInviteFriends = false
+    /// v98:Trip の KEY と パス(だれも いない 時の BOARDING)
+    @State private var tripKey = ""
+    @State private var tripPass: TripPassData?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.palette) private var palette
@@ -107,7 +112,8 @@ struct GroupChatRoomView: View {
 
     private var me: String? { CloudKitManager.current?.currentUserRecordName }
     private var blocked: Set<String> { Set(blockedUsers.map(\.blockedCloudKitUserRecordName)) }
-    private var night: Bool { palette.isNight }
+    /// v98:だれも いない 時は いつも 黒(`#0B0B0C`)
+    private var night: Bool { palette.isNight || members.count <= 1 }
     private var bg: Color { night ? Color(hex: "0B0B0E") : Color(hex: "F7F5F1") }
     private var ink: Color { night ? Color(hex: "F5F5F7") : Color(hex: "111111") }
     private var sub: Color { night ? Color(hex: "A1A1A8") : Color(hex: "8E8E95") }
@@ -185,9 +191,13 @@ struct GroupChatRoomView: View {
         .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
             ShareSheet(activityItems: shareItems ?? []) { _ in shareItems = nil }
         }
+        .fullScreenCover(item: Binding(get: { tripPass.map { PassBox(data: $0) } }, set: { if $0 == nil { tripPass = nil } })) { box in
+            TripPassView(data: box.data, newlyMade: false, onStart: { tripPass = nil }, onClose: { tripPass = nil })
+        }
         .fullScreenCover(isPresented: $showsInviteFriends) {
-            FriendsHubView(myName: UserProfile.current(from: profiles)?.name ?? "", friends: friends, groups: [group], startTab: 1, onClose: { showsInviteFriends = false })
-                .environment(\.palette, palette)
+            // v98:古い「ともだち ・ 呼ぶ」画面は 消した。どこから 来ても v94 の さがす 画面
+            FriendsV68View(myName: UserProfile.current(from: profiles)?.name ?? "", friends: friends, groups: [group], onClose: { showsInviteFriends = false })
+                .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NotificationCenter.default.post(name: .friendsSearchFocus, object: nil) } }
         }
         .confirmationDialog("通報する 理由", isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }), titleVisibility: .visible) {
             ForEach(ChatReport.Reason.allCases) { reason in
@@ -756,22 +766,29 @@ struct GroupChatRoomView: View {
     // MARK: 1人の とき
 
     private var emptyRoom: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Text("なかまが 入ると、\nここで 話せます")
-                .font(.system(size: 22, weight: .heavy))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(ink)
-            Button(action: shareLink) {
-                Label("リンクで よぶ", systemImage: "link")
-                    .font(.system(size: 16, weight: .heavy))
-                    .foregroundStyle(night ? Color(hex: "111111") : .white)
-                    .padding(.horizontal, 24).frame(height: 52)
-                    .background(Capsule().fill(night ? .white : Color(hex: "111111")))
-            }
-            Spacer()
+        let df = DateFormatter(); df.dateFormat = "MM/dd"
+        return TripBoardingView(
+            name: group.name,
+            date: df.string(from: group.creationDate),
+            key: tripKey.isEmpty ? "meadow95" : tripKey,
+            cover: V64Images.image(key: "tg\(group.id)", data: group.iconImageData, maxPixel: 360),
+            me: UserProfile.current(from: profiles)?.name ?? "",
+            people: group.members.map { TripSeatPerson(id: $0.id.uuidString, name: $0.name, image: V64Images.image(key: "tm\($0.id)", data: $0.profileImageData, maxPixel: 120)) },
+            onSend: shareLink,
+            onQR: openPass
+        )
+        .task(id: group.id) {
+            if let k = try? await GroupInviteService.passphrase(for: group, context: modelContext) { tripKey = k }
         }
-        .frame(maxWidth: .infinity)
+    }
+
+    /// QR を 見せる:パス(→ T16)
+    private func openPass() {
+        Haptics.play(.click)
+        Task {
+            let link = (try? await GroupInviteService.link(for: group, context: modelContext)).flatMap { InviteConfig.shareURL(from: $0) ?? $0 }
+            tripPass = TripPassData(group: group, key: tripKey, link: link?.absoluteString ?? "")
+        }
     }
 
     /// 今までと 同じ 招待文で 共有シート

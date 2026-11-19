@@ -91,7 +91,6 @@ struct TodayView: View {
     /// v14 ⑤:ともだち(呼ぶ / グループに えらぶ / とどいた)
     @State private var showingFriendsHub = false
     /// v48:ともだち画面の中から「とどいた」を見るときだけの、今の画面
-    @State private var showingFriendsHubInbox = false
     /// v18.2:撮ったチェキが、物干しへ とんでいる間
     @State private var shotFlight: (handOff: ShotHandOff, start: Date)?
     /// v21 E:オープニング(ゼロから起動した時だけ)
@@ -1082,45 +1081,17 @@ struct TodayView: View {
             .environment(\.colorScheme, palette.isNight ? .dark : .light)
         }
         .fullScreenCover(isPresented: $showingFriendsHub) {
-            if UIFlag.v64 {
-                FriendsV68View(
-                    myName: currentUser?.name ?? "",
-                    myAvatarData: currentUser?.profileImageData,
-                    friends: layerData(sharedGroups: sharedGroups).friends,
-                    groups: sharedGroups,
-                    onClose: { showingFriendsHub = false },
-                    onOpenInviteToGroup: {
-                        showingFriendsHub = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { newGroupPrefill = nil; showingNewGroup = true }
-                    }
-                )
-            } else {
-            FriendScreenV48(
+            FriendsV68View(
                 myName: currentUser?.name ?? "",
-                myColorIndex: currentUser?.avatarColorIndex,
                 myAvatarData: currentUser?.profileImageData,
                 friends: layerData(sharedGroups: sharedGroups).friends,
                 groups: sharedGroups,
                 onClose: { showingFriendsHub = false },
-                onOpenInbox: { showingFriendsHubInbox = true },
                 onOpenInviteToGroup: {
                     showingFriendsHub = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { newGroupPrefill = nil; showingNewGroup = true }
-                },
-                onEditProfile: onOpenProfile
+                }
             )
-            }
-        }
-        // v48:「とどいた」(ともだち申請)・「グループに えらぶ」は、今の 画面を そのまま 呼ぶ
-        .fullScreenCover(isPresented: $showingFriendsHubInbox) {
-            FriendsHubView(
-                myName: currentUser?.name ?? "",
-                friends: layerData(sharedGroups: sharedGroups).friends,
-                groups: sharedGroups,
-                startTab: 2,
-                onClose: { showingFriendsHubInbox = false }
-            )
-            .environment(\.palette, palette)
         }
         .fullScreenCover(isPresented: $showingNewGroup) {
             if UIFlag.v64 {
@@ -1646,6 +1617,7 @@ struct TodayView: View {
     private func saveCapturedShot(photo: UIImage, tags: [String], place: String?, shotIndex: Int) {
         let captureDate = Date()
         let music = MusicDraft.load()   // v22 L-4:撮ったときの 1曲
+        LastShotCaption.record(tags: tags, music: music)   // v98:次の 1枚は 空から
         markRevealBaseline()
         let background = BackgroundTaskBox.begin(name: "later.saveShot")
         shotSaveTask = Task { @MainActor in
@@ -1683,6 +1655,7 @@ struct TodayView: View {
     private func saveCapturedVideo(_ video: RecordedVideo, tags: [String], place: String?) {
         let captureDate = Date()
         let music = MusicDraft.load()   // v22 L-4
+        LastShotCaption.record(tags: tags, music: music)
         markRevealBaseline()
         Task { @MainActor in
             // もとの ふつう映像を置く(RETRO-8 は裏で書き出す。終わったら入れかわって、もとは消える)

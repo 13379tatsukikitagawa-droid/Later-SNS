@@ -25,6 +25,8 @@ struct GroupSheet: View {
     @State private var cardPulse = false
     /// まだ見ていない「〇〇さんが、抜けました。」(開いたときに読み、一度見たら既読)
     @State private var leftEvents: [MemberEventStore.Event] = []
+    @State private var tripKey = ""
+    @State private var shareItems: [Any]?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,27 +40,21 @@ struct GroupSheet: View {
                             .padding(.bottom, 12)
                     }
                     header
-                        .padding(.horizontal, 24)
-                        .modifier(SheetStagger(index: 0, appeared: appeared, reduceMotion: reduceMotion))
-                    InviteCard(group: group, summary: summary, haptics: haptics, onShowQR: onShowQR)
-                        .scaleEffect(cardPulse ? 1.025 : 1)
                         .padding(.horizontal, 20)
-                        .padding(.top, 22)
+                        .modifier(SheetStagger(index: 0, appeared: appeared, reduceMotion: reduceMotion))
+                    TripSeatMap(people: seatPeople, small: true)
+                        .padding(.horizontal, 16).padding(.top, 14)
                         .modifier(SheetStagger(index: 1, appeared: appeared, reduceMotion: reduceMotion))
-                    members
-                        .padding(.top, 22)
-                        .modifier(SheetStagger(index: 2, appeared: appeared, reduceMotion: reduceMotion))
-                    VStack(spacing: 6) {
-                        (Text("昨日は ") + Text("\(summary.postedYesterday)人").bold().foregroundColor(.white) + Text(" が預けました。"))
-                            .foregroundStyle(HomePalette.subText)
-                        Text(note)
-                            .foregroundStyle(Color(hex: "8E8E93"))
-                            .multilineTextAlignment(.center)
+                    VStack(spacing: 10) {
+                        TripSendButton(sub: summary.isFull ? "満員です" : "あと \(summary.openSeats)席", action: sendInvite)
+                        TripTwoButtons(key: tripKey, onQR: showPass)
                     }
-                    .font(.system(size: 12))
-                    .padding(.top, 20)
-                    .padding(.horizontal, 24)
-                    .modifier(SheetStagger(index: 3, appeared: appeared, reduceMotion: reduceMotion))
+                    .padding(.horizontal, 16).padding(.top, 14)
+                    .modifier(SheetStagger(index: 2, appeared: appeared, reduceMotion: reduceMotion))
+                    Text(note)
+                        .font(LF.inter(600, 11.5)).foregroundStyle(Color(hex: "6E6E75")).multilineTextAlignment(.center)
+                        .padding(.top, 14).padding(.horizontal, 24)
+                        .modifier(SheetStagger(index: 3, appeared: appeared, reduceMotion: reduceMotion))
                 }
                 .padding(.top, 18)
                 .padding(.bottom, 16)
@@ -71,7 +67,10 @@ struct GroupSheet: View {
                 .padding(.bottom, 64)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .overlay(alignment: .topTrailing) { settingsPill.padding(.top, 36).padding(.trailing, 22) }
+        .task(id: group.id) { if let k = try? await GroupInviteService.passphrase(for: group, context: modelContext) { tripKey = k } }
+        .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
+            ShareSheet(activityItems: shareItems ?? []) { _ in shareItems = nil }.presentationDetents([.medium, .large])
+        }
         .onAppear {
             appeared = true
             leftEvents = MemberEventStore.unseen(groupID: group.id)
@@ -91,27 +90,10 @@ struct GroupSheet: View {
         }
     }
 
-    /// 右上の「設定」(高さ34pt・角丸17pt)。触覚なし
-    private var settingsPill: some View {
-        Button(action: onSettings) {
-            HStack(spacing: 6) {
-                Image(systemName: "slider.horizontal.3").font(.system(size: 15))
-                Text("設定").font(.system(size: 12.5, weight: .semibold))
-            }
-            .foregroundStyle(Color(hex: "D0D0D4"))
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(Capsule().fill(.white.opacity(0.08)))
-            .overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 1))
-        }
-        .buttonStyle(PressScaleStyle(scale: 0.94))
-        .accessibilityLabel("グループの設定")
-    }
-
     /// 「しずくさんが、抜けました。」+ 日時(一度見たら消える・7日で消える)
     private func leftNotice(_ event: MemberEventStore.Event) -> some View {
         HStack(spacing: 10) {
-            Circle().fill(Color(hex: "FFB26E")).frame(width: 7, height: 7).shadow(color: Color(hex: "FFB26E").opacity(0.8), radius: 4)
+            Circle().fill(Color(hex: "C8F25A")).frame(width: 7, height: 7).shadow(color: Color(hex: "C8F25A").opacity(0.8), radius: 4)
             Text("\(event.memberName)さんが、抜けました。")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white)
@@ -136,96 +118,75 @@ struct GroupSheet: View {
         return f
     }()
 
-    // MARK: - 見出し
+    // MARK: - 見出し(表紙 52 ・ 名前 Instrument Serif 28 ・ DAY / 人数 ・ 歯車)
+
+    private var dayNumber: Int {
+        let cal = Calendar.current
+        return max(1, (cal.dateComponents([.day], from: cal.startOfDay(for: group.creationDate), to: cal.startOfDay(for: Date())).day ?? 0) + 1)
+    }
+
+    private var seatPeople: [TripSeatPerson] {
+        group.members.sorted { $0.id.uuidString < $1.id.uuidString }.map {
+            TripSeatPerson(id: $0.id.uuidString, name: $0.name, image: V64Images.image(key: "tm\($0.id)", data: $0.profileImageData, maxPixel: 120))
+        }
+    }
 
     private var header: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                GroupFace(iconData: summary.iconData, initial: summary.initial, auraIndex: summary.auraIndex, diameter: 56, mosaic: summary.faceMosaic, mosaicKey: summary.faceMosaicKey)
-                // まわりに12個の点。メンバー数ぶんが白く光る
-                GroupLightRing(memberCount: GroupRingMath.maxDots, posted: min(GroupRingMath.maxDots, summary.memberCount), diameter: 84)
-            }
-            .frame(width: 84, height: 84)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(group.name)
-                    .font(.system(size: 26, weight: .bold))
-                    .tracking(-0.03 * 26)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                HStack(spacing: 8) {
-                    Text("\(summary.memberCount) / \(summary.memberLimit)人")
-                        .foregroundStyle(Color(hex: "BCBBC0"))
-                        .contentTransition(.numericText(countsDown: true))
-                        .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.5), value: summary.memberCount)
-                    Text(summary.isFull ? "満員" : "あと\(summary.openSeats)人")
-                        .foregroundStyle(summary.isFull ? Color(hex: "8E8E93") : Color(hex: "FFB078"))
+        HStack(spacing: 12) {
+            Group {
+                if let img = V64Images.image(key: "tg\(group.id)", data: summary.iconData, maxPixel: 200) {
+                    Image(uiImage: img).resizable().scaledToFill()
+                } else {
+                    Color(hex: "2A2A2E").overlay(HV72HashShape().fill(Color(hex: "C8F25A")).frame(width: 26, height: 26))
                 }
-                .font(.system(size: 11.5))
+            }
+            .frame(width: 52, height: 52)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(2)
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color(hex: "C8F25A"), lineWidth: 1.5))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(group.name).font(LF.serif(28)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
+                Text("DAY \(dayNumber) ・ \(summary.memberCount) / \(summary.memberLimit)人")
+                    .font(LF.mono(10)).tracking(1.2).foregroundStyle(Color(hex: "8C8C93"))
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.5), value: summary.memberCount)
             }
             Spacer(minLength: 0)
+            Button(action: onSettings) {
+                Image(systemName: "gearshape").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 44, height: 44).background(Circle().fill(Color(hex: "1C1C1F")))
+            }
+            .buttonStyle(PressScaleStyle(scale: 0.94))
+            .accessibilityLabel("Trip を かえる")
         }
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - メンバー(1行)
+    // MARK: - 招待(KEY は 1つ)
 
-    private var members: some View {
-        let sorted = group.members.sorted { $0.id.uuidString < $1.id.uuidString }
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 8) {
-                ForEach(sorted) { member in
-                    VStack(spacing: 6) {
-                        PersonaIcon(seed: member.id)
-                            .frame(width: 48, height: 48)
-                            .clipShape(Circle())
-                        Text(member.name)
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(HomePalette.subText)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                    .frame(width: 58)
-                    .accessibilityElement(children: .combine)
-                    // 抜けた人の顔は、縮みながら消える(0.7秒)。残りが左へ寄る
-                    .transition(.scale(scale: 0.2).combined(with: .opacity))
-                }
-                if !summary.isFull {
-                    Button(action: pulseInviteCard) {
-                        VStack(spacing: 6) {
-                            InviteBreathingCircle()
-                            Text("招待")
-                                .font(.system(size: 10.5, weight: .semibold))
-                                .foregroundStyle(Color(hex: "FFB078"))
-                        }
-                        .frame(width: 58)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityLabel("なかまを招待する")
-                }
-            }
-            .padding(.horizontal, 24)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.7), value: sorted.map(\.id))
+    private func sendInvite() {
+        Haptics.play(.click)
+        Task {
+            guard let link = try? await GroupInviteService.link(for: group, context: modelContext) else { return }
+            let shareURL = InviteConfig.shareURL(from: link) ?? link
+            let join = GroupJoinLink.buildURL(shareURL: shareURL) ?? shareURL
+            shareItems = [ShareLinkItemSource(text: InviteConfig.shareMessage(groupName: group.name, url: join), title: "「\(group.name)」に招待されました。")]
         }
     }
 
-    /// 「＋ 招待」:上の招待カードが 1.025倍にふくらんで戻る(0.42秒)。ごく軽く1回
-    private func pulseInviteCard() {
-        haptics.playTransient(intensity: 0.25, sharpness: 0.4)
-        guard !reduceMotion else { return }
-        withAnimation(.easeOut(duration: 0.21)) { cardPulse = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.21) {
-            withAnimation(.easeIn(duration: 0.21)) { cardPulse = false }
+    private func showPass() {
+        Task {
+            guard let link = try? await GroupInviteService.link(for: group, context: modelContext) else { return }
+            onShowQR(InviteConfig.shareURL(from: link) ?? link)
         }
     }
 
     private var note: String {
         switch state {
-        case .ready, .opened: return "このグループの昨日だけを、ひらいて見られます。"
-        case .deciding: return "昨日の1枚を選ぶと、このグループの昨日がひらけます。"
-        default: return "今日を撮ると、このグループの昨日がひらけます。"
+        case .opened: return "きのうの Trip の 写真は ひらいて います"
+        case .ready: return "長押しで、きのうの Trip を ひらけます"
+        case .deciding: return "昨日の1枚を選ぶと、きのうの Trip が ひらく"
+        default: return "今日 1枚 撮ると、きのうの Trip が ひらく"
         }
     }
 
@@ -241,10 +202,10 @@ struct GroupSheet: View {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         shape.fill(.white.opacity(0.1))
-                        LinearGradient(colors: [Color(hex: "FFC56B"), HomePalette.orange], startPoint: .leading, endPoint: .trailing)
+                        Color(hex: "C8F25A")
                             .frame(width: proxy.size.width * p)
                             .clipShape(shape)
-                        shape.strokeBorder(HomePalette.orange.opacity(0.6), lineWidth: 1)
+                        shape.strokeBorder(Color(hex: "C8F25A").opacity(0.6), lineWidth: 1)
                         Text(holdModel.isPressing ? "そのまま、持っていて…" : "長押しで、グループの昨日をひらく")
                             .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(.white)
@@ -315,27 +276,6 @@ private struct SheetStagger: ViewModifier {
             .offset(y: shown || reduceMotion ? 0 : 14)
             .opacity(shown ? 1 : 0)
             .animation(reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.7).delay(0.12 + Double(index) * 0.08), value: appeared)
-    }
-}
-
-/// 「＋ 招待」のオレンジの点線の丸。ゆっくり呼吸する(影 0 ↔ 5pt、2.8秒)
-private struct InviteBreathingCircle: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var breathing = false
-
-    var body: some View {
-        ZStack {
-            Circle().strokeBorder(Color(hex: "FFB078"), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-            Image(systemName: "plus")
-                .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(Color(hex: "FFB078"))
-        }
-        .frame(width: 48, height: 48)
-        .shadow(color: Color(hex: "FFB078").opacity(0.6), radius: breathing ? 5 : 0)
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { breathing = true }
-        }
     }
 }
 

@@ -278,6 +278,8 @@ struct TagScreen: View {
     @State private var closing = false
     /// L-4:今日の 1曲(その日の 下書き。撮ると 写真に つく)
     @State private var music: MusicPick? = MusicDraft.load()
+    /// v98:「さっきと 同じ」(2枚目 以降)
+    @State private var last: LastShotCaption.Entry? = LastShotCaption.load()
     @State private var showsMusic = false
     @State private var musicBounce = 0
     private let musicPlayback = MusicPlayback.shared
@@ -338,6 +340,7 @@ struct TagScreen: View {
                             .foregroundStyle(Color(hex: "8E8E95"))
                             .modifier(Stagger(phase: stage, inDelay: 420, outIndex: 5, reduceMotion: reduceMotion))
                         Spacer(minLength: 8)
+                        if let last, tags.isEmpty, music == nil, trimmedInput.isEmpty { sameAsBeforeCapsule(last) }
                         addButton
                     }
                     .frame(height: 30)
@@ -385,7 +388,15 @@ struct TagScreen: View {
             }
         }
         .preferredColorScheme(.dark)
-        .onAppear { MusicPlayback.shared.setVolume(0.9); appear() }
+        .onAppear {
+            MusicPlayback.shared.setVolume(0.9)
+            if LastShotCaption.consumeFresh() { resetForNewShot() }
+            appear()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: LastShotCaption.didShoot)) { _ in
+            _ = LastShotCaption.consumeFresh()
+            resetForNewShot()
+        }
         .onDisappear { placeholderTask?.cancel(); MusicPlayback.shared.setVolume(0.45) }   // v89:撮影画面へ 行っても 小さく 流れる
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
             BackTiming.mark("⑥キーボードが 出た", on: .chipToTags)
@@ -579,6 +590,43 @@ struct TagScreen: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: inputFocused)
         .accessibilityLabel("タグを追加")
         .accessibilityHidden(!inputFocused)
+    }
+
+    // MARK: v98 さっきと 同じ
+
+    /// 1枚 撮れた:タグ ・ 音楽 ・ 入力欄を 空に して、再生を 止める(キャプション画面は ひらく たびに 新しい 状態)
+    private func resetForNewShot() {
+        tags = []
+        music = nil
+        input = ""
+        MusicPlayback.shared.stop()
+        last = LastShotCaption.load()
+    }
+
+    /// 「いま人気」の 右:ライムの 小さな カプセル。押すと 1枚目の タグ ・ 音楽が 入って、カプセルは 消える
+    private func sameAsBeforeCapsule(_ e: LastShotCaption.Entry) -> some View {
+        let tagText = e.tags.map { "#" + TagDictionary.display($0) }.joined(separator: " ")
+        let text = "↺ さっきと 同じ " + [tagText, e.music.map { "♪ " + $0.shortTitle }].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ・ ")
+        return Button {
+            Haptics.play(.pop)
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+                tags = Array(e.tags.prefix(TagRules.maxCount))
+                if let m = e.music { MusicDraft.save(m); music = m; musicBounce += 1 }
+                last = nil
+            }
+        } label: {
+            Text(text)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color(hex: "0B0C0D"))
+                .lineLimit(1).minimumScaleFactor(0.75)
+                .padding(.horizontal, 12)
+                .frame(height: 28)
+                .background(Capsule().fill(Color(hex: "C8F25A")))
+        }
+        .buttonStyle(SquishButtonStyle(pressedScale: 0.94))
+        .frame(maxWidth: 250)
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+        .accessibilityLabel("さっきと 同じ タグと 音楽を 入れる")
     }
 
     // MARK: 動きとルール

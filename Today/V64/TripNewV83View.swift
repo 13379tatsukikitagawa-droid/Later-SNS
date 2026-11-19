@@ -576,74 +576,7 @@ struct TripPassData {
     var names: [String]
 }
 
-struct TripPassView: View {
-    var data: TripPassData
-    var newlyMade = false
-    var onStart: () -> Void = {}
-    var onClose: () -> Void = {}
-    @State private var shareItems: [Any]?
-    @State private var copied = false
-
-    private var keyParts: (String, String) {
-        let k = data.key.hasPrefix("#") ? String(data.key.dropFirst()) : data.key
-        let digits = String(k.reversed().prefix(while: \.isNumber).reversed())
-        return ("#" + String(k.dropLast(digits.count)), digits)
-    }
-
-    var body: some View {
-        ZStack {
-            Color(hex: "0A0A0B").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "24A03C").opacity(0.22), .clear], center: UnitPoint(x: 0.1, y: 0.4), startRadius: 0, endRadius: 260).ignoresSafeArea()
-            VStack(spacing: 0) {
-                Text(newlyMade ? "YOUR TRIP IS READY" : "TRIP PASS").font(LF.mono(11)).tracking(3.3).foregroundStyle(Color(hex: "61DD7A")).padding(.top, 110)
-                VStack(spacing: 0) {
-                    ZStack(alignment: .topLeading) {
-                        ZStack { Color(hex: "2A2326"); if let c = data.cover { Image(uiImage: c).resizable().scaledToFill() } }
-                        LinearGradient(colors: [.black.opacity(0.3), .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                        VStack(alignment: .leading, spacing: 0) {
-                            HStack { Text("LATTAG").font(LF.mono(10.5)).tracking(2); Spacer(); Text("TRIP PASS").font(LF.mono(10.5)).tracking(2) }.foregroundStyle(.white.opacity(0.65))
-                            Text(data.name).font(LF.serif(42)).foregroundStyle(.white).padding(.top, 14)
-                            Text(data.sub).font(LF.inter(700, 12)).foregroundStyle(.white.opacity(0.75)).padding(.top, 0)
-                            HStack(alignment: .top) {
-                                VStack(alignment: .leading, spacing: 2) { Text("FROM").font(LF.mono(8)).tracking(1.5).foregroundStyle(.white.opacity(0.6)); Text(data.from).font(LF.mono(15)).fontWeight(.bold).foregroundStyle(.white) }
-                                Image(systemName: "arrow.right").font(.system(size: 18, weight: .light)).foregroundStyle(.white.opacity(0.7)).padding(.top, 18).padding(.horizontal, 12)
-                                VStack(alignment: .leading, spacing: 2) { Text("TO").font(LF.mono(8)).tracking(1.5).foregroundStyle(.white.opacity(0.6)); Text(data.to).font(LF.mono(15)).fontWeight(.bold).foregroundStyle(.white) }
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 2) { Text("DAYS").font(LF.mono(8)).tracking(1.5).foregroundStyle(.white.opacity(0.6)); Text("\(data.days)").font(LF.mono(15)).fontWeight(.bold).foregroundStyle(.white) }
-                            }.padding(.top, 22)
-                            HStack(spacing: 10) {
-                                HStack(spacing: -8) { ForEach(Array(data.members.prefix(3).enumerated()), id: \.offset) { i, m in TripTicket(draft: TripDraft(), cover: nil, members: []).memberDot(m, data.names[safe: i] ?? "", 26).overlay(Circle().strokeBorder(.white, lineWidth: 2)) } }
-                                Text("\(data.members.count) aboard ・ 23 / day").font(LF.mono(9.5)).fontWeight(.bold).foregroundStyle(.white.opacity(0.85))
-                            }.padding(.top, 16)
-                        }.padding(18)
-                    }.frame(height: 215).clipped()
-                    VStack(spacing: 0) {
-                        if let qr = QRImage.make(data.link) { Image(uiImage: qr).interpolation(.none).resizable().frame(width: 110, height: 110).padding(.top, 26) }
-                        Text("KEY").font(LF.mono(8.5)).tracking(2).foregroundStyle(Color(hex: "0B0C0D").opacity(0.5)).padding(.top, 20)
-                        (Text(keyParts.0).foregroundColor(Color(hex: "0B0C0D")) + Text(keyParts.1).foregroundColor(Color(hex: "24A03C"))).font(LF.inter(900, 34)).tracking(-1.2).minimumScaleFactor(0.6).lineLimit(1).padding(.top, 4)
-                        Text("SCAN TO JOIN ・ あした 9:00 に 現像").font(LF.mono(8.5)).tracking(1).foregroundStyle(Color(hex: "0B0C0D").opacity(0.5)).padding(.top, 6).padding(.bottom, 22)
-                    }.frame(maxWidth: .infinity).background(Color(hex: "F3F0EA"))
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous)).frame(width: 300).padding(.top, 14)
-                HStack(spacing: 8) {
-                    passButton("square.and.arrow.up", "Share") { shareItems = ["\(data.name) に きて ね\n\(data.link)"] }
-                    passButton("arrow.down.to.line", "Save") { Haptics.play(.tick) }
-                    passButton("doc.on.doc", copied ? "Copied" : "Copy key") { UIPasteboard.general.string = data.key; copied = true; Haptics.play(.success) }
-                }.frame(width: 300).padding(.top, 12)
-                Button { Haptics.play(.click); onStart() } label: { Text("Start the trip").font(LF.inter(800, 17)).foregroundStyle(Color(hex: "0B0C0D")).frame(maxWidth: .infinity).frame(height: 52).background(Color(hex: "F4F1EA"), in: Capsule()) }
-                    .buttonStyle(HVPress(scale: 0.98)).frame(width: 300).padding(.top, 12)
-                Spacer(minLength: 0)
-            }
-        }
-        .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) { ShareSheet(activityItems: shareItems ?? []) { _ in shareItems = nil }.presentationDetents([.medium, .large]) }
-    }
-
-    private func passButton(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
-        Button { Haptics.play(.tick); action() } label: {
-            VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 17, weight: .semibold)); Text(title).font(LF.inter(700, 12.5)) }.foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 60).background(Color(hex: "1C1C1E"), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }.buttonStyle(HVPress(scale: 0.95))
-    }
-}
+// TripPassView は `TripPassV98.swift`(v98)
 
 
 // MARK: - 候補(あとで サーバーから 季節で 変えられる ように ここに まとめる)

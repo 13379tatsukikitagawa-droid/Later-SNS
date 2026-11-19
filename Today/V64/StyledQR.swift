@@ -33,6 +33,8 @@ struct StyledQRView: View, Animatable {
     var progress: Double = 1
     var side: CGFloat = 232
     var paper = Color(hex: "FBFAF6")
+    /// v98:Trip の QR は まんなかが Trip の 表紙(角丸 22.4% ・ ライムの ふち)
+    var coverImage: UIImage? = nil
 
     var animatableData: Double { get { progress } set { progress = newValue } }
 
@@ -81,7 +83,16 @@ struct StyledQRView: View, Animatable {
                 }
             }
             if n > 0 {
-                OPIcon(size: side / CGFloat(n) * 7.6, lensScale: 1).scaleEffect(min(1, max(0, (progress - 0.05) * 6)))
+                let ic = side / CGFloat(n) * 7.6
+                Group {
+                    if let coverImage {
+                        Image(uiImage: coverImage).resizable().scaledToFill().frame(width: ic, height: ic)
+                            .clipShape(RoundedRectangle(cornerRadius: ic * 0.224, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: ic * 0.224, style: .continuous).strokeBorder(Color(hex: "C8F25A"), lineWidth: max(1.5, ic * 0.045)))
+                    } else {
+                        OPIcon(size: ic, lensScale: 1)
+                    }
+                }.scaleEffect(min(1, max(0, (progress - 0.05) * 6)))
             }
         }.frame(width: side, height: side)
     }

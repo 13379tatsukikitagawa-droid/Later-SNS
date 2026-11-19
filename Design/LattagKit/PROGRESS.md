@@ -280,3 +280,9 @@
 - ✓ A 形:`Shared/LattagLiveAttributes.swift`(Attributes ・ Phase ・ `OpenCameraIntent` ・ `LattagLiveClock`)・ `LaterWidget/LattagLiveViews.swift`(フィルム / ラストコール / 朝の 部 + Dynamic Island 小 ・ 最小 ・ ひらく)。古い(P10)ライブ アクティビティは バンドルから 外し、既存の 物は 終了。見た目は DEBUG ルート `live` で 確認(島は シミュレータで 未確認)
 - ✓ B 始め方 ・ 終わり方:`App/Services/LattagLiveManager.swift`(前面で 23:00 start → 23:50 ラストコール → 3枚 / 24:00 で end(+30分 / +1時間)・ 8:30 朝の 部)・ push-to-start トークンを 控える ・ 設定 › 通知に 夜 / 朝の オン オフ ・ 「撮る」ボタン = `OpenCameraIntent`(App Group の 旗 → 撮影)。`LattagLiveTests`(時間割)
 - ✓ C サーバー:`server/live-activity/`(Cloud Functions + APNs の ひな形 と README)。**未配備**。アプリに Firestore が 無く トークンを 送る 部分は 未実装
+
+## v98(実機を 見て 直す 5こ)
+- ① Trip パス:`TripPassV98.swift`(表紙は clipped ・ 印刷の 動き M39 ・ ISSUED はんこ ・ 写真に 保存 = ImageRenderer + addOnly)。QR = `https://lattag.app/t/<key>` ・ まんなか = 表紙 ・ Unit テストで 読める ことを 確認。`/t/<key>` は アプリ側(onOpenURL ・ QR 読み取り)で KEY から 入る。サーバー(invite-web の OGP)は 未作成。
+- ② Trip チャット(空)= `TripBoardingView`(座席表 ・ 送ると こう 見える ・ 招待リンク)。③ メンバーの シート = `GroupSheet` を シンプルに(合言葉 ・ 「預けました」 ・ オレンジ 削除)。
+- ④ 古い `FriendsHubView` を 削除。チャットの 友だち招待 = v94 の さがす 画面。
+- ⑤ キャプション:撮ったら タグ ・ 音楽を 空に(`LastShotCaption`)+ 「↺ さっきと 同じ」カプセル。

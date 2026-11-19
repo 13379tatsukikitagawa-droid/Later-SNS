@@ -309,6 +309,8 @@
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
 		F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */; };
 		F82C8F8187D6C0E8E13DF4F5 /* V64/TripHomeV83View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49028997E3DBDE8B3B4B28F8 /* V64/TripHomeV83View.swift */; };
+		62643459F4274E63CC552240 /* V64/TripPassV98.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE95C08DFFEA818FD2427D58 /* V64/TripPassV98.swift */; };
+		A3DE7EECEB5C7BA563349A1D /* V64/TripSeatsV98.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05216E330849EB495639DB92 /* V64/TripSeatsV98.swift */; };
 		F8E0DFF51C9B372080711A94 /* V64/TripNewV83View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */; };
 		F8F989379BFA17B7600AA6D2 /* EmailSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4223DCBF41BC23820D06D5F9 /* EmailSignInView.swift */; };
 		F9604D53BE6964B061D9D199 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
@@ -434,6 +436,8 @@
 		715D5217D6859EE7C88838FF /* V64/MusicPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/MusicPlayback.swift; sourceTree = "<group>"; };
 		7286B5CCAB2D0CFFAF4C6FDC /* V64/HomeV68FriendsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV68FriendsCard.swift; sourceTree = "<group>"; };
 		72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/DirectMessageView.swift; sourceTree = "<group>"; };
+		FE95C08DFFEA818FD2427D58 /* V64/TripPassV98.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripPassV98.swift; sourceTree = "<group>"; };
+		05216E330849EB495639DB92 /* V64/TripSeatsV98.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripSeatsV98.swift; sourceTree = "<group>"; };
 		7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripNewV83View.swift; sourceTree = "<group>"; };
 		74ABDCBD81139B48C5410711 /* HomeDotRing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeDotRing.swift; sourceTree = "<group>"; };
 		74F50275B63F472CA0B8DA54 /* CGImagePropertyOrientation+UIImage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "CGImagePropertyOrientation+UIImage.swift"; sourceTree = "<group>"; };
@@ -1016,6 +1020,8 @@
 				8B65E06F99EE28EDBF6A9F6E /* V64/RecapV86Model.swift */,
 				49028997E3DBDE8B3B4B28F8 /* V64/TripHomeV83View.swift */,
 				7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */,
+				05216E330849EB495639DB92 /* V64/TripSeatsV98.swift */,
+				FE95C08DFFEA818FD2427D58 /* V64/TripPassV98.swift */,
 				09B7A294C6B1D08D337C329D /* V64/YesterdayMondoView.swift */,
 				6AD03061F1111CC99997691B /* V64/HomeV72Hash.swift */,
 				0C5B5FBF72EB9A3061E80E58 /* V64/OpeningV72View.swift */,
@@ -1626,6 +1632,8 @@
 				8A5236B97D5A98BF504683EE /* V64/RecapV86Model.swift in Sources */,
 				F82C8F8187D6C0E8E13DF4F5 /* V64/TripHomeV83View.swift in Sources */,
 				F8E0DFF51C9B372080711A94 /* V64/TripNewV83View.swift in Sources */,
+				A3DE7EECEB5C7BA563349A1D /* V64/TripSeatsV98.swift in Sources */,
+				62643459F4274E63CC552240 /* V64/TripPassV98.swift in Sources */,
 				E92CAD42AD3606DBA7D25004 /* V64/YesterdayMondoView.swift in Sources */,
 				B4507C32DBC1B2B23B22AE59 /* V64/HomeV72Hash.swift in Sources */,
 				80F33C8F2640B7FC245DFDA6 /* V64/OpeningV72View.swift in Sources */,
@@ -2015,7 +2023,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "思い出を記録し、グループで共有するためにカメラを使用します。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "撮影した場所の地名を写真に添えるために位置情報を使用します。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画に音声を記録するためにマイクを使用します。";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "チェキ風の写真を写真アプリに保存するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "チェキ風の写真や Trip のパスを、写真アプリに保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "グループの顔にする写真を、最近の写真から選ぶために使用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -2059,7 +2067,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "思い出を記録し、グループで共有するためにカメラを使用します。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "撮影した場所の地名を写真に添えるために位置情報を使用します。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画に音声を記録するためにマイクを使用します。";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "チェキ風の写真を写真アプリに保存するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "チェキ風の写真や Trip のパスを、写真アプリに保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "グループの顔にする写真を、最近の写真から選ぶために使用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

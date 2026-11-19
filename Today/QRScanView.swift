@@ -738,6 +738,14 @@ struct QRScanView: View {
         guard now.timeIntervalSince(since) >= 0.25 else { return }
         if let url = URL(string: code), let shareURL = InviteConfig.shareURL(from: url) {
             lock(shareURL, haptic: true)
+        } else if let key = TripKeyLink.key(from: code) {
+            // v98:Trip の パスの QR(https://lattag.app/t/<key>)
+            guard ignoredCode != code else { return }
+            ignoredCode = code
+            Task {
+                if let shareURL = try? await GroupInviteService.resolve(passphrase: key, timeout: 10) { lock(shareURL, haptic: true) }
+                else { showNotice("この KEY の Trip は 見つかりません") }
+            }
         } else if ignoredCode != code {
             // 触覚なし・音なし・揺れなし・リンクも開かない。同じQRで何度も出さない
             ignoredCode = code

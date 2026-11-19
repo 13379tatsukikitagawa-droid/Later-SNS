@@ -50,7 +50,6 @@ struct V14SnapshotTests {
             try await shoot(VerticalPhotoViewer(pages: pages, startIndex: 0, haptics: ExposureHaptics(), onClose: {}).environment(\.palette, palette), name: "feed-\(tag)", dir: dir)
             try await shoot(MEScreen(onBack: {}, onShoot: {}).environment(\.palette, palette).modelContainer(container), name: "me-\(tag)", dir: dir)
             try await shoot(LaterCalendarView(onClose: {}).environment(\.palette, palette).modelContainer(container), name: "calendar-\(tag)", dir: dir)
-            try await shoot(FriendsHubView(myName: "たつき", friends: friends, groups: [], onClose: {}).environment(\.palette, palette).modelContainer(container), name: "friends-\(tag)", dir: dir)
             try await shoot(DevelopPager(shots: shots, now: now, startIndex: 1, onClose: {}).background(Color(hex: "1B1B1F")), name: "pager-\(tag)", dir: dir)
         }
     }

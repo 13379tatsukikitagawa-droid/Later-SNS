@@ -55,6 +55,56 @@ enum MusicDraft {
     }
 }
 
+// MARK: - v98:「さっきと 同じ」(1枚 撮ったら 下書きを 空に して、1枚目の タグ ・ 音楽を 1つ 覚えておく。日が かわると 消える)
+
+enum LastShotCaption {
+    struct Entry: Codable, Equatable {
+        var day: String
+        var tags: [String]
+        var music: MusicPick?
+    }
+
+    /// 1枚 保存した 合図(タグ画面が ひらいたまま でも 空に もどる)
+    static let didShoot = Notification.Name("lattag.captionShotSaved")
+    private static let entryKey = "lattag.lastShotCaption"
+    private static let freshKey = "lattag.lastShotCaption.fresh"
+
+    private static var today: String {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyyMMdd"
+        return f.string(from: Date())
+    }
+
+    /// 撮れた(保存の 流れに 入った):今の 状態を 覚えて、下書き(タグ ・ 音楽)を 消す
+    static func record(tags: [String], music: MusicPick?) {
+        if !tags.isEmpty || music != nil {
+            let entry = Entry(day: today, tags: tags, music: music)
+            if let data = try? JSONEncoder().encode(entry) { UserDefaults.standard.set(data, forKey: entryKey) }
+        }
+        TagDraft.clear()
+        MusicDraft.save(nil)
+        UserDefaults.standard.set(true, forKey: freshKey)
+        NotificationCenter.default.post(name: didShoot, object: nil)
+    }
+
+    /// 今日の 「さっきと 同じ」(日が かわったら nil)
+    static func load() -> Entry? {
+        guard let data = UserDefaults.standard.data(forKey: entryKey),
+              let e = try? JSONDecoder().decode(Entry.self, from: data), e.day == today,
+              !e.tags.isEmpty || e.music != nil else { return nil }
+        return e
+    }
+
+    /// タグ画面が ひらいた とき:撮った あとなら true(1回だけ)
+    static func consumeFresh() -> Bool {
+        let v = UserDefaults.standard.bool(forKey: freshKey)
+        if v { UserDefaults.standard.removeObject(forKey: freshKey) }
+        return v
+    }
+}
+
 // MARK: - リンク(Apple Music)
 
 nonisolated enum MusicLink {
