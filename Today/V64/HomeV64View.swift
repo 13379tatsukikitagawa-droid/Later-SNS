@@ -158,7 +158,7 @@ struct HomeV64View: View {
             if let tourStep { HomeTourV95View(start: tourStep, onDone: { finished in withAnimation(.easeOut(duration: 0.25)) { self.tourStep = nil }
                 if finished, !WidgetGuideV96.seen { WidgetGuideV96.markSeen(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showWidgetGuide = true } } }).transition(.opacity) }
         }
-        .sheet(isPresented: $showWidgetGuide) { WidgetGuideV96Sheet { showWidgetGuide = false } }
+        .sheet(isPresented: $showWidgetGuide) { WidgetGuideV96Sheet(firstTime: true) { showWidgetGuide = false } }
         .onChange(of: page) { _, p in
             // v99:Friends(1)・ Trip(2)・ Mondo(3)に はじめて 来て 0.62秒 とどまったら 説明を 出す(素通りは 出さない)
             guard (1...3).contains(p), let kind = IntroKind.allCases[safe: p - 1], !IntroStore.seen(kind) else { return }

@@ -1136,15 +1136,14 @@ struct InvitePasteSheet: View {
                 }
             }
             .padding(.top, 20)
-            Spacer(minLength: 12)
             Button(action: onDismiss) {
                 Text("ちがいます ・ このまま はじめる").font(.system(size: 14, weight: .medium)).foregroundStyle(Color(hex: "8E8E93")).frame(minHeight: 44)
-            }.buttonStyle(.plain)
+            }.buttonStyle(.plain).padding(.top, 6)
         }
         .padding(.horizontal, 20).padding(.bottom, 16)
         .frame(maxWidth: .infinity)
+        .sheetFitsContent()
         .background(Color(hex: "16161A").ignoresSafeArea())
-        .presentationDetents([.large])
         .animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.3), value: open)
     }
 

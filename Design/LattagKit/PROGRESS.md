@@ -322,4 +322,5 @@
 - 0 ✓(決定 済み)。A ☐ A2 ☐ B ☐ C ☐ D ☐ E ☐(P44 の あと)
 
 ## P47 ・ v104(Apple だけ ・ Name / ID / 招待シート ・ ウィジェット)
-- 0 しらべ(報告 待ち)。A サインイン ☐ B O04 ☐ C Name ・ ID ・ 招待シート ☐ D ウィジェット ☐
+- 0 しらべ ✓。A サインイン ☐(Firebase の Apple 設定 待ち)B O04 ☐ C Name ・ ID ・ 招待シート ✓(`SheetFitsContent` = 中身の 高さ ・ Name は キーボード中も 写真の 行)D ウィジェット ✓(えらぶ → 5場面の 案内 → `WidgetCenter` で 自動たしかめ)。
+- 実機: 置けたかの 自動確認 ・ ID / 招待シートの 高さ ・ iPhone SE。旧 `WidgetSetupFlow` は 旧設定 / 旧初回設定 から のみ(のこし)

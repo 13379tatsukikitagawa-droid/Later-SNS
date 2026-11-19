@@ -158,9 +158,9 @@ struct OnboardingV64View: View {
                 // チェキ
                 OBCheki(step: step, initial: initial, colors: colors, photo: photo, tags: tags,
                         friendInitials: requestedInvite ? [(invitedBy.map { String($0.prefix(1)) } ?? "", colors.0)] : [])
-                    .scaleEffect(editing ? 0.52 : step.chekiScale)
+                    .scaleEffect(editing ? 0.4 : step.chekiScale)
                     .rotationEffect(.degrees(step.chekiRotation))
-                    .position(x: W / 2, y: editing ? 92 + 108 * 0.52 : step.chekiTop + mid + 108)
+                    .position(x: W / 2, y: editing ? 100 + 108 * 0.4 : step.chekiTop + mid + 108)
                     .offset(y: entered ? 0 : -300)
                     .rotationEffect(.degrees(entered ? 0 : -14))
                     .opacity(entered ? 1 - min(1, up / 60) : 0)
@@ -253,12 +253,12 @@ struct OnboardingV64View: View {
             .frame(width: W).offset(y: 448 + mid)
         case .name:
             VStack(spacing: 0) {
-                Text("Name").font(LF.serif(editing ? 44 : 64, italic: true)).tracking(editing ? -0.88 : -1.28).foregroundStyle(.white).frame(height: editing ? 44 : 64)
+                Text("Name").font(LF.serif(editing ? 38 : 64, italic: true)).tracking(editing ? -0.76 : -1.28).foregroundStyle(.white).frame(height: editing ? 38 : 64)
                 if !editing { Text("\(Brand.name) で よばれる なまえ").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8) }
             }
-            .frame(width: W).offset(y: editing ? 214 : 453 + mid)
+            .frame(width: W).offset(y: editing ? 222 : 453 + mid)
             VStack(alignment: .leading, spacing: 0) {
-                ZStack {
+                ZStack(alignment: .bottomTrailing) {
                     if name.isEmpty { Text("なまえ").font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(OB.sub.opacity(0.5)) }
                     TextField("", text: $name)
                         .font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
@@ -269,29 +269,32 @@ struct OnboardingV64View: View {
                             Haptics.play(.tick, gap: 0.04)
                             col = v.isEmpty ? 0 : OB.colorIndex(for: v)
                         }
+                    Text("\(name.count) / 12").font(LF.mono(11)).foregroundStyle(.white.opacity(0.4)).padding(.bottom, 2).allowsHitTesting(false)
                 }
-                .frame(height: 58)
+                .frame(height: editing ? 50 : 58)
                 Rectangle().fill(focus == .name ? OB.accent : .white).frame(height: 2.5)
-                if !editing { Text("\(name.count) / 12").font(LF.mono(11.5, bold: true)).foregroundStyle(OB.sub).padding(.top, 8) }
             }
-            .frame(width: w).offset(x: 24, y: editing ? 266 : 691 + mid)
-            if !editing { Button { Haptics.play(.click); showsIcon = true } label: {
+            .frame(width: w).offset(x: 24, y: editing ? 268 : 691 + mid)
+            Button { Haptics.play(.click); showsIcon = true } label: {
                 HStack(spacing: 14) {
                     ZStack(alignment: .bottomTrailing) {
                         ZStack {
                             Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing))
                             if let d = iconData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() }
                             else { Text(String(name.prefix(1))).font(LF.inter(900, 28)).foregroundStyle(.white) }
-                        }.frame(width: 76, height: 76).clipShape(Circle()).overlay(Circle().strokeBorder(OB.accent, lineWidth: 3).padding(-3))
+                        }.frame(width: editing ? 60 : 76, height: editing ? 60 : 76).clipShape(Circle()).overlay(Circle().strokeBorder(OB.accent, lineWidth: 3).padding(-3))
                         Image(systemName: "plus").font(.system(size: 13, weight: .black)).foregroundStyle(HV.ink).frame(width: 28, height: 28).background(OB.accent, in: Circle()).overlay(Circle().strokeBorder(.black, lineWidth: 2)).offset(x: 4, y: 4)
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text("アイコンの 写真").font(LF.inter(800, 16)).foregroundStyle(.white)
-                        Text("あとで プロフィールでも 変えられます").font(LF.inter(600, 13)).foregroundStyle(OB.sub)
+                        Text("タップして えらぶ ・ あとで かえられます").font(LF.inter(600, 13)).foregroundStyle(OB.sub).lineLimit(1).minimumScaleFactor(0.75)
                     }
                     Spacer()
-                }.padding(.horizontal, 0)
-            }.buttonStyle(.plain).frame(width: w).offset(x: 24, y: 592 + mid) }
+                }
+                .padding(.horizontal, 10).padding(.vertical, 8)
+                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }.buttonStyle(.plain).frame(width: w).offset(x: 24, y: editing ? 340 : 592 + mid)
         case .id:
             VStack(spacing: 0) {
                 Text("ID").font(LF.serif(editing ? 44 : 64, italic: true)).tracking(editing ? -0.88 : -1.28).foregroundStyle(.white).frame(height: editing ? 44 : 64)

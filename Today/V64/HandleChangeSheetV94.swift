@@ -33,18 +33,18 @@ struct HandleChangeHost: View {
                 rule("前の ID は \(HandleRules.changeIntervalDays)日間 だれも とれません")
             }.padding(.top, 16)
             if let errorText { Text(errorText).font(LF.inter(700, 13)).foregroundStyle(Color(hex: "FF453A")).padding(.top, 10) }
-            Spacer(minLength: 12)
             Button { save() } label: {
                 Text(daysLeft > 0 ? "あと \(daysLeft)日で かえられます" : (saving ? "保存して います…" : "保存")).font(LF.inter(800, 17)).foregroundStyle(canSave ? HV.ink : .white.opacity(0.3))
                     .frame(maxWidth: .infinity).frame(height: 56).background(canSave ? lime : Color.white.opacity(0.08), in: Capsule())
-            }.buttonStyle(HVPress(scale: 0.97)).disabled(!canSave).padding(.bottom, 24)
+            }.buttonStyle(HVPress(scale: 0.97)).disabled(!canSave).padding(.top, 16).padding(.bottom, 16)
         }
         .padding(.horizontal, 20)
+        .sheetFitsContent()
         .background(Color(hex: "0F1011").ignoresSafeArea())
         .environment(\.colorScheme, .dark)
         .onAppear { if text.isEmpty { let cur = me?.username ?? ""; text = (forced && HandleRules.validate(cur) == nil) ? cur : (HandleRules.suggestions(fromName: me?.name ?? "").first ?? "") } }
         .interactiveDismissDisabled(forced)
-        .presentationDetents([.large]).presentationCornerRadius(38).presentationBackground(Color(hex: "0F1011")).presentationDragIndicator(.visible)
+        .presentationCornerRadius(38).presentationBackground(Color(hex: "0F1011")).presentationDragIndicator(.visible)
     }
 
     private func rule(_ t: String) -> some View {
