@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 // P12-B(v68):Friends 画面(BeReal 型の 黒い 一覧)。見本:F01〜F04。
-// データ ・ 申請 ・ つつく ・ チャット ・ ブロック ・ 通報の しくみは 今までの まま(`FriendRequests` `KnockStore` `DirectMessageView` `ModerationService`)。
+// データ ・ 申請 ・ チャット ・ ブロック ・ 通報の しくみは 今までの まま(`FriendRequests` `DirectMessageView` `ModerationService`)。
 // 友だちの 数は どこにも 出さない。キャラクターは 使わない。
 
 extension Notification.Name { static let friendsSearchFocus = Notification.Name("friendsSearchFocus") }
@@ -111,14 +111,13 @@ struct FriendsV68View: View {
         .sheet(item: $chat) { f in DirectMessageView(friendID: f.id, friendName: f.name, friendAvatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 160)) }
         .sheet(item: $cardFriend) { f in
             let df = DateFormatter(); let _ = df.dateFormat = "HH:mm"
-            FriendCardV82Sheet(name: f.name, avatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 320), tag: f.tag, city: f.city, times: f.hasShot ? [""] : [], mosaics: [V64Images.image(key: "lw\(f.id)", data: f.mosaicTiny, maxPixel: 96)], canPoke: !f.hasShot,
-                              onChat: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { chat = f } }, onPoke: { cardFriend = nil; poke(f) },
+            FriendCardV82Sheet(name: f.name, avatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 320), tag: f.tag, city: f.city, times: f.hasShot ? [""] : [], mosaics: [V64Images.image(key: "lw\(f.id)", data: f.mosaicTiny, maxPixel: 96)],
+                              onChat: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { chat = f } },
                               onTrip: { cardFriend = nil; onOpenInviteToGroup() }, onMore: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { actionFriend = f } }, onClose: { cardFriend = nil })
                 .presentationDetents([.fraction(0.72)]).presentationDragIndicator(.hidden)
         }
         .confirmationDialog("", isPresented: Binding(get: { actionFriend != nil }, set: { if !$0 { actionFriend = nil } }), titleVisibility: .hidden) {
             if let f = actionFriend {
-                if !f.hasShot { Button("つつく") { poke(f) } }
                 Button("ふたりの グループを つくる") { onOpenInviteToGroup() }
                 Button("ブロックする", role: .destructive) { confirmingBlock = f }
                 Button("通報する", role: .destructive) { reportingFriend = f }
@@ -409,12 +408,6 @@ struct FriendsV68View: View {
                 }
             }.buttonStyle(.plain)
             if f.hasShot { lockedWindows(f) }
-            else {
-                Button { Haptics.play(.heart); poke(f) } label: {
-                    Image(systemName: "hand.point.up.left.fill").font(.system(size: 17, weight: .semibold)).foregroundStyle(HV.lime)
-                        .frame(width: 44, height: 44).background(HV.lime.opacity(0.16), in: Circle())
-                }.buttonStyle(HVPress(scale: 0.92)).accessibilityLabel("つつく")
-            }
             Button { Haptics.play(.sel); chat = f } label: {
                 Image(systemName: "bubble.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.10), in: Circle())
             }.buttonStyle(HVPress(scale: 0.92)).padding(.leading, 8).accessibilityLabel("チャット")
@@ -466,19 +459,6 @@ struct FriendsV68View: View {
     }
 
     // MARK: 処理(今ある ものを 呼ぶだけ)
-
-    private func poke(_ friend: HomeFriend) {
-        let window = DailyWindow.key(for: Date())
-        if KnockStore.shared.hasKnocked(friend.id, window: window) { Haptics.play(.warn); show("つつくのは 1日 1回"); return }
-        Haptics.play(.heart)
-        Task {
-            switch await KnockStore.shared.knock(friend, window: window, groups: groups, myName: myName) {
-            case .sent: show("\(friend.name) を つつきました")
-            case .already: Haptics.play(.warn); show("つつくのは 1日 1回")
-            case .failed: show("送れませんでした。つながってから、もう一度")
-            }
-        }
-    }
 
     private func block(_ friend: HomeFriend) {
         Task {

@@ -12,7 +12,7 @@ enum WidgetGuideV96 {
     static func sample(now: Date = Date()) -> WidgetModel {
         let key = LaterDay.key(for: now)
         let friends = [("れな", "れ", "C8F25A", 3), ("あや", "あ", "9ED8FF", 2), ("そら", "そ", "EE5E9C", 0), ("かい", "か", "F4B942", 1)].map { n, i, c, s in
-            FriendRing(uid: n, name: n, initial: i, colorHex: c, shotsToday: s, avatar: nil, knock: nil)
+            FriendRing(uid: n, name: n, initial: i, colorHex: c, shotsToday: s, avatar: nil)
         }
         let snap = WidgetSnapshot(dayKey: key, writtenAt: now, shots: 1, limit: 3, shotTimes: [now.addingTimeInterval(-3600)], shotBlurs: [], friends: friends, today: nil,
                                   yesterday: DaySummary(dayKey: key, people: 4, count: 11, tag: "夕焼け", names: ["れな", "あや", "そら", "かい"]),

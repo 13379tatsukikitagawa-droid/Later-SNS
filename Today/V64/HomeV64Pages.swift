@@ -240,7 +240,7 @@ struct HVFriendsPage: View {
             .frame(width: cardW, height: 100).offset(y: 124)
             HStack(spacing: 8) {
                 stat("\(shotFriends)/\(total)", "撮った")
-                stat("\(waiting)", "まだ ・ つつける")
+                stat("\(waiting)", "まだ")
                 stat("9:00", "ひらく")
             }.frame(width: cardW - 36).offset(x: 18, y: 236)
             if input.requestCount > 0 {
@@ -282,11 +282,6 @@ struct HVFriendsPage: View {
                         if let img = fr.image { Image(uiImage: img).resizable().scaledToFill().clipShape(Circle()) }
                         else { Text(String(fr.name.prefix(1))).font(LF.inter(800, 18)).foregroundStyle(.white) }
                     }.frame(width: 54, height: 54).saturation(fr.shots > 0 ? 1 : 0.2)
-                    if fr.shots == 0 {
-                        Image(systemName: "hand.point.up.left.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
-                            .frame(width: 22, height: 22).background(Color(hex: "2A2A2D"), in: Circle()).overlay(Circle().strokeBorder(.black, lineWidth: 2))
-                            .offset(x: 23, y: 23).onTapGesture { Haptics.play(.heart); actions.poke(fr.id) }
-                    }
                 }.frame(width: 68, height: 68)
                 Text(fr.name).font(LF.inter(700, 10.5)).foregroundStyle(Color(hex: "C9C9CF")).lineLimit(1).frame(width: 68)
             }

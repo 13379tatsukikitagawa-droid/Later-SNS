@@ -2,29 +2,7 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 
-// v96 C:中 ・ 大(M1 Friends + つつく / M2 きのう / M3 Trip / L1 ボード)。見本 widgets/v96/M1〜L1。
-
-// MARK: つつく(AppIntent。アプリを ひらかずに 送る)
-
-struct PokeFriendIntent: AppIntent {
-    static var title: LocalizedStringResource = "つつく"
-    static var description = IntentDescription("まだ 撮って いない 友だちに ノックを 送ります")
-    static var openAppWhenRun: Bool = false
-
-    @Parameter(title: "友だち") var friendID: String
-
-    init() {}
-    init(friendID: String) { self.friendID = friendID }
-
-    func perform() async throws -> some IntentResult {
-        let snap = WidgetSnapshot.load()
-        if let f = snap.friends.first(where: { $0.uid == friendID }) {
-            _ = await KnockSender.send(to: f, myRecordName: snap.myRecordName, myName: snap.myName)
-        }
-        WidgetCenter.shared.reloadTimelines(ofKind: LattagShared.Kind.friends)
-        return .result()
-    }
-}
+// v96 C:中 ・ 大(M1 Friends / M2 きのう / M3 Trip / L1 ボード)。見本 widgets/v96/M1〜L1。
 
 // MARK: 共通:チェキ
 
@@ -117,10 +95,6 @@ struct LattagFriendsView: View {
                     if let img = WImage.load(f.avatar) { Image(uiImage: img).resizable().widgetAccentedRenderingMode(.desaturated).scaledToFill() }
                     else { Text(f.initial).font(WFont.inter(900, 15)).foregroundStyle(.white) }
                 }.frame(width: 42, height: 42).clipShape(Circle()).saturation(f.shotsToday > 0 ? 1 : 0.3)
-                if f.shotsToday == 0 {
-                    Image(systemName: "hand.point.up.left.fill").font(.system(size: 8, weight: .bold)).foregroundStyle(.black)
-                        .frame(width: 18, height: 18).background(.white, in: Circle()).offset(x: 18, y: 18)
-                }
             }.frame(width: 54, height: 54)
             Text(f.name).font(WFont.inter(800, 10)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
         }
@@ -131,12 +105,6 @@ struct LattagFriendsView: View {
             Text("NEXT").font(WFont.mono(8)).foregroundStyle(WColor.lime)
             Text(waiting.isEmpty ? "みんな 撮りました" : (waiting.prefix(2).map(\.name).joined(separator: " と ") + " が まだ")).font(WFont.inter(800, 13)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
             Spacer(minLength: 0)
-            if let f = waiting.first(where: { $0.knock != nil }) ?? waiting.first {
-                Button(intent: PokeFriendIntent(friendID: f.uid)) {
-                    HStack(spacing: 4) { Image(systemName: "hand.point.up.left.fill").font(.system(size: 10, weight: .bold)); Text("つつく").font(WFont.inter(900, 12)) }
-                        .foregroundStyle(Color(hex6: 0x0B0B0C)).padding(.horizontal, 12).frame(height: 28).background(WColor.lime, in: Capsule())
-                }.buttonStyle(.plain).widgetAccentable()
-            }
         }
         .padding(.leading, 12).padding(.trailing, 4).frame(height: 36).background(Color.white.opacity(0.07), in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.08)))

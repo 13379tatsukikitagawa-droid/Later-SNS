@@ -119,13 +119,6 @@ struct HVFriendsCard: View {
                         Text(t).font(LF.mono(8.5)).foregroundStyle(HV.lime).padding(.horizontal, 7).frame(height: 17)
                             .background(Color(hex: "111214"), in: Capsule()).offset(y: 29)
                     }
-                    if !took {
-                        Image(systemName: "hand.point.up.left.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
-                            .frame(width: 24, height: 24).background(Color(hex: "2A2A2D"), in: Circle())
-                            .overlay(Circle().strokeBorder(Color(hex: "111214"), lineWidth: 3))
-                            .offset(x: 23, y: 23)
-                            .onTapGesture { Haptics.play(.heart); actions.poke(f.id) }
-                    }
                 }.frame(width: 68, height: 68)
                 Text(f.name).font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.88)).lineLimit(1).truncationMode(.tail).frame(width: 68)
             }

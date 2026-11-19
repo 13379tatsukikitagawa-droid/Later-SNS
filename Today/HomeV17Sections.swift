@@ -1119,7 +1119,7 @@ struct V17FriendsSection: View {
                 V17FriendsEmpty(ink: ink, feel: feel, actions: actions)
             } else {
                 V17FriendsRow(friends: friends, ink: ink, feel: feel, actions: actions)
-                Text("まわりの光 = 今日 撮った こま数。長押しで、つよく つつけます。")
+                Text("まわりの光 = 今日 撮った こま数。")
                     .font(.system(size: 12.5, weight: .medium))
                     .lineSpacing(4)
                     .foregroundStyle(ink.body)
@@ -1252,12 +1252,6 @@ private struct V17FriendCell: View {
     let actions: HomeV17Actions
 
     @State private var wobble = 0
-    @State private var charge: Double = 0
-    @State private var holdStart: Date?
-    @State private var pressed = false
-    @State private var loop: Task<Void, Never>?
-    @State private var result: String?
-    @State private var ramp = HapticRamp()
 
     var body: some View {
         VStack(spacing: 6) {
@@ -1286,10 +1280,8 @@ private struct V17FriendCell: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text("\(friend.shotsToday) / 3").font(V17Font.mono(8.5)).tracking(0.1 * 8.5).foregroundStyle(ink.sub)
-            knockChip
         }
         .frame(width: 66)
-        .onDisappear { loop?.cancel(); ramp.stop() }
     }
 
     private var face: some View {
@@ -1312,75 +1304,6 @@ private struct V17FriendCell: View {
         .frame(width: 66, height: 66)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(friend.name)、今日 \(friend.shotsToday)こま")
-    }
-
-    private var knockChip: some View {
-        let done = result != nil
-        return Text(result ?? "つつく")
-            .font(.system(size: 11, weight: .heavy))
-            .foregroundStyle(done || !friend.canKnock ? ink.body : ink.onButton)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(done || !friend.canKnock ? ink.fill : ink.button))
-            .overlay(alignment: .bottomLeading) {
-                GeometryReader { proxy in
-                    Rectangle().fill(V17Ink.orange).frame(width: proxy.size.width * charge, height: 3)
-                        .frame(maxHeight: .infinity, alignment: .bottom)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in if !pressed { pressed = true; begin() } }
-                    .onEnded { _ in pressed = false; release() }
-            )
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(done ? "\(friend.name) を つついた" : "\(friend.name) を つつく。長押しで、つよく")
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction { holdStart = Date(); release() }
-    }
-
-    private func begin() {
-        guard result == nil else { return }
-        guard friend.canKnock else {
-            holdStart = nil
-            Haptics.play(.double)
-            if friend.home?.knockOff == true {
-                actions.toast("\(friend.name) は、つつきを受けとっていません")
-            } else {
-                actions.toast("同じグループの ともだちだけ、つつけます")
-            }
-            return
-        }
-        holdStart = Date()
-        Haptics.play(.tick)
-        ramp.start()
-        loop?.cancel()
-        loop = Task { @MainActor in
-            while !Task.isCancelled, let start = holdStart {
-                let v = min(1, Date().timeIntervalSince(start) / HomeV17Rules.knockFull)
-                charge = v
-                ramp.update(v)
-                feel.rattle = v * 0.75
-                try? await Task.sleep(for: .milliseconds(16))
-            }
-        }
-    }
-
-    /// はなした:0.9秒より長く ためたら「つよく」。相手に届くのは、どちらも ふつうの つつく
-    private func release() {
-        guard let start = holdStart, let home = friend.home else { holdStart = nil; return }
-        holdStart = nil
-        loop?.cancel()
-        ramp.stop()
-        feel.rattle = 0
-        let strong = Date().timeIntervalSince(start) > HomeV17Rules.strongKnock
-        withAnimation(.easeOut(duration: 0.2)) { charge = 0 }
-        Haptics.play(strong ? .burst : .heart)
-        wobble += 1
-        result = strong ? "つよく" : "つついた"
-        actions.knock(home)
     }
 }
 

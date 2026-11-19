@@ -79,7 +79,6 @@
 		713A5095E2754D1FBADADEC1 /* PhotoNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C61470FC924F8D8D9D42A5 /* PhotoNotificationService.swift */; };
 		7156FC811FE54860A9D24D7C /* Fonts/SpaceMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5EB475C0B25346EBBDDE292C /* Fonts/SpaceMono-Regular.ttf */; };
 		71A7B7ACD65CEE59BD4CB060 /* FilmCameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0EC5490E33581BEBC31225E /* FilmCameraController.swift */; };
-		738D5A0AC54C212326C1FDAA /* KnockSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A44017CE90E26C90018D9E /* KnockSender.swift */; };
 		73AE4F5B71C4CE851B12BD98 /* V64/DirectMessageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99250B0EB5E496A94CD226D2 /* V64/DirectMessageService.swift */; };
 		74E41292673F65D82CE75DE1 /* V64/HandleField.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4273AC3A99091056D212333 /* V64/HandleField.swift */; };
 		75F3912B87D68D201AD6DF30 /* LattagWidgetParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */; };
@@ -93,7 +92,6 @@
 		80F33C8F2640B7FC245DFDA6 /* V64/OpeningV72View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5B5FBF72EB9A3061E80E58 /* V64/OpeningV72View.swift */; };
 		83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 279DA74E4D37ACFB5ADCA029 /* ShareInviteInbox.swift */; };
 		83AF09928B472D3BC39CB828 /* LattagLiveAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0085A82C81A33EB0CC84F3 /* LattagLiveAttributes.swift */; };
-		86E492D2902A5D64756C105A /* KnockSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A44017CE90E26C90018D9E /* KnockSender.swift */; };
 		8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512B00F2AAA89453E3C98FD5 /* GroupUnlockPolicy.swift */; };
 		8A5236B97D5A98BF504683EE /* V64/RecapV86Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B65E06F99EE28EDBF6A9F6E /* V64/RecapV86Model.swift */; };
 		8AEC2FC399D74E06D7A981E1 /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */; };
@@ -434,7 +432,6 @@
 		61631B2AC7C0C0680568B3A3 /* GroupSelectionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupSelectionStore.swift; sourceTree = "<group>"; };
 		6263168DD78F66F40B6BB431 /* LattagLiveViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagLiveViews.swift; sourceTree = "<group>"; };
 		658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetParts.swift; sourceTree = "<group>"; };
-		66A44017CE90E26C90018D9E /* KnockSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnockSender.swift; sourceTree = "<group>"; };
 		6A0F02DF031CD33AD4DDCE09 /* V64/OnboardingV64View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/OnboardingV64View.swift; sourceTree = "<group>"; };
 		6AD03061F1111CC99997691B /* V64/HomeV72Hash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV72Hash.swift; sourceTree = "<group>"; };
 		6C1FB1B6590D58C45B24FB54 /* V64/HomeV64Pages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV64Pages.swift; sourceTree = "<group>"; };
@@ -1274,7 +1271,6 @@
 				E1D000000000000000000002 /* LaterWidgetShared.swift */,
 				F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */,
 				9E0085A82C81A33EB0CC84F3 /* LattagLiveAttributes.swift */,
-				66A44017CE90E26C90018D9E /* KnockSender.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -1622,7 +1618,6 @@
 				1F6A1866991A120A5CDABE7D /* V64/ShutterIconV94.swift in Sources */,
 				83AF09928B472D3BC39CB828 /* LattagLiveAttributes.swift in Sources */,
 				7D61488B26F67FC07FAB8796 /* V64/WidgetGuideV96.swift in Sources */,
-				738D5A0AC54C212326C1FDAA /* KnockSender.swift in Sources */,
 				092332E0BBFB3FC5311F1A26 /* LattagWidgetsMid.swift in Sources */,
 				19046F9F10D6A2E9E26075B8 /* LattagWidgetsLock.swift in Sources */,
 				4685AC62FD7AEBBAE8033088 /* LattagLiveViews.swift in Sources */,
@@ -1850,7 +1845,6 @@
 				9136131F60AB4354E54032EF /* LattagWidgetParts.swift in Sources */,
 				F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */,
 				D24DFC7AC0A42F754D80E960 /* LattagLiveAttributes.swift in Sources */,
-				86E492D2902A5D64756C105A /* KnockSender.swift in Sources */,
 				2B7FB8AF4D0EC71E4B2589B9 /* LattagLiveViews.swift in Sources */,
 				FE7EF1B5361F641E85C0CF43 /* LattagWidgetsMid.swift in Sources */,
 				E1D000000000000000000031 /* LaterWidgetShared.swift in Sources */,

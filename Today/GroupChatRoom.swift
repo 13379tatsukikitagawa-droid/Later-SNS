@@ -78,7 +78,7 @@ struct PassBox: Identifiable { let id = UUID(); let data: TripPassData }
 
 struct GroupChatRoomView: View {
     let group: LaterGroup
-    /// つつく 相手(ホームの ともだち)
+    /// ホームの ともだち(今は 使わない)
     var friends: [HomeFriend] = []
     let onClose: () -> Void
     /// メニュー:メンバー・ぬける など(今までの グループの 画面)
@@ -286,10 +286,10 @@ struct GroupChatRoomView: View {
         }
         .buttonStyle(SquishButtonStyle())
         .accessibilityLabel("\(member.name)。\(member.shotToday ? "今日 撮った" : "まだ")")
-        .accessibilityHint(member.isMe ? (member.shotToday ? "現像を見ます" : "撮影へ") : (member.shotToday ? "" : "つつきます"))
+        .accessibilityHint(member.isMe ? (member.shotToday ? "現像を見ます" : "撮影へ") : "")
     }
 
-    /// v47:自分(撮った)→ 現像 / 自分(まだ)→ 撮影 / ほかの人(撮った)→ 知らせる / ほかの人(まだ)→ つつく
+    /// v47:自分(撮った)→ 現像 / 自分(まだ)→ 撮影 / ほかの人(撮った)→ 知らせる / ほかの人(まだ)→ 何もしない
     private func tapMember(_ member: GroupTogether.Member) {
         if member.isMe {
             Haptics.play(.tick)
@@ -305,7 +305,6 @@ struct GroupChatRoomView: View {
             show("\(member.name)・今日 撮った・9:00に ひらく")
             return
         }
-        poke(member)
     }
 
     private var weekDots: some View {
@@ -321,32 +320,6 @@ struct GroupChatRoomView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("今週 そろった 日:\(dots.filter(\.together).count)日")
-    }
-
-    /// まだの 人を つつく(1日 1回・ドクン)。2回目は 警告 +「つつくのは 1日 1回」
-    private func poke(_ member: GroupTogether.Member) {
-        guard !member.isMe, !member.shotToday else { return }
-        let window = DailyWindow.key(for: Date())
-        guard let friend = friends.first(where: { $0.id == member.id }) else {
-            Haptics.play(.warn)
-            show("つつけませんでした")
-            return
-        }
-        if KnockStore.shared.hasKnocked(friend.id, window: window) {
-            Haptics.play(.warn)
-            show("つつくのは 1日 1回")
-            return
-        }
-        Haptics.play(.heart)
-        let myName = UserProfile.current(from: profiles)?.name ?? ""
-        Task {
-            let result = await KnockStore.shared.knock(friend, window: window, groups: [group], myName: myName)
-            switch result {
-            case .sent: show("\(member.name) を つつきました")
-            case .already: Haptics.play(.warn); show("つつくのは 1日 1回")
-            case .failed: show("送れませんでした。つながってから、もう一度")
-            }
-        }
     }
 
     // MARK: きのうの カード

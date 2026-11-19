@@ -160,12 +160,10 @@ struct V13FixTests {
     }
 
     @Test func ともだちの一言() {
-        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: true), knockedToday: false) == .shot)
-        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: false), knockedToday: false) == .canKnock)
-        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: false), knockedToday: true) == .knocked)
-        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: false, knockOff: true), knockedToday: false) == .notYet)
-        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: false, isMe: true), knockedToday: false) == .notYet)
-        #expect(HomeLayerRules.friendStatus(state: .night, friend: friend(hasShot: false), knockedToday: false) == .resting)
+        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: true)) == .shot)
+        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: false)) == .notYet)
+        #expect(HomeLayerRules.friendStatus(state: .dawn, friend: friend(hasShot: false, isMe: true)) == .notYet)
+        #expect(HomeLayerRules.friendStatus(state: .night, friend: friend(hasShot: false)) == .resting)
     }
 
     // MARK: 4. 招待の共有

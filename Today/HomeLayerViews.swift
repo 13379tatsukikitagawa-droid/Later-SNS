@@ -325,7 +325,6 @@ private struct LayerFriendsBlock: View {
     let onFriend: (HomeFriend) -> Void
     let onInvite: () -> Void
 
-    @State private var knocks = KnockStore.shared
     @State private var focusedID: String?
     @State private var tick = ScrollTickHaptics()
 
@@ -344,12 +343,8 @@ private struct LayerFriendsBlock: View {
                     ForEach(people) { person in
                         LayerFriendCell(
                             friend: person,
-                            status: HomeLayerRules.friendStatus(state: state, friend: person, knockedToday: knocks.hasKnocked(person.id, window: data.windowKey)),
-                            onOpen: { onFriend(person) },
-                            onKnock: {
-                                LayerHaptics.knock()
-                                actions.knock(person)
-                            }
+                            status: HomeLayerRules.friendStatus(state: state, friend: person),
+                            onOpen: { onFriend(person) }
                         )
                         .id(person.id)
                     }
@@ -381,7 +376,6 @@ private struct LayerFriendCell: View {
     let friend: HomeFriend
     let status: HomeLayerRules.FriendStatus
     let onOpen: () -> Void
-    let onKnock: () -> Void
 
     static let avatar: CGFloat = 70
 
@@ -427,23 +421,6 @@ private struct LayerFriendCell: View {
             Text("● 撮った")
                 .font(.system(size: 11.5, weight: .bold))
                 .foregroundStyle(LayerFriendColors.shotText(night: palette.isNight))
-        case .canKnock:
-            Button(action: onKnock) {
-                Text("ノック")
-                    .font(.system(size: 11.5, weight: .bold))
-                    .foregroundStyle(palette.bg)
-                    .padding(.horizontal, 12)
-                    .frame(height: 26)
-                    .background(Capsule().fill(palette.ink))
-                    .contentShape(Capsule().inset(by: -8))
-            }
-            .buttonStyle(PressScaleStyle(scale: 0.92, duration: 0.12))
-            .accessibilityLabel("\(friend.name)に、ノックする")
-            .accessibilityHint("文字なしで、トントンと知らせます。1日に1回")
-        case .knocked:
-            Text("ノック済")
-                .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(palette.groupAdd.note)
         case .notYet:
             Text("まだ")
                 .font(.system(size: 11.5, weight: .semibold))
@@ -459,8 +436,7 @@ private struct LayerFriendCell: View {
         var text = friend.isMe ? "わたし" : friend.name
         switch status {
         case .shot: text += "、撮った"
-        case .canKnock, .notYet: text += "、まだ"
-        case .knocked: text += "、まだ、ノックずみ"
+        case .notYet: text += "、まだ"
         case .resting: text += "、おやすみ"
         }
         return text

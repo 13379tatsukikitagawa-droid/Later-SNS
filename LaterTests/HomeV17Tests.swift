@@ -90,9 +90,6 @@ struct HomeV17Tests {
         let list = HomeV17Rules.friends(group: group, bump: bump, counts: ["g0": 2, "b1": 1], myID: "me")
         #expect(list.map(\.id) == ["g0", "g1", "g2", "b1"])
         #expect(list[0].shotsToday == 2)
-        #expect(list[0].canKnock)
-        // QR で つながっただけの人は、つつけない(同じグループがない)
-        #expect(!list[3].canKnock)
         let many = (0..<20).map { BumpFriend(id: "x\($0)", name: "x") }
         #expect(HomeV17Rules.friends(group: [], bump: many, counts: [:], myID: nil).count == FriendRules.maxFriends)
         // 色の丸の種は、同じ id なら同じ

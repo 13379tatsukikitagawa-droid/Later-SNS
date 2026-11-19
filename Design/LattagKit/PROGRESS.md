@@ -304,3 +304,9 @@
 - ✓ `LegalLink`(URL 1か所)+ `SFSafariViewController`(ライム / `#1C1C1E`・soft / tick)。
 - ✓ サインイン O04 の 2つ(別々に 開く ・ 44pt ・ isLink)/ 設定 > サポート の 2行。
 - 未: 旧 `SettingsMenuView` / `OnboardingFlowView` / `PrivacyPolicyView` / `LaterPromiseView` は 残してある(Profile 側から 到達の 可能性)。実機: 機内モード ・ VoiceOver ・ UI テスト。
+
+
+## 「つつく」を なくした
+- 送る(`KnockStore`)・ ウィジェットの `PokeFriendIntent` / `KnockSender` ・ 全画面の ボタン(Friends / 友だちカード / チャット / Home / 旧 Home)・ NEXT の poke ・ 設定の「ノックを受けとる」を 削除。
+- 古い版が 書いた knock レコードは `KnockInbox` が 黙って 捨てる(通知も 出さない)。
+- のこした:`knockOff` フィールド(SwiftData / CloudKit の 形を 変えない)・ `Haptics.knock`(スクロールの かぎ用)・ ウィジェットの iCloud 権限 ・ `Localizable.xcstrings` の `notification.poke.*`(ユーザーの 未コミット変更の ため 触らず)。

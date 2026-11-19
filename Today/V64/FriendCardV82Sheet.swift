@@ -1,6 +1,6 @@
 import SwiftUI
 
-// F05:友だちの カード(シート)。背景は 暗く ぼかす。チェキ + タグの シール + 名前 + 今日の こま(ぼかし + 時刻)+ Chat / つつく / Trip / more。
+// F05:友だちの カード(シート)。背景は 暗く ぼかす。チェキ + タグの シール + 名前 + 今日の こま(ぼかし + 時刻)+ Chat / Trip / more。
 // 写真の 中身は 出さない(ロック中は ぼかしと 時刻だけ)。人の 絵は 使わない(写真が 無い 時は 名前の 1文字 + 色)。
 
 struct FriendCardV82Sheet: View {
@@ -10,9 +10,7 @@ struct FriendCardV82Sheet: View {
     var city: String?
     var times: [String]
     var mosaics: [UIImage?]
-    var canPoke = true
     var onChat: () -> Void = {}
-    var onPoke: () -> Void = {}
     var onTrip: () -> Void = {}
     var onMore: () -> Void = {}
     var onClose: () -> Void = {}
@@ -25,8 +23,7 @@ struct FriendCardV82Sheet: View {
                 Text([city, "ともだち"].compactMap { $0 }.joined(separator: " ・ ")).font(LF.mono(11)).tracking(1.5).foregroundStyle(.white.opacity(0.4)).padding(.top, 10)
                 today.padding(.horizontal, 20).padding(.top, 18)
                 HStack(spacing: 8) {
-                    action("bubble.left", "Chat", style: 0, w: 109) { onChat() }
-                    action("hand.point.up.left", "つつく", style: 1, w: 77) { onPoke() }.opacity(canPoke ? 1 : 0.4)
+                    action("bubble.left", "Chat", style: 0, w: 186) { onChat() }
                     action("suitcase", "Trip", style: 2, w: 78) { onTrip() }
                     action("ellipsis", "more", style: 2, w: 62) { onMore() }
                 }.padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 28)

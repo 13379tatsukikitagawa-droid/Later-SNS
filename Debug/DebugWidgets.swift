@@ -61,7 +61,7 @@ struct DebugWidgetsView: View {
         }
         let a = save("a", "dbg_a.jpg"), b = save("b", "dbg_b.jpg"), c = save("c", "dbg_c.jpg")
         let friends = [("れな", "れ", "C8F25A", 3), ("あや", "あ", "9ED8FF", 2), ("そら", "そ", "EE5E9C", 0), ("かい", "か", "F4B942", 1)].map { n, i, col, s in
-            FriendRing(uid: n, name: n, initial: i, colorHex: col, shotsToday: s, avatar: nil, knock: nil)
+            FriendRing(uid: n, name: n, initial: i, colorHex: col, shotsToday: s, avatar: nil)
         }
         let cal = Calendar.current
         let key = LaterDay.key(for: now)

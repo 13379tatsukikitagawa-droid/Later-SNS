@@ -120,7 +120,6 @@ struct FriendsClockCard: View {
 
     private func seat(friend: HomeFriend, index: Int) -> some View {
         let point = position(for: index)
-        let yellow = KnockStore.shared.hasKnocked(friend.id, window: DailyWindow.key(for: Date()))
         return ZStack(alignment: .topTrailing) {
             LayerAvatar(data: friend.avatarData, seed: friend.seed, name: friend.name)
                 .frame(width: 42, height: 42)
@@ -138,7 +137,6 @@ struct FriendsClockCard: View {
             }
         }
         .overlay(alignment: .topLeading) {
-            if yellow { Circle().fill(Color(hex: "FFD60A")).frame(width: 8, height: 8).offset(x: -1, y: -1) }
         }
         .offset(x: point.x, y: point.y)
         .accessibilityHidden(true)

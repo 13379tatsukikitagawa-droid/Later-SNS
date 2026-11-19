@@ -945,8 +945,6 @@ struct TodayView: View {
         }
         .task(id: currentUser?.id) {
             // 層:2日より古いノックを消す・送りそこねた👍を送る
-            if let user = currentUser { KnockSetting.isOff = user.knockOff }
-            await KnockStore.shared.prune()
             await LampGroupSync.flush(groups: sharedGroups)
         }
         .task(id: currentUser?.id) {
@@ -2288,7 +2286,6 @@ struct TodayView: View {
                 UserDefaults.standard.set("mondo", forKey: "homeV5LastTab")
                 switchHome(to: .yesterday)
             },
-            knock: layer.knock,
             openFriends: { gateIntro(.friends) { showingFriendsHub = true } },
             openWord: { openMondoWord($0) }
         )
@@ -2305,18 +2302,6 @@ struct TodayView: View {
             toast: { presentToast($0) },
             openYesterdayPhoto: { groupID, itemID in openYesterdayFromLayer(groupID: groupID, itemID: itemID) },
             openWord: { openMondoWord($0) },
-            knock: { friend in
-                let window = DailyWindow.key(for: clock())
-                let name = currentUser?.name ?? ""
-                Task {
-                    let result = await KnockStore.shared.knock(friend, window: window, groups: sharedGroups, myName: name)
-                    switch result {
-                    case .sent: presentToast("トントン。")
-                    case .already: presentToast("今日は、もうノックしました")
-                    case .failed: presentToast("送れませんでした。つながってから、もう一度")
-                    }
-                }
-            },
             shoot: {
                 // フィルムの「+ きょう撮る」:撮影の流れをひらく
                 CaptureRequestStore.shared.pendingRequestID = UUID()

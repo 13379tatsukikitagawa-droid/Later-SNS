@@ -69,10 +69,6 @@ private struct LayerFriendSheet: View {
     let onClose: () -> Void
 
     @Environment(\.palette) private var palette
-    @State private var knocks = KnockStore.shared
-
-    private var knocked: Bool { knocks.hasKnocked(friend.id, window: windowKey) }
-
     var body: some View {
         ScrollView {
             VStack(spacing: 18) {
@@ -126,55 +122,11 @@ private struct LayerFriendSheet: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("今日の1枚のモザイク\(friend.tag.map { "。#\($0)" } ?? "")")
                 }
-
-                if !friend.isMe, !friend.hasShot {
-                    knockArea
-                }
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
         }
-    }
-
-    @ViewBuilder
-    private var knockArea: some View {
-        if HomeLayerRules.canKnock(state: state, friend: friend, knockedToday: knocked) {
-            VStack(spacing: 8) {
-                Button {
-                    LayerHaptics.knock()
-                    actions.knock(friend)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "hand.tap.fill")
-                        Text("ノックする")
-                    }
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(palette.isNight ? Palette.day.ink : Color.white)
-                    .frame(maxWidth: .infinity, minHeight: 54)
-                    .background(Capsule().fill(palette.ink))
-                }
-                .buttonStyle(PressScaleStyle(scale: 0.97, duration: 0.15))
-                .accessibilityHint("文字なしで、ブブッと知らせます。1日に1回")
-                Text("文字は送れません。1人に、1日1回。")
-                    .font(.system(size: 11))
-                    .foregroundStyle(palette.sub)
-            }
-            .padding(.top, 8)
-        } else {
-            Text(knockNote)
-                .font(.system(size: 12))
-                .foregroundStyle(palette.sub)
-                .multilineTextAlignment(.center)
-                .padding(.top, 8)
-        }
-    }
-
-    private var knockNote: String {
-        if knocked { return "今日は、ノックしました。" }
-        if friend.knockOff { return "ノックを受けとっていません。" }
-        if state.isNight { return "夜は、ノックできません。" }
-        return ""
     }
 }
 

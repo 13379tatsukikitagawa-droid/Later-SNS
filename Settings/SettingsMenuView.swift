@@ -27,7 +27,6 @@ struct SettingsMenuView: View {
     @State private var videoStamp = RetroSettings.stampOn
     @State private var openingMode = OpeningSettings.mode
     @State private var mondoOn = MondoService.isPublic
-    @State private var knockOn = !KnockSetting.isOff
     @State private var showingNotificationDenied = false
     @State private var showingSignOutConfirm = false
     @State private var showingDeletion = false
@@ -265,12 +264,6 @@ struct SettingsMenuView: View {
                     .toggleStyle(MonoToggleStyle())
                     .accessibilityLabel("Mondo に写真を出す")
             }
-            SettingsDivider()
-            SettingsRow(icon: "hand.tap", title: "ノックを受けとる", note: "まだ撮っていない日に、ともだちからトントンと届きます") {
-                Toggle("ノックを受けとる", isOn: Binding(get: { knockOn }, set: setKnock))
-                    .toggleStyle(MonoToggleStyle())
-                    .accessibilityLabel("ノックを受けとる")
-            }
         }
         SettingsSection(title: "安全") {
             SettingsRow(icon: "hand.raised", title: "通報・ブロックした人", action: { showingBlocked = true }) {
@@ -368,18 +361,6 @@ struct SettingsMenuView: View {
         if level != .off {
             haptics.prepare()
             Haptics.play(.pop, gap: 0)
-        }
-    }
-
-    /// ノックを受けない:プロフィール(グループの共有ゾーン)に載せ、相手のボタンを出さないようにする
-    private func setKnock(_ on: Bool) {
-        choose()
-        knockOn = on
-        KnockSetting.isOff = !on
-        guard let profile else { return }
-        profile.knockOff = !on
-        if let manager = CloudKitManager.current {
-            for group in sharedGroups { manager.markForUpload(userProfile: profile, in: group) }
         }
     }
 

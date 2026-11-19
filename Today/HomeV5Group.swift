@@ -1009,11 +1009,8 @@ struct TodayFriendsSection: View {
     let onInvite: () -> Void
 
     @Environment(\.palette) private var palette
-    @State private var knocks = KnockStore.shared
     @State private var focusedID: String?
     @State private var tick = ScrollTickHaptics()
-    /// つよく つついた相手(リングがぐらっと揺れる)
-    @State private var shaken: String?
 
     private var shotCount: Int { data.friends.filter { $0.hasShot }.count }
 
@@ -1064,16 +1061,8 @@ struct TodayFriendsSection: View {
                     ForEach(data.friends) { friend in
                         TodayFriendRing(
                             friend: friend,
-                            status: HomeLayerRules.friendStatus(state: state, friend: friend, knockedToday: knocks.hasKnocked(friend.id, window: data.windowKey)),
-                            shaking: shaken == friend.id,
-                            onOpen: { onFriend(friend) },
-                            onKnock: { strong in
-                                actions.knock(friend)
-                                if strong {
-                                    shaken = friend.id
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { if shaken == friend.id { shaken = nil } }
-                                }
-                            }
+                            status: HomeLayerRules.friendStatus(state: state, friend: friend),
+                            onOpen: { onFriend(friend) }
                         )
                         .id(friend.id)
                     }
@@ -1104,16 +1093,13 @@ struct TodayFriendsSection: View {
     }
 }
 
-/// 1人ぶん:撮った人は朝焼けリング +「撮った」、まだの人は点線 +「つつく」(長押しで ためて つつく)
+/// 1人ぶん:撮った人は朝焼けリング +「撮った」、まだの人は点線 +「まだ」
 private struct TodayFriendRing: View {
     let friend: HomeFriend
     let status: HomeLayerRules.FriendStatus
-    let shaking: Bool
     let onOpen: () -> Void
-    let onKnock: (_ strong: Bool) -> Void
 
     @Environment(\.palette) private var palette
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 6) {
@@ -1137,21 +1123,6 @@ private struct TodayFriendRing: View {
                             .offset(x: 2, y: -2)
                     }
                 }
-                .keyframeAnimator(initialValue: 0.0, trigger: shaking) { content, angle in
-                    content.rotationEffect(.degrees(angle))
-                } keyframes: { _ in
-                    KeyframeTrack {
-                        if shaking && !reduceMotion {
-                            LinearKeyframe(-12, duration: 0.08)
-                            LinearKeyframe(10, duration: 0.1)
-                            LinearKeyframe(-7, duration: 0.1)
-                            LinearKeyframe(4, duration: 0.1)
-                            SpringKeyframe(0, duration: 0.25)
-                        } else {
-                            LinearKeyframe(0, duration: 0.01)
-                        }
-                    }
-                }
             }
             .buttonStyle(SquishButtonStyle())
             .accessibilityLabel(friend.name + (status == .shot ? "、撮った" : "、まだ"))
@@ -1169,15 +1140,6 @@ private struct TodayFriendRing: View {
                     }
                     .font(.system(size: 10.5, weight: .bold))
                     .foregroundStyle(LayerFriendColors.shotText(night: palette.isNight))
-                case .canKnock:
-                    ChargeKnockButton(name: friend.name, onKnock: onKnock)
-                case .knocked:
-                    Text("つついた")
-                        .font(.system(size: 10.5, weight: .heavy))
-                        .foregroundStyle(palette.groupAdd.note)
-                        .padding(.horizontal, 10)
-                        .frame(height: 24)
-                        .background(Capsule().fill(palette.fill))
                 case .notYet:
                     Text("まだ").font(.system(size: 10.5, weight: .bold)).foregroundStyle(palette.groupAdd.note)
                 case .resting:
@@ -1189,93 +1151,6 @@ private struct TodayFriendRing: View {
         .frame(width: 76)
     }
 }
-
-/// ためて つつく(v14 2-B ②・Buzz 風)。タップ = ふつうに つつく(heart 弱)。
-/// 長押し:ボタンが震えながら強くなる(240ms ごとに tick → 0.9秒から thud)。0.9秒こえて離す = つよく(rumble)。
-struct ChargeKnockButton: View {
-    let name: String
-    let onKnock: (_ strong: Bool) -> Void
-
-    @Environment(\.palette) private var palette
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pressStart: Date?
-    @State private var beatTask: Task<Void, Never>?
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: pressStart == nil)) { context in
-            let charge = ChargeKnock.charge(since: pressStart, now: context.date)
-            let wobble = reduceMotion || pressStart == nil ? 0 : sin(context.date.timeIntervalSinceReferenceDate * 60) * (0.6 + 2.4 * charge)
-            Text(charge >= 1 ? "つよく!" : "つつく")
-                .font(.system(size: 10.5, weight: .heavy))
-                .foregroundStyle(palette.bg)
-                .padding(.horizontal, 10)
-                .frame(height: 24)
-                .background(Capsule().fill(charge >= 1 ? Color(hex: "FF6A1A") : palette.ink))
-                .scaleEffect(1 + 0.18 * charge)
-                .offset(x: wobble)
-        }
-        .contentShape(Capsule().inset(by: -10))
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in if pressStart == nil { begin() } }
-                .onEnded { _ in end() }
-        )
-        .accessibilityElement()
-        .accessibilityLabel("\(name)を つつく")
-        .accessibilityHint("長押しで、つよく つつく")
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { onKnock(false); Haptics.play(.heart, intensity: 0.6) }
-        .accessibilityAction(named: "つよく つつく") { onKnock(true); Haptics.play(.rumble) }
-    }
-
-    private func begin() {
-        pressStart = Date()
-        Haptics.prepare(.tick)
-        beatTask?.cancel()
-        beatTask = Task { @MainActor in
-            var beats = 0
-            while !Task.isCancelled, let start = pressStart {
-                try? await Task.sleep(for: .seconds(ChargeKnock.beatInterval))
-                guard !Task.isCancelled, pressStart != nil else { return }
-                beats += 1
-                Haptics.play(Date().timeIntervalSince(start) >= ChargeKnock.strongAfter ? .thud : .tick, gap: 0)
-            }
-        }
-    }
-
-    private func end() {
-        let strong = ChargeKnock.isStrong(since: pressStart, now: Date())
-        beatTask?.cancel()
-        beatTask = nil
-        pressStart = nil
-        if strong {
-            Haptics.play(.rumble)
-        } else {
-            Haptics.play(.heart, intensity: 0.6)
-        }
-        onKnock(strong)
-    }
-}
-
-/// ためて つつく の決まり(テストで確かめる)
-enum ChargeKnock {
-    /// これより長く押して離すと「つよく」
-    static let strongAfter: TimeInterval = 0.9
-    /// 長押し中の tick の間隔
-    static let beatInterval: TimeInterval = 0.24
-
-    static func charge(since start: Date?, now: Date) -> Double {
-        guard let start else { return 0 }
-        return min(1, max(0, now.timeIntervalSince(start) / strongAfter))
-    }
-
-    static func isStrong(since start: Date?, now: Date) -> Bool {
-        guard let start else { return false }
-        // 小数の誤差で 0.9秒ちょうどを取りこぼさない
-        return now.timeIntervalSince(start) >= strongAfter - 0.0005
-    }
-}
-
 
 // MARK: - ME カード
 

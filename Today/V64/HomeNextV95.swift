@@ -4,7 +4,7 @@ import SwiftUI
 // 押す = その 場所へ(Button なので、上の かたまりの スクロールを 止めない)。
 
 struct HVNextItem: Identifiable, Equatable {
-    enum Go { case shoot, friends, poke(String), live, develop }
+    enum Go { case shoot, friends, live, develop }
     let id: String
     let title: String
     let sub: String
@@ -32,9 +32,6 @@ enum HVNextBuilder {
         }
         if i.friendCount == 0 && i.friends.isEmpty { out.append(.init(id: "invite", title: "友だちを よぼう", sub: "QR ・ リンク ・ @ID", icon: "person.2.fill", go: .friends)) }
         if i.shotsUsed >= 1 && i.shotsUsed < i.limit { out.append(.init(id: "left", title: "のこり \(i.remaining)こま", sub: left, icon: "camera.fill", go: .shoot)) }
-        if let f = i.friends.first(where: { $0.shots == 0 }) {
-            out.append(.init(id: "poke", title: "\(f.name) が まだ 撮って いない", sub: "つついて 知らせる", icon: "hand.point.up.left.fill", go: .poke(f.id)))
-        }
         if i.shotsUsed >= i.limit { out.append(.init(id: "done", title: "今日は ここまで", sub: "あしたの 9:00 に ひらく", icon: "checkmark", go: .live)) }
         if i.shotsUsed >= 1 { out.append(.init(id: "dev", title: "現像中 ・ のぞいて みる", sub: "ねかせて ひらく", icon: "film", go: .develop)) }
         return out
@@ -116,7 +113,6 @@ struct HVNextCapsule: View {
         switch it.go {
         case .shoot: actions.shoot()
         case .friends: actions.openFriends()
-        case .poke(let id): actions.poke(id)
         case .live: onLive()
         case .develop: actions.openDevelop()
         }

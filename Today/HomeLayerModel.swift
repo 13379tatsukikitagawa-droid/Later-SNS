@@ -108,7 +108,6 @@ struct HomeLayerActions {
     var openYesterdayPhoto: (_ groupID: UUID, _ itemID: String) -> Void = { _, _ in }
     /// Mondo の「ことばページ」をひらく
     var openWord: (String) -> Void = { _ in }
-    var knock: (HomeFriend) -> Void = { _ in }
     /// 撮影をひらく(フィルムの「+ きょう撮る」)
     var shoot: () -> Void = {}
     /// v14 ⑤:ともだち(呼ぶ / グループに えらぶ / とどいた)をひらく
@@ -169,31 +168,20 @@ enum HomeLayerRules {
         state != .first
     }
 
-    /// ノックできるか:昼・まだ撮っていない友だち・今日まだノックしていない・相手が受けとる
-    static func canKnock(state: HomeState, friend: HomeFriend, knockedToday: Bool) -> Bool {
-        !state.isNight && !friend.isMe && !friend.hasShot && !friend.knockOff && !knockedToday
-    }
-
     /// ともだちの下の一言
     enum FriendStatus: Equatable {
         /// 撮った(色の輪 +「● 撮った」)
         case shot
-        /// まだ(今日)。ノックできる
-        case canKnock
-        /// 今日はノックした
-        case knocked
-        /// まだ(ノックできない:自分・ノックを受けない人)
+        /// まだ(今日)
         case notYet
         /// 夜(おやすみ)
         case resting
     }
 
-    static func friendStatus(state: HomeState, friend: HomeFriend, knockedToday: Bool) -> FriendStatus {
+    static func friendStatus(state: HomeState, friend: HomeFriend) -> FriendStatus {
         if friend.hasShot { return .shot }
         if state.isNight { return .resting }
-        if friend.isMe { return .notYet }
-        if knockedToday { return .knocked }
-        return canKnock(state: state, friend: friend, knockedToday: knockedToday) ? .canKnock : .notYet
+        return .notYet
     }
 
     /// ことばをひらけるか(今の玉と同じ考え方:1枚撮ったあと)

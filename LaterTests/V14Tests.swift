@@ -64,16 +64,6 @@ struct V14Tests {
         #expect(abs(p - 0.5) < 0.001)
     }
 
-    // MARK: ためて つつく
-
-    @Test func ためてつつくは_0秒9で強くなる() {
-        let start = Date(timeIntervalSince1970: 0)
-        #expect(!ChargeKnock.isStrong(since: start, now: start.addingTimeInterval(0.5)))
-        #expect(ChargeKnock.isStrong(since: start, now: start.addingTimeInterval(0.9)))
-        #expect(abs(ChargeKnock.charge(since: start, now: start.addingTimeInterval(0.45)) - 0.5) < 0.001)
-        #expect(ChargeKnock.charge(since: nil, now: start) == 0)
-    }
-
     // MARK: ⑧ 現像ページャー
 
     @Test func 現像ページャー_しきい値と端() {

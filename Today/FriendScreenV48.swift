@@ -3,7 +3,7 @@ import SwiftUI
 
 /// v48/v48b/v48c:ともだち画面を ぜんぶ 作りなおし。黒い 背景・大きな 12の 席・
 /// 自分の チェキ・なかまの イラスト(「BUMP」の文字は 出さない)。
-/// 友達追加・つつく・ブロック・通報は 今ある 処理を 呼ぶだけ。
+/// 友達追加・ブロック・通報は 今ある 処理を 呼ぶだけ。
 struct FriendScreenV48: View {
     let myName: String
     var myColorIndex: Int?
@@ -92,9 +92,6 @@ struct FriendScreenV48: View {
         }
         .confirmationDialog("", isPresented: Binding(get: { actionFriend != nil }, set: { if !$0 { actionFriend = nil } }), titleVisibility: .hidden) {
             if let friend = actionFriend {
-                if !friend.hasShot {
-                    Button("つつく") { poke(friend) }
-                }
                 Button("ふたりの グループを つくる") { makePair(friend) }
                 Button("席で 見る") { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { selected = friend } }
                 Button("ブロックする", role: .destructive) { confirmingBlock = friend }
@@ -245,7 +242,6 @@ struct FriendScreenV48: View {
 
     private func seat(friend: HomeFriend, index: Int) -> some View {
         let point = position(for: index)
-        let yellow = KnockStore.shared.hasKnocked(friend.id, window: DailyWindow.key(for: Date()))
         return Button {
             Haptics.play(.detent)
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { selected = friend }
@@ -263,7 +259,6 @@ struct FriendScreenV48: View {
                 }
             }
             .overlay(alignment: .topLeading) {
-                if yellow { Circle().fill(Color(hex: "FFD60A")).frame(width: 10, height: 10).offset(x: -2, y: -2) }
             }
         }
         .buttonStyle(.plain)
@@ -496,16 +491,6 @@ struct FriendScreenV48: View {
                 }
                 if friend.hasShot {
                     Text("9:00").font(Darkroom.mono(11)).foregroundStyle(.white.opacity(0.5))
-                } else {
-                    Button { poke(friend) } label: {
-                        Image(systemName: "hand.point.up.fill")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Darkroom.orange)
-                            .frame(width: 30, height: 30)
-                            .background(Circle().fill(Darkroom.orange.opacity(0.14)))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("つつく")
                 }
             }
             .padding(.horizontal, 14)
@@ -555,24 +540,6 @@ struct FriendScreenV48: View {
     }
 
     // MARK: 処理(いまの ものを 呼ぶだけ)
-
-    private func poke(_ friend: HomeFriend) {
-        let window = DailyWindow.key(for: Date())
-        if KnockStore.shared.hasKnocked(friend.id, window: window) {
-            Haptics.play(.warn)
-            show("つつくのは 1日 1回")
-            return
-        }
-        Haptics.play(.heart)
-        Task {
-            let result = await KnockStore.shared.knock(friend, window: window, groups: groups, myName: myName)
-            switch result {
-            case .sent: show("\(friend.name) を つつきました")
-            case .already: Haptics.play(.warn); show("つつくのは 1日 1回")
-            case .failed: show("送れませんでした。つながってから、もう一度")
-            }
-        }
-    }
 
     private func makePair(_ friend: HomeFriend) {
         // v48:「ふたりのグループをつくる」は 今の グループ作成の 入口を そのまま 呼ぶ(友だちの えらぶ状態だけ 渡す)

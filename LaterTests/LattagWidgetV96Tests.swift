@@ -15,7 +15,7 @@ struct LattagWidgetV96Tests {
         s.dayKey = LaterDay.key(for: Self.at(day, 12))
         s.shots = shots
         s.shotTimes = shots > 0 ? [Self.at(day, 10)] : []
-        s.friends = [FriendRing(uid: "a", name: "あ", initial: "あ", colorHex: "EE5E9C", shotsToday: 2, avatar: nil, knock: nil)]
+        s.friends = [FriendRing(uid: "a", name: "あ", initial: "あ", colorHex: "EE5E9C", shotsToday: 2, avatar: nil)]
         s.today = DaySummary(dayKey: s.dayKey, people: 4, count: 7, tag: "夕焼け", names: ["あ"])
         s.yesterday = DaySummary(dayKey: "prev", people: 2, count: 3, tag: "朝", names: ["い"])
         s.yesterdayPhotos = photos ? [YPhoto(uid: "a", name: "あ", time: "21:12", tag: nil, thumb: "y_1.jpg")] : []

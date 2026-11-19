@@ -65,9 +65,6 @@ enum HomeV17Rules {
     /// ひらいたあと、ミルクにもどるまで
     static let developShow: TimeInterval = 2.6
     static let developReturn: TimeInterval = 1.1
-    /// つつく:これより長く ためたら「つよく」
-    static let strongKnock: TimeInterval = 0.9
-    static let knockFull: TimeInterval = 1.0
     /// つまみ:はなすと「いま」にもどる
     static let dayReturn: TimeInterval = 0.42
 
@@ -266,8 +263,6 @@ struct V17Friend: Identifiable, Equatable {
     let shotsToday: Int
     /// グループのともだち(つつける)。QR で つながっただけの人は nil
     let home: HomeFriend?
-
-    var canKnock: Bool { home.map { !$0.knockOff && !$0.groupIDs.isEmpty } ?? false }
 }
 
 /// v17 の区画に渡す中身
@@ -289,8 +284,6 @@ struct HomeV17Actions {
     var shoot: () -> Void = {}
     /// 撮った日のことば:昨日のホーム(Mondo)へ(アイコン2回タップと同じ)
     var openMondo: () -> Void = {}
-    /// つつく(相手に届くのは、ふつうの つつく)
-    var knock: (HomeFriend) -> Void = { _ in }
     /// 呼ぶ・合言葉・QR(ともだちの画面)
     var openFriends: () -> Void = {}
     /// v47:ことばのカード → Mondo を そのことばで しぼって ひらく

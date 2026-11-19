@@ -84,22 +84,6 @@ struct HomeLayerTests {
         HomeFriend(id: "ck-a", name: "あお", avatarData: nil, seed: UUID(), hasShot: hasShot, city: nil, mosaicTiny: nil, mosaicKey: "k", tag: nil, knockOff: knockOff, isMe: isMe, groupIDs: [])
     }
 
-    @Test func ノックはまだの友だちに_昼だけ_1日1回() {
-        #expect(HomeLayerRules.canKnock(state: .dawn, friend: friend(hasShot: false), knockedToday: false))
-        #expect(!HomeLayerRules.canKnock(state: .dawn, friend: friend(hasShot: true), knockedToday: false))
-        #expect(!HomeLayerRules.canKnock(state: .dawn, friend: friend(hasShot: false), knockedToday: true))
-        #expect(!HomeLayerRules.canKnock(state: .dawn, friend: friend(hasShot: false, knockOff: true), knockedToday: false))
-        #expect(!HomeLayerRules.canKnock(state: .night, friend: friend(hasShot: false), knockedToday: false))
-        #expect(!HomeLayerRules.canKnock(state: .dawn, friend: friend(hasShot: false, isMe: true), knockedToday: false))
-    }
-
-    @Test func ノックの名前は_同じ日同じ相手なら同じ() {
-        let a = KnockStore.recordName(window: "2026-11-02", from: "me", to: "you")
-        #expect(a == KnockStore.recordName(window: "2026-11-02", from: "me", to: "you"))
-        #expect(a != KnockStore.recordName(window: "2026-11-03", from: "me", to: "you"))
-        #expect(!a.contains("you"))
-    }
-
     // MARK: 👍
 
     private func card(_ id: String, group: String, at date: Date) -> HomeYesterdayCard {

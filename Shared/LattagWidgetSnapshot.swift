@@ -64,18 +64,7 @@ struct FriendRing: Codable, Hashable, Identifiable {
     var shotsToday: Int
     /// アイコン(App Group の ファイル名。プロフィールの 写真 ・ 120px)
     var avatar: String?
-    /// つつく の 宛先(なければ つつけない)
-    var knock: KnockTarget?
     var id: String { uid }
-}
-
-/// つつく の 宛先(KnockSender が CloudKit に 書く)
-struct KnockTarget: Codable, Hashable {
-    var zoneName: String
-    var zoneOwner: String
-    /// 共有 DB(相手の ゾーン)なら true
-    var shared: Bool
-    var parentRecordName: String?
 }
 
 /// きのうの 1枚(ひらいた 後 ・ 自分が 今日 撮った 時 だけ)
@@ -151,7 +140,7 @@ struct WidgetSnapshot: Codable, Equatable {
     var mondoCountries: Int?
     var trip: TripSnap?
     var next: NextItem?
-    /// つつく を 送る 自分
+    /// 自分
     var myRecordName: String?
     var myName: String
 

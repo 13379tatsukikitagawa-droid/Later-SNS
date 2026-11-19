@@ -72,7 +72,6 @@ struct HomeV64Actions {
     var openChat: (_ friendID: String, _ name: String) -> Void = { _, _ in }
     var approve: (_ requestID: String) -> Void = { _ in }
     var dismissRequest: (_ requestID: String) -> Void = { _ in }
-    var poke: (_ friendID: String) -> Void = { _ in }
     var shareLink: () -> Void = {}
     var showQR: () -> Void = {}
     var searchByID: () -> Void = {}

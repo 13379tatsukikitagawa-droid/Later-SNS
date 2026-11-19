@@ -111,9 +111,8 @@ enum WidgetSnapshotWriter {
             return name
         }
 
-        // 友だち(今日 撮った こま ・ アイコン ・ つつく の 宛先)
+        // 友だち(今日 撮った こま ・ アイコン)
         let counts = HomeV17Rules.shotCounts(groups: input.groups, now: now, calendar: calendar)
-        let groupsByID = Dictionary(input.groups.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let rings: [FriendRing] = input.friends.filter { !$0.isMe }.prefix(8).map { f in
             var avatar: String?
             if let data = f.avatarData, !data.isEmpty {
@@ -121,9 +120,8 @@ enum WidgetSnapshotWriter {
                 jobs.append(.init(name: name, data: data, kind: .thumb(120)))
                 avatar = name
             }
-            let knock = f.groupIDs.lazy.compactMap { groupsByID[$0] }.compactMap(Self.knockTarget(for:)).first
             let shot = counts[f.id] ?? (f.hasShot ? 1 : 0)
-            return FriendRing(uid: f.id, name: f.name, initial: String(f.name.prefix(1)), colorHex: Self.color(for: f.id), shotsToday: min(3, shot), avatar: avatar, knock: knock)
+            return FriendRing(uid: f.id, name: f.name, initial: String(f.name.prefix(1)), colorHex: Self.color(for: f.id), shotsToday: min(3, shot), avatar: avatar)
         }
 
         // Trip(いちばん 新しい グループ。Home の Trip と 同じ 決め方)
@@ -200,12 +198,6 @@ enum WidgetSnapshotWriter {
     /// TRIP PASS の 番号(TripNewV83View と 同じ 計算)
     static func passNumber(_ name: String) -> Int {
         name.isEmpty ? 1074 : name.unicodeScalars.reduce(1074) { ($0 &* 31 &+ Int($1.value)) % 10000 }
-    }
-
-    static func knockTarget(for group: LaterGroup) -> KnockTarget? {
-        guard let t = LayerCloud.target(for: group) else { return nil }
-        let shared = t.database.databaseScope == .shared
-        return KnockTarget(zoneName: t.zoneID.zoneName, zoneOwner: t.zoneID.ownerName, shared: shared, parentRecordName: t.parent?.recordName)
     }
 
     /// 起動ごとに 変わらない ハッシュ(FNV-1a)

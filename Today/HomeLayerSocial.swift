@@ -33,9 +33,6 @@ enum LayerHaptics {
 
     /// 👍 = success
     static func medium() { Haptics.play(.success) }
-
-    /// つつく(ノック)= heart
-    static func knock() { Haptics.play(.heart) }
 }
 
 // MARK: - スクロールの「カチ」(鳴らしすぎない)
@@ -81,18 +78,6 @@ final class ScrollTickHaptics {
     }
 }
 
-// MARK: - ノックを受けない(自分の設定)
-
-enum KnockSetting {
-    private static let key = "knockOff"
-
-    /// 端末の写し(受けとる側の判定に使う。プロフィールの knockOff と同じ値)
-    static var isOff: Bool {
-        get { UserDefaults.standard.bool(forKey: key) }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
-    }
-}
-
 // MARK: - 共有ゾーンへ書く
 
 @MainActor
@@ -108,152 +93,13 @@ enum LayerCloud {
     }
 }
 
-// MARK: - ノック
+// MARK: - 古い版が書いた「つつく」の読みすて
 
-/// 自分が送ったノック。1人に1日1回。印(アイコンの小さな手)に使う。
-@MainActor
-@Observable
-final class KnockStore {
-    static let shared = KnockStore()
-
-    struct Sent: Codable, Equatable {
-        let target: String
-        let window: String
-        let recordName: String
-        let zoneName: String
-        let zoneOwner: String
-        let at: Date
-    }
-
-    enum Result: Equatable {
-        case sent
-        /// 今日はもうノックした(サーバーにも、もうある)
-        case already
-        case failed
-    }
-
-    private static let key = "knocks.sent.v1"
-    private(set) var sent: [Sent]
-    /// 送っている途中(印を先に出す)
-    private(set) var inFlight: Set<String> = []
-
-    private init() {
-        if let data = UserDefaults.standard.data(forKey: Self.key),
-           let list = try? JSONDecoder().decode([Sent].self, from: data) {
-            sent = list
-        } else {
-            sent = []
-        }
-    }
-
-    func hasKnocked(_ target: String, window: String) -> Bool {
-        inFlight.contains("\(window)|\(target)") || sent.contains { $0.target == target && $0.window == window }
-    }
-
-    static func recordName(window: String, from: String, to: String) -> String {
-        "knock_\(window)_\(LampIdentity.userHash(source: from))_\(LampIdentity.userHash(source: to))"
-    }
-
-    func knock(_ friend: HomeFriend, window: String, groups: [LaterGroup], myName: String) async -> Result {
-        guard !hasKnocked(friend.id, window: window) else { return .already }
-        guard let manager = CloudKitManager.current, let me = manager.currentUserRecordName,
-              let group = groups.first(where: { friend.groupIDs.contains($0.id) && $0.cachedZoneID != nil }),
-              let target = LayerCloud.target(for: group) else { return .failed }
-        let flightKey = "\(window)|\(friend.id)"
-        inFlight.insert(flightKey)
-        defer { inFlight.remove(flightKey) }
-
-        let name = Self.recordName(window: window, from: me, to: friend.id)
-        let record = CKRecord(recordType: AppRecordType.memberEvent, recordID: CKRecord.ID(recordName: name, zoneID: target.zoneID))
-        record["eventType"] = "knock"
-        record["memberId"] = me
-        record["memberName"] = String(myName.prefix(24))
-        record["targetId"] = friend.id
-        record["eventAt"] = Date()
-        if let parent = target.parent {
-            record["groupRef"] = CKRecord.Reference(recordID: parent, action: .none)
-            record.parent = CKRecord.Reference(recordID: parent, action: .none)
-        }
-        do {
-            // 同じ名前(同じ日・同じ相手)が、もうあれば失敗する = サーバー側でも1日1回
-            let result = try await target.database.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged)
-            if case .failure(let error) = result.saveResults[record.recordID] {
-                if (error as? CKError)?.code == .serverRecordChanged {
-                    remember(friend.id, window: window, record: record)
-                    return .already
-                }
-                return .failed
-            }
-            remember(friend.id, window: window, record: record)
-            return .sent
-        } catch {
-            if (error as? CKError)?.code == .serverRecordChanged {
-                remember(friend.id, window: window, record: record)
-                return .already
-            }
-            return .failed
-        }
-    }
-
-    private func remember(_ target: String, window: String, record: CKRecord) {
-        let zone = record.recordID.zoneID
-        sent.removeAll { $0.target == target && $0.window == window }
-        sent.append(Sent(target: target, window: window, recordName: record.recordID.recordName, zoneName: zone.zoneName, zoneOwner: zone.ownerName, at: Date()))
-        save()
-    }
-
-    /// 2日より古いノックを消す(自分が送ったぶんだけ。競合は気にしない)
-    func prune(now: Date = Date()) async {
-        guard let manager = CloudKitManager.current else { return }
-        let old = sent.filter { now.timeIntervalSince($0.at) > 2 * 86_400 }
-        guard !old.isEmpty else { return }
-        for item in old {
-            let zoneID = CKRecordZone.ID(zoneName: item.zoneName, ownerName: item.zoneOwner)
-            let isOwner = item.zoneOwner == manager.currentUserRecordName || item.zoneOwner == CKCurrentUserDefaultName
-            let database = isOwner ? manager.container.privateCloudDatabase : manager.container.sharedCloudDatabase
-            _ = try? await database.deleteRecord(withID: CKRecord.ID(recordName: item.recordName, zoneID: zoneID))
-        }
-        sent.removeAll { item in old.contains(item) }
-        save()
-    }
-
-    private func save() {
-        UserDefaults.standard.set(try? JSONEncoder().encode(sent), forKey: Self.key)
-    }
-}
-
-/// 届いたノック(同期で受けとった MemberEvent の "knock")。自分あて・今日のぶんだけ、1回だけ知らせる。
-@MainActor
+/// 「つつく」機能は なくした。古い版が 共有ゾーンに 書いた knock の レコードが 届いても、
+/// 何も 知らせず、MemberEventStore にも 入れない(true = ここで 捨てる)。
 enum KnockInbox {
-    private static let seenKey = "knocks.seen.v1"
-
-    /// ノックのレコードなら true(MemberEventStore には入れない)
     static func handle(record: CKRecord, myRecordName: String?, now: Date = Date()) -> Bool {
-        guard record["eventType"] as? String == "knock" else { return false }
-        guard let myRecordName, record["targetId"] as? String == myRecordName else { return true }
-        guard !KnockSetting.isOff else { return true }
-        // 今日の窓のノックだけ(古いものは、あとから届いても知らせない)
-        guard let at = record["eventAt"] as? Date, DailyWindow.key(for: at) == DailyWindow.key(for: now), !DailyWindow.isNight(now) else { return true }
-        let id = record.recordID.recordName
-        var seen = UserDefaults.standard.stringArray(forKey: seenKey) ?? []
-        guard !seen.contains(id) else { return true }
-        seen.append(id)
-        UserDefaults.standard.set(Array(seen.suffix(200)), forKey: seenKey)
-
-        let name = (record["memberName"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "notification.poke.someone")
-        let text = String(format: String(localized: "notification.poke.inApp"), name)
-        if UIApplication.shared.applicationState == .active {
-            LayerHaptics.knock()
-            MondoNotice.post(text)
-        } else {
-            let content = UNMutableNotificationContent()
-            content.title = String(localized: "notification.poke.title")
-            content.body = String(format: String(localized: "notification.poke.body"), name)
-            content.sound = .default
-            let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
-            UNUserNotificationCenter.current().add(request)
-        }
-        return true
+        record["eventType"] as? String == "knock"
     }
 }
 

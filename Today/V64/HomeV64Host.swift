@@ -205,7 +205,6 @@ struct HomeV64Host: View {
             guard let r = incoming.first(where: { $0.id == id }) else { return }
             Task { _ = await FriendRequests.respond(to: r, accept: true, myName: src.avatarName); await refreshRequests() }
         }
-        a.poke = { id in if let f = src.layerData.friends.first(where: { $0.id == id }) { src.layerActions.knock(f) } }
         a.shareLink = { showShare = true }
         a.showQR = { showSelfQR = true }
         a.scanQR = { showScan = true }
