@@ -148,6 +148,7 @@
 		A614CF38672E8165178A57A7 /* V64/LegalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20D3230E5B587513B00ED375 /* V64/LegalLinks.swift */; };
 		A70FCBF38ADE5FEE4F0C2E0A /* V64/HomeViewSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5AB9DB36D920AC00893439 /* V64/HomeViewSwitch.swift */; };
 		A76B1D8370E9671F3A761E47 /* ChekiPhotoFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDF5F2153F01F43089097247 /* ChekiPhotoFrame.swift */; };
+		789FC7EA5A6F82D999D7F873 /* DebugDataVolume.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF39B90BD0EE97062274ACA /* DebugDataVolume.swift */; };
 		A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D881D698B13AD2783A958080 /* DebugStateMenu.swift */; };
 		A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB985051FDA08E630C624743 /* LGGlass.swift */; };
 		A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF193B5747AE398EAD547C74 /* OnboardingModel.swift */; };
@@ -608,6 +609,7 @@
 		D6A000000000000000004F00 /* LampCalendar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LampCalendar.swift; sourceTree = "<group>"; };
 		D7C61470FC924F8D8D9D42A5 /* PhotoNotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoNotificationService.swift; sourceTree = "<group>"; };
 		D8074893E58921F0B4509881 /* DesignSystemPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemPreview.swift; sourceTree = "<group>"; };
+		3BF39B90BD0EE97062274ACA /* DebugDataVolume.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDataVolume.swift; sourceTree = "<group>"; };
 		D881D698B13AD2783A958080 /* DebugStateMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugStateMenu.swift; sourceTree = "<group>"; };
 		D913D5C6B689C4EA4AC49236 /* V64/ProfileV82View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ProfileV82View.swift; sourceTree = "<group>"; };
 		DCBDC7FAD56546EBF6A12F48 /* HandleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandleService.swift; sourceTree = "<group>"; };
@@ -764,6 +766,7 @@
 				860520ED2477CD6D28B8C7AA /* DebugWidgets.swift */,
 				57F36AA1B5669102F3368268 /* DebugRouter.swift */,
 				D881D698B13AD2783A958080 /* DebugStateMenu.swift */,
+				3BF39B90BD0EE97062274ACA /* DebugDataVolume.swift */,
 				769863F83DF8CA3E06CAE493 /* SampleData.swift */,
 				D8074893E58921F0B4509881 /* DesignSystemPreview.swift */,
 			);
@@ -1593,6 +1596,7 @@
 				2B32E67B1159449C70952B9C /* DebugWidgets.swift in Sources */,
 				0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */,
 				A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */,
+				789FC7EA5A6F82D999D7F873 /* DebugDataVolume.swift in Sources */,
 				00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */,
 				16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */,
 				1054D4672E2B4B9DAEE4F2B7 /* LaterFont.swift in Sources */,
