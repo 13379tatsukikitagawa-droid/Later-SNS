@@ -266,21 +266,19 @@ struct OnboardingV64View: View {
             }
             .frame(width: W).offset(y: editing ? 222 : 453 + mid)
             VStack(alignment: .leading, spacing: 0) {
-                ZStack(alignment: .bottomTrailing) {
-                    if name.isEmpty { Text("なまえ").font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(OB.sub.opacity(0.5)) }
-                    TextField("", text: $name)
-                        .font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
-                        .submitLabel(.next).focused($focus, equals: .name)
-                        .onSubmit { if validName { next() } }
-                        .onChange(of: name) { _, v in
-                            if v.count > OnboardingRules.nameMaxLength { name = String(v.prefix(OnboardingRules.nameMaxLength)) }
-                            Haptics.play(.tick, gap: 0.04)
-                            col = v.isEmpty ? 0 : OB.colorIndex(for: v)
-                        }
-                    Text("\(name.count) / 12").font(LF.mono(11)).foregroundStyle(.white.opacity(0.4)).padding(.bottom, 2).allowsHitTesting(false)
-                }
-                .frame(height: editing ? 50 : 58)
+                TextField("", text: $name, prompt: Text("なまえ").foregroundColor(OB.sub.opacity(0.5)))
+                    .font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
+                    .submitLabel(.next).focused($focus, equals: .name)
+                    .onSubmit { if validName { next() } }
+                    .onChange(of: name) { _, v in
+                        if v.count > OnboardingRules.nameMaxLength { name = String(v.prefix(OnboardingRules.nameMaxLength)) }
+                        Haptics.play(.tick, gap: 0.04)
+                        col = v.isEmpty ? 0 : OB.colorIndex(for: v)
+                    }
+                    .frame(height: editing ? 50 : 58)
                 Rectangle().fill(focus == .name ? OB.accent : .white).frame(height: 2.5)
+                // v106 §2:字数は 線の 下 ・ 右(上から 4pt)。線の 中には 置かない
+                Text("\(name.count) / 12").font(LF.mono(11)).foregroundStyle(.white.opacity(0.4)).frame(maxWidth: .infinity, alignment: .trailing).padding(.top, 4).allowsHitTesting(false)
             }
             .frame(width: w).offset(x: 24, y: editing ? 268 : 691 + mid)
             Button { Haptics.play(.click); showsIcon = true } label: {
@@ -573,16 +571,8 @@ struct OnboardingV64View: View {
 
     private func resumeStep() -> OBStep? {
         let signedIn = !appleUserID.isEmpty || !firebaseUID.isEmpty
-        guard !savedStep.isEmpty else { return nil }
-        guard let saved = OBStep(rawValue: savedStep) else { return signedIn ? .name : .signin }   // 古い 版の 場面
-        switch saved {
-        case .mail, .sent:
-            if signedIn { return .name }
-            if let p = FirebaseAuthService.pendingEmail { sentAddress = p; return .sent }
-            return .signin
-        case .signin: return signedIn ? .name : .signin
-        default: return signedIn ? saved : .signin
-        }
+        if let p = FirebaseAuthService.pendingEmail, savedStep == OBStep.sent.rawValue, !signedIn { sentAddress = p; return .sent }
+        return OnboardingRouter.resume(saved: savedStep, signedIn: signedIn)
     }
 
     /// 入口が おわった:チェキが 落ちてきて、ほかが 浮かんで 入る(`obIntroEnd`)
@@ -686,11 +676,11 @@ struct OnboardingV64View: View {
         if let url = URL(string: "message://") { UIApplication.shared.open(url) }
     }
 
-    /// サインインが 済んだ:名前の 画面へ(あとで 既存アカウントか 確かめる)
+    /// サインインが 済んだ:名前の 画面へ。おかえり の 判定は 公開 ディレクトリの `onboardedAt`(v106)。
+    /// 端末に のこった プロフィールが あるだけでは Home に 行かない(途中の 人を つづきの ページへ)。
     private func handleSignInChange() {
         guard step == .signin || step == .mail || step == .sent, !appleUserID.isEmpty || !firebaseUID.isEmpty, !isCheckingAccount else { return }
         if isSetupCompleted { markCompleted(); return }
-        if let existing = existingProfile() { currentProfileID = existing.id.uuidString; markCompleted(); return }
         go(.name)
         checkExistingAccountInBackground()
     }
@@ -700,13 +690,16 @@ struct OnboardingV64View: View {
         isCheckingAccount = true
         Task { @MainActor in
             defer { isCheckingAccount = false }
-            for _ in 0..<40 where CloudKitManager.current == nil { try? await Task.sleep(for: .seconds(0.5)) }
-            guard let manager = CloudKitManager.current else { return }
+            for _ in 0..<40 where CloudKitManager.current?.currentUserRecordName == nil { try? await Task.sleep(for: .seconds(0.5)) }
+            guard let manager = CloudKitManager.current, let rn = manager.currentUserRecordName else { return }
+            let dir = await UserDirectoryService.fetchProfile(cloudKitUserRecordName: rn)
+            let gate = OnboardingRouter.gate(name: dir?.name ?? "", onboardedAt: dir?.onboardedAt, recordCreatedAt: dir?.createdAt)
+            guard gate != .resume else { return }
             await manager.fetchPrivateChangesNow()
             await manager.fetchSharedChangesNow()
             guard !isSetupCompleted, finishStart == nil, let existing = existingProfile() else { return }
             currentProfileID = existing.id.uuidString
-            markCompleted()
+            markCompleted()   // isSetupCompleted が 立つと 前から いる 人の `onboardedAt` は 次の 書きこみで 入る
         }
     }
 
@@ -741,7 +734,7 @@ struct OnboardingV64View: View {
         currentProfileID = profile.id.uuidString
         userName = n
         userID = profile.username
-        Task { await UserDirectoryService.publish(profile) }
+        // v106:ここでは 公開 ディレクトリに 書かない(さいごの ながおしが 終わった あとに だけ)
     }
 
     /// ID を とって 保存(同じ ID は だめ)。とれたら 次へ
@@ -754,7 +747,6 @@ struct OnboardingV64View: View {
             busy = false
             if r == .mine || r == .ok {
                 profile.username = h; profile.profileUpdatedAt = Date(); try? modelContext.save(); userID = h
-                await UserDirectoryService.publish(profile)
                 go(.tag)
             } else { Haptics.play(.warn); handleState = r }
         }
@@ -842,8 +834,8 @@ struct OnboardingV64View: View {
     }
 
     private func beginFinish() {
-        onboardingCompleted = true     // 途中で 閉じても やり直させない
-        savedStep = ""
+        // v106:完了の 印は ながおしの 演出が 終わった 時に だけ(ここでは 立てない)。うしろの Home だけ 用意する
+        OnboardingRuntime.shared.finishing = true
         sparks = []
         finishStart = Date()
     }
@@ -852,13 +844,15 @@ struct OnboardingV64View: View {
     private func completeFinish() {
         #if DEBUG
         // 見た目の 確認用:完了に しないで もどす(-debugNoComplete 1)
-        if UserDefaults.standard.bool(forKey: "debugNoComplete") { finishStart = nil; return }
+        if UserDefaults.standard.bool(forKey: "debugNoComplete") { finishStart = nil; OnboardingRuntime.shared.finishing = false; return }
         #endif
         markCompleted()
+        if let p = UserProfile.current(from: profiles) { Task { await UserDirectoryService.publish(p, finishingOnboarding: true) } }
     }
 
     private func markCompleted() {
         savedStep = ""
+        OnboardingRuntime.shared.finishing = false
         onboardingCompleted = true
         if UserDefaults.standard.object(forKey: "onboardingCompletedAt") == nil { UserDefaults.standard.set(Date(), forKey: "onboardingCompletedAt") }
         hasSeenWelcomeOnboarding = true; hasCompletedSurvey = true; hasSeenAboutLaterIntro = true

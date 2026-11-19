@@ -13,10 +13,19 @@ enum UserDirectoryService {
     /// 自分のプロフィールを公開ディレクトリへ発行/更新する。プロフィール作成時・編集時に呼ぶ。
     /// savePolicy: .changedKeysで、既存レコードの有無やchangeTagを気にせず上書きできるようにする
     /// (この用途では楽観ロックの衝突検知は不要なため)。
-    static func publish(_ profile: UserProfile) async {
+    /// v106 §1:はじめての 設定が おわる まで(`isSetupCompleted` が 立つ まで)は 書かない。
+    /// さいごの ながおしが 終わった とき だけ `finishingOnboarding: true` で 書き、`onboardedAt` を 入れる。
+    /// 前から いる 人(isSetupCompleted 済み)は、次の 書きこみで 1回だけ `onboardedAt` を あとから 書く。
+    static let stampedKey = "directoryOnboardedStamped"
+    static func publish(_ profile: UserProfile, finishingOnboarding: Bool = false) async {
+        let d = UserDefaults.standard
+        guard finishingOnboarding || d.bool(forKey: "isSetupCompleted") else { return }
         let record = profile.toPublicDirectoryRecord()
+        let stamp = finishingOnboarding || !d.bool(forKey: stampedKey)
+        if stamp { record["onboardedAt"] = Date() }
         do {
             _ = try await publicDatabase.modifyRecords(saving: [record], deleting: [], savePolicy: .changedKeys)
+            if stamp { d.set(true, forKey: stampedKey) }
         } catch {
             print("UserDirectoryService: failed to publish profile: \(error)")
         }
@@ -35,6 +44,10 @@ enum UserDirectoryService {
         let cloudKitUserRecordName: String?
         /// 「名前で 見つかる」(古い レコードは オン あつかい)
         var discoverable = true
+        /// v106:はじめての 設定を さいごまで 終えた 日時(古い レコードは nil)
+        var onboardedAt: Date?
+        /// サーバーに レコードが できた 日時(前から いる 人の 判定に つかう)
+        var createdAt: Date?
     }
 
     private static let directoryRecordIDPrefix = "userdir_"
@@ -54,6 +67,8 @@ enum UserDirectoryService {
         let cloudKitUserRecordName = record["cloudKitUserRecordName"] as? String
         var p = DirectoryProfile(id: id, name: name, username: username, bio: bio, avatarData: avatarData, cloudKitUserRecordName: cloudKitUserRecordName)
         if let d = record["discoverableByName"] as? Int64 { p.discoverable = d != 0 }
+        p.onboardedAt = record["onboardedAt"] as? Date
+        p.createdAt = record.creationDate
         return p
     }
 

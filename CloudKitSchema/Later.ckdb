@@ -216,6 +216,7 @@ DEFINE SCHEMA
         name                   STRING QUERYABLE SEARCHABLE SORTABLE,
         nameSearch             STRING QUERYABLE SEARCHABLE SORTABLE,
         discoverableByName     INT64 QUERYABLE,
+        onboardedAt            TIMESTAMP,
         username               STRING QUERYABLE SEARCHABLE SORTABLE,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
