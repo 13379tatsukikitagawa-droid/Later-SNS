@@ -235,7 +235,7 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
         session.sessionPreset = .photo
         addInput(for: queuePosition)
         addMicrophoneInputIfAuthorized()
-        if session.canAddOutput(photoOutput) { session.addOutput(photoOutput) }
+        if session.canAddOutput(photoOutput) { session.addOutput(photoOutput); if photoOutput.maxPhotoQualityPrioritization.rawValue < AVCapturePhotoOutput.QualityPrioritization.balanced.rawValue { photoOutput.maxPhotoQualityPrioritization = .balanced } }
         if session.canAddOutput(movieOutput) {
             session.addOutput(movieOutput)
             movieOutput.maxRecordedDuration = CMTime(seconds: VideoExposureRules.maxDuration, preferredTimescale: 600)
@@ -354,6 +354,7 @@ nonisolated final class FilmCameraController: NSObject, ObservableObject, @unche
                 return
             }
             let settings = AVCapturePhotoSettings()
+            settings.photoQualityPrioritization = .balanced   // v107
             if self.queuePosition == .back, self.photoOutput.supportedFlashModes.contains(.auto) {
                 settings.flashMode = .auto
             }

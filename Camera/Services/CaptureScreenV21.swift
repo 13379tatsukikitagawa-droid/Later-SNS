@@ -93,7 +93,7 @@ struct CaptureScreenV21: View {
         .onAppear(perform: appear)
         .onDisappear { gesture.interrupt(); camera.recorder.setActive(false) }
         .onChange(of: scenePhase) { _, phase in if phase != .active { gesture.interrupt() } }
-        .onChange(of: mode) { _, m in gesture.mode = m }
+        .onChange(of: mode) { _, m in gesture.mode = m; camera.setVideoLook(m == .video) }   // v107:動画モードの 間だけ HDR オフ ・ sRGB ・ 手ぶれ補正 .standard
         .onChange(of: left) { _, _ in countFlick += 1 }
         .onChange(of: gesture.releasedEarlyToken) { _, _ in
             hintOverride = "もうすこし、長く"
@@ -525,6 +525,7 @@ struct CaptureScreenV21: View {
             }
         }
         if mode == .video { prepareAudio() }
+        camera.setVideoLook(mode == .video)
         if playsEntrance && !reduceMotion {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { withAnimation(.easeOut(duration: 0.45)) { appeared = true } }
         } else {

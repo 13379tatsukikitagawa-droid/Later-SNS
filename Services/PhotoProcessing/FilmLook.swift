@@ -122,7 +122,7 @@ nonisolated final class FilmLook: @unchecked Sendable {
     enum Retro8 {
         static let sharpness: Double = 0.35
         static let sharpRadius: Double = 1.2
-        static let grainAlpha: CGFloat = 0.30
+        static let grainAlpha: CGFloat = 0.15   // 0.30 → 0.15(粒子を 弱める)
     }
 
     /// 1こま:LUT(色)→ うすい シャープ → 粒子(こまごとに ずらす)。向き ・ 大きさは 呼ぶ 側で そろえて ある
@@ -130,7 +130,7 @@ nonisolated final class FilmLook: @unchecked Sendable {
         let ext = input.extent
         var img = lut(input, retro8LUT)
         img = img.applyingFilter("CISharpenLuminance", parameters: [kCIInputSharpnessKey: Retro8.sharpness, kCIInputRadiusKey: Retro8.sharpRadius]).cropped(to: ext)
-        return grain(over: img, alpha: Retro8.grainAlpha, seed: UInt64(max(0, frame))).cropped(to: ext).settingAlphaOne(in: ext)
+        return grain(over: img, alpha: Retro8.grainAlpha, seed: UInt64(max(0, frame) / 2))   // 粒子の 位置は 2こまに 1回(15回/秒).cropped(to: ext).settingAlphaOne(in: ext)
     }
 
     // MARK: 部品

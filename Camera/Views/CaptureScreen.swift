@@ -259,6 +259,8 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
         else { return false }
         session.addInput(input)
         session.addOutput(photoOutput)
+        // v107:処理を 強く しすぎない(.balanced)。撮る 時の 指定より 上限が 低いと 落ちるので 上限も そろえる
+        if photoOutput.maxPhotoQualityPrioritization.rawValue < AVCapturePhotoOutput.QualityPrioritization.balanced.rawValue { photoOutput.maxPhotoQualityPrioritization = .balanced }
         if let connection = photoOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90) {
             connection.videoRotationAngle = 90   // 縦向きの写真
         }
@@ -316,10 +318,45 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
                 if let c = out.connection(with: .video) { if c.isVideoRotationAngleSupported(90) { c.videoRotationAngle = 90 }; if c.isVideoMirroringSupported { c.automaticallyAdjustsVideoMirroring = false; c.isVideoMirrored = (new == .front) } }
             }
             self.session.commitConfiguration()
+            self.savedLook = nil   // 新しい カメラの 値を 取りなおす
+            if self.videoLookOn { self.applyVideoLook() }
         }
     }
 
     func useBackCameraIfNeeded() { setCameraPosition(.back) }
+
+    // MARK: v107 動画モードの 間だけ iPhone 8 らしい 撮り方(HDR オフ ・ sRGB ・ 手ぶれ補正 .standard)。写真の セッション(.photo)と activeFormat は 変えない
+    private var videoLookOn = false
+    private var savedLook: (autoHDR: Bool, hdr: Bool, color: AVCaptureColorSpace, stab: AVCaptureVideoStabilizationMode)?
+
+    func setVideoLook(_ on: Bool) {
+        sessionQueue.async { [weak self] in
+            guard let self, self.videoLookOn != on else { return }
+            self.videoLookOn = on
+            self.applyVideoLook()
+        }
+    }
+
+    /// sessionQueue の 上で。カメラを 入れかえた 後にも 呼ぶ
+    private func applyVideoLook() {
+        guard let device = (session.inputs.compactMap { $0 as? AVCaptureDeviceInput }.first { $0.device.hasMediaType(.video) })?.device else { return }
+        let conn = videoOutput.connection(with: .video)
+        guard (try? device.lockForConfiguration()) != nil else { return }
+        defer { device.unlockForConfiguration() }
+        if videoLookOn {
+            if savedLook == nil {
+                savedLook = (device.automaticallyAdjustsVideoHDREnabled, device.activeFormat.isVideoHDRSupported ? device.isVideoHDREnabled : false, device.activeColorSpace, conn?.preferredVideoStabilizationMode ?? .auto)
+            }
+            if device.activeFormat.isVideoHDRSupported { device.automaticallyAdjustsVideoHDREnabled = false; device.isVideoHDREnabled = false }
+            if device.activeFormat.supportedColorSpaces.contains(.sRGB) { device.activeColorSpace = .sRGB }
+            if let conn, conn.isVideoStabilizationSupported { conn.preferredVideoStabilizationMode = .standard }
+        } else if let s = savedLook {
+            if device.activeFormat.isVideoHDRSupported { device.automaticallyAdjustsVideoHDREnabled = s.autoHDR; if !s.autoHDR { device.isVideoHDREnabled = s.hdr } }
+            if device.activeFormat.supportedColorSpaces.contains(s.color) { device.activeColorSpace = s.color }
+            if let conn, conn.isVideoStabilizationSupported { conn.preferredVideoStabilizationMode = s.stab }
+            savedLook = nil
+        }
+    }
 
     func snapshotLatestFrame(completion: @escaping (UIImage?) -> Void) {
         frameQueue.async { [weak self] in
@@ -407,6 +444,7 @@ nonisolated final class CaptureCameraModel: NSObject, ObservableObject, @uncheck
                 return
             }
             let settings = AVCapturePhotoSettings()
+            settings.photoQualityPrioritization = .balanced   // v107
             // v21:フラッシュ(AUTO / OFF。撮影画面の左のボタン)
             let flashAuto = UserDefaults.standard.object(forKey: "capture.flashAuto") as? Bool ?? true
             if flashAuto, self.photoOutput.supportedFlashModes.contains(.auto) { settings.flashMode = .auto }
