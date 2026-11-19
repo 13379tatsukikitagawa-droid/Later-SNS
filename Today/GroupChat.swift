@@ -177,6 +177,12 @@ final class GroupChatStore {
         return last.sentAt > (lastSeen[groupID] ?? .distantPast)
     }
 
+    /// 見ていない 数(自分の ・ システムの は 数えない)
+    func unreadCount(_ groupID: UUID, me: String?, blocked: Set<String>) -> Int {
+        let seen = lastSeen[groupID] ?? .distantPast
+        return visible(groupID, blocked: blocked).filter { $0.senderId != me && $0.kind != .system && $0.sentAt > seen }.count
+    }
+
     func markSeen(_ groupID: UUID, at date: Date = Date()) {
         lastSeen[groupID] = date
         persist()

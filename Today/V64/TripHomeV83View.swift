@@ -59,10 +59,14 @@ struct TripHomeV83View: View {
         ZStack(alignment: .topLeading) {
             Color(hex: "2A2326").overlay { if let c = data.cover { Image(uiImage: c).resizable().scaledToFill() } }.frame(width: w, height: 330).clipped()
             LinearGradient(stops: [.init(color: .black.opacity(0.45), location: 0), .init(color: .clear, location: 0.3), .init(color: Color(hex: "0A0A0B").opacity(0.2), location: 0.7), .init(color: Color(hex: "0A0A0B"), location: 1)], startPoint: .top, endPoint: .bottom).frame(width: w, height: 330)
-            glassButton("chevron.left", 42) { onClose() }.offset(x: 14, y: 50)
-            Text(data.dayTotal.map { "TRIP ・ DAY \(data.dayNumber) / \($0)" } ?? "TRIP ・ DAY \(data.dayNumber)").font(LF.mono(12)).tracking(2.4).foregroundStyle(HV.lime).frame(width: w).offset(y: 61)
-            glassButton("qrcode", 42) { onQR() }.offset(x: w - 14 - 42 - 8 - 42, y: 50)
-            glassButton("ellipsis", 42) { onMore() }.offset(x: w - 14 - 42, y: 50)
+            // v106 §4-1:もどる ・ TRIP の 字(せまい 時は 字を 小さく)・ 字つきの カプセル 2つ(招待 / 設定)。ボタンは 小さく しない
+            HStack(spacing: 8) {
+                glassButton("chevron.left", 44) { onClose() }
+                Text(data.dayTotal.map { "TRIP ・ DAY \(data.dayNumber) / \($0)" } ?? "TRIP ・ DAY \(data.dayNumber)").font(LF.mono(12)).tracking(1.6).foregroundStyle(HV.lime)
+                    .lineLimit(1).minimumScaleFactor(0.55).frame(maxWidth: .infinity)
+                capsuleButton("qrcode", "招待") { onQR() }
+                capsuleButton("gearshape", "設定") { onMore() }
+            }.padding(.horizontal, 14).frame(width: w).offset(y: 50)
             VStack(alignment: .leading, spacing: 0) {
                 Text(data.name).font(LF.serif(54)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
                 Text(data.sub).font(LF.mono(13)).foregroundStyle(.white.opacity(0.65)).padding(.top, 2)
@@ -72,6 +76,16 @@ struct TripHomeV83View: View {
                 }.padding(.top, 12)
             }.padding(.horizontal, 16).offset(y: 98)
         }.frame(width: w, height: 330, alignment: .topLeading)
+    }
+
+    private func capsuleButton(_ icon: String, _ label: String, _ action: @escaping () -> Void) -> some View {
+        Button { Haptics.play(.tick); action() } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 14, weight: .bold))
+                Text(label).font(LF.inter(800, 13))
+            }.foregroundStyle(.white).padding(.leading, 12).padding(.trailing, 14).frame(height: 44)
+                .background(.black.opacity(0.3), in: Capsule()).background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.15), lineWidth: 1))
+        }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel(label)
     }
 
     private func glassButton(_ icon: String, _ s: CGFloat, _ action: @escaping () -> Void) -> some View {

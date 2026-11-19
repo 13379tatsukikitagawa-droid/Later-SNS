@@ -24,6 +24,7 @@ enum DebugRouter {
         case "friends": showRaw(FriendsV68Preview())
         case "trip": showRaw(TripV83Preview())
         case "triphome": showRaw(TripHomeV83Preview())
+        case "tripsettings": showRaw(TripSettingsPreviewV106())
         case "me": showRaw(MEV86Preview())
         case "friendcard": showRaw(ZStack { Color.black.opacity(0.62).ignoresSafeArea();  FriendCardV82Sheet(name: "れな", avatar: SampleData.photo("d"), tag: "雨の日", city: nil, times: ["08:14", "12:40"], mosaics: [SampleData.photo("d"), SampleData.photo("d")]).padding(8).frame(maxHeight: .infinity, alignment: .bottom) })
         case "dm": showRaw(DirectMessageView(friendID: "x", friendName: "れな", yesterdayCount: 4, injected: [.init(id: "1", senderID: "れな", text: "きのうの 写真 みた?", createdAt: Date()), .init(id: "2", senderID: "れな", text: "わたしの 帰り道", createdAt: Date())]))
@@ -364,5 +365,18 @@ enum DebugTripV98 {
         TripPassData(name: "京都 2泊3日", sub: "Kyoto trip", from: "NOV 18", to: "NOV 20", days: 3, key: "meadow95", link: "https://lattag.app/t/meadow95",
                      cover: SampleData.photo("d"), members: people.map(\.image), names: people.map(\.name))
     }
+}
+#endif
+
+
+#if DEBUG
+/// DEBUG:Trip の 設定(`-debugRoute tripsettings`)。保存は 動かさない(見た目だけ)
+struct TripSettingsPreviewV106: View {
+    @State private var group: LaterGroup = {
+        let g = LaterGroup(name: "Kyoto")
+        g.iconImageData = SampleData.photo("d")?.jpegData(compressionQuality: 0.8)
+        return g
+    }()
+    var body: some View { TripSettingsV106Sheet(group: group, isHost: true) }
 }
 #endif

@@ -834,7 +834,28 @@ struct TodayView: View {
                 .fullScreenCover(isPresented: Binding(get: { settingsGroup != nil }, set: { if !$0 { settingsGroup = nil } })) {
                     // v58 §5:TRIP SETTINGS。見た目は New trip と 同じ ウィザード。
                     // 保存(なまえ・表紙)・ぬける・おわるの 本物の 処理は、今までと 同じ 呼び出しに まかせる(ここでは 新しく 作らない)。
-                    if let group = settingsGroup {
+                    if let group = settingsGroup, UIFlag.v64 {
+                        // v106 §5:編集は 1枚の シート(新しく つくる 流れは そのまま)
+                        TripSettingsV106Sheet(
+                            group: group,
+                            isHost: GroupLeaveService.isHost(group, currentUserRecordName: CloudKitManager.current?.currentUserRecordName ?? currentUser?.cloudKitUserRecordName),
+                            onInvite: { settingsGroup = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { sheetGroup = group } },
+                            onLeave: {
+                                guard let user = currentUser else { return }
+                                settingsGroup = nil
+                                leavingGroup = group
+                                withAnimation(.easeOut(duration: 0.25)) { leaveSnapshot = LeaveSnapshot(group: group, user: user) }
+                            },
+                            onEnd: {
+                                guard let user = currentUser else { return }
+                                settingsGroup = nil
+                                leavingGroup = group
+                                isEndingTrip = true
+                                withAnimation(.easeOut(duration: 0.25)) { leaveSnapshot = LeaveSnapshot(group: group, user: user) }
+                            },
+                            onClose: { settingsGroup = nil }
+                        )
+                    } else if let group = settingsGroup {
                         NewGroupFlowView(
                             friends: layerData(sharedGroups: sharedGroups).friends.filter { !$0.isMe }.map {
                                 GroupCreateFriend(id: $0.id, name: $0.name, avatarData: $0.avatarData, seed: $0.seed)
@@ -2416,6 +2437,15 @@ struct TodayView: View {
         }
         data.days.reverse()
         data.members = members
+        // v106 §4-2:さいごの 1行の カプセル + 未読の 数(部屋と 同じ 共有ゾーンの GroupChatMessage)
+        let blocked = Set(blockedUsers.map(\.blockedCloudKitUserRecordName))
+        let me = CloudKitManager.current?.currentUserRecordName ?? currentUser?.cloudKitUserRecordName
+        let store = GroupChatStore.shared
+        if let last = store.last(group.id, blocked: blocked), last.kind != .system {
+            let who = group.members.first { ($0.cloudKitUserRecordName ?? "local_\($0.id.uuidString)") == last.senderId }?.name ?? "だれか"
+            data.chatLine = (last.senderId == me ? "あなた" : who, last.kind == .sticker ? "#" + (last.stickerId ?? "") : last.text)
+        }
+        data.unread = store.unreadCount(group.id, me: me, blocked: blocked)
         return data
     }
 

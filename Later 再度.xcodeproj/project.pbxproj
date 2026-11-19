@@ -245,6 +245,7 @@
 		D7A7C560AE93424F97531E23 /* CGImagePropertyOrientation+UIImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F50275B63F472CA0B8DA54 /* CGImagePropertyOrientation+UIImage.swift */; };
 		D99D01AB86DA42B2A633148F /* Fonts/KleeOne-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 22FBEAF337854AA894688A73 /* Fonts/KleeOne-SemiBold.ttf */; };
 		6A0992A46AC13BFCA554E96F /* V64/FeedEndV106.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9029F34F055CFC75ED897FD1 /* V64/FeedEndV106.swift */; };
+		730BB8671D04CB31A53FCEB0 /* V64/TripSettingsV106.swift in Sources */ = {isa = PBXBuildFile; fileRef = D694CD77723E391F154D4CBC /* V64/TripSettingsV106.swift */; };
 		DA19C87ED77467007061BD3E /* V64/YesterdayV64View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28B69966E3153288F3B80519 /* V64/YesterdayV64View.swift */; };
 		DB41BB4F998A47AC8C2C7DE3 /* FriendScreenV48.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF54B9E52664A609C8C2408 /* FriendScreenV48.swift */; };
 		DE23C9D06D5A4BF6AF296702 /* FriendMascot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5769A32D7C7C43519C4B6160 /* FriendMascot.swift */; };
@@ -406,6 +407,7 @@
 		27B30D00E22A4904938D7ED6 /* Fonts/Inter-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Inter-Black.ttf"; sourceTree = "<group>"; };
 		288E412DBA3D560B94FDA1C6 /* V64/HomeV64Lower.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV64Lower.swift; sourceTree = "<group>"; };
 		9029F34F055CFC75ED897FD1 /* V64/FeedEndV106.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FeedEndV106.swift; sourceTree = "<group>"; };
+		D694CD77723E391F154D4CBC /* V64/TripSettingsV106.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripSettingsV106.swift; sourceTree = "<group>"; };
 		28B69966E3153288F3B80519 /* V64/YesterdayV64View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/YesterdayV64View.swift; sourceTree = "<group>"; };
 		2A2BFAC1A6DE1DAB14447490 /* HomeScrollUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeScrollUITests.swift; sourceTree = "<group>"; };
 		2CF326736D97D14B1A1DC9F0 /* V64/UsageGuideV105.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/UsageGuideV105.swift; sourceTree = "<group>"; };
@@ -1068,6 +1070,7 @@
 				090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */,
 				DF437A3BCC3AC311F165505A /* V64/FriendRequestService.swift */,
 				28B69966E3153288F3B80519 /* V64/YesterdayV64View.swift */,
+				D694CD77723E391F154D4CBC /* V64/TripSettingsV106.swift */,
 				9029F34F055CFC75ED897FD1 /* V64/FeedEndV106.swift */,
 				C1E2DC22216E0ADC40D73A86 /* V64/HomeV64Host.swift */,
 				CA5AB9DB36D920AC00893439 /* V64/HomeViewSwitch.swift */,
@@ -1691,6 +1694,7 @@
 				B9144BB237EBBF08EDC37109 /* V64/FriendRequestsView.swift in Sources */,
 				5A83367B525A88BA2B2BB5CE /* V64/FriendRequestService.swift in Sources */,
 				DA19C87ED77467007061BD3E /* V64/YesterdayV64View.swift in Sources */,
+				730BB8671D04CB31A53FCEB0 /* V64/TripSettingsV106.swift in Sources */,
 				6A0992A46AC13BFCA554E96F /* V64/FeedEndV106.swift in Sources */,
 				6DE47217F92473C3E32D539A /* V64/HomeV64Host.swift in Sources */,
 				A70FCBF38ADE5FEE4F0C2E0A /* V64/HomeViewSwitch.swift in Sources */,
