@@ -36,6 +36,7 @@ enum DebugRouter {
         case "trippass": showRaw(TripPassView(data: DebugTripV98.pass, newlyMade: UserDefaults.standard.object(forKey: "debugNew") as? Bool ?? true, onStart: {}, onClose: {}))
         case "tripboard": showRaw(TripBoardingView(name: "京都 2泊3日", date: "11/18", key: "meadow95", cover: SampleData.photo("d"), me: "ゆい", people: [TripSeatPerson(id: "1", name: "ゆい", image: SampleData.photo("f"))], onSend: {}, onQR: {}))
         case "tripseats": showRaw(VStack { TripSeatMap(people: DebugTripV98.people, small: true).padding(16) }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color(hex: "111113")))
+        case "intro": showRaw(IntroStoryView(kind: IntroKind(rawValue: UserDefaults.standard.string(forKey: "debugIntroKind") ?? "") ?? .friends, startAt: UserDefaults.standard.double(forKey: "debugIntroAt"), onClose: { _ in }))
         case "widgetguide": showRaw(WidgetGuideV96Sheet(onClose: {}))
         case "live": showRaw(DebugLiveView())
         case "widgets": showRaw(DebugWidgetsView())

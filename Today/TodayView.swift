@@ -90,6 +90,8 @@ struct TodayView: View {
     @State private var showingDevelopSheet = false
     /// v14 ⑤:ともだち(呼ぶ / グループに えらぶ / とどいた)
     @State private var showingFriendsHub = false
+    /// v99:はじめての 説明(Friends ・ Trip ・ Mondo)
+    @State private var introRequest: IntroRequest?
     /// v48:ともだち画面の中から「とどいた」を見るときだけの、今の画面
     /// v18.2:撮ったチェキが、物干しへ とんでいる間
     @State private var shotFlight: (handOff: ShotHandOff, start: Date)?
@@ -515,7 +517,7 @@ struct TodayView: View {
                 avatarName: currentUser?.name ?? "",
                 onDevelopTap: { developPage = 0; showingDevelopSheet = true },
                 onSelectGroup: { id in openChat(id) },
-                onCreateGroup: { newGroupPrefill = nil; showingNewGroup = true },
+                onCreateGroup: { gateIntro(.trip) { newGroupPrefill = nil; showingNewGroup = true } },
                 onJoinGroup: {
                     NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.scan)
                 },
@@ -568,8 +570,7 @@ struct TodayView: View {
                     onOpenGroupSheet: { id in openChat(id) },
                     onAddGroup: { showingAddGroupSheet = true },
                     onCreateGroup: { prefill in
-                        newGroupPrefill = prefill
-                        showingNewGroup = true
+                        gateIntro(.trip) { newGroupPrefill = prefill; showingNewGroup = true }
                     },
                     onJoinGroup: {
                         NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.scan)
@@ -578,7 +579,7 @@ struct TodayView: View {
                     avatarSwitch: avatarSwitch,
                     friendsData: layerData(sharedGroups: sharedGroups),
                     friendsActions: layerActions(sharedGroups: sharedGroups),
-                    onInviteFriend: { showingFriendsHub = true }
+                    onInviteFriend: { gateIntro(.friends) { showingFriendsHub = true } }
                 )
                 .opacity(v5Opacity * (irisMode == .fade ? irisFade : 1))
                 // カメラの絞り:アバターの中心から広がる円の中だけ、昨日のホームを見せる
@@ -1079,6 +1080,17 @@ struct TodayView: View {
             .presentationDragIndicator(.hidden)
             .environment(\.palette, palette)
             .environment(\.colorScheme, palette.isNight ? .dark : .light)
+        }
+        .fullScreenCover(item: $introRequest) { req in
+            IntroStoryView(kind: req.kind, shotToday: FilmCounter.shared.used > 0) { pressed in
+                introRequest = nil
+                finishIntro(req, pressedAction: pressed)
+            }
+            .environment(\.palette, palette)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: IntroStore.requested)) { note in
+            guard let r = note.object as? IntroRequest, introRequest == nil, screen == .home, !isHomeCovered else { return }
+            introRequest = r
         }
         .fullScreenCover(isPresented: $showingFriendsHub) {
             FriendsV68View(
@@ -2277,7 +2289,7 @@ struct TodayView: View {
                 switchHome(to: .yesterday)
             },
             knock: layer.knock,
-            openFriends: { showingFriendsHub = true },
+            openFriends: { gateIntro(.friends) { showingFriendsHub = true } },
             openWord: { openMondoWord($0) }
         )
     }
@@ -2309,14 +2321,13 @@ struct TodayView: View {
                 // フィルムの「+ きょう撮る」:撮影の流れをひらく
                 CaptureRequestStore.shared.pendingRequestID = UUID()
             },
-            openFriends: { showingFriendsHub = true },
+            openFriends: { gateIntro(.friends) { showingFriendsHub = true } },
             inviteLink: { id in
                 guard let group = sharedGroups.first(where: { $0.id == id }) else { return nil }
                 return try? await GroupInviteService.link(for: group, context: context)
             },
             createGroup: {
-                newGroupPrefill = nil
-                showingNewGroup = true
+                gateIntro(.trip) { newGroupPrefill = nil; showingNewGroup = true }
             },
             flushThumbs: { await LampGroupSync.flush(groups: sharedGroups) }
         )
@@ -2437,6 +2448,32 @@ struct TodayView: View {
         Haptics.play(.tick)  // v17:ごく軽く1回(えらぶ)
         showingAddGroupSheet = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: open)
+    }
+
+    /// v99:まだ 見て いない 説明が あれば 先に 見せて、スキップ ・ 最後の ボタンの あと もとの 画面へ そのまま 進む
+    private func gateIntro(_ kind: IntroKind, _ go: @escaping () -> Void) {
+        if IntroStore.seen(kind) || introRequest != nil || screen != .home { go(); return }
+        introRequest = IntroRequest(kind: kind, then: go)
+    }
+
+    private func finishIntro(_ req: IntroRequest, pressedAction: Bool) {
+        let d = UserDefaults.standard
+        // とじた あと:ページの ? が 2回 ぷくっ + 1回目 だけ トースト
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            NotificationCenter.default.post(name: Notification.Name("introClosedPulse"), object: nil)
+            if !d.bool(forKey: IntroStore.dismissedOnce) { d.set(true, forKey: IntroStore.dismissedOnce); presentToast("? を おすと、もう一度 見られます") }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            if let then = req.then { then(); return }
+            guard pressedAction else { return }
+            switch req.kind {
+            case .friends:
+                showingFriendsHub = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { NotificationCenter.default.post(name: .friendsSearchFocus, object: nil) }
+            case .trip: newGroupPrefill = nil; showingNewGroup = true
+            case .mondo: if FilmCounter.shared.used == 0 { NotificationCenter.default.post(name: IntroStore.goCameraPage, object: nil) }
+            }
+        }
     }
 
     private func presentToast(_ text: String, actionLabel: String? = nil, action: (() -> Void)? = nil) {

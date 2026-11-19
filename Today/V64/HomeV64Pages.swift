@@ -105,6 +105,7 @@ struct HVPageHeader: View {
             }
             .frame(width: 40, height: 40).offset(x: 22, y: 22)
             Text(String(format: "%02d / 03", number)).font(LF.mono(9)).tracking(1.62).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 72, y: 35.5)
+            if let k = IntroKind.allCases[safe: page.rawValue - 1], (1...3).contains(page.rawValue) { IntroHelpButton(kind: k).offset(x: 112, y: 20) }
             if let status {
                 Text(status).font(LF.mono(9.5)).tracking(1.14).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
                     .frame(width: 200, alignment: .trailing).offset(x: cardW - 22 - 200, y: 35)
@@ -733,6 +734,36 @@ struct HorizontalPanV88: UIGestureRecognizerRepresentable {
         case .ended: onEnded(t, t + r.velocity(in: r.view).x * 0.2)
         case .cancelled, .failed: onEnded(0, 0)
         default: break
+        }
+    }
+}
+
+
+/// v99:ページの 番号の 横の `?`(見た目 20pt ・ 押せる 所 44pt)。いつでも もう一度 見られる
+struct IntroHelpButton: View {
+    let kind: IntroKind
+    @State private var pulse = 0
+    var body: some View {
+        Button {
+            Haptics.play(.tick)
+            NotificationCenter.default.post(name: IntroStore.requested, object: IntroRequest(kind: kind))
+        } label: {
+            Text("?").font(LF.mono(11)).foregroundStyle(.white.opacity(0.7))
+                .frame(width: 20, height: 20).overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
+                .scaleEffect(pulse % 2 == 1 ? 1.5 : 1)
+                .frame(width: 44, height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(kind.name) の 説明を 見る")
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("introClosedPulse"))) { _ in
+            Task { @MainActor in
+                for _ in 0..<2 {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.5)) { pulse += 1 }
+                    try? await Task.sleep(for: .milliseconds(260))
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) { pulse += 1 }
+                    try? await Task.sleep(for: .milliseconds(260))
+                }
+            }
         }
     }
 }

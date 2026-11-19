@@ -48,5 +48,7 @@ enum AccountDeletionService {
         try? modelContext.delete(model: ExposureDay.self)
         try? modelContext.delete(model: UserProfile.self)
         try? modelContext.save()
+        // v99:はじめての 説明(Friends ・ Trip ・ Mondo)の 見た 記録を もどす
+        await MainActor.run { IntroStore.resetAll() }
     }
 }

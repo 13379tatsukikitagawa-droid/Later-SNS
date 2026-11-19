@@ -286,3 +286,9 @@
 - ② Trip チャット(空)= `TripBoardingView`(座席表 ・ 送ると こう 見える ・ 招待リンク)。③ メンバーの シート = `GroupSheet` を シンプルに(合言葉 ・ 「預けました」 ・ オレンジ 削除)。
 - ④ 古い `FriendsHubView` を 削除。チャットの 友だち招待 = v94 の さがす 画面。
 - ⑤ キャプション:撮ったら タグ ・ 音楽を 空に(`LastShotCaption`)+ 「↺ さっきと 同じ」カプセル。
+
+## P42 ・ v99(はじめての 説明:Friends ・ Trip ・ Mondo)
+- A 土台:`IntroStoryV99.swift`(進み具合 ・ 題字 ・ 1行 ・ タップ / 長押し / 下スワイプ ・ 最後の ボタン ・ `introSeen.*`)。出す きっかけ = ① Home の ページ 1〜3 に 0.62秒 とどまる(`HomeV64View` onChange)② Friends / New trip の 入口(`TodayView.gateIntro`:5か所)③ ページの `?`(`IntroHelpButton`)。
+- B 場面 12こ:`IntroScenesV99.swift`(時間 t の 関数。バイブは `IntroKind.scenes`)。DEBUG:`-debugRoute intro -debugIntroKind friends|trip|mondo -debugIntroAt 秒`。
+- C 仕上げ:Reduce Motion(最後の 形で 止める ・ 題字なし)・ VoiceOver(場面ごとに 読み上げ + 「つぎへ」「スキップ」)・ 幅は 390 × 844 の 座標を 拡縮 ・ とじた あとの `?` ぷくっ + 初回 トースト ・ アカウント削除で 記録を もどす。
+- 未:見本 G01〜G14 ・ M40〜M42 は キットに 無く 比べて いない。写真は 色の 絵(見本の 6枚は 未取りこみ)。Instruments の 120fps は 未計測。
