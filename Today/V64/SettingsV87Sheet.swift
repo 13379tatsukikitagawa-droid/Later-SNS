@@ -39,8 +39,7 @@ struct SettingsV87Sheet: View {
     @State private var showsHandle = false
     @State private var showsWidgets = false
     @State private var showsHowTo = false
-    @State private var showsTerms = false
-    @State private var showsPrivacy = false
+    @State private var legal: LegalLink?
     @State private var confirmLogout = false
     @State private var showsDelete = false
     @State private var deniedAlert = false
@@ -118,9 +117,9 @@ struct SettingsV87Sheet: View {
                     divider
                     linkRow("はじめての 説明を もう1回") { HomeTour.markSeen(); dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NotificationCenter.default.post(name: HomeTour.replayRequested, object: nil) } }
                     divider
-                    linkRow("利用規約") { showsTerms = true }
+                    linkRow("利用規約") { legal = .terms }
                     divider
-                    linkRow("プライバシー") { showsPrivacy = true }
+                    linkRow("プライバシー") { legal = .privacy }
                     if !SupportContact.mail.isEmpty { divider; linkRow("問い合わせ") { if let u = URL(string: "mailto:\(SupportContact.mail)") { UIApplication.shared.open(u) } } }
                 }
                 group {
@@ -137,8 +136,7 @@ struct SettingsV87Sheet: View {
         .sheet(isPresented: $showsHandle) { HandleChangeHost { _ in showsHandle = false } }
         .fullScreenCover(isPresented: $showsHowTo) { HowToReplayView() }
         .sheet(isPresented: $showsWidgets) { WidgetGuideV96Sheet { showsWidgets = false } }
-        .sheet(isPresented: $showsTerms) { LaterPromiseView() }
-        .sheet(isPresented: $showsPrivacy) { PrivacyPolicyView() }
+        .legalSheet($legal)
         .sheet(isPresented: $showsDelete) { AccountDeletionView(groupCount: groupCount, onDeleted: { signOutState(); onLoggedOut() }) }
         .confirmationDialog("ログアウト しますか?", isPresented: $confirmLogout, titleVisibility: .visible) {
             Button("ログアウト", role: .destructive) { signOutState(); onLoggedOut() }

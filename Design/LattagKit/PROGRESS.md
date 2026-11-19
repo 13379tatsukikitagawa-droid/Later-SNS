@@ -298,3 +298,9 @@
 - B スクロール:`DesignSystem/ScrollHapticsV100.swift`(`.scrollHaptics()` + `.hapticSection()`)。Home の 下(`HVAnchor`)・ yesterday ・ Friends 一覧 ・ 設定 に 接続。区切り = notch(かぎ付き = knock)・ はじ = edge ・ ひっぱる = stretch ×3 → soft ・ はやい(2400pt/秒 超)は 静か。
 - C:横スライドの 半分で sel ・ 地球を 指で まわす(15° notch ・ 慣性 ×0.95 ・ 地球が 優先)・ 「ひらくまで」長押し(pop ・ 1秒 tick ・ 分 click ・ soft)・ 9:00 / 24:00 の 10秒前(`CountdownV100.swift`)・ Lattag の サイン(sig + はずむ)。
 - 未:Trip チャット ・ 横の 列(Mondo)の notch ・ 9章(detent ・ 引いて 閉じる ・ ピンチ)・ 名前の ない ボタン 全部への tick ・ オープニングの sig ・ パターンの 使いまわし。
+
+
+## v102 規約 ・ プライバシーの つなぎ
+- ✓ `LegalLink`(URL 1か所)+ `SFSafariViewController`(ライム / `#1C1C1E`・soft / tick)。
+- ✓ サインイン O04 の 2つ(別々に 開く ・ 44pt ・ isLink)/ 設定 > サポート の 2行。
+- 未: 旧 `SettingsMenuView` / `OnboardingFlowView` / `PrivacyPolicyView` / `LaterPromiseView` は 残してある(Profile 側から 到達の 可能性)。実機: 機内モード ・ VoiceOver ・ UI テスト。

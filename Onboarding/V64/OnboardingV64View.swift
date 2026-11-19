@@ -59,7 +59,7 @@ struct OnboardingV64View: View {
     // 状態
     @State private var busy = false
     @State private var toast: String?
-    @State private var showingPolicy = false
+    @State private var legalLink: LegalLink?
     @State private var showingShare = false
     @State private var isCheckingAccount = false
     @State private var holdLevel = 0.0
@@ -119,7 +119,7 @@ struct OnboardingV64View: View {
         .onChange(of: firebaseUID) { _, _ in handleSignInChange() }
         .onChange(of: photoItem) { _, item in loadPhoto(item) }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
-        .sheet(isPresented: $showingPolicy) { PrivacyPolicyView() }
+        .legalSheet($legalLink)
         .sheet(isPresented: $showsIcon) {
             IconPickerV81Sheet(name: name, current: iconData.flatMap { UIImage(data: $0) }, recent: [], onSave: { iconData = $0 }, onClose: { showsIcon = false })
                 .presentationDetents([.large]).presentationBackground(Color(hex: "141516"))
@@ -438,12 +438,14 @@ struct OnboardingV64View: View {
                         Button { Haptics.play(.sel); go(.mail) } label: { Text("メールで つづける") }.buttonStyle(OBButtonStyle(kind: .secondary))
                         HStack(spacing: 0) {
                             Text("つづけると ")
-                            Button { showingPolicy = true } label: { Text("利用規約").underline() }
+                            Button { legalLink = .terms } label: { Text("利用規約").underline().frame(minHeight: 44).contentShape(Rectangle()) }
+                                .accessibilityAddTraits(.isLink).accessibilityLabel("利用規約")
                             Text(" ・ ")
-                            Button { showingPolicy = true } label: { Text("プライバシー").underline() }
+                            Button { legalLink = .privacy } label: { Text("プライバシー").underline().frame(minHeight: 44).contentShape(Rectangle()) }
+                                .accessibilityAddTraits(.isLink).accessibilityLabel("プライバシー")
                             Text(" に 同意(13歳以上)")
                         }
-                        .font(LF.inter(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2).frame(height: 15)
+                        .font(LF.inter(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2).frame(height: 44).padding(.vertical, -14.5)
                     }
                     .padding(.bottom, 44)
                 case .mail:
