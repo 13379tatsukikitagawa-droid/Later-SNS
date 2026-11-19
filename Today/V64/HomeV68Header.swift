@@ -4,6 +4,12 @@ import SwiftUI
 // 表示する 数字は 本物の 意味が ある ものだけ(のこり 時間 ・ のこり こま)。ISO や f値 などの にせの 数字は 出さない。
 
 struct HV68Header: View {
+    @State private var logoScale: CGFloat = 1
+    @State private var holding = false
+    @State private var holdPulse = false
+    @State private var holdTask: Task<Void, Never>?
+    @State private var suppressTapUntil = Date.distantPast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotionH
     let input: HomeV64Input
     let f: HV.Frame
     let compact: Bool
@@ -32,7 +38,11 @@ struct HV68Header: View {
             Group {
                 Text(Brand.name).font(LF.inter(900, 30)).tracking(-1.95).foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.35), radius: 7, y: 1)
-                    .frame(height: 40, alignment: .leading).fixedSize().offset(x: 22, y: 56)
+                    .scaleEffect(logoScale, anchor: .leading)
+                    .frame(height: 40, alignment: .leading).fixedSize()
+                    .contentShape(Rectangle())
+                    .onTapGesture { signTap() }   // v100 §7:Lattag の サイン(ラ・タッ・グ)+ はずむ
+                    .offset(x: 22, y: 56)
             }
             .scaleEffect(compact ? 0.86 : 1, anchor: .topLeading)
             .offset(y: compact ? -10 : 0)
@@ -103,6 +113,54 @@ struct HV68Header: View {
         return Color(hex: palette[n % palette.count])
     }
 
+    // MARK: v100 サイン ・ 長押し
+
+    private func signTap() {
+        Haptics.play(.sig)
+        guard !reduceMotionH else { return }
+        Task { @MainActor in
+            for (v, d) in [(1.06, 0.1), (0.98, 0.1), (1.03, 0.1), (1.0, 0.12)] {
+                withAnimation(.easeInOut(duration: d)) { logoScale = v }
+                try? await Task.sleep(for: .milliseconds(Int(d * 1000)))
+            }
+        }
+    }
+
+    private func startHold() {
+        holding = true
+        Haptics.play(.pop)
+        holdTask?.cancel()
+        holdTask = Task { @MainActor in
+            var lastMinute: Int? = nil
+            while !Task.isCancelled {
+                let now = input.debugClock ?? Date()
+                let frac = now.timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+                try? await Task.sleep(for: .milliseconds(Int((1 - frac) * 1000)))   // 秒の ちょうどに あわせる
+                guard !Task.isCancelled else { return }
+                let t = input.debugClock ?? Date()
+                let cal = Calendar.current
+                let sec = cal.component(.hour, from: t) * 3600 + cal.component(.minute, from: t) * 60 + cal.component(.second, from: t)
+                let remain = sec < 9 * 3600 ? 9 * 3600 - sec : 86400 - sec
+                let minute = remain / 60
+                Haptics.play(lastMinute != nil && minute != lastMinute ? .click : .tick)
+                lastMinute = minute
+                if !reduceMotionH {
+                    withAnimation(.easeOut(duration: 0.08)) { holdPulse = true }
+                    try? await Task.sleep(for: .milliseconds(90))
+                    withAnimation(.easeIn(duration: 0.12)) { holdPulse = false }
+                }
+            }
+        }
+    }
+
+    private func endHold() {
+        guard holding else { return }
+        holdTask?.cancel(); holdTask = nil
+        holding = false; holdPulse = false
+        Haptics.play(.soft)
+        suppressTapUntil = Date().addingTimeInterval(0.4)   // この 長押しの あと ライブ パネルは ひらかない
+    }
+
     // MARK: 時間の カプセル(輪 ・ 消灯まで ・ 秒まで 進む 時計 ・ のこり こま)。まとまる と 中央の 小さな ピル
 
     private var hud: some View {
@@ -125,7 +183,11 @@ struct HV68Header: View {
             .mask(alignment: .leading) { Rectangle().frame(width: entered ? f.w + 40 : 0) }
             .animation(.timingCurve(0.3, 1, 0.4, 1, duration: 0.7).delay(entered ? 0.26 : 0), value: entered)
             .contentShape(Rectangle())
-            .onTapGesture { Haptics.play(.click); onLive() }
+            .overlay(Capsule().strokeBorder(Color(hex: "C8F25A"), lineWidth: 2).opacity(holding ? 1 : 0))
+            .scaleEffect(holdPulse ? 1.035 : 1)
+            .onTapGesture { guard Date() > suppressTapUntil else { return }; Haptics.play(.click); onLive() }
+            // v100 §5:長押し = 時間を さわる(0.45秒で pop → はなす まで 1秒ごとに tick ・ 分が かわる 時は click)
+            .onLongPressGesture(minimumDuration: 0.45, maximumDistance: 40, perform: { startHold() }, onPressingChanged: { p in if !p { endHold() } })
         }
         .offset(x: compact ? f.cx - 88 : 16, y: compact ? 52 : 108)
         .accessibilityElement(children: .ignore)

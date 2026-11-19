@@ -76,6 +76,7 @@ struct FriendsV68View: View {
                 }
             }
             .scrollIndicators(.hidden)
+            .scrollHaptics()
             .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, v in scrollY = v }
             header
             searchBar.padding(.horizontal, 16).offset(y: 62 + 44 + 10)
@@ -376,12 +377,12 @@ struct FriendsV68View: View {
                 Text("Friends").font(LF.serif(28)).foregroundStyle(.white)
                 Spacer()
                 if tookCount > 0 {
-                    HStack(spacing: 5) { Circle().fill(Color(hex: "3BD35A")).frame(width: 5, height: 5); Text("\(tookCount) SHOT TODAY").font(LF.mono(9.5)).tracking(1.1).foregroundStyle(Color(hex: "7EE08F")) }
+                    HStack(spacing: 5) { Circle().fill(Color(hex: "C8F25A")).frame(width: 5, height: 5); Text("\(tookCount) SHOT TODAY").font(LF.mono(9.5)).tracking(1.1).foregroundStyle(Color(hex: "C8F25A")) }
                 }
             }.frame(height: 28).padding(.horizontal, 20).padding(.top, requests.isEmpty ? 30 : 27)
             VStack(spacing: 0) {
                 ForEach(Array(shown.enumerated()), id: \.element.id) { i, f in
-                    friendRow(f)
+                    friendRow(f).hapticSection(f.id)
                     if i < shown.count - 1 { Rectangle().fill(.white.opacity(0.08)).frame(height: 1).padding(.leading, 74) }
                 }
             }.padding(.horizontal, 16).padding(.top, 8)

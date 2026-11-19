@@ -127,6 +127,7 @@ struct HomeV64View: View {
                         }
                         }
                     .onChange(of: wantsToday) { _, _ in withAnimation(.easeInOut(duration: 0.6)) { proxy.scrollTo("today", anchor: .top) } }
+                    .scrollHaptics()
                     .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, new in
                         scrollY = new
                         let want = new > 60
@@ -147,6 +148,7 @@ struct HomeV64View: View {
                 .modifier(HVVeil(on: input.spotlight || showLive, dim: input.spotlight))
                 .animation(.easeOut(duration: 0.35), value: input.spotlight)
                 moon(f)
+                HVCountdownV100(active: !input.spotlight && tourStep == nil && !showLive).frame(width: f.w, height: f.h)
                 if showLive { HVLivePanel(input: input, onClose: { withAnimation(.easeOut(duration: 0.25)) { showLive = false } }, onShoot: actions.shoot).zIndex(10) }
             }
             .frame(width: f.w, height: f.h, alignment: .topLeading)

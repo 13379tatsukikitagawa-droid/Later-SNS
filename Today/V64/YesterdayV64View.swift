@@ -204,11 +204,12 @@ struct YesterdayV64View: View {
                 if noFriends { inviteBlock.padding(.top, hasMine ? 30 : 34) }
                 if input.locked && hasMine { lockBand.padding(.horizontal, 16).padding(.top, 14) }
                 VStack(spacing: 0) {
-                    ForEach(input.posts) { post in postView(post, w: w) }
+                    ForEach(input.posts) { post in postView(post, w: w).hapticSection(post.id, locked: input.locked) }
                 }.padding(.top, input.locked ? 14 : 22)
                 Color.clear.frame(height: 150)
             }
         }
+        .scrollHaptics()
         .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, v in scrollNow(v, forTab: 0) }
         .scrollPosition($pos)
         .onAppear { if let y = input.debugScrollY, tab == 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { pos.scrollTo(y: y) } } }

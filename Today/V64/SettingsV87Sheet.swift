@@ -35,6 +35,7 @@ struct SettingsV87Sheet: View {
     @AppStorage("privacy.discoverableByName") private var discoverable = true
     @Query private var profiles: [UserProfile]
     @State private var showsBlocked = false
+    @State private var hapticLevel = AppHapticsSetting.level
     @State private var showsHandle = false
     @State private var showsWidgets = false
     @State private var showsHowTo = false
@@ -83,6 +84,23 @@ struct SettingsV87Sheet: View {
                             seg("日本語", on: !AppLanguage.isEnglish); seg("English", on: AppLanguage.isEnglish)
                         }.padding(4).background(.white.opacity(0.07), in: Capsule())
                     }.padding(.horizontal, 16).frame(height: 64)
+                    divider
+                    HStack {
+                        Text("バイブ").font(LF.inter(800, 17)).foregroundStyle(ink)
+                        Spacer()
+                        HStack(spacing: 0) {
+                            ForEach(AppHapticsSetting.Level.allCases) { l in
+                                Button {
+                                    AppHapticsSetting.level = l; hapticLevel = l
+                                    // 選んだ 時に 見本を 1回(ひかえめ は きざみを 鳴らさない = pop)
+                                    if l != .off { Haptics.play(l == .strong ? .click : .pop) }
+                                } label: {
+                                    Text(l.title).font(LF.inter(800, 13)).foregroundStyle(hapticLevel == l ? Color(hex: "0B0C0D") : .white.opacity(0.7))
+                                        .padding(.horizontal, 12).frame(height: 36).background(hapticLevel == l ? Color.white : .clear, in: Capsule())
+                                }.buttonStyle(.plain)
+                            }
+                        }.padding(4).background(.white.opacity(0.07), in: Capsule())
+                    }.padding(.horizontal, 16).frame(height: 64)
                 }
                 header("アカウント")
                 group {
@@ -112,6 +130,7 @@ struct SettingsV87Sheet: View {
                 Text("Lattag \(Self.version)").font(LF.mono(10)).foregroundStyle(.white.opacity(0.3)).frame(maxWidth: .infinity).padding(.top, 6).padding(.bottom, 50)
             }.padding(.horizontal, 16)
         }
+        .scrollHaptics()
         .background(Color(hex: "0F1011").ignoresSafeArea()).environment(\.colorScheme, .dark)
         .task { dailyOn = await DailyOpenNotification.isScheduled() }
         .sheet(isPresented: $showsBlocked) { SettingsBlockedList() }
@@ -147,7 +166,7 @@ struct SettingsV87Sheet: View {
         }.padding(16).background(box, in: RoundedRectangle(cornerRadius: 22, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06), lineWidth: 1))
     }
 
-    private func header(_ t: String) -> some View { Text(t).font(LF.inter(700, 12.5)).foregroundStyle(.white.opacity(0.45)).padding(.leading, 12).padding(.top, 26).padding(.bottom, 8) }
+    private func header(_ t: String) -> some View { Text(t).font(LF.inter(700, 12.5)).foregroundStyle(.white.opacity(0.45)).padding(.leading, 12).padding(.top, 26).padding(.bottom, 8).hapticSection(t) }
     private func group<C: View>(@ViewBuilder _ c: () -> C) -> some View {
         VStack(spacing: 0, content: c).background(box, in: RoundedRectangle(cornerRadius: 22, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06), lineWidth: 1))
     }

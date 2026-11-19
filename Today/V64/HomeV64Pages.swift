@@ -1,4 +1,5 @@
 import SwiftUI
+internal import Combine
 
 // P03:横スライドの 5ページ(Camera / Friends / Trip / Mondo / Yesterday)。仕様:PROMPT_v64 §9〜11、v65 §5、v66 §4、v67(Mondo)。
 // 座標は spec/screens/H11〜H18.json(カードの 左上 = (10, 178))。ここでは カード内の 座標(= 絶対 − (10, 178))で 書く。
@@ -446,11 +447,29 @@ struct HVBars: View {
 }
 
 /// 点の 地球(本物の 海岸線の 点 = `MondoGeo.land`)。見えて いない ときは 止める。
+/// v100:地球の 上で 指が 動いて いる 間 = 地球が 優先(ページの 横スライドは 動かさない)
+enum HVGlobeDrag { static var active = false }
+
 struct HVGlobe: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// v100:指で まわした 分(ラジアン)・ はなした あとの 慣性(×0.95 / コマ)
+    @State private var spin = 0.0
+    @State private var vel = 0.0
+    @State private var dragging = false
+    @State private var startSpin = 0.0
+    @State private var lastSpin = 0.0
+    @State private var lastT = Date()
+    @State private var lastNotch = 0
+    private let perPt = 0.0065
+
+    private func notchCheck(_ total: Double) {
+        let k = Int(floor(total * 180 / .pi / 15))
+        if k != lastNotch { lastNotch = k; Haptics.play(.notch) }   // 15° ごとに カリッ
+    }
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion)) { ctx in
-            let rot = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate * 0.0016 * 60 * 0.5
+        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion && !dragging && abs(vel) < 0.01)) { ctx in
+            let rot = (reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate * 0.0016 * 60 * 0.5) + spin
             Canvas { c, size in
                 let R: CGFloat = 124, cx = size.width / 2, cy = size.height / 2, tilt = 0.38
                 // 大気
@@ -472,7 +491,30 @@ struct HVGlobe: View {
             }
         }
         .drawingGroup()
-        .allowsHitTesting(false)
+        .contentShape(Circle().scale(0.8))
+        .gesture(HorizontalPanV88(
+            onChanged: { dx in
+                HVGlobeDrag.active = true
+                if !dragging { dragging = true; startSpin = spin; vel = 0; lastSpin = spin; lastT = Date() }
+                let now = Date(), prev = spin
+                spin = startSpin + Double(dx) * perPt
+                let dt = max(0.001, now.timeIntervalSince(lastT)); lastT = now
+                vel = vel * 0.5 + ((spin - prev) / dt) * 0.5
+                notchCheck(spin + Date().timeIntervalSinceReferenceDate * 0.048)
+            },
+            onEnded: { _, _ in
+                dragging = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { HVGlobeDrag.active = false }
+            }))
+        .onChange(of: vel) { _, _ in }
+        .overlay { Color.clear.onReceive(Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()) { _ in
+            guard !dragging, abs(vel) > 0.01 else { return }
+            let dt = 1.0 / 30
+            spin += vel * dt
+            vel *= pow(0.95, dt * 60)
+            notchCheck(spin + Date().timeIntervalSinceReferenceDate * 0.048)
+            if abs(vel) <= 0.01 { vel = 0 }
+        }.allowsHitTesting(false) }
     }
 }
 
@@ -488,6 +530,7 @@ struct HVPager: View {
     var onDrag: (CGFloat) -> Void = { _ in }
     @State private var drag: CGFloat = 0
     @State private var settling = false
+    @State private var pastHalf = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -514,12 +557,18 @@ struct HVPager: View {
         .contentShape(Rectangle())
         .gesture(HorizontalPanV88(
             onChanged: { dx in
+                if HVGlobeDrag.active { drag = 0; onDrag(0); return }   // v100:地球の 上は 地球が 優先
                 var dx = dx
                 if (page == 0 && dx > 0) || (page == pages.count - 1 && dx < 0) { dx *= 0.35 }   // 端は ゴムのように 重く
                 drag = dx
                 onDrag(dx)
+                // v100:半分を こえたら sel(「はなすと 次へ」)。もどって 半分を こえても sel
+                let past = abs(dx) > width * 0.5
+                if past != pastHalf { pastHalf = past; Haptics.play(.sel) }
             },
             onEnded: { dx, predicted in
+                pastHalf = false
+                if HVGlobeDrag.active { drag = 0; onDrag(0); return }
                 let projected = dx + (predicted - dx) * 0.5
                 var next = Int((CGFloat(page) - projected / width).rounded())
                 next = max(page - 1, min(page + 1, next))                 // 1回で 動けるのは ±1ページ

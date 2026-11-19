@@ -339,8 +339,8 @@ enum AppHapticsSetting {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .strong: return "つよめ"
-            case .normal: return "ふつう"
+            case .strong: return "しっかり"
+            case .normal: return "ひかえめ"
             case .off: return "オフ"
             }
         }
@@ -348,7 +348,7 @@ enum AppHapticsSetting {
         var scale: Float {
             switch self {
             case .strong: return 1
-            case .normal: return 0.65
+            case .normal: return 0.65     // v100:ひかえめ = さわる 段を 鳴らさない(Haptics.play の 中)
             case .off: return 0
             }
         }
@@ -446,13 +446,29 @@ enum Haptics {
         case buzz
         /// v54:ブイッ(上がるカーブ)40-20-320ms・強さ1.0。HAPTICS.md の `vui`。
         case vui
+        // v100:新しい 5つ(spec/HAPTICS.md の 20種類)
+        /// カリッ(きざみ)0.22 / 0.9
+        case notch
+        /// コン(はじに 当たる)0.45 / 0.1
+        case edge
+        /// ググッ(のびる)0.3 / 0.2
+        case stretch
+        /// コツコツ(かぎの 場所)0.4 / 0.8 を 0ms と 70ms
+        case knock
+        /// ラ・タッ・グ(Lattag の サイン)
+        case sig
+
+        /// さわる 段(「ひかえめ」では 鳴らさない)
+        var isTouchTier: Bool {
+            switch self { case .tick, .soft, .notch, .edge, .stretch, .knock: return true; default: return false }
+        }
     }
 
     /// 強さ・間隔の定数(実機で調整する)
     enum Tuning {
         typealias Beat = (time: TimeInterval, intensity: Float, sharpness: Float)
         /// 最短の間(秒)。これより早い2回目は鳴らさない
-        static let gaps: [Kind: TimeInterval] = [.land: 0.1, .projector: 0.2, .tick: 0.055, .sel: 0.08, .detent: 0.08, .pop: 0.09, .click: 0.1, .thud: 0.12, .soft: 0.08, .double: 0.2, .heart: 0.15, .burst: 0.25, .success: 0.25, .warn: 0.25, .buzz: 0.2, .vui: 0.4]
+        static let gaps: [Kind: TimeInterval] = [.land: 0.1, .projector: 0.2, .tick: 0.055, .sel: 0.08, .detent: 0.08, .pop: 0.09, .click: 0.1, .thud: 0.12, .soft: 0.08, .double: 0.2, .heart: 0.15, .burst: 0.25, .success: 0.25, .warn: 0.25, .buzz: 0.2, .vui: 0.4, .notch: 0.055, .edge: 0.1, .stretch: 0.05, .knock: 0.12, .sig: 0.4]
         /// スクロールで鳴らす tick の最短の間
         static let scrollGap: TimeInterval = 0.07
         /// 長押し中の heart の間隔:520ms → 190ms
@@ -484,6 +500,11 @@ enum Haptics {
             // v54:ブルブル(短く)0〜80ms・40ms毎(continuous 0.75 を 0.12秒ぶんの 近似)
             case .buzz: return [(0, 0.75, 0.6), (0.04, 0.75, 0.6), (0.08, 0.75, 0.6)]
             // v54:ブイッ(上がるカーブ)0〜300ms・60ms毎、強さが だんだん 上がる
+            case .notch: return [(0, 0.22, 0.9)]
+            case .edge: return [(0, 0.45, 0.1)]
+            case .stretch: return [(0, 0.3, 0.2)]
+            case .knock: return [(0, 0.4, 0.8), (0.07, 0.4, 0.8)]
+            case .sig: return [(0, 0.7, 0.35), (0.11, 0.5, 0.8), (0.18, 0.8, 0.3)]
             case .vui: return [(0, 0.3, 0.5), (0.06, 0.45, 0.55), (0.12, 0.6, 0.6), (0.18, 0.75, 0.65), (0.24, 0.9, 0.7), (0.3, 1.0, 0.75)]
             }
         }
@@ -514,11 +535,26 @@ enum Haptics {
     }
 
     /// 鳴らす。gap を渡すと、その間隔で間引く(省略時は Tuning.gaps)。intensity は表の強さへの倍率
+    /// v100:動画の 録画中は 鳴らさない(マイクに 振動の 音が 入る)。撮影の 流れが 立てる
+    static var isMuted = false
+    /// v100:全体で 40ms に 1回 まで
+    static let globalGap: TimeInterval = 0.04
+    private static var lastAny = Date.distantPast
+    /// 直前に 実際に 鳴らした もの(テスト用)
+    private(set) static var playedLog: [Kind] = []
+    static var recordsPlays = false
+
     static func play(_ kind: Kind, gap: TimeInterval? = nil, intensity: Float = 1) {
-        guard isEnabled else { return }
+        guard isEnabled, !isMuted else { return }
+        // アプリが うしろに いる 時は 鳴らさない(テストでは 判定しない)
+        if !recordsPlays, UIApplication.shared.applicationState == .background { return }
+        if kind.isTouchTier, AppHapticsSetting.level == .normal { return }
         let now = Date()
+        if now.timeIntervalSince(lastAny) < globalGap { return }
         if let gap = gap ?? Tuning.gaps[kind], let previous = last[kind], now.timeIntervalSince(previous) < gap { return }
         last[kind] = now
+        lastAny = now
+        if recordsPlays { playedLog.append(kind); return }
         let scale = intensity * AppHapticsSetting.scale
         if playCore(Tuning.beats(kind), scale: scale) { return }
         fallback(kind, scale: scale)
@@ -540,7 +576,7 @@ enum Haptics {
     }
 
     /// 間引きの記録を消す(テスト用)
-    static func resetForTesting() { last = [:] }
+    static func resetForTesting() { last = [:]; lastAny = .distantPast; playedLog = [] }
 
     fileprivate static func sharedEngine() -> CHHapticEngine? {
         startEngine()
@@ -580,7 +616,12 @@ enum Haptics {
     private static func fallback(_ kind: Kind, scale: Float) {
         let k = CGFloat(scale)
         switch kind {
-        case .tick, .detent: selection.selectionChanged(); selection.prepare()
+        case .tick, .detent, .notch: selection.selectionChanged(); selection.prepare()
+        case .edge: rigid.impactOccurred(intensity: k * 0.6); rigid.prepare()
+        case .stretch: light.impactOccurred(intensity: k * 0.6); light.prepare()
+        case .knock:
+            light.impactOccurred(intensity: k)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) { light.impactOccurred(intensity: k) }
         case .pop, .sel: light.impactOccurred(intensity: k); light.prepare()
         case .click: medium.impactOccurred(intensity: k); medium.prepare()
         case .thud: rigid.impactOccurred(intensity: k); rigid.prepare()

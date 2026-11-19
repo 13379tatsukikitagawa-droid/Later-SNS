@@ -35,6 +35,7 @@
 		25F834EB07CD5ED6F87873BD /* V64/DailyQuestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B88E59887E4FF3899F6B37 /* V64/DailyQuestion.swift */; };
 		2744BB79479D4A999C8709EC /* FriendQRScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C290258883324294968F5BFF /* FriendQRScanView.swift */; };
 		28B4C138D3260E1CBD61CCA6 /* V64/HomeV68Lens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79ECF39E8624C568F5ACD511 /* V64/HomeV68Lens.swift */; };
+		29B9AEC74E9F5D3A2C86F320 /* V64/CountdownV100.swift in Sources */ = {isa = PBXBuildFile; fileRef = B909DDF30E54B848F50C1D3D /* V64/CountdownV100.swift */; };
 		2AAA7B6FC5CA4F2DB25247A4 /* AppLaunchTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B50BDAFEBEB4D5A963BB1E5 /* AppLaunchTiming.swift */; };
 		2B32E67B1159449C70952B9C /* DebugWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 860520ED2477CD6D28B8C7AA /* DebugWidgets.swift */; };
 		2B7AE6057167759F489433B8 /* V64/MEV86Host.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCD537320C68487D59243FA3 /* V64/MEV86Host.swift */; };
@@ -54,6 +55,7 @@
 		4685AC62FD7AEBBAE8033088 /* LattagLiveViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6263168DD78F66F40B6BB431 /* LattagLiveViews.swift */; };
 		46F03AC432C94F5FAFDECB81 /* DarkroomSafelightString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816403D71DEC46BB9BD1D575 /* DarkroomSafelightString.swift */; };
 		49013B6816DB416B81AAFF62 /* PhotoImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119556FA11AB4599AE228BA8 /* PhotoImageCache.swift */; };
+		5502F7A1F4FA81887C4CA804 /* ScrollHapticsV100.swift in Sources */ = {isa = PBXBuildFile; fileRef = 606521BC8FC62EDC1F11ECBF /* ScrollHapticsV100.swift */; };
 		55913463BB580C82514D7EEC /* LattagWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */; };
 		56A59AA661817280B45B8698 /* V64/MEV86View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C13685A780690F0FA8C5EC9 /* V64/MEV86View.swift */; };
 		59F80A436DE7C20220C14325 /* Profile/Views/SquareImageCropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46C4149AD669549389D9F96 /* Profile/Views/SquareImageCropView.swift */; };
@@ -425,6 +427,7 @@
 		5C13685A780690F0FA8C5EC9 /* V64/MEV86View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/MEV86View.swift; sourceTree = "<group>"; };
 		5EB475C0B25346EBBDDE292C /* Fonts/SpaceMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/SpaceMono-Regular.ttf"; sourceTree = "<group>"; };
 		6006EC8C8FAF478280A1DC43 /* DevelopRequestStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevelopRequestStore.swift; sourceTree = "<group>"; };
+		606521BC8FC62EDC1F11ECBF /* ScrollHapticsV100.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollHapticsV100.swift; sourceTree = "<group>"; };
 		60B938792A0F07511106FF26 /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		61631B2AC7C0C0680568B3A3 /* GroupSelectionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupSelectionStore.swift; sourceTree = "<group>"; };
 		6263168DD78F66F40B6BB431 /* LattagLiveViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagLiveViews.swift; sourceTree = "<group>"; };
@@ -525,6 +528,7 @@
 		B6C21640B170159AAEF45324 /* V64/ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ImageCache.swift; sourceTree = "<group>"; };
 		B7570F235D7BDA9A5DBA8EF6 /* V64/HandleChangeSheetV94.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HandleChangeSheetV94.swift; sourceTree = "<group>"; };
 		B8289C9CCB22AFFDABCEC81E /* ModerationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ModerationService.swift; sourceTree = "<group>"; };
+		B909DDF30E54B848F50C1D3D /* V64/CountdownV100.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/CountdownV100.swift; sourceTree = "<group>"; };
 		BA74312F8635A2490D14152A /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BB1CA2432BC34861C0931894 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		BF193B5747AE398EAD547C74 /* OnboardingModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingModel.swift; sourceTree = "<group>"; };
@@ -1026,6 +1030,7 @@
 				7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */,
 				05216E330849EB495639DB92 /* V64/TripSeatsV98.swift */,
 				FE95C08DFFEA818FD2427D58 /* V64/TripPassV98.swift */,
+				B909DDF30E54B848F50C1D3D /* V64/CountdownV100.swift */,
 				78A3C4FE14AFC530749249A2 /* V64/IntroScenesV99.swift */,
 				9C8BB7E4F22E6B8A27E143AB /* V64/IntroStoryV99.swift */,
 				09B7A294C6B1D08D337C329D /* V64/YesterdayMondoView.swift */,
@@ -1299,6 +1304,7 @@
 				0159D1A97715D4F4D7AB1471 /* LGMotion.swift */,
 				48D0F07632A5009E1A3721A3 /* LGPressable.swift */,
 				FB985051FDA08E630C624743 /* LGGlass.swift */,
+				606521BC8FC62EDC1F11ECBF /* ScrollHapticsV100.swift */,
 			);
 			path = DesignSystem;
 			sourceTree = "<group>";
@@ -1571,6 +1577,7 @@
 				F27CC6ECC52DCB98DAD70845 /* LGMotion.swift in Sources */,
 				7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */,
 				A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */,
+				5502F7A1F4FA81887C4CA804 /* ScrollHapticsV100.swift in Sources */,
 				1B716886DF2649BF8D6544BD /* DebugState.swift in Sources */,
 				2B32E67B1159449C70952B9C /* DebugWidgets.swift in Sources */,
 				0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */,
@@ -1640,6 +1647,7 @@
 				F8E0DFF51C9B372080711A94 /* V64/TripNewV83View.swift in Sources */,
 				A3DE7EECEB5C7BA563349A1D /* V64/TripSeatsV98.swift in Sources */,
 				62643459F4274E63CC552240 /* V64/TripPassV98.swift in Sources */,
+				29B9AEC74E9F5D3A2C86F320 /* V64/CountdownV100.swift in Sources */,
 				985780C0F404039BC207F72E /* V64/IntroScenesV99.swift in Sources */,
 				F8A7E335B296727E10CB3A2F /* V64/IntroStoryV99.swift in Sources */,
 				E92CAD42AD3606DBA7D25004 /* V64/YesterdayMondoView.swift in Sources */,

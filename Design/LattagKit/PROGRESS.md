@@ -292,3 +292,9 @@
 - B 場面 12こ:`IntroScenesV99.swift`(時間 t の 関数。バイブは `IntroKind.scenes`)。DEBUG:`-debugRoute intro -debugIntroKind friends|trip|mondo -debugIntroAt 秒`。
 - C 仕上げ:Reduce Motion(最後の 形で 止める ・ 題字なし)・ VoiceOver(場面ごとに 読み上げ + 「つぎへ」「スキップ」)・ 幅は 390 × 844 の 座標を 拡縮 ・ とじた あとの `?` ぷくっ + 初回 トースト ・ アカウント削除で 記録を もどす。
 - 未:見本 G01〜G14 ・ M40〜M42 は キットに 無く 比べて いない。写真は 色の 絵(見本の 6枚は 未取りこみ)。Instruments の 120fps は 未計測。
+
+## P43 ・ v100(アプリ ぜんたいに バイブ)
+- A 土台:`Haptics.Kind` に notch / edge / stretch / knock / sig(計 21)・ 全体 40ms ・ 種類ごとの gap ・ ひかえめ = さわる段を 鳴らさない ・ 背面 / 録画中(`ShutterGesture` が `isMuted`)は 鳴らさない ・ 設定 › 表示 › バイブ(しっかり / ひかえめ / オフ ・ 選ぶと 見本)・ `LGButtonStyle` / `.lgTap()` ・ `HapticsV100Tests`。
+- B スクロール:`DesignSystem/ScrollHapticsV100.swift`(`.scrollHaptics()` + `.hapticSection()`)。Home の 下(`HVAnchor`)・ yesterday ・ Friends 一覧 ・ 設定 に 接続。区切り = notch(かぎ付き = knock)・ はじ = edge ・ ひっぱる = stretch ×3 → soft ・ はやい(2400pt/秒 超)は 静か。
+- C:横スライドの 半分で sel ・ 地球を 指で まわす(15° notch ・ 慣性 ×0.95 ・ 地球が 優先)・ 「ひらくまで」長押し(pop ・ 1秒 tick ・ 分 click ・ soft)・ 9:00 / 24:00 の 10秒前(`CountdownV100.swift`)・ Lattag の サイン(sig + はずむ)。
+- 未:Trip チャット ・ 横の 列(Mondo)の notch ・ 9章(detent ・ 引いて 閉じる ・ ピンチ)・ 名前の ない ボタン 全部への tick ・ オープニングの sig ・ パターンの 使いまわし。

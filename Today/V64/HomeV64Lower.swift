@@ -148,7 +148,7 @@ struct HVYesterdayBlock: View {
     var body: some View {
         let locked = input.locked
         VStack(alignment: .leading, spacing: 8) {
-            HVAnchor(id: "sec-yesterday")
+            HVAnchor(id: "sec-yesterday", locked: input.locked)
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
             HVLabel(text: "YESTERDAY", trailing: data.weekday).padding(.top, 8).padding(.bottom, 6)
             if input.isFirstDay { firstDay } else { hero(locked: locked) }
@@ -242,7 +242,9 @@ struct HVYesterdayBlock: View {
 /// セクションの 頭に 置く 目印(DEBUG の 位置あわせ ・ 目次から の スクロール 用)
 struct HVAnchor: View {
     let id: String
-    var body: some View { Color.clear.frame(height: 0).id(id) }
+    /// かぎ付き(撮る まえの Yesterday ・ Mondo)= knock
+    var locked = false
+    var body: some View { Color.clear.frame(height: 0).id(id).hapticSection(id, locked: locked) }
 }
 
 /// Mondo の 列(人気タグ):高さ 188 の 縦長カード(数字 ・ タグ)
@@ -252,7 +254,7 @@ struct HVMondoRow: View {
     let actions: HomeV64Actions
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HVAnchor(id: "sec-mondo")
+            HVAnchor(id: "sec-mondo", locked: input.locked)
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
             HVLabel(text: "MONDO", trailing: "TOP 5").padding(.top, 18)
             ScrollView(.horizontal, showsIndicators: false) {

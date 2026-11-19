@@ -47,7 +47,7 @@ final class ShutterGesture {
         case recording(start: Date)
     }
 
-    private(set) var phase: Phase = .idle
+    private(set) var phase: Phase = .idle { didSet { Haptics.isMuted = isRecording } }   // v100:録画中は 鳴らさない
     private(set) var source: ShutterSource?
     /// 写真 0〜1・動画のためる 0〜1
     private(set) var progress: Double = 0
