@@ -25,6 +25,7 @@ enum DebugRouter {
         case "trip": showRaw(TripV83Preview())
         case "triphome": showRaw(TripHomeV83Preview())
         case "tripsettings": showRaw(TripSettingsPreviewV106())
+        case "tripend": showRaw(TripLeavePreviewV106())
         case "me": showRaw(MEV86Preview())
         case "friendcard": showRaw(ZStack { Color.black.opacity(0.62).ignoresSafeArea();  FriendCardV82Sheet(name: "れな", avatar: SampleData.photo("d"), tag: "雨の日", city: nil, times: ["08:14", "12:40"], mosaics: [SampleData.photo("d"), SampleData.photo("d")]).padding(8).frame(maxHeight: .infinity, alignment: .bottom) })
         case "dm": showRaw(DirectMessageView(friendID: "x", friendName: "れな", yesterdayCount: 4, injected: [.init(id: "1", senderID: "れな", text: "きのうの 写真 みた?", createdAt: Date()), .init(id: "2", senderID: "れな", text: "わたしの 帰り道", createdAt: Date())]))
@@ -378,5 +379,14 @@ struct TripSettingsPreviewV106: View {
         return g
     }()
     var body: some View { TripSettingsV106Sheet(group: group, isHost: true) }
+}
+
+/// DEBUG:おわる 確認(`-debugRoute tripend`)
+struct TripLeavePreviewV106: View {
+    @State private var snap: LeaveSnapshot = {
+        let g = LaterGroup(name: "大阪"); g.iconImageData = SampleData.photo("d")?.jpegData(compressionQuality: 0.8)
+        return LeaveSnapshot(group: g, user: UserProfile(name: "me", username: "me"))
+    }()
+    var body: some View { GroupLeaveOverlay(snapshot: snap, haptics: ExposureHaptics(), perform: { try await Task.sleep(for: .seconds(0.3)) }, onCancel: {}, onHome: {}, isEndingTrip: true) }
 }
 #endif

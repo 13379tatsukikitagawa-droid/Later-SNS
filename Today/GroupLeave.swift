@@ -44,6 +44,9 @@ struct GroupLeaveOverlay: View {
     var isEndingTrip = false
 
     private static let holdDuration: TimeInterval = 1.0
+    /// v106 §6:Trip(V64)では 1.2秒
+    private var hold: TimeInterval { UIFlag.v64 ? 1.2 : Self.holdDuration }
+    private var v106: Bool { UIFlag.v64 }
     private static let circleDiameter: CGFloat = 220
     private static let red = Color(hex: "FF7A85")
     private static let orange = Color(hex: "FFB26E")
@@ -56,6 +59,8 @@ struct GroupLeaveOverlay: View {
     @State private var message: String?
     @State private var softFired = false
     @State private var confirmingVoiceOver = false
+    @State private var nextTickAt: Date?
+    @State private var buzzed = false
 
     private var isEnding: Bool { isEndingTrip || snapshot.kind == .lastOne }
     /// 「抜けました。」の時刻:1.5秒。処理がそれより遅ければ、終わるまで待つ
@@ -71,15 +76,15 @@ struct GroupLeaveOverlay: View {
                     .onTapGesture { if leaveStart == nil { onCancel() } }
 
                 if let t {
-                    animation(t: t)
+                    if v106 { tearAnimation(t: t) } else { animation(t: t) }
                 } else {
-                    dialog(now: context.date)
+                    (v106 ? AnyView(dialogV106(now: context.date)) : AnyView(dialog(now: context.date)))
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                 }
             }
             .onChange(of: context.date) { _, date in tick(date) }
         }
-        .onAppear { haptics.playSoftDouble() }
+        .onAppear { if !v106 { haptics.playSoftDouble() } }
         .onChange(of: scenePhase) { _, phase in
             // 動きの途中で背面に行った:戻ったら、終わった状態を出す
             if phase == .active, successAt != nil, let leaveStart, Date().timeIntervalSince(leaveStart) < 3.3 {
@@ -119,7 +124,7 @@ struct GroupLeaveOverlay: View {
     }
 
     private func dialog(now: Date) -> some View {
-        let progress = pressStart.map { min(1, now.timeIntervalSince($0) / Self.holdDuration) } ?? 0
+        let progress = pressStart.map { min(1, now.timeIntervalSince($0) / hold) } ?? 0
         return VStack(spacing: 0) {
             ZStack {
                 Circle().fill(Self.red.opacity(0.18))
@@ -202,12 +207,13 @@ struct GroupLeaveOverlay: View {
                     }
                     message = nil
                     pressStart = Date()
-                    haptics.beginHold(duration: Self.holdDuration)
+                    if v106 { nextTickAt = Date(); buzzed = false } else { haptics.beginHold(duration: hold) }
                 }
                 .onEnded { _ in
                     guard leaveStart == nil else { return }
+                    if v106, pressStart != nil { Haptics.play(.soft) }
                     pressStart = nil
-                    haptics.cancelHold()
+                    if !v106 { haptics.cancelHold() }
                 }
         )
         .accessibilityElement()
@@ -216,11 +222,155 @@ struct GroupLeaveOverlay: View {
         .accessibilityAction { confirmingVoiceOver = true }
     }
 
+    // MARK: v106 §6 確認(パスの 見本 + 点線 + 長押し 1.2秒)
+
+    private var v106Texts: (title: String, bullets: [String], word: String) {
+        if isEndingTrip {
+            return ("『\(snapshot.name)』を\nおわりますか?", [
+                "みんなが 入れなく なる",
+                "招待の リンク ・ QR ・ KEY が 使えなく なる",
+                "写真は すぐには 消えない(撮ってから 7日で 消える)",
+            ], "おわる")
+        }
+        return ("『\(snapshot.name)』を\nぬけますか?", [
+            "あなた だけ 外れる(みんなは つづける)",
+            "もう一度 入る には 招待を もらいなおす",
+            "あなたが 撮った 写真は のこる(7日で 消える)",
+        ], "ぬける")
+    }
+
+    /// パスの 小さな 見本(180 × 150)。`open` = 点線から 左右に ひらく 量(0〜1)
+    private func miniPass(open: Double, half: Int?) -> some View {
+        let card = ZStack(alignment: .bottomLeading) {
+            RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "2A2326"))
+                .overlay { if let img = snapshot.image { Image(uiImage: img).resizable().scaledToFill() } }
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            LinearGradient(colors: [.clear, .black.opacity(0.7)], startPoint: .center, endPoint: .bottom).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("TRIP PASS").font(LF.mono(8.5)).tracking(2).foregroundStyle(HV.lime)
+                Text(snapshot.name).font(LF.serif(28)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
+            }.padding(14)
+        }.frame(width: 180, height: 150)
+        return Group {
+            if let half {
+                card.mask(alignment: half == 0 ? .leading : .trailing) { Rectangle().frame(width: 90) }
+                    .rotationEffect(.degrees((half == 0 ? -3 : 3) * open), anchor: half == 0 ? .bottomLeading : .bottomTrailing)
+                    .offset(x: (half == 0 ? -4 : 4) * open)
+            } else { card }
+        }
+    }
+
+    private func passWithCut(progress: Double) -> some View {
+        ZStack {
+            HStack(spacing: 0) { miniPass(open: progress, half: 0).frame(width: 90, height: 150, alignment: .leading); miniPass(open: progress, half: 1).frame(width: 90, height: 150, alignment: .trailing) }
+            Path { p in p.move(to: CGPoint(x: 94, y: 0)); p.addLine(to: CGPoint(x: 94, y: 150)) }
+                .stroke(.white.opacity(0.7), style: StrokeStyle(lineWidth: 1.4, dash: [4, 4]))
+        }.frame(width: 188, height: 150)
+    }
+
+    private func dialogV106(now: Date) -> some View {
+        let progress = pressStart.map { min(1, now.timeIntervalSince($0) / hold) } ?? 0
+        let t = v106Texts
+        let red = Color(hex: "FF453A")
+        return VStack(spacing: 0) {
+            passWithCut(progress: progress).padding(.top, 4)
+            Text(t.title).font(.system(size: 21, weight: .bold)).foregroundStyle(.white).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true).padding(.top, 18)
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(t.bullets, id: \.self) { line in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Capsule().fill(red).frame(width: 10, height: 2.5).offset(y: -3)
+                        Text(line).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }.font(.system(size: 13)).foregroundStyle(Color(hex: "BCBBC0")).padding(.top, 16)
+            if let message { Text(message).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Self.orange).padding(.top, 12) }
+            let shape = RoundedRectangle(cornerRadius: 29, style: .continuous)
+            ZStack {
+                shape.fill(red.opacity(0.12))
+                red.scaleEffect(x: max(0.0001, progress), y: 1, anchor: .leading).clipShape(shape)
+                shape.strokeBorder(red.opacity(0.45), lineWidth: 1)
+                Text(pressStart == nil ? "長押しで \(t.word)" : "そのまま、押し続けて").font(.system(size: 15.5, weight: .bold)).foregroundStyle(.white)
+            }
+            .frame(height: 58).contentShape(shape).padding(.top, 20)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard pressStart == nil, leaveStart == nil else { return }
+                        guard ConnectivityMonitor.shared.isOnline else { message = "つながったら、できます"; return }
+                        message = nil; pressStart = Date(); nextTickAt = Date(); buzzed = false
+                    }
+                    .onEnded { _ in
+                        guard leaveStart == nil else { return }
+                        if pressStart != nil { Haptics.play(.soft) }
+                        pressStart = nil
+                    }
+            )
+            .accessibilityElement().accessibilityLabel("長押しで \(t.word)").accessibilityAddTraits(.isButton)
+            .accessibilityAction { confirmingVoiceOver = true }
+            Button(action: onCancel) { Text("やめる").font(.system(size: 14, weight: .medium)).foregroundStyle(Color(hex: "8E8E93")).frame(minHeight: 44) }.buttonStyle(.plain).padding(.top, 6)
+        }
+        .padding(22).frame(width: 336)
+        .background(RoundedRectangle(cornerRadius: 32, style: .continuous).fill(Color(hex: "1A1A1E")))
+        .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
+        .accessibilityAddTraits(.isModal)
+    }
+
+    // MARK: v106 §6-3 終わった 時(パスが 2つに やぶれて 落ちる → 終わりました)
+
+    private func tearAnimation(t: Double) -> some View {
+        let done = successAt != nil
+        let u = reduceMotion ? 0 : min(1, max(0, t / 0.62))
+        let e = u * u   // 落ちる
+        let fade = reduceMotion ? min(1, t / 0.3) : 0
+        let local = t - max(0.8, successAt ?? .infinity)
+        let word = isEndingTrip ? "おわりました" : "ぬけました"
+        return VStack(spacing: 0) {
+            Spacer()
+            ZStack {
+                miniPass(open: 0, half: 0).frame(width: 90, height: 150, alignment: .leading)
+                    .rotationEffect(.degrees(-28 * e), anchor: .bottomLeading).offset(x: -90 + (-34 * e), y: 220 * e)
+                    .opacity(reduceMotion ? 1 - fade : 1 - max(0, (u - 0.7) / 0.3))
+                miniPass(open: 0, half: 1).frame(width: 90, height: 150, alignment: .trailing)
+                    .rotationEffect(.degrees(32 * e), anchor: .bottomTrailing).offset(x: 90 + (38 * e), y: 220 * e)
+                    .opacity(reduceMotion ? 1 - fade : 1 - max(0, (u - 0.7) / 0.3))
+            }.frame(height: 190).offset(x: 45)
+            Group {
+                if done, local >= 0 {
+                    let p = reduceMotion ? min(1, local / 0.3) : HomeMotion.ease(min(1, local / 0.5))
+                    VStack(spacing: 8) {
+                        Text("『\(snapshot.name)』を").font(.system(size: 17, weight: .semibold))
+                        Text(word).font(.system(size: 32, weight: .bold))
+                    }.foregroundStyle(.white).entrance(p, blur: reduceMotion ? 0 : 10, dy: reduceMotion ? 0 : 12)
+                } else {
+                    Text(isEndingTrip ? "おわらせて います…" : "ぬけて います…").font(.system(size: 15)).foregroundStyle(.white.opacity(0.8))
+                }
+            }.padding(.top, 20)
+            Spacer()
+            let bp = done ? (reduceMotion ? min(1, max(0, (local - 0.4) / 0.3)) : HomeMotion.ease(min(1, max(0, (local - 0.4) / 0.5)))) : 0
+            Button(action: onHome) {
+                Text("ホームへ").font(.system(size: 16, weight: .bold)).foregroundStyle(.black).frame(maxWidth: .infinity, minHeight: 56).background(Capsule().fill(.white))
+            }
+            .buttonStyle(PressScaleStyle(scale: 0.97)).disabled(!(done && local >= 0.9)).entrance(bp, dy: reduceMotion ? 0 : 16)
+            .padding(.horizontal, 24).padding(.bottom, 30)
+        }
+        .onChange(of: t >= 0.42) { _, on in if on, !reduceMotion { Haptics.play(.thud) } }
+        .onChange(of: done) { _, d in if d { Haptics.play(.success) } }
+        .onAppear { if !reduceMotion { Haptics.play(.knock) } }
+    }
+
     // MARK: 抜ける動き
 
     private func tick(_ date: Date) {
-        if let pressStart, leaveStart == nil, date.timeIntervalSince(pressStart) >= Self.holdDuration {
+        if let pressStart, leaveStart == nil, date.timeIntervalSince(pressStart) >= hold {
             startLeave()
+        }
+        // v106 §6-2:tick が だんだん 速く(220ms → 60ms)・ 70% から buzz
+        if v106, let pressStart, leaveStart == nil {
+            let p = min(1, date.timeIntervalSince(pressStart) / hold)
+            if let n = nextTickAt, date >= n {
+                if p >= 0.7 { if !buzzed { buzzed = true; Haptics.play(.buzz) } } else { Haptics.play(.tick, gap: 0) }
+                nextTickAt = date.addingTimeInterval(0.22 - 0.16 * p)
+            }
         }
         guard let leaveStart else { return }
         let t = date.timeIntervalSince(leaveStart)
@@ -233,7 +383,7 @@ struct GroupLeaveOverlay: View {
 
     private func startLeave() {
         pressStart = nil
-        haptics.cancelHold()
+        if !v106 { haptics.cancelHold() }
         guard ConnectivityMonitor.shared.isOnline else {
             message = "つながったら、抜けられます"
             return
