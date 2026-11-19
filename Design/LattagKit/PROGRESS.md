@@ -343,4 +343,4 @@
 - 移行の 処理(`ChekiColorGrade.bakeIntoImageData` の 旧 FilmEmulation 分)は 2026-11-27 以降に 消す(P50 B)。
 - ✓ B(外共有の 白い 枠 `InstaxShareFrame` + テスト ・ 遡り 焼きこみを 削除。**表示時の フィルターは もともと 写真に かけて いない**ので 削る もの なし)
 - △ C 動画:書き出しを `FilmLook.retro8Frame`(LUT + シャープ + 動く 粒子)に 置きかえ ・ `filmVersion = 2`。1080p 6Mbps は 10秒 約 9MB(前 1.45MB の 約 6倍)→ 規則どおり 720p30 3.5Mbps(約 4.7MB ・ 約 3.2倍)。撮る 設定(1080p30 ・ HDR オフ ・ sRGB ・ H.264)は **写真と 同じ セッション(.photo)の ため 未実施**(確認待ち)
-- ☐ D はかる
+- △ D はかる(シミュレータ ・ 12MP):写真 1枚 約 110ms ・ メモリの 山 +約 49MB(読む 時に 1440px へ 縮めて 234MB → 49MB)・ 大きさ 約 0.12〜0.36MB ・ 動画 10秒 書き出し 約 6.6秒 / 約 4.7MB(前 1.45MB)。**実機の ms ・ ヒッチ(Instruments)は 実機で**

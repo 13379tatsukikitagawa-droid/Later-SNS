@@ -42,8 +42,20 @@ nonisolated final class FilmLook: @unchecked Sendable {
 
     /// 撮った 写真(HEIC / JPEG の Data)→ チェキの JPEG(EXIF ・ 位置情報 なし)。`seed` が 同じ なら 同じ 粒子
     func chekiJPEG(from photoData: Data, cropAspect: CGFloat? = 3.0 / 4.0, seed: UInt64) -> Data? {
-        guard var img = CIImage(data: photoData, options: [.applyOrientationProperty: true]) else { return nil }
-        img = img.settingProperties([:])
+        // メモリ:12MP を ぜんぶ ひらかず、読む 時に 必要な 大きさ(長辺 1440 相当)まで 縮める(向きも ここで 直す)
+        guard let src = CGImageSourceCreateWithData(photoData as CFData, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+              let pw = (props[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
+              let ph = (props[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue else { return nil }
+        let turned = [5, 6, 7, 8].contains((props[kCGImagePropertyOrientation] as? NSNumber)?.intValue ?? 1)
+        let w = turned ? ph : pw, h = turned ? pw : ph
+        var croppedLong = max(w, h)
+        if let r = cropAspect { croppedLong = (w / h > r) ? h : w / r; croppedLong = max(croppedLong, 1) }
+        let need = max(w, h) * min(1, Double(Cheki.longEdge) / croppedLong)
+        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true,
+                                     kCGImageSourceThumbnailMaxPixelSize: Int(need.rounded(.up)), kCGImageSourceShouldCacheImmediately: false]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) else { return nil }
+        var img = CIImage(cgImage: cg).settingProperties([:])
         if let r = cropAspect { img = Self.centerCrop(img, aspect: r) }
         return render(img, seed: seed)
     }
