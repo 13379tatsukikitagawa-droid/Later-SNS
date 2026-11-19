@@ -166,3 +166,5 @@
 | `F22_settings_logout` | 設定:ログアウトの 確認 |
 
 動き:`motion/M26_camera_flip` `M27_settings_open` `M28_avatar_double_tap`。
+
+**v104**:O04 は Apple だけ。`O05` `O06` `O25`〜`O27` `O29`〜`O31`(メール ・ Google)の 見本は 使わない(作らない ・ あれば 消す)。

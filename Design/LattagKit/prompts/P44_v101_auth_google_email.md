@@ -1,5 +1,7 @@
 # P44 ・ v101:Google と メールで サインイン(Firebase)
 
+> **⚠ v104 で かわりました**:サインインは **Apple だけ**。この P44 は **使わない**。かわりに `P47_v104_apple_only_onboarding.md` を 使う(Apple を Firebase に のせる 部分 ・ 入った あと の 部分は P47 の A に 入って いる)。
+
 > **使い方**:Claude Code に「`Design/LattagKit/prompts/P44_v101_auth_google_email.md` を 読んで、その とおりに 進めて」と だけ 伝える。**計画モードで 始める**。A〜D の 4回に 分けて commit。
 > **ほかの タブと 同じ フォルダで 同時に 動かさない**。
 

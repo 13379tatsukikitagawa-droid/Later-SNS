@@ -65,6 +65,9 @@
 - ガラス:iOS 26 は `.glassEffect()`(押せる 物は `.interactive()`)、それ より 前は `.ultraThinMaterial` + 白 10〜14% + ふちの 白い 線。部品は `LGGlass` に まとめる。
 - **利用規約 ・ プライバシー(v102)**:リンク先は `LegalLink` 1か所(`…github.io/APP-Later2/terms.html` ・ `privacy.html`)。**文章は アプリに 持たない**。`SFSafariViewController` の シートで ひらく(「完了」で もどる)。つなぐ 場所は サインイン画面(O04)の 下の 字 と 設定 > サポート。押せる 大きさ 44pt ・ 重ねない。
 - **友だち ・ 申請 ・ 1対1チャット ・ 友だちの 写真(v103)**:置き場所は **Cloudflare(Worker + R2 + データベース)**、本人確認は **Firebase の ID トークン(`uid`)**。CloudKit の 公開DB には 置かない(`_world` で だれでも 読めて しまう ため)。友だちは **無制限**(数は どこにも 表示しない)。写真は **投稿した 1枚だけ**・ **7日で 消える**・ EXIF を 取る。グループ ・ Trip は CloudKit の 共有ゾーンの まま、ME ・ Recap は 個人DB の `me` ゾーン。ID(`UserHandle`)と `UserDirectory` は 公開DB の まま(写真は 入れない)。**本人と 相手だけ 読める ことを サーバーが 検証**する。 **グループの 共有リンクと 招待の KEY は 公開DB に 置かない**(Worker 経由 ・ 回数制限 ・ 期限)。
+- **サインイン(v104 ・ v101 を 上書き)**:**Apple だけ**(Google ・ メールの リンクは 出さない ・ コードも のこさない)。Apple は **Firebase に のせて** `uid` で 見分ける。O04 は 白い 丸の Apple ボタン(丸の 中は かえない ・ 動きは 丸の 外だけ)+「メールは かくす」(初期 オン = メールを もらわない)。見出しは「昨日を / 共有する SNS」。前から いる 人は おかえり → Home。**Apple で 入って いる 人を 壊さない**。
+- **シートは 中身の 高さ(v104)**:`Spacer()` で のばさない ・ `.presentationDetents([.height(h)])` ・ キーボードの すぐ 上。Name では キーボード 中も アイコンの 写真を かくさない。
+- **ウィジェット(v104)**:先に 1つ えらぶ → アプリの 中の 動く 案内(5場面)→ もどった 時に `WidgetCenter` で 自動で たしかめる(アプリから ホームへ 行く ・ 自動で 置く ことは できない)。
 - バイブ:`spec/HAPTICS.md` の 15種類(`tick` `sel` `pop` `click` `soft` `thud` `warn` `success` `shutter` `land` `heart` `projector` `buzz` `rumble` `vui`)を `Haptics.play(.名前)` で。モックの `hap('名前', …)` と 1対1。
 - 動き:
   - CSS / JS の `cubic-bezier(a,b,c,d)` → `.timingCurve(a, b, c, d, duration:)`
