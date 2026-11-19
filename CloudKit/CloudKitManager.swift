@@ -57,12 +57,6 @@ final class CloudKitManager: NSObject {
     /// 兆候(絞り込みが効いていない等)の手がかりになる。
     private static let resendSweepFetchLimit = 200
 
-    /// migrateChekiGradingForOwnPhotos()の多重実行(プロセス内での再入)防止用。
-    /// 既に焼き込み済みの写真を対象から除外する冪等性自体はLaterPhoto.isColorGraded
-    /// フラグが保証するが、それとは別に「今まさに処理中のバッチ」が重複して
-    /// 起動しないようにするための軽量なガード。
-    private var isMigratingChekiGrading = false
-
     /// CKSyncEngineからの変更通知(apply(record:)経由)、または既知のローカル操作
     /// (自分の投稿直後等)によって「再評価が必要かもしれない」とマークされたグループの
     /// ID集合。evaluateGroupUnlockConditions()はこの集合に含まれるグループだけを処理し、
@@ -801,68 +795,6 @@ final class CloudKitManager: NSObject {
         if didChange {
             try? modelContext.save()
         }
-    }
-
-    /// 「解禁時に一度だけチェキ加工(FilmEmulation)を焼き込む」仕組みの導入前から
-    /// 既に解禁済みだった、自分が撮影した写真を遡って焼き込むマイグレーション。
-    ///
-    /// 対象は isUnlocked == true && isColorGraded == false && 自分が撮影した写真のみ。
-    /// 他メンバーが撮影した写真は対象にしない: 焼き込みにはその写真の実データ
-    /// (imageData)が必要だが、自分の端末にある他人の写真のimageDataはCloudKit経由で
-    /// 受信したものであり、ここで独自に焼き込むと(1)乱数シードが端末ごとに異なるため
-    /// 見た目が撮影者本人の焼き込み結果と食い違う、(2)撮影者本人が後で自分の端末で
-    /// 焼き込んだ結果を送ってきた際、二重に加工が重なる、という問題が起きる。
-    /// 「1つの写真につき、焼き込みは撮影者本人の端末で1回だけ」という原則を
-    /// isUnlockedの通常の解禁フロー(evaluateGroupUnlockConditions/autoUnlockPhotos)と
-    /// 揃えている。
-    ///
-    /// isColorGradedフラグにより、既に焼き込み済みの写真は対象から自然に除外されるため、
-    /// deduplicateGroupMembers()と同じ方針で起動のたびに呼んでよい
-    /// (2回目以降は対象0件の軽い処理で終わる)。
-    func migrateChekiGradingForOwnPhotos() async {
-        guard !isMigratingChekiGrading else { return }
-        guard let currentUserRecordName else { return }
-        // World Later等でLaterPhotoの総数が増えても、この対象(自分が撮影した未焼き込み分)
-        // だけをDB側の#Predicateで絞り込む(以前は全件取得後にSwift側でfilterしていた)。
-        let predicate = #Predicate<LaterPhoto> {
-            $0.isUnlocked && !$0.isColorGraded && $0.authorCloudKitUserRecordName == currentUserRecordName
-        }
-        guard let targets = try? modelContext.fetch(FetchDescriptor<LaterPhoto>(predicate: predicate)) else { return }
-        guard !targets.isEmpty else {
-            print("[GroupSync] チェキ加工マイグレーション: 対象0件")
-            return
-        }
-
-        isMigratingChekiGrading = true
-        defer { isMigratingChekiGrading = false }
-
-        var successCount = 0
-        var failureCount = 0
-        var recordNamesNeedingResend: [String] = []
-
-        for photo in targets {
-            guard let groupID = photo.groupID, let group = fetchOne(LaterGroup.self, { $0.id == groupID }) else {
-                failureCount += 1
-                continue
-            }
-            await ChekiColorGrade.bakeIntoImageData(photo)
-            if photo.isColorGraded {
-                successCount += 1
-                recordNamesNeedingResend.append(photo.ckRecordName ?? photo.id.uuidString)
-                await markForUpload(photo: photo, in: group)
-            } else {
-                failureCount += 1
-            }
-        }
-        try? modelContext.save()
-
-        print("[GroupSync] チェキ加工マイグレーション: 対象\(targets.count)件、成功\(successCount)件、失敗\(failureCount)件")
-
-        guard !recordNamesNeedingResend.isEmpty else { return }
-        // 焼き込み済みの新しいバイト列を、他メンバーへも伝播させる
-        // (これまでの未加工バージョンが既に送信済み・受信済みの可能性があるため、
-        // 明示的に再送する)。
-        await sendPendingChangesNow()
     }
 
     private func apply(record: CKRecord) {

@@ -45,3 +45,20 @@ struct FilmLookTests {
         #expect(props?[kCGImagePropertyGPSDictionary] == nil)
     }
 }
+
+struct InstaxShareFrameTests {
+    @Test func cardRatioAndPaper() throws {
+        let photo = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 400)).image { c in UIColor.blue.setFill(); c.fill(CGRect(x: 0, y: 0, width: 300, height: 400)) }
+        let out = InstaxShareFrame.compose(photo: photo, date: Date(timeIntervalSince1970: 1_700_000_000), width: 540)
+        #expect(out.size.width == 540)
+        #expect(abs(out.size.height - 860) <= 1)            // 54:86
+        let cg = try #require(out.cgImage)
+        let w = cg.width, h = cg.height
+        var buf = [UInt8](repeating: 0, count: w * h * 4)
+        let ctx = try #require(CGContext(data: &buf, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        func px(_ x: Int, _ y: Int) -> (Int, Int, Int) { let i = (y * w + x) * 4; return (Int(buf[i]), Int(buf[i + 1]), Int(buf[i + 2])) }
+        let corner = px(3, 3); #expect(abs(corner.0 - 246) <= 2 && abs(corner.1 - 243) <= 2 && abs(corner.2 - 234) <= 2)
+        let mid = px(270, 330); #expect(mid.2 > 200 && mid.0 < 60)
+    }
+}

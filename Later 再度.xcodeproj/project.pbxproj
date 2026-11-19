@@ -317,6 +317,7 @@
 		E7390D2B2CBE0B9D3FC410BD /* V64/OnboardingV64Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B219B02437086612F96FD945 /* V64/OnboardingV64Parts.swift */; };
 		E92CAD42AD3606DBA7D25004 /* V64/YesterdayMondoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B7A294C6B1D08D337C329D /* V64/YesterdayMondoView.swift */; };
 		EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B4C22287B8F839F97B59D7 /* UserDirectoryService.swift */; };
+		185984A0B3F5805E08CC7A04 /* InstaxShareFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB0762A3B8CFF1DAFAE1F061 /* InstaxShareFrame.swift */; };
 		EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */; };
 		EF1ACD90ED1193CE169C4851 /* V64/DevelopV64View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5151B98D9817974A8A5B4D4B /* V64/DevelopV64View.swift */; };
 		F021F793DD7643F7BE34A452 /* Fonts/NotoSerifJP-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5988548E0712404AB28D5F6B /* Fonts/NotoSerifJP-Bold.ttf */; };
@@ -586,6 +587,7 @@
 		C41C00000000000000000004 /* ChicHomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChicHomeView.swift; sourceTree = "<group>"; };
 		C5254C88F07D4041B008F712 /* RecapPlayerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecapPlayerView.swift; sourceTree = "<group>"; };
 		C7259E737667BD9D41829457 /* HomeMoon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMoon.swift; sourceTree = "<group>"; };
+		EB0762A3B8CFF1DAFAE1F061 /* InstaxShareFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstaxShareFrame.swift; sourceTree = "<group>"; };
 		C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilmEmulation.swift; sourceTree = "<group>"; };
 		C867FCD95A952EDEC6388047 /* V64/MondoWaitV95.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/MondoWaitV95.swift; sourceTree = "<group>"; };
 		C8B8E2911EFFED828CF900DD /* V64/HomeNextV95.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeNextV95.swift; sourceTree = "<group>"; };
@@ -831,6 +833,7 @@
 			isa = PBXGroup;
 			children = (
 				C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */,
+				EB0762A3B8CFF1DAFAE1F061 /* InstaxShareFrame.swift */,
 				AC67E891DCAB7E9E67145673 /* FilmLook.swift */,
 			);
 			path = PhotoProcessing;
@@ -1848,6 +1851,7 @@
 				E1101136910946A18888005F /* PerformanceSignpost.swift in Sources */,
 				2AAA7B6FC5CA4F2DB25247A4 /* AppLaunchTiming.swift in Sources */,
 				EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */,
+				185984A0B3F5805E08CC7A04 /* InstaxShareFrame.swift in Sources */,
 				7114D6320BE8058533FCC70E /* FilmLook.swift in Sources */,
 				60C5A0CFDCC62D982F0F1FCF /* GroupDetailView.swift in Sources */,
 				C80D93F950589B0635570AAE /* NewGroupFlowView.swift in Sources */,

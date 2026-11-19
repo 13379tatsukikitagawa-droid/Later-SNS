@@ -114,7 +114,7 @@ final class LaterPhoto {
     var isUnlocked: Bool = false
     /// ChekiColorGrade.bakeIntoImageData(_:)でFilmEmulationの焼き込みが完了済みかどうか。
     /// isUnlocked==falseから移行する前(=このプロパティ導入前)に既に解禁済みだった写真は
-    /// falseのままなので、CloudKitManager.migrateChekiGradingForOwnPhotos()の対象になる。
+    /// falseのままだが、v107以降は遡って焼きなおさない(古い写真にはさわらない)。
     /// 焼き込み処理を誤って二重適用しない(=同じ画像に多重にグレイン等を重ねない)ための
     /// 冪等性ガードも兼ねる。
     var isColorGraded: Bool = false
