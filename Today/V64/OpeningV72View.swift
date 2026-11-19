@@ -40,18 +40,45 @@ func opKeys(_ t: Double, _ frames: [(Double, Double)], _ ease: OPBez) -> Double 
 // MARK: - 時間割り(ミリ秒)
 
 enum OP72 {
-    // v91 L(軽い 版 ・ 1.47秒)。動かすのは アイコン ・ 文字 ・ 9:00 ・ 全体 / Home の 4つ だけ
-    static let slideStart = 250.0, slideDur = 450.0
-    static let textStart = 330.0, textDur = 420.0
-    static let nineStart = 640.0, nineDur = 240.0
-    static let openStart = 950.0, openDur = 320.0     // オープニングが ふわっと 消える
-    static let homeStart = 990.0, homeDur = 480.0     // Home が 1.04 → 1
-    static let total = 1470.0
+    // v105 S(強い 版 ・ 約 2.1秒)。動かすのは 位置 ・ 大きさ ・ 回転 ・ 透明度 だけ。光 ・ 輪 は 前もって 作った 画像(`OPImages`)
+    static let chargeStart = 220.0, chargeEnd = 420.0          // ためる
+    static let releaseAt = 420.0                              // はなつ
+    static let slideStart = 720.0, slideOver = 1170.0, slideEnd = 1320.0
+    static let textStart = 700.0, textStep = 45.0, textDur = 460.0
+    static let nineStart = 1080.0, nineDur = 380.0
+    static let blinkStart = 1300.0, blinkDur = 200.0
+    static let diveStart = 1440.0, diveDur = 520.0            // レンズの 中へ 飛びこむ
+    static let openStart = 1440.0                             // 「ひらく」の はじまり(とばす 時の ゆきさき ・ onReveal)
+    static let homeStart = 1640.0, homeDur = 460.0            // Home が 1.25 → 1
+    static let total = 2100.0
     /// 0.6秒 たったら タップで とばせる
     static let skipAfter = 600.0
+    /// 通知 ・ リンク:この 時間の あと すぐ 「ひらく」へ
+    static let shortCut = 220.0
     /// 組みの 寸法
     static let iconStart: CGFloat = 132, iconEnd: CGFloat = 78, gap: CGFloat = 18
     static let letterFont: CGFloat = 54, nineFont: CGFloat = 15
+    static let homeFrom: CGFloat = 1.25
+}
+
+/// 光 ・ 輪 ・ うしろの 光:起動時に 1回だけ 作る 画像(動かす 時に ぼかし ・ 影の 半径を 変えない)
+enum OPImages {
+    private static func make(_ draw: (CGContext, CGSize) -> Void) -> UIImage {
+        let sz = CGSize(width: 256, height: 256)
+        return UIGraphicsImageRenderer(size: sz).image { draw($0.cgContext, sz) }
+    }
+    private static func radial(_ ctx: CGContext, _ sz: CGSize, _ color: UIColor, _ a: CGFloat) {
+        let cs = CGColorSpaceCreateDeviceRGB()
+        let g = CGGradient(colorsSpace: cs, colors: [color.withAlphaComponent(a).cgColor, color.withAlphaComponent(a * 0.35).cgColor, color.withAlphaComponent(0).cgColor] as CFArray, locations: [0, 0.4, 1])!
+        ctx.drawRadialGradient(g, startCenter: CGPoint(x: sz.width / 2, y: sz.height / 2), startRadius: 0, endCenter: CGPoint(x: sz.width / 2, y: sz.height / 2), endRadius: sz.width / 2, options: [])
+    }
+    static let flash: UIImage = make { radial($0, $1, .white, 1) }
+    static let glow: UIImage = make { radial($0, $1, UIColor(red: 0xC8 / 255, green: 0xF2 / 255, blue: 0x5A / 255, alpha: 1), 0.9) }
+    static let ring: UIImage = make { ctx, sz in
+        ctx.setStrokeColor(UIColor(red: 0xC8 / 255, green: 0xF2 / 255, blue: 0x5A / 255, alpha: 1).cgColor)
+        ctx.setLineWidth(5)
+        ctx.strokeEllipse(in: CGRect(x: 8, y: 8, width: sz.width - 16, height: sz.height - 16))
+    }
 }
 
 // MARK: - アプリアイコンと 同じ 絵(ベクター。レンズだけ 倍率を 変えられる)
@@ -123,7 +150,7 @@ struct OpeningV72View: View {
                     .onChange(of: ms >= OP72.openStart) { _, go in if go { reveal() } }
                     .onChange(of: Int(ms / 16)) { _, _ in
                         let hu = (ms - OP72.homeStart) / OP72.homeDur
-                        homeScale?.wrappedValue = hu <= 0 ? 1.04 : CGFloat(1.04 - 0.04 * OPBez(0.2, 0.8, 0.2, 1).at(hu))
+                        homeScale?.wrappedValue = hu <= 0 ? OP72.homeFrom : OP72.homeFrom - (OP72.homeFrom - 1) * CGFloat(OPBez(0.16, 1, 0.3, 1).at(hu))
                     }
             }
             .frame(width: size.width, height: size.height)
@@ -157,13 +184,12 @@ struct OpeningV72View: View {
 
     private var endMs: Double { variant == .fade ? 1000 : OP72.total }
 
-    /// とばした / 短い 版 / 視差を 減らす を 1本の 時間に ならす
+    /// とばした / 短い 版 を 1本の 時間に ならす(220ms の あと すぐ 「ひらく」= 1440ms へ)
     private func effective(_ ms: Double) -> Double {
         switch variant {
         case .fade: return ms
         case .short:
-            // 0〜330ms の あと すぐ「ひらく」(文字 ・ 9:00 は 出さない)
-            return ms < OP72.slideStart ? ms : OP72.openStart + (ms - OP72.slideStart)
+            return ms < OP72.shortCut ? ms : OP72.openStart + (ms - OP72.shortCut)
         case .full:
             if let skipAt, ms >= skipAt { return max(ms - skipAt, 0) + OP72.openStart }
             return ms
@@ -205,8 +231,8 @@ struct OpeningV72View: View {
     private func scheduleHaptics() {
         guard variant != .fade else { return }
         let marks: [(Double, Haptics.Kind)] = variant == .short
-            ? [(OP72.slideStart, .land)]
-            : [(OP72.textStart, .soft), (OP72.nineStart, .pop), (OP72.openStart, .land)]
+            ? [(OP72.shortCut + (1700 - OP72.openStart), .land)]
+            : [(220, .tick), (420, .shutter), (700, .soft), (1100, .pop), (1320, .click), (1700, .land)]
         hapticTask = Task { @MainActor in
             for (ms, h) in marks {
                 let wait = ms / 1000 - Date().timeIntervalSince(start)
@@ -222,59 +248,116 @@ struct OpeningV72View: View {
     private func scene(ms: Double, size: CGSize) -> some View {
         let W = size.width, H = size.height
         let cy = H / 2
+        let fade = variant == .fade
+        // .fade(はじめての 設定へ)は 組みあがった 形を そのまま フェード
+        let t = fade ? 1400.0 : ms
         let tot = OP72.iconEnd + OP72.gap + letterW + 5 + nineW
         let x0 = (W - tot) / 2
         let lensX = x0 + OP72.iconEnd / 2
-        let compact = variant == .short
-        let fade = variant == .fade
-        let move = OPBez(0.22, 1, 0.36, 1)
+        func clamp(_ x: Double) -> Double { min(1, max(0, x)) }
 
-        // アイコン:132 で 描いて 縮める(行きすぎ なし ・ 450ms)
-        let p = compact ? 0 : (fade ? 1 : move.at((ms - OP72.slideStart) / OP72.slideDur))
-        let k = (OP72.iconStart + (OP72.iconEnd - OP72.iconStart) * p) / OP72.iconStart
-        let iconX = W / 2 + (lensX - W / 2) * p
+        // --- アイコン:ためる → はなつ → 左へ(少し 行きすぎ)
+        var pulse = 1.0
+        var lens = 1.0
+        if t < OP72.chargeStart { pulse = 1 }
+        else if t < OP72.releaseAt {
+            let e = OPBez(0.42, 0, 1, 1).at((t - OP72.chargeStart) / (OP72.releaseAt - OP72.chargeStart))
+            pulse = 1 - 0.1 * e; lens = 1 - 0.22 * e
+        } else if t < OP72.slideStart {
+            pulse = opKeys(t, [(420, 0.9), (540, 1.12), (720, 1.0)], OPBez(0.2, 0.9, 0.3, 1))
+            lens = opKeys(t, [(420, 1.06), (620, 1.0)], OPBez(0.2, 0.9, 0.3, 1))
+        }
+        // レンズの まばたき(1 → 0.8 → 1)
+        if t >= OP72.blinkStart && t < OP72.blinkStart + OP72.blinkDur {
+            lens *= opKeys(t, [(OP72.blinkStart, 1), (OP72.blinkStart + 100, 0.8), (OP72.blinkStart + 200, 1)], OPBez(0.4, 0, 0.6, 1))
+        }
+        let dist = max(1, W / 2 - lensX)
+        var pp = 0.0, sizeNow = OP72.iconStart
+        if t >= OP72.slideStart {
+            if t < OP72.slideOver {
+                let e = OPBez(0.3, 0, 0.2, 1).at((t - OP72.slideStart) / (OP72.slideOver - OP72.slideStart))
+                pp = e * (1 + 5 / dist)
+                sizeNow = OP72.iconStart + (OP72.iconEnd * 0.98 - OP72.iconStart) * CGFloat(e)
+            } else {
+                let e = OPBez(0.3, 0, 0.2, 1).at(clamp((t - OP72.slideOver) / (OP72.slideEnd - OP72.slideOver)))
+                pp = (1 + 5 / dist) + (1 - (1 + 5 / dist)) * e
+                sizeNow = OP72.iconEnd * 0.98 + (OP72.iconEnd - OP72.iconEnd * 0.98) * CGFloat(e)
+            }
+        }
+        let iconK = sizeNow / OP72.iconStart * CGFloat(pulse)
+        let iconX = W / 2 + (lensX - W / 2) * pp
 
-        // 文字(1かたまり):左 34 → 0 ・ 透明 → 不透明(420ms)
-        let tu = fade ? 1 : move.at((ms - OP72.textStart) / OP72.textDur)
-        // 9:00(0.6倍 → 1 ・ 240ms)
-        let nu = fade ? 1 : OPBez(0.3, 1.4, 0.5, 1).at((ms - OP72.nineStart) / OP72.nineDur)
+        // --- 光 ・ 輪 ・ うしろの 光(画像)
+        let fu = clamp((t - 420) / 380)
+        let flashScale = opKeys(fu, [(0, 0.3), (0.5, 1), (1, 1.9)], OPBez(0.2, 0.8, 0.4, 1))
+        let flashAlpha = opKeys(fu, [(0, 0), (0.5, 1), (1, 0)], OPBez(0.3, 0, 0.5, 1))
+        let ru = OPBez(0.15, 0.7, 0.3, 1).at(clamp((t - 430) / 680))
+        let ringScale = 0.7 + 2.7 * ru, ringAlpha = 0.95 * (1 - ru)
+        let gu = clamp((t - 420) / 1100)
+        let glowScale = opKeys(gu, [(0, 0.5), (0.45, 1.15), (1, 0.62)], OPBez(0.3, 0, 0.3, 1))
+        let glowAlpha = opKeys(gu, [(0, 0), (0.45, 1), (1, 0.42)], OPBez(0.3, 0, 0.3, 1))
 
-        // オープニングが ふわっと 消える(1 → 0 ・ 1 → 1.03)
-        let ou = (ms - OP72.openStart) / OP72.openDur
-        let oe = OPBez(0.4, 0, 0.2, 1).at(ou)
-        let opAlpha = 1 - oe
-        let opScale = 1 + 0.03 * oe
+        // --- 文字(1字ずつ)・ 9:00
+        let letters = Array("Lattag")
+        let nu = OPBez(0.3, 1.4, 0.5, 1).at(clamp((t - OP72.nineStart) / OP72.nineDur))
+        let nineRot = opKeys(nu, [(0, -14), (0.6, 5), (1, 0)], OPBez(0.3, 0, 0.3, 1))
+        let nineScale = opKeys(nu, [(0, 0.3), (0.6, 1.2), (1, 1)], OPBez(0.3, 0, 0.3, 1))
+
+        // --- 飛びこみ ・ Home
+        let du = t - OP72.diveStart
+        var diveScale = 1.0, diveAlpha = 1.0
+        if du > 0 && !fade {
+            let x = clamp(du / OP72.diveDur)
+            diveScale = opKeys(x, [(0, 1), (0.4, 1.7), (0.7, 4.5), (1, 24)], OPBez(0.45, 0, 0.75, 0.4))
+            diveAlpha = x < 0.85 ? 1 : 1 - (x - 0.85) / 0.15
+        }
+        let blackAlpha = fade ? 1 : 1 - OPBez(0.3, 0, 0.3, 1).at(clamp((t - OP72.homeStart) / 320))
         let fadeAlpha = fade ? 1 - OPBez(0.3, 0, 0.3, 1).at((ms - 600) / 400) : 1
+        let lumpX = x0 + OP72.iconEnd + OP72.gap
 
         return ZStack {
-            Color.black
+            Color.black.opacity(blackAlpha)
+            ZStack {
+                Image(uiImage: OPImages.glow).resizable().frame(width: 300, height: 300)
+                    .scaleEffect(glowScale).opacity(glowAlpha).position(x: iconX, y: cy)
+                Image(uiImage: OPImages.flash).resizable().frame(width: 200, height: 200)
+                    .scaleEffect(flashScale).opacity(flashAlpha).position(x: W / 2, y: cy)
+                Image(uiImage: OPImages.ring).resizable().frame(width: 120, height: 120)
+                    .scaleEffect(ringScale).opacity(ringAlpha).position(x: W / 2, y: cy)
 
-            // 文字(アイコンの うしろから 出る)
-            if !compact {
                 ZStack(alignment: .topLeading) {
-                    Text("Lattag").font(LF.inter(900, OP72.letterFont)).tracking(-0.06 * OP72.letterFont).foregroundStyle(.white).fixedSize()
-                        .frame(height: OP72.iconEnd)
+                    HStack(spacing: 0) {
+                        ForEach(0..<letters.count, id: \.self) { i in
+                            let u = OPBez(0.3, 1.1, 0.4, 1).at(clamp((t - (OP72.textStart + OP72.textStep * Double(i))) / OP72.textDur))
+                            Text(String(letters[i])).font(LF.inter(900, OP72.letterFont)).tracking(-0.06 * OP72.letterFont).foregroundStyle(.white).fixedSize()
+                                .offset(x: opKeys(u, [(0, -30), (0.6, 3), (1, 0)], OPBez(0.3, 0, 0.3, 1)))
+                                .rotationEffect(.degrees(opKeys(u, [(0, -6), (0.6, 1), (1, 0)], OPBez(0.3, 0, 0.3, 1))))
+                                .opacity(opKeys(u, [(0, 0), (0.4, 1), (1, 1)], OPBez(0.3, 0, 0.3, 1)))
+                        }
+                    }.frame(height: OP72.iconEnd)
                     Text("9:00").font(LF.inter(900, OP72.nineFont)).tracking(-0.02 * OP72.nineFont).monospacedDigit()
                         .foregroundStyle(Color(hex: "C8F25A")).fixedSize()
-                        .scaleEffect(0.6 + 0.4 * max(0, nu), anchor: .bottomLeading).opacity(min(1, max(0, nu * 2)))
+                        .scaleEffect(nineScale, anchor: .bottomLeading).rotationEffect(.degrees(nineRot), anchor: .bottomLeading).opacity(min(1, max(0, nu * 2)))
                         .offset(x: letterW + 5, y: 19)
                 }
                 .frame(width: letterW + 5 + nineW, height: OP72.iconEnd, alignment: .topLeading)
-                .offset(x: -34 * (1 - tu)).opacity(tu)
-                .position(x: x0 + OP72.iconEnd + OP72.gap + (letterW + 5 + nineW) / 2, y: cy)
-            }
+                .position(x: lumpX + (letterW + 5 + nineW) / 2, y: cy)
 
-            // アイコン(影は 132 の 大きさで 1枚の 絵に して 縮める)
-            OPIcon(size: OP72.iconStart, lensScale: 1)
-                .shadow(color: Color(hex: "C8F25A").opacity(0.38), radius: 20 * OP72.iconStart / OP72.iconEnd, x: 0, y: 18 * OP72.iconStart / OP72.iconEnd)
-                .padding(90)   // 影が 切れない よう 余白ごと 1枚の 絵に する
-                .drawingGroup()
-                .scaleEffect(k)
-                .position(x: iconX, y: cy)
+                // アイコン(影は 132 の 大きさで 1枚の 絵に して 縮める)
+                OPIcon(size: OP72.iconStart, lensScale: CGFloat(lens))
+                    .shadow(color: Color(hex: "C8F25A").opacity(0.38), radius: 20 * OP72.iconStart / OP72.iconEnd, x: 0, y: 18 * OP72.iconStart / OP72.iconEnd)
+                    .padding(90)
+                    .drawingGroup()
+                    .scaleEffect(iconK)
+                    .position(x: iconX, y: cy)
+            }
+            .frame(width: W, height: H)
+            .scaleEffect(diveScale, anchor: UnitPoint(x: lensX / max(1, W), y: 0.5))
+            .opacity(diveAlpha)
         }
         .frame(width: W, height: H)
-        .scaleEffect(opScale)
-        .opacity(opAlpha * fadeAlpha)
+        .opacity(fadeAlpha)
+        .drawingGroup()
     }
 }
 

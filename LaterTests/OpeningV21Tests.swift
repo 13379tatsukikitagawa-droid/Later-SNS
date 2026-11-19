@@ -19,11 +19,14 @@ struct OpeningV21Tests {
         #expect(opKeys(999, [(0, 1), (180, 0.86), (360, 1)], OPBez(0.3, 1.4, 0.5, 1)) == 1)
     }
 
-    @Test func 時間割りは1秒半以内() {
+    @Test func 時間割りは_S版_約2秒() {
         #expect(OP72.homeStart + OP72.homeDur == OP72.total)
-        #expect(OP72.openStart + OP72.openDur <= OP72.total)
-        #expect(OP72.total <= 1500)
+        #expect(OP72.diveStart + OP72.diveDur <= OP72.total)
+        #expect(OP72.openStart == OP72.diveStart)
+        #expect(OP72.total == 2100)
         #expect(OP72.skipAfter == 600)
+        #expect(OP72.shortCut == 220)
+        #expect(OP72.homeFrom == 1.25)
     }
 
     @Test func はじめも2回目も同じ_設定どおり() {

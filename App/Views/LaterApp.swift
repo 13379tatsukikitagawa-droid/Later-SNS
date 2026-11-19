@@ -54,7 +54,7 @@ struct RootView: View {
     /// v72 B:アプリを 起動した とき だけ(戻った ときは 出さない)。起動画面と 同じ 絵から はじまる
     @State private var opening: (variant: OpeningVariant, start: Date)? = RootView.initialOpening()
     @State private var openingRevealed = false
-    @State private var homeScale: CGFloat = 1
+    @State private var homeScale: CGFloat = OP72.homeFrom
     @State private var cloudKitManager: CloudKitManager?
     @State private var sharedProfile: UserProfile?
     @State private var showingSharedProfile = false
@@ -207,7 +207,7 @@ struct RootView: View {
                     }
                 }
                 .scaleEffect(opening == nil ? 1 : homeScale)
-                .opacity(opening == nil ? 1 : max(0, min(1, 1 - Double(homeScale - 1) / 0.04)))   // v91:Home が 0 → 1 で 出る(1.04 → 1 と 同じ 動き)
+                .opacity(opening == nil ? 1 : max(0, min(1, 1 - Double(homeScale - 1) / Double(OP72.homeFrom - 1))))   // v105:Home が 0 → 1 で 出る(1.25 → 1 と 同じ 動き)
                 .transition(.opacity)
             }
 
