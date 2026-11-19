@@ -109,12 +109,17 @@ struct FriendsV68View: View {
             ShareSheet(activityItems: shareItems ?? []) { done in shareItems = nil; if done { Haptics.play(.success) } }.presentationDetents([.medium, .large])
         }
         .sheet(item: $chat) { f in DirectMessageView(friendID: f.id, friendName: f.name, friendAvatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 160)) }
-        .sheet(item: $cardFriend) { f in
-            let df = DateFormatter(); let _ = df.dateFormat = "HH:mm"
-            FriendCardV82Sheet(name: f.name, avatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 320), tag: f.tag, city: f.city, times: f.hasShot ? [""] : [], mosaics: [V64Images.image(key: "lw\(f.id)", data: f.mosaicTiny, maxPixel: 96)],
-                              onChat: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { chat = f } },
-                              onTrip: { cardFriend = nil; onOpenInviteToGroup() }, onMore: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { actionFriend = f } }, onClose: { cardFriend = nil })
-                .presentationDetents([.fraction(0.72)]).presentationDragIndicator(.hidden)
+        .overlay {
+            FriendCardOverlay(isPresented: Binding(get: { cardFriend != nil }, set: { if !$0 { cardFriend = nil } })) {
+                if let f = cardFriend {
+                    FriendCardV82Sheet(name: f.name, avatar: V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 320), tag: f.tag, city: f.city,
+                                       times: f.hasShot ? [""] : [], mosaics: [V64Images.image(key: "lw\(f.id)", data: f.mosaicTiny, maxPixel: 96)],
+                                       onChat: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { chat = f } },
+                                       onTrip: { cardFriend = nil; onOpenInviteToGroup() },
+                                       onMore: { cardFriend = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { actionFriend = f } },
+                                       onClose: { cardFriend = nil })
+                }
+            }
         }
         .confirmationDialog("", isPresented: Binding(get: { actionFriend != nil }, set: { if !$0 { actionFriend = nil } }), titleVisibility: .hidden) {
             if let f = actionFriend {
