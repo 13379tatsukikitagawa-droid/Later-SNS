@@ -292,6 +292,8 @@ enum DailyExposureStore {
             photo.groupID = group.id
             photo.groupNameCache = group.name
             photo.mosaicTiny = mosaicTiny
+            photo.filmVersion = dayExtras?.filmVersion
+            if dayExtras?.filmVersion == FilmLook.version { photo.isColorGraded = true }   // 焼きずみ(解禁の 直前に もう 焼かない)
             // v20 動画:ポスター(最初のコマ)は imageData。本体は端末のファイル(グループごとの写しで同じファイルを指す)
             if let video {
                 photo.durationSeconds = video.duration

@@ -305,6 +305,7 @@ extension LaterPhoto {
         record["authorNameCache"] = authorNameCache ?? owner?.name
         record["groupNameCache"] = shares ? groupNameCache : nil
         record["isPosted"] = isPosted
+        record["filmVersion"] = filmVersion.map { Int64($0) }
         // モザイク用の小さな画像(投稿した写真だけ)。位置は、共有を「撮った場所」にした分だけ(丸めた値)。
         // 空にしたとき(共有オフ)は、サーバー側の値も消える。
         record["mosaicTiny"] = shares ? mosaicTiny : nil
@@ -370,6 +371,7 @@ extension LaterPhoto {
         // 項目が無い = 古いアプリから届いたレコード(撮った時点で共有していた)ので、投稿ずみ
         let posted = record["isPosted"] as? Bool ?? true
         isPosted = posted
+        if let v = record["filmVersion"] as? Int64 { filmVersion = Int(v); if v >= 2 { isColorGraded = true } }
         // 【プライバシー】投稿の前の レコードには タグ・場所などが 入っていない(送っていない)。
         // そのときは、端末に ある 値(撮った本人の 端末なら 本物)を 消さない
         func take<T>(_ key: String, _ current: T?) -> T? {

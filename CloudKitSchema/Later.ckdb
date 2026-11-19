@@ -172,6 +172,7 @@ DEFINE SCHEMA
         groupIDString                STRING QUERYABLE SEARCHABLE SORTABLE,
         groupNameCache               STRING QUERYABLE SEARCHABLE SORTABLE,
         image                        ASSET,
+        filmVersion                  INT64,
         isPosted                     INT64,
         isUnlocked                   INT64 QUERYABLE SORTABLE,
         locationName                 STRING QUERYABLE SEARCHABLE SORTABLE,

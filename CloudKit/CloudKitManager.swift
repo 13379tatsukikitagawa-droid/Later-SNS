@@ -153,13 +153,7 @@ final class CloudKitManager: NSObject {
         Self.current = self
         SignInPerf.mark("T6 同期の準備ができた(CKSyncEngine)")
 
-        // 「解禁時に一度だけチェキ加工を焼き込む」仕組みの導入前から既に解禁済みだった
-        // 自分の写真を遡って焼き込む。件数次第で時間がかかり得るため、start()自体を
-        // 待たせないよう独立したTaskとして起動する(deduplicateGroupMembers()と違い
-        // Core Image処理を伴うため、CKSyncEngineの初期化完了を待たせたくない)。
-        Task { [weak self] in
-            await self?.migrateChekiGradingForOwnPhotos()
-        }
+        // v107:前に 撮った 写真は 焼きなおさない(古い 解禁ずみの 写真への 遡り 焼きこみは やめた)
     }
 
     /// グループ参加直後など、すぐにShared DBの内容を反映させたい場合に呼ぶ。

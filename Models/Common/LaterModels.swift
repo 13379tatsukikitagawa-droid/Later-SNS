@@ -118,6 +118,8 @@ final class LaterPhoto {
     /// 焼き込み処理を誤って二重適用しない(=同じ画像に多重にグレイン等を重ねない)ための
     /// 冪等性ガードも兼ねる。
     var isColorGraded: Bool = false
+    /// v107:焼いた ファイルの しるし。2 = 撮った 時に チェキ(FilmLook)を 焼いた。1 = 解禁の 直前に 旧 FilmEmulation で 焼いた(移行)。nil = 古い 写真(さわらない)
+    var filmVersion: Int?
     /// この写真の画像本体(CKAsset)が、少なくとも一度はCloudKitへの保存に成功したか。
     /// CloudKitManager.markSynced(_:)が、画像フィールドを含む保存の成功を確認した時点で
     /// trueにする。CloudKitManager.resendOwnUnlockedPhotosIfNeeded()が「解禁済みなのに

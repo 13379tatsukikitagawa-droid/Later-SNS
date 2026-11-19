@@ -73,6 +73,8 @@ nonisolated struct EncodedShot: Sendable {
     let colorHex: String?
     let thumbnailData: Data?
     let toneHexes: [String]
+    /// v107:撮った 時に 焼いた しるし(2)。焼けなかった 時は nil
+    var filmVersion: Int? = nil
 }
 
 nonisolated enum ShotEncoder {
@@ -111,15 +113,22 @@ nonisolated enum ShotEncoder {
 
     /// メインの外で呼ぶ
     static func encode(_ image: UIImage, sourceData: Data?) -> EncodedShot? {
-        let data: Data?
-        if let sourceData, let resized = resizedJPEG(fromData: sourceData) {
+        // v107:撮った 時に 1回 だけ チェキを 焼く(1440px ・ EXIF なし)。以降は この ファイルだけ を 保存 ・ 送る。
+        // ぼかし(ロック ・ ウィジェット)も この 焼いた ファイルから 作る。焼けなかった 時だけ 従来の 形(filmVersion なし)
+        var data: Data?
+        var film: Int?
+        if let sourceData, let baked = FilmLook.shared.chekiJPEG(from: sourceData, seed: FilmLook.seed(for: sourceData)) {
+            data = baked; film = FilmLook.version
+        } else if let baked = FilmLook.shared.chekiJPEG(from: image, seed: FilmLook.seed(for: image.pngData()?.prefix(4096) ?? Data())) {
+            data = baked; film = FilmLook.version
+        } else if let sourceData, let resized = resizedJPEG(fromData: sourceData) {
             data = resized
         } else {
             data = resizedJPEG(from: image)
         }
         guard let imageData = data else { return nil }
         let extras = dayExtras(from: imageData)
-        return EncodedShot(imageData: imageData, colorHex: extras.colorHex, thumbnailData: extras.thumbnailData, toneHexes: extras.toneHexes)
+        return EncodedShot(imageData: imageData, colorHex: extras.colorHex, thumbnailData: extras.thumbnailData, toneHexes: extras.toneHexes, filmVersion: film)
     }
 
     /// 端末に残っていた写真(再試行)からも、同じ値を作る
@@ -167,6 +176,8 @@ nonisolated enum PendingShotStore {
         let place: String?
         /// v22 L-4:撮ったときの 1曲(古い保存には ない)
         var music: MusicPick? = nil
+        /// v107:焼いた しるし(古い 保存には ない)
+        var filmVersion: Int? = nil
     }
 
     struct Item: Sendable {

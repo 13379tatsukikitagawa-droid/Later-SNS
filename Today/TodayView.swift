@@ -1660,10 +1660,10 @@ struct TodayView: View {
                 return false
             }
             CaptureSignpost.mark("encoded")
-            let meta = PendingShotStore.Meta(id: UUID(), captureDate: captureDate, tags: tags, place: place, music: music)
+            let meta = PendingShotStore.Meta(id: UUID(), captureDate: captureDate, tags: tags, place: place, music: music, filmVersion: encoded.filmVersion)
             let data = encoded.imageData
             let wrote = await Task.detached(priority: .userInitiated) { PendingShotStore.write(imageData: data, meta: meta) }.value
-            let extras = ExposureDayStore.Extras(colorHex: encoded.colorHex, thumbnailData: encoded.thumbnailData, toneHexes: encoded.toneHexes)
+            let extras = ExposureDayStore.Extras(colorHex: encoded.colorHex, thumbnailData: encoded.thumbnailData, toneHexes: encoded.toneHexes, filmVersion: encoded.filmVersion)
             let ok = saveExposure(imageData: data, exposureStart: captureDate, tags: tags, locationName: place, extras: extras, music: music)
             CaptureSignpost.mark("saved", ok ? "ok" : "failed")   // ③ 写真が返る → 保存
             lastSaveOK = ok
@@ -1890,7 +1890,7 @@ struct TodayView: View {
             let data = item.imageData
             let extras = await Task.detached(priority: .utility) { ShotEncoder.dayExtras(from: data) }.value
             let ok = saveExposure(imageData: data, exposureStart: date, tags: item.meta.tags, locationName: item.meta.place,
-                                  extras: ExposureDayStore.Extras(colorHex: extras.colorHex, thumbnailData: extras.thumbnailData, toneHexes: extras.toneHexes),
+                                  extras: ExposureDayStore.Extras(colorHex: extras.colorHex, thumbnailData: extras.thumbnailData, toneHexes: extras.toneHexes, filmVersion: item.meta.filmVersion),
                                   music: item.meta.music)
             if ok { PendingShotStore.remove(item.meta.id) }
         }

@@ -64,7 +64,8 @@ struct ChekiPhotoFrame: View {
 
     private var photoArea: some View {
         ZStack {
-            if photo.isUnlocked {
+            if photo.isUnlocked || photo.filmVersion == FilmLook.version {
+                // v107:焼いた ファイルは そのまま 表示(表示の 時に 何も かけない)
                 // 解禁済みの写真は、解禁確定の瞬間(CloudKitManager.evaluateGroupUnlockConditions
                 // →ChekiColorGrade.bakeIntoImageData)に既にFilmEmulationを一度だけ焼き込んで
                 // imageData自体を加工済みにしてある。ここでは再加工せず、そのまま表示するだけでよい。
@@ -186,6 +187,8 @@ enum ChekiColorGrade {
     @MainActor
     static func bakeIntoImageData(_ photo: LaterPhoto) async {
         guard !photo.isColorGraded else { return }
+        // v107:撮った 時に 焼きずみ(2)は もう 焼かない
+        if photo.filmVersion == FilmLook.version { photo.isColorGraded = true; return }
         // v20:動画のポスターは RETRO-8 の加工ずみ。チェキの加工(写真 = ふわっと)とは混ぜない
         if photo.isVideo {
             photo.isColorGraded = true
@@ -213,6 +216,7 @@ enum ChekiColorGrade {
         }
         photo.imageData = result
         photo.isColorGraded = true
+        photo.filmVersion = 1   // 移行:解禁の 直前に 旧 FilmEmulation で 1回 焼いた(P50:移行が 終わったら この 処理ごと 消す)
     }
 
     /// LaterPhoto以外(プロフィール画像等)向けの汎用の焼き込み関数。専用の永続フラグ

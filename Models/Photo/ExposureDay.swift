@@ -45,6 +45,8 @@ enum ExposureDayStore {
         var colorHex: String?
         var thumbnailData: Data?
         var toneHexes: [String]
+        /// v107:撮った 時に 焼いた しるし(2)。焼けなかった 時は nil
+        var filmVersion: Int? = nil
     }
 
     /// 撮った1枚から、その日の記録を作る(すでにあれば何もしない)。
