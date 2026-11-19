@@ -267,8 +267,14 @@ enum RetroExportQueue {
             }
             let temp = FileManager.default.temporaryDirectory.appendingPathComponent("later-retro-\(UUID().uuidString).mp4")
             let started = Date()
+            #if DEBUG
+            let debugToken = DebugFilm.beginVideo(raw: raw)
+            #endif
             do {
                 let result = try await RetroExporter.export(raw: raw, to: temp, velocities: job.velocities, captureDate: job.captureDate)
+                #if DEBUG
+                DebugFilm.finishVideo(debugToken, baked: temp, clipSeconds: result.duration)
+                #endif
                 print(String(format: "[RetroExport] %.1f秒の動画を %.1f秒で書き出し", result.duration, Date().timeIntervalSince(started)))
                 let name = try LaterVideoStore.adopt(temp)
                 apply(job: job, fileName: name, poster: result.poster)
@@ -277,6 +283,9 @@ enum RetroExportQueue {
                 drop(job)
             } catch {
                 print("[RetroExport] 書き出しに失敗:\(error)。次の起動で もう一度")
+                #if DEBUG
+                DebugFilm.discardVideo(debugToken)
+                #endif
                 try? FileManager.default.removeItem(at: temp)
                 return
             }

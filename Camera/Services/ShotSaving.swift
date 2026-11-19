@@ -117,9 +117,16 @@ nonisolated enum ShotEncoder {
         // ぼかし(ロック ・ ウィジェット)も この 焼いた ファイルから 作る。焼けなかった 時だけ 従来の 形(filmVersion なし)
         var data: Data?
         var film: Int?
-        if let sourceData, let baked = FilmLook.shared.chekiJPEG(from: sourceData, seed: FilmLook.seed(for: sourceData)) {
-            data = baked; film = FilmLook.version
-        } else if let baked = FilmLook.shared.chekiJPEG(from: image, seed: FilmLook.seed(for: image.pngData()?.prefix(4096) ?? Data())) {
+        func bake() -> Data? {
+            if let sourceData, let baked = FilmLook.shared.chekiJPEG(from: sourceData, seed: FilmLook.seed(for: sourceData)) { return baked }
+            return FilmLook.shared.chekiJPEG(from: image, seed: FilmLook.seed(for: image.pngData()?.prefix(4096) ?? Data()))
+        }
+        #if DEBUG
+        let bakedJPEG = DebugFilm.recordPhoto(sourceData: sourceData, image: image, bake: bake)
+        #else
+        let bakedJPEG = bake()
+        #endif
+        if let baked = bakedJPEG {
             data = baked; film = FilmLook.version
         } else if let sourceData, let resized = resizedJPEG(fromData: sourceData) {
             data = resized

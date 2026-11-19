@@ -93,6 +93,7 @@
 		7603F641A9C34FDCB88549A5 /* LaterColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0936F8145E634A46BB2AB934 /* LaterColor.swift */; };
 		7632BEB81B5BF8E549C665C4 /* V64/ProfileEditV88View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0379B7B1C3D13126CF9489E1 /* V64/ProfileEditV88View.swift */; };
 		77A916BDF86500D6406DB99B /* V64/MusicPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715D5217D6859EE7C88838FF /* V64/MusicPlayback.swift */; };
+		32B89DFF90D2888730DA9406 /* DebugFilm.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35FB2F394F9AB8AA239628C /* DebugFilm.swift */; };
 		789FC7EA5A6F82D999D7F873 /* DebugDataVolume.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF39B90BD0EE97062274ACA /* DebugDataVolume.swift */; };
 		7B2B451E280BFE3372DED15F /* CloudKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15C54A1DF7CA538AE122F15 /* CloudKitManager.swift */; };
 		7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D0F07632A5009E1A3721A3 /* LGPressable.swift */; };
@@ -415,6 +416,7 @@
 		2A2BFAC1A6DE1DAB14447490 /* HomeScrollUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeScrollUITests.swift; sourceTree = "<group>"; };
 		2CF326736D97D14B1A1DC9F0 /* V64/UsageGuideV105.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/UsageGuideV105.swift; sourceTree = "<group>"; };
 		39124A5DC2D4B9F1FACAA21B /* V64/ShutterIconV94.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ShutterIconV94.swift; sourceTree = "<group>"; };
+		C35FB2F394F9AB8AA239628C /* DebugFilm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugFilm.swift; sourceTree = "<group>"; };
 		3BF39B90BD0EE97062274ACA /* DebugDataVolume.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDataVolume.swift; sourceTree = "<group>"; };
 		3DBC3939C57455DE3F1BBC4D /* AccountDeletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDeletionView.swift; sourceTree = "<group>"; };
 		3E20E050E410BA1D32F171B6 /* MainNavigationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainNavigationView.swift; sourceTree = "<group>"; };
@@ -783,6 +785,7 @@
 				57F36AA1B5669102F3368268 /* DebugRouter.swift */,
 				D881D698B13AD2783A958080 /* DebugStateMenu.swift */,
 				3BF39B90BD0EE97062274ACA /* DebugDataVolume.swift */,
+				C35FB2F394F9AB8AA239628C /* DebugFilm.swift */,
 				769863F83DF8CA3E06CAE493 /* SampleData.swift */,
 				D8074893E58921F0B4509881 /* DesignSystemPreview.swift */,
 			);
@@ -1625,6 +1628,7 @@
 				0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */,
 				A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */,
 				789FC7EA5A6F82D999D7F873 /* DebugDataVolume.swift in Sources */,
+				32B89DFF90D2888730DA9406 /* DebugFilm.swift in Sources */,
 				00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */,
 				16D97CBCD681A1D79C4538B9 /* DesignSystemPreview.swift in Sources */,
 				1054D4672E2B4B9DAEE4F2B7 /* LaterFont.swift in Sources */,

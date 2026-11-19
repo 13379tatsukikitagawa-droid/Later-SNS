@@ -10,6 +10,8 @@ struct DebugStateMenu: View {
     @State private var shots = DebugState.shared.shots
     @State private var showPreview = false
     @State private var showVolume = false
+    @State private var showFilmCompare = false
+    @State private var showFilmMetrics = false
 
     /// (名前, route, 一時の 起動フラグ)
     static let screens: [(String, String, [String: Any])] = [
@@ -82,6 +84,10 @@ struct DebugStateMenu: View {
                 Section("データの 量(v106)") {
                     Button("データの 量を 見る") { showVolume = true }
                 }
+                Section("質感(v107)") {
+                    Button("焼いた 写真 ・ 動画を すぐ 見る") { showFilmCompare = true }
+                    Button("質感の 数字") { showFilmMetrics = true }
+                }
                 Section("確かめる") {
                     Button("書体 ・ バイブ ・ ガラス の プレビュー") { showPreview = true }
                 }
@@ -90,6 +96,8 @@ struct DebugStateMenu: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("閉じる") { dismiss() } } }
             .sheet(isPresented: $showPreview) { DesignSystemPreview() }
+            .sheet(isPresented: $showFilmCompare) { DebugFilmCompareView() }
+            .sheet(isPresented: $showFilmMetrics) { DebugFilmMetricsView() }
             .sheet(isPresented: $showVolume) { DebugDataVolumeView().modelContainer(LaterApp.sharedModelContainer) }
         }
     }
