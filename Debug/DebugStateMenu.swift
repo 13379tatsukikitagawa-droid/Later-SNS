@@ -84,6 +84,12 @@ struct DebugStateMenu: View {
                 Section("データの 量(v106)") {
                     Button("データの 量を 見る") { showVolume = true }
                 }
+                Section("自分の uid(USE_WORKER_UIDS 用 ・ v111)") {
+                    let uid = UserDefaults.standard.string(forKey: "firebaseUID") ?? ""
+                    Text(uid.isEmpty ? "(まだ ログインして いません)" : uid).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                    Button("uid を コピー") { UIPasteboard.general.string = uid; Haptics.play(.success) }.disabled(uid.isEmpty)
+                    Text("リモート設定 useWorker = \(UserDefaults.standard.bool(forKey: SocialFlag.remoteKey) ? "オン" : "オフ")").font(.footnote).foregroundStyle(.secondary)
+                }
                 Section("友だちの Worker(v108)") {
                     Toggle("Worker を つかう(切りかえ ・ 再起動)", isOn: Binding(get: { SocialFlag.useWorker }, set: { UserDefaults.standard.set($0, forKey: SocialFlag.key) }))
                 }

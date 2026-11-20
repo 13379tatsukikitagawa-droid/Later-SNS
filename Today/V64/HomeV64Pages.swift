@@ -454,8 +454,8 @@ struct HVLivePanel: View {
                     Capsule().fill(Color.white.opacity(0.06)).frame(width: W, height: 8).mask(Rectangle().frame(width: W - W * 24 / 33).frame(width: W, alignment: .trailing))
                     Capsule().fill(LinearGradient(colors: [lime.opacity(0.18), lime.opacity(0.85)], startPoint: .leading, endPoint: .trailing)).frame(width: max(8, W * frac * barP), height: 8).shadow(color: lime.opacity(0.32), radius: 7)
                     if !reduceMotion {
-                        TimelineView(.animation) { ctx in
-                            let u = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.4) / 2.4
+                        PausableTimeline(minimumInterval: 1.0 / 30) { date in   // v111:間隔 ・ 見えて いる 時だけ
+                            let u = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.4) / 2.4
                             LinearGradient(colors: [.clear, .white.opacity(0.35), .clear], startPoint: .leading, endPoint: .trailing).frame(width: W * 0.4, height: 8).offset(x: -W * 0.4 + (W * 1.4) * u)
                         }.frame(width: W, height: 8).clipShape(Capsule()).allowsHitTesting(false)
                     }

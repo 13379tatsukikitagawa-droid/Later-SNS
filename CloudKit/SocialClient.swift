@@ -4,8 +4,11 @@ import UIKit
 /// v108 (2) Worker(server/social-worker)への つなぎかえ。**切りかえの スイッチ `SocialFlag.useWorker` が オフの 間は 何も 呼ばない**
 /// (今まで どおり CloudKit)。オンに するのは 実機で 確かめて から。
 enum SocialFlag {
+    /// DEBUG メニューの 手動スイッチ(今までの 名前)
     static let key = "useSocialWorker"
-    static var useWorker: Bool { UserDefaults.standard.bool(forKey: key) }
+    /// Worker の `/v1/config` から 読んだ 前回の 値(読めない 時は これを 使う)
+    static let remoteKey = "useSocialWorkerRemote"
+    static var useWorker: Bool { UserDefaults.standard.bool(forKey: key) || UserDefaults.standard.bool(forKey: remoteKey) }
 }
 
 enum SocialClient {
@@ -50,6 +53,33 @@ enum SocialClient {
         struct R: Decodable { let token: String }
         guard let d = try? await call("POST", "/v1/trip-links", body: ["key": key, "groupName": groupName, "fromName": fromName, "dates": dates, "members": members]) else { return nil }
         return (try? JSONDecoder().decode(R.self, from: d))?.token
+    }
+
+    // MARK: リモート設定 ・ Trip の メンバー登録 ・ チャット通知(v111)
+
+    /// 起動時と 前に 来た 時に 読む。読めない 時は 前回の 値を そのまま 使う(`useWorker` は 切りかえに 使う だけで この 呼び出しは 止めない)
+    static func refreshConfig() async {
+        struct C: Decodable { let useWorker: Bool }
+        guard let d = try? await call("GET", "/v1/config"), let c = try? JSONDecoder().decode(C.self, from: d) else { return }
+        UserDefaults.standard.set(c.useWorker, forKey: SocialFlag.remoteKey)
+    }
+
+    /// Trip の ID = LaterGroup.id(小文字の UUID)。共有ゾーンの 内側の 名前は 見る 人で かわる ため 使わない
+    static func tripID(_ group: LaterGroup) -> String { group.id.uuidString.lowercased() }
+
+    /// 入った 人が 自分で 登録する(何回 よんでも 同じ)
+    static func joinTripMembership(_ group: LaterGroup) async {
+        guard SocialFlag.useWorker, !group.isPersonalSpace else { return }
+        _ = try? await call("POST", "/v1/trips/\(tripID(group))/members", body: [:])
+    }
+    static func leaveTripMembership(_ group: LaterGroup) async {
+        guard SocialFlag.useWorker, !group.isPersonalSpace else { return }
+        _ = try? await call("DELETE", "/v1/trips/\(tripID(group))/members", body: [:])
+    }
+    /// チャットを 送った 時。登録 ずみの ほかの メンバーへ(2分に 1回 まで ・ サーバーで 間引く)
+    static func tripChatPush(group: LaterGroup, preview: String) async {
+        guard SocialFlag.useWorker, !group.isPersonalSpace else { return }
+        _ = try? await call("POST", "/v1/push/trip-chat", body: ["tripId": tripID(group), "tripName": group.name, "preview": preview])
     }
 
     // MARK: 自分

@@ -302,33 +302,29 @@ struct HVGrain: View {
 
 /// 通知の 赤い 点(1.8秒ごとに 輪が ひろがる)
 struct HVBadge: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var size: CGFloat = 16
+    @State private var p: Double = 0
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { ctx in
-            let p = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.8) / 1.8
-            ZStack {
-                Circle().stroke(HV.red.opacity(0.6 * (1 - p)), lineWidth: 2).frame(width: size + 18 * p, height: size + 18 * p)
-                Circle().fill(HV.red).overlay(Circle().strokeBorder(.white, lineWidth: 2)).frame(width: size, height: size)
-            }
+        ZStack {
+            Circle().stroke(HV.red.opacity(0.6 * (1 - p)), lineWidth: 2).frame(width: size + 18 * p, height: size + 18 * p)
+            Circle().fill(HV.red).overlay(Circle().strokeBorder(.white, lineWidth: 2)).frame(width: size, height: size)
         }
         .frame(width: size, height: size)
+        .loopWhileVisible(.linear(duration: 1.8).repeatForever(autoreverses: false), value: $p)   // v111:見えて いる 間 だけ
     }
 }
 
 // MARK: - 下の ピル / 上の チップ
 
 struct HVLiveDot: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var p: Double = 0
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { ctx in
-            let p = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.2) / 2.2
-            ZStack {
-                Circle().stroke(HV.lime.opacity(0.5 * (1 - p)), lineWidth: 4.5 * p + 0.5).frame(width: 7 + 9 * p, height: 7 + 9 * p)
-                Circle().fill(HV.lime).frame(width: 7, height: 7)
-            }
+        ZStack {
+            Circle().stroke(HV.lime.opacity(0.5 * (1 - p)), lineWidth: 4.5 * p + 0.5).frame(width: 7 + 9 * p, height: 7 + 9 * p)
+            Circle().fill(HV.lime).frame(width: 7, height: 7)
         }
         .frame(width: 7, height: 7)
+        .loopWhileVisible(.linear(duration: 2.2).repeatForever(autoreverses: false), value: $p)   // v111
     }
 }
 

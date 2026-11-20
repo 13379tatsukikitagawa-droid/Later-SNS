@@ -253,6 +253,7 @@ struct RootView: View {
                 developProfilePhotoIfDue()
             }
             if newPhase == .active, isSignedIn {
+                Task { await SocialClient.refreshConfig() }   // v111:前に 来た 時にも リモート設定
                 Task { await cloudKitManager?.handleRemoteNotification() }
                 Task { await cloudKitManager?.resendOwnUnlockedPhotosIfNeeded() }
                 ensurePersonalSpaceForCurrentUser()
@@ -275,12 +276,16 @@ struct RootView: View {
             if AppleFirebaseAuth.needsReconnect, !AppleFirebaseAuth.snoozed { AppleFirebaseAuth.snooze(); showAppleReconnect = true }   // 出した 時から 24時間 は 出さない
         }
         .task(id: firebaseUID) {
+            // v111:リモート設定を 先に 読む(読めない 時は 前回の 値)
+            if !firebaseUID.isEmpty { await SocialClient.refreshConfig() }
             // v108 (2):Worker へ(切りかえの スイッチが オンの とき だけ)。ID ・ 名前の 登録 → 端末トークン → 友だちの 移行(1回)
             guard SocialFlag.useWorker, !firebaseUID.isEmpty, isSetupCompleted else { return }
             let me = UserProfile.current(from: (try? modelContext.fetch(FetchDescriptor<UserProfile>())) ?? [])
             let rn = CloudKitManager.current?.currentUserRecordName
             await SocialClient.registerMe(handle: HandleRules.normalize(me?.username ?? ""), name: me?.name ?? "", recordName: rn)
             if let hex = UserDefaults.standard.string(forKey: "apnsTokenHex") { await SocialClient.registerDevice(tokenHex: hex) }
+            // v111:入って いる Trip を 自分で 登録(チャット通知の 宛先)
+            for g in (try? modelContext.fetch(FetchDescriptor<LaterGroup>())) ?? [] { await SocialClient.joinTripMembership(g) }
             if let rn { await SocialClient.migrateLegacyFriendsOnce(recordName: rn) }
         }
         .sheet(isPresented: $showAppleReconnect) { AppleReconnectSheet() }

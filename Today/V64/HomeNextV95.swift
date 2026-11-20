@@ -124,6 +124,6 @@ private struct HVNextPulse: ViewModifier {
     @State private var on = false
     func body(content: Content) -> some View {
         content.background(Circle().stroke(color.opacity(on ? 0 : 0.6), lineWidth: 2).frame(width: 36, height: 36).scaleEffect(on ? 1.7 : 1))
-            .onAppear { withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { on = true } }
+            .loopWhileVisible(.easeOut(duration: 1.4).repeatForever(autoreverses: false), value: $on)   // v111
     }
 }

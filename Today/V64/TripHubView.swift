@@ -53,7 +53,7 @@ struct TripHubView: View {
                     .background(PopColor.sun, in: Capsule()).overlay(Capsule().strokeBorder(.white, lineWidth: 2)).padding(.top, topInset + 4).transition(.scale.combined(with: .opacity))
             }
         }
-        .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { blink = true } } }
+        .loopWhileVisible(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: $blink)   // v111
     }
 
     // MARK: 5-1 週の 帯

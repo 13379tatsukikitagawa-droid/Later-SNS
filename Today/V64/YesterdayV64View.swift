@@ -243,7 +243,7 @@ struct YesterdayV64View: View {
                         .zIndex(mid ? 1 : 0)
                 }
             }.frame(height: 230).padding(.top, 8)
-            .onAppear { withAnimation(.easeInOut(duration: 3.6).repeatForever(autoreverses: true)) { floatUp = true } }
+            .loopWhileVisible(.easeInOut(duration: 3.6).repeatForever(autoreverses: true), value: $floatUp)   // v111
             Text("最初の 1枚を 撮ろう").font(LF.inter(900, 24)).foregroundStyle(.white).padding(.top, 18)
             Text("あした 9:00 に、ここで ひらきます").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.5)).padding(.top, 6)
             Button { Haptics.play(.click); actions.shoot() } label: {

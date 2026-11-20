@@ -272,6 +272,9 @@ final class GroupChatStore {
         messages[group.id] = list
         markSeen(group.id, at: now)
         upload(message, group: group)
+        let preview: String
+        switch kind { case .text: preview = text; case .sticker: preview = "ステッカー"; default: preview = "写真" }
+        Task { await SocialClient.tripChatPush(group: group, preview: preview) }
         return message
     }
 

@@ -268,6 +268,7 @@ enum GroupLeaveService {
             leaveLog("失敗 \(describe(error))")
             throw LeaveError.failed
         }
+        await SocialClient.leaveTripMembership(group)   // v111:チャット通知の 宛先から はずれる
         // 端末の片づけ(写真は cascade で消える)
         context.delete(group)
         try? context.save()

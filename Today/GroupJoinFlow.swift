@@ -829,6 +829,7 @@ struct InvitationView: View {
             switch result {
             case .success(let group):
                 joinedGroup = group
+                Task { await SocialClient.joinTripMembership(group) }   // v111:チャット通知の 宛先に 自分を 登録
                 successAt = Date().timeIntervalSince(joinStart)
             case .failure(let failure):
                 // アニメを途中で止めて、エラーへ
