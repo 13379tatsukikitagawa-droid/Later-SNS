@@ -236,17 +236,19 @@ enum GroupLeaveService {
         let isZoneOwner = zoneID?.ownerName == cloudKitManager.currentUserRecordName
 
         PendingLeaveStore.begin(group.id)
+        leaveLog("開始 group=\(group.id.uuidString.prefix(8)) kind=\(kind) isHost=\(isHost) isZoneOwner=\(isZoneOwner) zone=\(zoneID?.zoneName.prefix(12) ?? "nil") owner=\(zoneID?.ownerName.prefix(10) ?? "nil")")
         do {
             if (kind == .lastOne && isZoneOwner) || zoneID == nil {
                 // 最後の1人:ゾーンごと消える(投稿も一緒に消える)
-                try await sharing.leaveGroup(group, currentUser: user, isHost: isHost)
+                try await leaveStep("1 ゾーンごと削除") { try await sharing.leaveGroup(group, currentUser: user, isHost: isHost) }
             } else if let zoneID {
                 let isOwner = zoneID.ownerName == cloudKitManager.currentUserRecordName
                 let database = isOwner ? cloudKitManager.container.privateCloudDatabase : cloudKitManager.container.sharedCloudDatabase
-                try await deleteOwnPosts(in: group, user: user, zoneID: zoneID, database: database, context: context)
-                try await writeLeftEvent(group: group, user: user, zoneID: zoneID, database: database)
+                leaveLog("DB=\(isOwner ? "private" : "shared")")
+                try await leaveStep("2 自分の投稿を消す") { try await deleteOwnPosts(in: group, user: user, zoneID: zoneID, database: database, context: context) }
+                try await leaveStep("3 left イベント") { try await writeLeftEvent(group: group, user: user, zoneID: zoneID, database: database) }
                 // 自分のプロフィールを消す(ホストならホスト役を次の人へ渡して、送る)
-                try await sharing.leaveGroup(group, currentUser: user, isHost: isHost)
+                try await leaveStep("4 自分のプロフィール") { try await sharing.leaveGroup(group, currentUser: user, isHost: isHost) }
                 if isHost { await cloudKitManager.sendPendingChangesNow() }
                 if isOwner {
                     // 作った人は共有から外れられない(ゾーンは残る)。同期で届いても取りこまない
@@ -254,7 +256,7 @@ enum GroupLeaveService {
                 } else {
                     // 参加者は、shared DB からゾーンを消すと、共有から外れる
                     do {
-                        _ = try await cloudKitManager.container.sharedCloudDatabase.modifyRecordZones(saving: [], deleting: [zoneID])
+                        try await leaveStep("5 shared DB からゾーン削除") { _ = try await cloudKitManager.container.sharedCloudDatabase.modifyRecordZones(saving: [], deleting: [zoneID]) }
                     } catch let error as CKError where error.code == .zoneNotFound || error.code == .unknownItem {
                         // すでに外れている
                     }
@@ -263,12 +265,35 @@ enum GroupLeaveService {
             }
         } catch {
             print("[GroupLeave] 抜ける途中で失敗(次の起動で続きから): \(error)")
+            leaveLog("失敗 \(describe(error))")
             throw LeaveError.failed
         }
         // 端末の片づけ(写真は cascade で消える)
         context.delete(group)
         try? context.save()
         PendingLeaveStore.finish(group.id)
+    }
+
+    // MARK: [Leave] ログ(原因の 特定用。Xcode の コンソールで「[Leave]」で 絞る)
+    private static func leaveLog(_ s: String) { print("[Leave] \(s)") }
+
+    private static func describe(_ error: Error) -> String {
+        guard let ck = error as? CKError else { return "\(type(of: error)) \(error)" }
+        var out = "CKError code=\(ck.code.rawValue)(\(ck.code)) \(ck.localizedDescription)"
+        if let partial = ck.partialErrorsByItemID {
+            for (id, e) in partial {
+                let c = (e as? CKError).map { "\($0.code.rawValue)(\($0.code))" } ?? "\(e)"
+                out += "\n    partial \(String(describing: id).prefix(60)) → \(c)"
+            }
+        }
+        if let retry = ck.retryAfterSeconds { out += " retryAfter=\(retry)" }
+        return out
+    }
+
+    private static func leaveStep(_ name: String, _ body: () async throws -> Void) async throws {
+        leaveLog("▶ \(name)")
+        do { try await body(); leaveLog("✓ \(name)") }
+        catch { leaveLog("✗ \(name) \(describe(error))"); throw error }
     }
 
     /// v58 §5:「Trip を おわる」(作成者だけ)。GroupSharingService.endTrip を 呼ぶだけ(写真は 消さない)。
@@ -311,7 +336,8 @@ enum GroupLeaveService {
         if let groupRecordName = group.ckRecordName {
             record["groupRef"] = CKRecord.Reference(recordID: CKRecord.ID(recordName: groupRecordName, zoneID: zoneID), action: .none)
         }
-        _ = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+        let (saved, _) = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+        for (_, r) in saved { if case .failure(let e) = r { leaveLog("  left イベントの 保存で 個別に 失敗 \(describe(e))(先へ 進む)") } }
     }
 
     /// 起動のとき:抜けている最中で止まったものを、続きから(二重には実行しない)
