@@ -1,6 +1,6 @@
 # モックの 元コード ・ 読む 順番
 
-`lattag_v96.html` は、下の ファイルを この 順番で 1つに まとめた もの です(フォント ・ 見本写真は html の 中に 埋めこみ)。
+`lattag_v97.html` は、下の ファイルを この 順番で 1つに まとめた もの です(フォント ・ 見本写真は html の 中に 埋めこみ)。
 
 ## HTML
 
@@ -45,13 +45,14 @@
 36. `v94.css`(**v105**:友だちの カード ・ 使いかた)
 37. `v95.css`(**v106**:Name の 字数 ・ Friends の さいご ・ Trip の 設定 ・ ぬける)
 38. `v96.css`(**v108**:Home の 上 ・ お知らせ ・ 送る 文)
+39. `v97.css`(**v110**:Mondo を なくす ・ Friends | Trip ・ ポップ)
 17. `v75.css`(**v78 + v79**:Home = 大きな # ・ 時間の カプセル ・ ピルから CAMERA を 外す)
 
 ## JS(後ろ ほど 優先 ・ 前の 関数を 包んで 上書き)
 
 `app.js` の 最後に ある `window.__api={...}` の **直前** に、次の 順で 入って います:
 
-`v46.js` → `v48.js` → `v49.js` → `v50.js` → `v51.js` → `v52.js` → `v53.js` → `v54.js` → `v55.js` → `v56.js` → `v57.js` → `v58.js` → `v61.js` → `v62.js` → `v63.js` → `v64.js` → `v65.js` → `v66.js` → `v67.js` → `v68.js` → `v69.js` → `v70.js` → `v71.js` → `v72.js` → `v73.js` → `v74.js` → `v75.js` → `v76.js` → `v77.js` → `v78.js` → `v79.js` → `v80.js` → `v81.js` → `v82.js` → `v83.js` → `v84.js` → `v85.js` → `v86.js` → `v87.js` → `v88.js` → `v89.js` → `v90.js` → `v91.js` → `v92.js` → `v93.js` → `v94.js` → `v95.js` → `v96.js`
+`v46.js` → `v48.js` → `v49.js` → `v50.js` → `v51.js` → `v52.js` → `v53.js` → `v54.js` → `v55.js` → `v56.js` → `v57.js` → `v58.js` → `v61.js` → `v62.js` → `v63.js` → `v64.js` → `v65.js` → `v66.js` → `v67.js` → `v68.js` → `v69.js` → `v70.js` → `v71.js` → `v72.js` → `v73.js` → `v74.js` → `v75.js` → `v76.js` → `v77.js` → `v78.js` → `v79.js` → `v80.js` → `v81.js` → `v82.js` → `v83.js` → `v84.js` → `v85.js` → `v86.js` → `v87.js` → `v88.js` → `v89.js` → `v90.js` → `v91.js` → `v92.js` → `v93.js` → `v94.js` → `v95.js` → `v96.js` → `v97.js`
 
 - 上書きの 書き方:`{const _r=renderOrb;renderOrb=function(){_r(); …足す 処理…}}`。**最後に 定義された もの が 本当の 動き**。
 - `v60.*` は `v61.*` に 置きかわった ので 入って いない。

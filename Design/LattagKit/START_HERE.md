@@ -104,3 +104,4 @@ Design/LattagKit/prompts/P00_setup.md を 読んで、その とおりに 進め
 | P45 | `P45_v102_legal_links.md` | **v102**:利用規約 ・ プライバシーを アプリに つなぐ(サインイン画面 ・ 設定 > サポート ・ アプリ内ブラウザ)。小さな 作業 | 0 + A〜B |
 | P46 | `P46_v103_friends_backend.md` | **v103**:友だち ・ 申請 ・ 1対1チャット ・ 友だちの 写真を Cloudflare + Firebase 認証に まとめる。**P44 が 先** | 0 + A〜E |
 | P47 | `P47_v104_apple_only_onboarding.md` | **v104**:サインインは Apple だけ(P44 の かわり)・ 見出し「昨日を 共有する SNS」・ Name / ID / 招待シートの 空白 ・ ウィジェットを 先に えらぶ |
+| P54 | `P54_v110_trip_tab_pop.md` | **v110**:Mondo を なくす ・ タブ Friends / Trip ・ ステッカー × チェキ で ポップ |

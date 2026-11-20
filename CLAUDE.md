@@ -6,7 +6,7 @@
 ## 1. いま やって いる こと
 
 - HTML の モック(`Design/LattagKit/mock/lattag_v83.html`)を、**見た目 ・ 動き ・ バイブまで そのまま** SwiftUI の 実機アプリに 移す。
-- 範囲は **オープニング 〜 Trip を つくる まで ぜんぶ**。段階(フェーズ)ごとに 進める:`Design/LattagKit/prompts/P00〜P52`。
+- 範囲は **オープニング 〜 Trip を つくる まで ぜんぶ**。段階(フェーズ)ごとに 進める:`Design/LattagKit/prompts/P00〜P54`。
 - 進み具合は `Design/LattagKit/PROGRESS.md` に 書く(フェーズ と 画面 ID に ✓)。
 
 ## 2. 正解の 順番(迷ったら 上が 勝つ)
@@ -38,7 +38,7 @@
 
 ## 6. デザインの きまり(Design System)
 
-- 色 ・ 書体は `spec/TOKENS.md` と 各 PROMPT に ある 値だけ。**新しい 色を 作らない**。
+- 色 ・ 書体は `spec/TOKENS.md` と 各 PROMPT に ある 値だけ。**新しい 色を 作らない**。(v110 で ポップ 3色 ピンク #FF7AB6 ・ 空色 #6EC8FF ・ 黄色 #FFD84D を 足した。使う 所は ステッカー ・ タグ ・ Trip の 色 ・ 数の 丸 だけ)
 - 書体:Inter / Instrument Serif / Space Mono / Caveat / Klee One / Noto Serif JP Bold(`Later Mincho`)。`Info.plist` の `UIAppFonts` に 登録。
 - **重さ**:ぼかしは 小さな 画像を 1回だけ ぼかして 引きのばす(毎フレーム 計算しない)。ガラスは 1画面 8枚まで。画面の 外の 動きは 止める(`PROMPT_v68.md` 5章)。
 - **キャラクター(にこちゃんの 顔 ・ 人の 絵)は 使わない**。
@@ -55,6 +55,7 @@
 - **写真と 動画の 質感(v107 ・ 必須)**:写真 = チェキ(1440px ・ LUT `cheki_v2` ・ にじみ ・ ビネット ・ 粒子)、動画 = iPhone 8 風(1080p30 ・ HDR オフ ・ sRGB ・ LUT `retro8` ・ うすい シャープ ・ 動く 粒子)。**撮った 時に 1回 だけ 焼き、焼いた ファイル だけ を 保存 ・ 送る**(友だちにも 同じ 質感)。表示時の フィルターは 0。数字は `tools/film/film_pipeline.py`。
 - **相互フォロー ・ お知らせ(v108)**:申請 → 承認(= フォローバック)で 相互。おたがいに 申請 → すぐ 相互。片方 だけの フォローは 作らない。Home の 上は まんなかに Lattag ・ 左に お知らせ(ベル + 数)・ 右に アイコン。友だち申請と Trip の 招待は お知らせで 承認 / 参加。通知は Worker → APNs。
 - **リンク(v108)**:`https://later-app-f2606.firebaseapp.com/u/<ID>` ・ `/t/<トークン>` + `?openExternalBrowser=1`(LINE の 中で 止まらない)。ページ ・ OGP ・ AASA は `hosting/`。`/g/*` は こわさない。ドメインは `AppLinks` 1か所。
+- **ポップ(v110)**:ステッカー × チェキ。部品は `Pop/`(Sticker ・ Tag ・ Tape ・ ChekiFrame ・ PopButton)。押すと 0.93 → ばねで もどる。ステッカーは 形と 字 だけ(顔 なし)。Trip は 上に 週の 帯(Trip の 色の 線)+ いま / これから / おわった の カード。
 - **重さ(v106)**:起動時は 今の Trip だけ ・ CloudKit は 変更トークンで 差分 だけ ・ 一覧は サムネ だけ。古い データの 片づけは DEBUG だけ(自分の もの だけ ・ 自動で 消さない)。
 - **シートは 中身の 高さ(v104)**:`Spacer()` で のばさない ・ `.presentationDetents([.height(h)])` ・ キーボードの すぐ 上。Name では キーボード 中も アイコンの 写真を かくさない。
 - **ウィジェット(v104)**:先に 1つ えらぶ → アプリの 中の 動く 案内(5場面)→ もどった 時に `WidgetCenter` で 自動で たしかめる(アプリから ホームへ 行く ・ 自動で 置く ことは できない)。
