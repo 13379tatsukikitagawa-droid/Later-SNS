@@ -338,6 +338,7 @@
 - 未: §6 ぬける/おわる の 長押し ・ やぶれる 演出 ・ Home の カード 消え(いまは 今までの 確認 + 演出)/ §5 の 日にち ・ メンバーの ✕(データが ない)/ §7-1 起動の 軽量化 ・ サムネ キャッシュ(数字を 見てから)
 | P50 | v107 質感(A 写真 / B 送る ・ 見せる / C 動画 / D はかる)| ☐ ☐ ☐ ☐ | 手順 0 報告まで |
 | P51 | Xcode 27 切りかえ(期限 2027年4月 ・ 目安 1〜2日)| ☐ | P50 の あと。Firebase 12 系 / AppDelegate の コメント直し / import SwiftData 2件 / UIScreen.main 置きかえ / 警告の 整理 |
+| P52 | v108 相互フォロー ・ お知らせ ・ リンク(手順 0 報告 → 1 相互 / 2 Home 上 / 3 お知らせ / 4 通知 / 5 リンク)| ☐ | 手順 0 報告まで |
 
 ## v107 P50
 - ✓ A 写真:`FilmLook.chekiJPEG`(撮った 時に 1回 ・ 1440px ・ LUT ・ にじみ ・ ビネット ・ 粒子 ・ EXIF なし)・ `filmVersion = 2`(LaterPhoto ・ CKRecord `filmVersion` ・ PendingShot)・ 解禁の 直前に もう 焼かない(filmVersion が ない 写真だけ 旧 FilmEmulation を 1回 → `filmVersion = 1`)・ 古い 写真への 遡り 焼きこみは やめた。LUT の 色見本テスト(±3)。

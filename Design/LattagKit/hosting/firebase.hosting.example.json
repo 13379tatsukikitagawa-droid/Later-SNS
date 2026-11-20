@@ -1,0 +1,26 @@
+{
+  "hosting": {
+    "public": "public",
+    "headers": [
+      {
+        "source": "/.well-known/apple-app-site-association",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/u/**",
+        "destination": "/u.html"
+      },
+      {
+        "source": "/t/**",
+        "destination": "/t.html"
+      }
+    ]
+  }
+}

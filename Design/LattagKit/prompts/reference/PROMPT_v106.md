@@ -2,7 +2,7 @@
 # PROMPT v106 ・ バグ 2つ + Friends + Trip + 重さ
 
 > **いちばん 新しい 指示**。
-> 見た目の 正解:モック `mock/lattag_v95.html`。デモ:`Name(字数)` `Friends:フィードの さいご` `Trip の 中` `Trip の 設定` `Trip を ぬける` `Trip を おわる`。元コード `mock/src/v95.js` `v95.css`(関数は `e9…`)。
+> 見た目の 正解:モック `mock/lattag_v96.html`。デモ:`Name(字数)` `Friends:フィードの さいご` `Trip の 中` `Trip の 設定` `Trip を ぬける` `Trip を おわる`。元コード `mock/src/v95.js` `v95.css`(関数は `e9…`)。
 
 ---
 

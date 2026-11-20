@@ -5,7 +5,7 @@
 
 ## 読む もの
 1. `prompts/reference/PROMPT_v105.md`(**ここが 正解**)
-2. モック `mock/lattag_v95.html`(デモ `友だちの カード(撮った)` `友だちの カード(まだ)` `使いかた`)・ 元コード `mock/src/v94.js` `v94.css`
+2. モック `mock/lattag_v96.html`(デモ `友だちの カード(撮った)` `友だちの カード(まだ)` `使いかた`)・ 元コード `mock/src/v94.js` `v94.css`
 3. オープニング `mock/opening_v94.html` の **S**(「ゆっくり ×4」)・ コマ割り `motion/M32_opening_v94_strong.png`
 4. v99 の 動く 説明(`PROMPT_v99.md`)・ v104 の ウィジェット(`PROMPT_v104.md` 6章)
 

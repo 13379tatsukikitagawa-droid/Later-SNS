@@ -5,7 +5,7 @@
 
 ## 読む もの
 1. `prompts/reference/PROMPT_v106.md`(**ここが 正解**)
-2. モック `mock/lattag_v95.html`(デモ `Name(字数)` `Friends:フィードの さいご` `Trip の 中` `Trip の 設定` `Trip を ぬける` `Trip を おわる`)・ 元コード `mock/src/v95.js` `v95.css`
+2. モック `mock/lattag_v96.html`(デモ `Name(字数)` `Friends:フィードの さいご` `Trip の 中` `Trip の 設定` `Trip を ぬける` `Trip を おわる`)・ 元コード `mock/src/v95.js` `v95.css`
 3. グループの チャット:モックの `openRoom`(base)・ `mock/src/v77.js` の `th77Draw`(チャットの 入口)
 
 ## すすめ方

@@ -7,7 +7,7 @@
 ## 読む もの
 1. `prompts/reference/PROMPT_v104.md`(**ここが 正解**)
 2. `prompts/reference/PROMPT_v101.md` の **4-2 章**(Apple を Firebase に のせる ・ 今の 人の 引きつぎ)と v103 の **8-3**(おかえり = `UserDirectory.firebaseUID`)
-3. モック `mock/lattag_v95.html`(デモ `サインイン(Apple だけ)` `Apple とじた` `Apple できない` `サインイン:おかえり` `ID シート` `招待シート` `ウィジェット(えらぶ)` `ウィジェット(ホームで 置く)`)・ 元コード `mock/src/v93.js` `v93.css`
+3. モック `mock/lattag_v96.html`(デモ `サインイン(Apple だけ)` `Apple とじた` `Apple できない` `サインイン:おかえり` `ID シート` `招待シート` `ウィジェット(えらぶ)` `ウィジェット(ホームで 置く)`)・ 元コード `mock/src/v93.js` `v93.css`
 
 ## すすめ方
 - **0 しらべて 報告**(PROMPT 0章の 5つ)。コードは 変えない。

@@ -1,0 +1,24 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "G79GN2S2U5.com.tatsukikitagawa.laternew2"
+        ],
+        "components": [
+          {
+            "/": "/g/*"
+          },
+          {
+            "/": "/u/*",
+            "comment": "友だち"
+          },
+          {
+            "/": "/t/*",
+            "comment": "Trip"
+          }
+        ]
+      }
+    ]
+  }
+}
