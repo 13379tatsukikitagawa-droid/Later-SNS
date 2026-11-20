@@ -2,26 +2,12 @@
   "applinks": {
     "details": [
       {
-        "appIDs": [
-          "G79GN2S2U5.com.tatsukikitagawa.laternew2"
-        ],
+        "appIDs": ["G79GN2S2U5.com.tatsukikitagawa.laternew2"],
         "components": [
-          {
-            "/": "/g/*",
-            "comment": "グループの招待リンク"
-          },
-          {
-            "/": "/__/auth/*",
-            "comment": "メールのサインインリンク"
-          },
-          {
-            "/": "/u/*",
-            "comment": "友だち"
-          },
-          {
-            "/": "/t/*",
-            "comment": "Trip"
-          }
+          { "/": "/g/*", "comment": "グループの招待リンク" },
+          { "/": "/__/auth/*", "comment": "メールのサインインリンク" },
+          { "/": "/u/*", "comment": "友だち(v108)" },
+          { "/": "/t/*", "comment": "Trip(v108)" }
         ]
       }
     ]

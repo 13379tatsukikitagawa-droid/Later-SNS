@@ -1,68 +1,33 @@
 {
   "hosting": {
     "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/node_modules/**"],
     "headers": [
       {
         "source": "/.well-known/apple-app-site-association",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ]
+        "headers": [{ "key": "Content-Type", "value": "application/json" }]
       },
       {
         "source": "/g/**",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          },
-          {
-            "key": "Referrer-Policy",
-            "value": "no-referrer"
-          },
-          {
-            "key": "X-Robots-Tag",
-            "value": "noindex"
-          }
+          { "key": "Cache-Control", "value": "no-store" },
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "X-Robots-Tag", "value": "noindex" }
         ]
       },
       {
-        "source": "/@(u|t)/**",
+        "source": "/{u,t}/**",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          },
-          {
-            "key": "Referrer-Policy",
-            "value": "no-referrer"
-          },
-          {
-            "key": "X-Robots-Tag",
-            "value": "noindex"
-          }
+          { "key": "Cache-Control", "value": "no-store" },
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "X-Robots-Tag", "value": "noindex" }
         ]
       }
     ],
     "rewrites": [
-      {
-        "source": "/g/**",
-        "destination": "/g/index.html"
-      },
-      {
-        "source": "/u/**",
-        "destination": "/u.html"
-      },
-      {
-        "source": "/t/**",
-        "destination": "/t.html"
-      }
+      { "source": "/g/**", "destination": "/g/index.html" },
+      { "source": "/u/**", "destination": "/u.html" },
+      { "source": "/t/**", "destination": "/t.html" }
     ]
   }
 }
