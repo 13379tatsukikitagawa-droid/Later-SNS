@@ -107,8 +107,6 @@ private struct HV68LensBody: View {
 
 /// ガラスの 反射(コーティングの 色)。ゆっくり 回る 色の 帯だけ 動く(16秒で 1回転 ・ 見えない ときは 止める)
 private struct HV68LensGlass: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
             // 反射 1(左上):黄緑 34%(幅 144 ・ 高さ 112 ・ -18°)
@@ -118,8 +116,9 @@ private struct HV68LensGlass: View {
             Ellipse().fill(RadialGradient(colors: [Color(hex: "3BD35A").opacity(0.34), Color(red: 36 / 255, green: 160 / 255, blue: 60 / 255).opacity(0)], center: .center, startRadius: 0, endRadius: 30))
                 .frame(width: 81, height: 59).position(x: 201, y: 204)
             // 回る 色の 帯(黄緑 ・ 緑 16%)
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { ctx in
-                let a = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 16) / 16 * 360
+            // v111:16秒で 1回転と ゆっくり なので 12fps で 十分(60fps の 状態アニメは かえって 重い)
+            PausableTimeline(minimumInterval: 1.0 / 12) { date in
+                let a = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 16) / 16 * 360
                 Circle().fill(AngularGradient(stops: [
                     .init(color: .clear, location: 0), .init(color: Color(hex: "C8F25A").opacity(0.16), location: 0.12),
                     .init(color: .clear, location: 0.2), .init(color: .clear, location: 0.55),

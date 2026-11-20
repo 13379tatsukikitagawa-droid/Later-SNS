@@ -56,8 +56,8 @@ struct HV72Shutter: View {
         ZStack {
             // 外へ 広がる 波(呼吸):2.8秒 ・ 70% で 消えて 待つ
             if !pressing && !reduceMotion {
-                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: scenePhase != .active)) { ctx in
-                    let u = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.8) / 2.8
+                PausableTimeline(minimumInterval: 1.0 / 24) { date in   // v111:見えて いる 時 だけ
+                    let u = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.8) / 2.8
                     let p = min(1, u / 0.7)
                     let e = OPBez(0.3, 0, 0.3, 1).at(p)
                     Circle().stroke(HV.lime, lineWidth: 2).frame(width: 100, height: 100)
@@ -101,7 +101,8 @@ struct HV72DomeGlobe: View {
     private let lights: [(Double, Double)] = [(62, 20), (70, 95), (55, 160), (68, 230), (50, 300), (75, 340), (58, 55)]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { ctx in
+        // v111:ゆっくり 回る(3.6°/秒)ので ふだんは 10fps で 十分。押している 間 だけ 30fps(Canvas の 描き直しが 重い)
+        PausableTimeline(minimumInterval: pressing ? 1.0 / 30 : 1.0 / 10) { date in
             Canvas { c, size in
                 let r = Double(d / 2), cx = Double(size.width / 2), cy = Double(d / 2)
                 let tilt = 22.0 * .pi / 180
@@ -135,7 +136,7 @@ struct HV72DomeGlobe: View {
                     c.fill(Path(ellipseIn: CGRect(x: p.x - 1.1, y: p.y - 1.1, width: 2.2, height: 2.2)), with: .color(Color(hex: "F4FFC8")))
                 }
             }
-            .onChange(of: ctx.date) { _, now in
+            .onChange(of: date) { _, now in
                 let dt = min(0.1, now.timeIntervalSince(last)); last = now
                 speed += ((pressing ? 97 : 3.6) - speed) * min(1, dt * (pressing ? 8 : 1.6))
                 angle += speed * dt
