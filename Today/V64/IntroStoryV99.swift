@@ -1,15 +1,15 @@
 import SwiftUI
 
-// v99 / P42:はじめて ひらいた 時の 説明(Friends ・ Trip ・ Mondo)。ストーリーの 形 ・ 4場面 × 3.6秒 ・ 文字は 1行だけ。
+// v99 / P42:はじめて ひらいた 時の 説明(Friends ・ Trip)。ストーリーの 形 ・ 4場面 × 3.6秒 ・ 文字は 1行だけ。
 // 進み具合と 自動送りは 1つの TimelineView の 時間から 計算(場面ごとの タイマーは 作らない)。一時停止 = その 時計を 止める だけ。
 // 場面の 動きは `IntroScenesV99.swift`(時間 t の 関数)。
 
 enum IntroKind: String, CaseIterable, Identifiable {
-    case friends, trip, mondo
+    case friends, trip
     var id: String { rawValue }
     var seenKey: String { "introSeen.\(rawValue)" }
-    var name: String { ["friends": "Friends", "trip": "Trip", "mondo": "Mondo"][rawValue] ?? "" }
-    var icon: HVIconKind { [IntroKind.friends: HVIconKind.friends, .trip: .trip, .mondo: .mondo][self] ?? .friends }
+    var name: String { ["friends": "Friends", "trip": "Trip"][rawValue] ?? "" }
+    var icon: HVIconKind { [IntroKind.friends: HVIconKind.friends, .trip: .trip][self] ?? .friends }
 
     struct Scene {
         let label: String
@@ -31,12 +31,6 @@ enum IntroKind: String, CaseIterable, Identifiable {
             .init(label: "BOARD", line: "リンクで、なかまを のせる", haptics: [(0.15, .pop), (1.0, .pop), (1.34, .pop), (1.68, .pop), (2.02, .pop), (2.36, .pop), (2.6, .success)]),
             .init(label: "SHARE", line: "1日 23枚を、みんなで", haptics: [(0.9, .tick), (1.3, .tick), (1.7, .tick), (2.1, .tick), (2.5, .tick), (2.9, .tick)]),
             .init(label: "DEVELOP", line: "あした 9:00 に、まとめて 現像", haptics: [(0.2, .soft), (1.0, .land), (2.45, .thud), (2.6, .success)]),
-        ]
-        case .mondo: return [
-            .init(label: "LOOK", line: "世界の きのうを のぞく", haptics: [(0, .rumble), (0.5, .tick), (0.9, .tick), (1.3, .tick), (1.7, .tick), (2.1, .tick)]),
-            .init(label: "MATCH", line: "同じ # で、世界と つながる", haptics: [(0.15, .pop), (0.6, .tick), (0.85, .tick), (1.1, .tick), (1.35, .tick), (1.6, .tick), (1.85, .tick), (2.1, .success)]),
-            .init(label: "RANK", line: "きのうの 人気 TOP 5", haptics: [(0.2, .tick), (1.9, .pop), (2.3, .success)]),
-            .init(label: "UNLOCK", line: "1枚 撮ると、ひらく", haptics: [(0.4, .rumble), (1.7, .shutter), (2.0, .success)]),
         ]
         }
     }
@@ -261,7 +255,6 @@ struct IntroStoryView: View {
         switch kind {
         case .friends: return "友だちを さがす"
         case .trip: return "Trip を つくる"
-        case .mondo: return shotToday ? "Mondo を ひらく" : "まず 1枚 撮る"
         }
     }
 

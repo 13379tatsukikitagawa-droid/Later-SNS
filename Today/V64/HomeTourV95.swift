@@ -14,7 +14,7 @@ enum HomeTour {
         .init(title: "1日 3こま、撮る", body: "ここを 押して 撮影へ。シャッターは 長押し。", round: false),
         .init(title: "24:00 で 消灯", body: "それまでに 撮る。のこりの こまは 右の 3本。", round: false),
         .init(title: "撮った 写真は 現像中", body: "すぐには 見られない。あしたの 9:00 まで ねかせる。", round: true),
-        .init(title: "9:00 に 友だちと ひらく", body: "Friends ・ Trip ・ Mondo は 横に スワイプ。", round: false),
+        .init(title: "9:00 に 友だちと ひらく", body: "Friends ・ Trip は 横に スワイプ。", round: false),
         .init(title: "あなたの アイコン", body: "1回 タップ = プロフィール ・ 2回 = きのう。", round: true),
     ]
 

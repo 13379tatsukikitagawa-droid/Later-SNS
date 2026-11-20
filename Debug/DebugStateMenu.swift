@@ -18,7 +18,7 @@ struct DebugStateMenu: View {
         ("Friends:はじめて", "friends", ["debugFriendsMode": "first"]),
         ("Friends:友だち 0人", "friends", ["debugFriendsMode": "nofriends"]),
         ("Friends:自分の きのう なし", "friends", ["debugFriendsMode": "noown"]),
-        ("Mondo:投稿 なし", "yesterday", ["debugTab": 1, "debugMondo": "empty"]),
+        ("Trip タブ", "yesterday", ["debugTab": 1]),
         ("ひらく(新)", "reveal", [:]),
         ("音楽:つなぐ まえ", "music", [:]),
         ("設定", "settings", [:]),
@@ -54,7 +54,7 @@ struct DebugStateMenu: View {
                     Toggle("Trip を つくる(見本の Trip)", isOn: $state.trip)
                     Toggle("招待が とどく", isOn: $state.invite)
                     Toggle("翌朝 9:00 に する", isOn: $state.nextMorning)
-                    Toggle("見本データを 使う(写真・友だち・Mondo)", isOn: $state.sampleData)
+                    Toggle("見本データを 使う(写真・友だち)", isOn: $state.sampleData)
                 }
                 Section("昼 ⇄ 夜") {
                     Picker("テーマ", selection: Binding(get: { state.theme }, set: { state.setTheme($0) })) {

@@ -345,18 +345,12 @@ enum YesterdayPostStore {
         return user.photos.filter { $0.captureDate >= window.open && $0.captureDate < window.close }
     }
 
-    /// 投稿する:画像をグループに送り、Mondo(公開がオンのときだけ・審査あり)に出す。
+    /// 投稿する:画像をグループに送る。
     static func post(_ photos: [LaterPhoto], user: UserProfile, context: ModelContext) {
         let pending = photos.filter { !$0.isPosted }
         guard let first = pending.first else { return }
         for photo in pending { photo.isPosted = true }
         try? context.save()
-
-        let imageData = first.imageData, captureDate = first.captureDate, tags = first.tags, name = user.name, photoID = first.id
-        Task { @MainActor in
-            let result = await MondoService.shared.publishIfEnabled(imageData: imageData, captureDate: captureDate, tags: tags, name: name, photoID: photoID)
-            if result == .notAllowed { MondoNotice.post("この写真は Mondo には出せません") }
-        }
 
         guard let cloudKitManager = CloudKitManager.current else { return }
         let targets = pending.compactMap { photo -> (LaterPhoto, LaterGroup)? in

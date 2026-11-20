@@ -26,7 +26,6 @@ struct SettingsMenuView: View {
     @State private var tapToRecord = RetroSettings.tapToRecord
     @State private var videoStamp = RetroSettings.stampOn
     @State private var openingMode = OpeningSettings.mode
-    @State private var mondoOn = MondoService.isPublic
     @State private var showingNotificationDenied = false
     @State private var showingSignOutConfirm = false
     @State private var showingDeletion = false
@@ -258,12 +257,6 @@ struct SettingsMenuView: View {
             SettingsRow(icon: "circle.grid.2x2", title: "グループ", action: { showingGroups = true }) {
                 SettingsValue("\(sharedGroups.count) / \(GroupMembershipPolicy.maxGroupsPerUser)", chevron: true)
             }
-            SettingsDivider()
-            SettingsRow(icon: "globe", title: "Mondo に写真を出す", note: "世界の昨日に、1枚が並びます") {
-                Toggle("Mondo に写真を出す", isOn: Binding(get: { mondoOn }, set: setMondo))
-                    .toggleStyle(MonoToggleStyle())
-                    .accessibilityLabel("Mondo に写真を出す")
-            }
         }
         SettingsSection(title: "安全") {
             SettingsRow(icon: "hand.raised", title: "通報・ブロックした人", action: { showingBlocked = true }) {
@@ -362,13 +355,6 @@ struct SettingsMenuView: View {
             haptics.prepare()
             Haptics.play(.pop, gap: 0)
         }
-    }
-
-    private func setMondo(_ on: Bool) {
-        choose()
-        mondoOn = on
-        MondoService.isPublic = on
-        if !on { Task { await MondoService.shared.withdrawAll() } }
     }
 
     private func openGroup(_ id: UUID) {

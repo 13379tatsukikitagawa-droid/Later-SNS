@@ -68,17 +68,10 @@ struct HVTripFilm: View {
     }
 }
 
-struct HomeV64MondoInfo {
-    var tags: [String] = ["#夕焼け", "#放課後", "#帰り道"]
-    var city = "SYDNEY"
-    var nowText = "NOW 9:00"
-    var photo: UIImage? = nil
-}
-
 enum HVPage: Int, CaseIterable {
-    case camera, friends, trip, mondo, yesterday
-    var title: String { ["Camera", "Friends", "Trip", "Mondo", "Yesterday"][rawValue] }
-    var icon: HVIconKind { [HVIconKind.camera, .friends, .trip, .mondo, .yesterday][rawValue] }
+    case camera, friends, trip, yesterday
+    var title: String { ["Camera", "Friends", "Trip", "Yesterday"][rawValue] }
+    var icon: HVIconKind { [HVIconKind.camera, .friends, .trip, .yesterday][rawValue] }
 }
 
 // MARK: - ページの 型(背景・ヘッダー行・タイトル・CTA)
@@ -102,7 +95,7 @@ struct HVPageHeader: View {
                 Circle().fill(Color.black).offset(y: 3)
                 Circle().fill(iconColor)
                 Circle().strokeBorder(Color.black, lineWidth: 2)
-                HVIcon(kind: page.icon, size: 20, color: page == .mondo ? .black : .black)
+                HVIcon(kind: page.icon, size: 20, color: .black)
             }
             .frame(width: 40, height: 40).offset(x: 22, y: 22)
             Text(String(format: "%02d / 03", number)).font(LF.mono(9)).tracking(1.62).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 72, y: 35.5)
@@ -382,137 +375,6 @@ struct HVTripPage: View {
     }
 }
 
-// MARK: - 3 Mondo
-
-struct HVMondoPage: View {
-    let input: HomeV64Input
-    let cardW: CGFloat
-    let actions: HomeV64Actions
-
-    var body: some View {
-        let locked = input.locked
-        ZStack(alignment: .topLeading) {
-            ZStack {
-                Color(hex: "030805")
-                RadialGradient(colors: [Color(red: 0.1, green: 0.4, blue: 0.2).opacity(0.5), .clear], center: UnitPoint(x: 0.85, y: 0.62), startRadius: 0, endRadius: 220)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 1))
-            .shadow(color: .black.opacity(0.6), radius: 30, y: 30)
-            HVGlobe().frame(width: 310, height: 310).scaleEffect(114 / 124).position(x: cardW - 113, y: 274)
-            HVPageHeader(page: .mondo, number: 3, status: locked ? "LOCKED" : "TOP 3", cardW: cardW, iconColor: .white)
-            HVPageTitle(text: "Mondo").offset(x: 22, y: 72)
-            Text("the world, yesterday.").font(LF.serif(21, italic: true)).foregroundStyle(HV.lime.opacity(0.85)).fixedSize().offset(x: 22, y: 126)
-            ForEach(0..<3, id: \.self) { i in
-                let tag = input.mondo.tags[safe: i] ?? ""
-                HStack(spacing: 0) {
-                    Text(String(format: "%02d", i + 1)).font(LF.serif(26)).foregroundStyle(i == 0 ? HV.lime : .white.opacity(0.55)).frame(width: 46, alignment: .leading)
-                    Text(tag).font(LF.inter(800, 15.5)).foregroundStyle(.white).blur(radius: locked ? 6 : 0)
-                    Spacer()
-                    HVBars(level: [4, 3, 2][i]).padding(.trailing, 10)
-                }
-                .padding(.leading, 12).frame(width: 182, height: 43)
-                .background((i == 0 ? HV.lime.opacity(0.14) : Color.white.opacity(0.06)), in: RoundedRectangle(cornerRadius: 18))
-                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(i == 0 ? HV.lime.opacity(0.4) : .white.opacity(0.1), lineWidth: 1))
-                .offset(x: 22, y: 174 + CGFloat(i) * 52)
-            }
-            if locked { Image(systemName: "lock.fill").font(.system(size: 14, weight: .bold)).foregroundStyle(.white).frame(width: 34, height: 34).background(Color.black.opacity(0.6), in: Circle()).offset(x: 150, y: 220) }
-            HStack(spacing: 8) {
-                Circle().fill(HV.lime).frame(width: 7, height: 7)
-                Text("\(input.mondo.nowText) ・ \(input.mondo.city)").font(LF.mono(10.5)).tracking(1.0).foregroundStyle(.white).fixedSize()
-            }
-            .padding(.horizontal, 14).frame(height: 30)
-            .background(Color.black.opacity(0.4), in: Capsule()).overlay(Capsule().strokeBorder(HV.lime.opacity(0.35), lineWidth: 1))
-            .offset(x: 22, y: 337)
-            HVCTA(title: locked ? "Shoot first" : "Explore", locked: locked, width: 334) { locked ? actions.shoot() : actions.openMondo() }.offset(x: 18, y: 386)
-        }
-        .frame(width: cardW, height: 508, alignment: .topLeading)
-    }
-}
-
-struct HVBars: View {
-    let level: Int
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 2.5) {
-            ForEach(0..<5, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 1.5).fill(i < level ? HV.lime : HV.lime.opacity(0.2)).frame(width: 4, height: CGFloat(6 + i * 4))
-            }
-        }
-    }
-}
-
-/// 点の 地球(本物の 海岸線の 点 = `MondoGeo.land`)。見えて いない ときは 止める。
-/// v100:地球の 上で 指が 動いて いる 間 = 地球が 優先(ページの 横スライドは 動かさない)
-enum HVGlobeDrag { static var active = false }
-
-struct HVGlobe: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// v100:指で まわした 分(ラジアン)・ はなした あとの 慣性(×0.95 / コマ)
-    @State private var spin = 0.0
-    @State private var vel = 0.0
-    @State private var dragging = false
-    @State private var startSpin = 0.0
-    @State private var lastSpin = 0.0
-    @State private var lastT = Date()
-    @State private var lastNotch = 0
-    private let perPt = 0.0065
-
-    private func notchCheck(_ total: Double) {
-        let k = Int(floor(total * 180 / .pi / 15))
-        if k != lastNotch { lastNotch = k; Haptics.play(.notch) }   // 15° ごとに カリッ
-    }
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion && !dragging && abs(vel) < 0.01)) { ctx in
-            let rot = (reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate * 0.0016 * 60 * 0.5) + spin
-            Canvas { c, size in
-                let R: CGFloat = 124, cx = size.width / 2, cy = size.height / 2, tilt = 0.38
-                // 大気
-                c.fill(Path(ellipseIn: CGRect(x: cx - R * 1.18, y: cy - R * 1.18, width: R * 2.36, height: R * 2.36)),
-                       with: .radialGradient(Gradient(colors: [Color(red: 80 / 255, green: 220 / 255, blue: 120 / 255).opacity(0.42), .clear]), center: CGPoint(x: cx, y: cy), startRadius: R * 0.92, endRadius: R * 1.18))
-                c.fill(Path(ellipseIn: CGRect(x: cx - R, y: cy - R, width: R * 2, height: R * 2)),
-                       with: .radialGradient(Gradient(colors: [Color(hex: "13301F"), Color(hex: "050A07")]), center: CGPoint(x: cx - R * 0.35, y: cy - R * 0.4), startRadius: R * 0.1, endRadius: R))
-                c.stroke(Path(ellipseIn: CGRect(x: cx - R, y: cy - R, width: R * 2, height: R * 2)), with: .color(Color(red: 126 / 255, green: 224 / 255, blue: 143 / 255).opacity(0.45)), lineWidth: 1)
-                let sun = 0.2
-                for p in MondoGeo.land {
-                    let lat = p.lat * .pi / 180, lo = p.lon * .pi / 180 + rot
-                    let X = cos(lat) * sin(lo), Y = sin(lat), Z = cos(lat) * cos(lo)
-                    let Y2 = Y * cos(tilt) - Z * sin(tilt), Z2 = Y * sin(tilt) + Z * cos(tilt)
-                    if Z2 < 0 { continue }
-                    let day = cos(lo - sun) * cos(lat), e = 0.35 + Z2 * 0.65
-                    let sx = cx + X * R, sy = cy - Y2 * R
-                    c.fill(Path(CGRect(x: sx - 1.35, y: sy - 1.35, width: 2.7, height: 2.7)), with: .color(Color(red: 245 / 255, green: 243 / 255, blue: 236 / 255).opacity(day > 0 ? (0.35 + day * 0.6) * e : 0.13 * e)))
-                }
-            }
-        }
-        .drawingGroup()
-        .contentShape(Circle().scale(0.8))
-        .gesture(HorizontalPanV88(
-            onChanged: { dx in
-                HVGlobeDrag.active = true
-                if !dragging { dragging = true; startSpin = spin; vel = 0; lastSpin = spin; lastT = Date() }
-                let now = Date(), prev = spin
-                spin = startSpin + Double(dx) * perPt
-                let dt = max(0.001, now.timeIntervalSince(lastT)); lastT = now
-                vel = vel * 0.5 + ((spin - prev) / dt) * 0.5
-                notchCheck(spin + Date().timeIntervalSinceReferenceDate * 0.048)
-            },
-            onEnded: { _, _ in
-                dragging = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { HVGlobeDrag.active = false }
-            }))
-        .onChange(of: vel) { _, _ in }
-        .overlay { Color.clear.onReceive(Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()) { _ in
-            guard !dragging, abs(vel) > 0.01 else { return }
-            let dt = 1.0 / 30
-            spin += vel * dt
-            vel *= pow(0.95, dt * 60)
-            notchCheck(spin + Date().timeIntervalSinceReferenceDate * 0.048)
-            if abs(vel) <= 0.01 { vel = 0 }
-        }.allowsHitTesting(false) }
-    }
-}
-
 // MARK: - ページャ(横スライド)
 
 struct HVPager: View {
@@ -552,7 +414,6 @@ struct HVPager: View {
         .contentShape(Rectangle())
         .gesture(HorizontalPanV88(
             onChanged: { dx in
-                if HVGlobeDrag.active { drag = 0; onDrag(0); return }   // v100:地球の 上は 地球が 優先
                 var dx = dx
                 if (page == 0 && dx > 0) || (page == pages.count - 1 && dx < 0) { dx *= 0.35 }   // 端は ゴムのように 重く
                 drag = dx
@@ -563,7 +424,6 @@ struct HVPager: View {
             },
             onEnded: { dx, predicted in
                 pastHalf = false
-                if HVGlobeDrag.active { drag = 0; onDrag(0); return }
                 let projected = dx + (predicted - dx) * 0.5
                 var next = Int((CGFloat(page) - projected / width).rounded())
                 next = max(page - 1, min(page + 1, next))                 // 1回で 動けるのは ±1ページ

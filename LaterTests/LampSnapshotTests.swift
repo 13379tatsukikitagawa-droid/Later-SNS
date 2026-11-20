@@ -118,28 +118,7 @@ struct LampSnapshotTests {
         return nil
     }
 
-    // MARK: MONDO・GROUP
-
-    @Test(arguments: devices)
-    func mondoAnnouncedCard(_ device: HomeV5LayoutSnapshotTests.Device) async throws {
-        let pick = worldPick(day: "2026-10-26", hue: 0.07)
-        let page = ZStack(alignment: .top) {
-            V5Backdrop(isAnimating: false)
-            HomeV5MondoPage(phase: .notReady, dayKey: "2026-10-26", isActive: false, topInset: 59, onTick: {}, onSettings: {}, onRetry: {},
-                            onOpenTag: { _, _, _ in }, onOpenAll: { _, _ in }, announced: pick, onOpenAnnounced: { _ in })
-            V5HeaderScrim()
-            LaterHeader(home: .yesterday, avatarName: "さ", showsBadge: false)
-                .padding(.top, 59)
-        }
-        let (window, root) = try host(page, width: device.size.width, height: device.size.height)
-        try await Task.sleep(for: .milliseconds(500))
-        root.layoutIfNeeded()
-        for scroll in scrollViews(in: root) {
-            #expect(scroll.contentSize.width <= device.size.width + 0.5, "\(device.name): \(scroll.contentSize.width)")
-        }
-        try write(window, name: "v6_mondo_card_\(device.name)")
-        window.isHidden = true
-    }
+    // MARK: GROUP
 
     @Test(arguments: devices)
     func groupAnnouncedTile(_ device: HomeV5LayoutSnapshotTests.Device) async throws {

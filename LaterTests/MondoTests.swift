@@ -92,42 +92,4 @@ struct MondoTests {
         let blocked = [BlockedUser(blockedCloudKitUserRecordName: MondoService.blockKey("abc")), BlockedUser(blockedCloudKitUserRecordName: "_icloudUser")]
         #expect(MondoService.blockedMondoIDs(blocked) == ["abc"])
     }
-
-    // MARK: - 見た目の書き出し(LATER_SNAPSHOT_DIR がある時だけ)
-
-    @Test func exportScreens() throws {
-        guard let dir = HomeSnapshotTests.outputDirectory else { return }
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let tones = ["C98A5A", "5A7FA8", "D9B26A", "8A6AA8", "6AA88A", "A85A5A"]
-        let places = [("JP", "日本", "東京都"), ("IT", "Italia", "Lazio"), ("FR", "France", "Île-de-France"), ("US", "United States", "California")]
-        let tagSets = [["コーヒー", "朝ごはん"], ["空"], ["コーヒー", "散歩"], ["夜"], ["空", "カフェ"], ["コーヒー"]]
-        let entries = (0..<4).map { i in
-            MondoEntry(id: "r\(i)", mondoID: UUID().uuidString, name: ["みお", "Luca", "Chloé", "Sam"][i % 4],
-                       place: MondoPlace(countryCode: places[i % 4].0, countryName: places[i % 4].1, region: places[i % 4].2),
-                       tags: tagSets[i % 6], dayKey: "2026-10-02", toneHex: tones[i % 6], isMine: false)
-        }
-        let summary = MondoAggregator.summarize(entries, dayKey: "2026-10-02", hidden: [], blocked: [])
-        let top = MondoTopView(dayKey: "2026-10-02", load: .ready(summary), onBack: {}, onSettings: {}, onTag: { _ in }, onOpen: { _, _, _ in }, onRetry: {})
-            .scrollContent
-            .frame(width: 390)
-            .background(Color.black)
-            .environment(\.colorScheme, .dark)
-        let r1 = ImageRenderer(content: top)
-        r1.scale = 1
-        try #require(r1.uiImage?.pngData()).write(to: dir.appendingPathComponent("mondo_top.png"))
-
-        for (i, state) in [MondoTopView.State.notReady, .failed].enumerated() {
-            let v = MondoTopView(dayKey: "2026-10-02", load: state, onBack: {}, onSettings: {}, onTag: { _ in }, onOpen: { _, _, _ in }, onRetry: {})
-                .scrollContent.frame(width: 390).background(Color.black)
-            let r = ImageRenderer(content: v)
-            r.scale = 2
-            try #require(r.uiImage?.pngData()).write(to: dir.appendingPathComponent("mondo_state\(i).png"))
-        }
-
-        let welcome = MondoWelcomeView(haptics: ExposureHaptics(), onEnter: {})
-            .frame(width: 390, height: 844)
-        let r2 = ImageRenderer(content: welcome)
-        r2.scale = 2
-        try #require(r2.uiImage?.pngData()).write(to: dir.appendingPathComponent("mondo_welcome.png"))
-    }
 }

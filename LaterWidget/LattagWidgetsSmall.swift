@@ -1,7 +1,7 @@
 import SwiftUI
 import WidgetKit
 
-// v96 B:小 4種(S1 レンズ ・ S2 9:00 まで ・ S3 友だちの 1枚 ・ S4 Mondo)。見本 widgets/v96/S1〜S4。
+// v96 B:小 3種(S1 レンズ ・ S2 9:00 まで ・ S3 友だちの 1枚)。見本 widgets/v96/S1〜S3。
 
 // MARK: S1 レンズ ・ すぐ撮る
 
@@ -156,62 +156,3 @@ struct LattagFriendView: View {
     }
 }
 
-// MARK: S4 Mondo
-
-struct LattagMondoWidget: Widget {
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: LattagShared.Kind.mondo, provider: LattagProvider()) { e in
-            LattagMondoView(model: e.model).widgetURL(LattagShared.Link.mondo)
-                .containerBackground(for: .widget) { WColor.ground }
-        }
-        .configurationDisplayName("Mondo").description("世界の きのうの お題")
-        .supportedFamilies([.systemSmall]).contentMarginsDisabled()
-    }
-}
-
-struct LattagMondoView: View {
-    let model: WidgetModel
-    private var open: Bool { !model.beforeNine && model.mondoTag != nil }
-    var body: some View {
-        ZStack {
-            Canvas { ctx, size in
-                let c = CGPoint(x: size.width / 2, y: size.height + 20), r = size.width * 0.62
-                var y = c.y - r
-                while y < size.height {
-                    var x: CGFloat = 0
-                    while x < size.width {
-                        let d = hypot(x - c.x, y - c.y)
-                        if d < r { ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 2, height: 2)), with: .color(WColor.lime.opacity(0.28))) }
-                        x += 7
-                    }
-                    y += 7
-                }
-                ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(WColor.lime.opacity(0.35)), lineWidth: 1)
-                for p in [CGPoint(x: size.width * 0.28, y: size.height * 0.62), CGPoint(x: size.width * 0.74, y: size.height * 0.8), CGPoint(x: size.width * 0.5, y: size.height * 0.7)] {
-                    ctx.fill(Path(ellipseIn: CGRect(x: p.x - 7, y: p.y - 7, width: 14, height: 14)), with: .color(WColor.lime.opacity(0.25)))
-                    ctx.fill(Path(ellipseIn: CGRect(x: p.x - 3, y: p.y - 3, width: 6, height: 6)), with: .color(WColor.lime))
-                }
-            }.widgetAccentable()
-            VStack(alignment: .leading, spacing: 0) {
-                Text("MONDO ・ " + (open ? "きのう" : "今日")).font(WFont.mono(8.5)).foregroundStyle(WColor.lime)
-                Text(open ? "きのうの お題" : "お題は 9:00").font(WFont.serif(22)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6).padding(.top, 2)
-                Text("#" + (open ? (model.mondoTag ?? "") : "おだい")).font(WFont.inter(900, 15)).foregroundStyle(Color(hex6: 0x0B0B0C))
-                    .padding(.horizontal, 10).padding(.vertical, 5).background(WColor.lime, in: RoundedRectangle(cornerRadius: 10)).rotationEffect(.degrees(-3)).blur(radius: open ? 0 : 5).padding(.top, 8)
-                Spacer(minLength: 0)
-                if open {
-                    HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text(Self.num(model.mondoCount ?? 0)).font(WFont.inter(900, 18)).foregroundStyle(.white)
-                        Text("枚").font(WFont.inter(700, 9)).foregroundStyle(.white.opacity(0.7))
-                        if let c = model.mondoCountries { Text("・ \(c)都市").font(WFont.inter(700, 9)).foregroundStyle(.white.opacity(0.7)) }
-                    }.lineLimit(1).minimumScaleFactor(0.7)
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        WTimer(from: model.now, to: model.opensAt).font(WFont.inter(900, 18)).foregroundStyle(.white).frame(maxWidth: 80, alignment: .leading)
-                        Text("あと").font(WFont.inter(700, 9)).foregroundStyle(.white.opacity(0.7))
-                    }
-                }
-            }.padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }
-    }
-    private static func num(_ n: Int) -> String { let f = NumberFormatter(); f.numberStyle = .decimal; return f.string(from: NSNumber(value: n)) ?? "\(n)" }
-}

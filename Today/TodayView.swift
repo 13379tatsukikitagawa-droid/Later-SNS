@@ -412,8 +412,7 @@ struct TodayView: View {
 
     private var yesterdayItems: [YesterdayItem]? {
         if yesterdayScope == .mondo {
-            guard case .loaded(let entries) = mondoLoad else { return nil }
-            return entries.map(MondoViewer.item)
+            return nil
         }
         var items = groupItems(yesterdayScope)
         if items.isEmpty, syncStatus == .failed, yesterdayScope != .mine { return nil }
@@ -606,7 +605,7 @@ struct TodayView: View {
                 yesterdayViewer
                 .transition(.opacity)
             case .mondo:
-                MondoRootView(now: now, haptics: haptics, initialTag: mondoInitialTag, onClose: closeMondo)
+                Color.black.ignoresSafeArea()
                     .transition(.opacity)
             case .decide:
                 decideView
@@ -2486,7 +2485,6 @@ struct TodayView: View {
                 showingFriendsHub = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { NotificationCenter.default.post(name: .friendsSearchFocus, object: nil) }
             case .trip: newGroupPrefill = nil; showingNewGroup = true
-            case .mondo: if FilmCounter.shared.used == 0 { NotificationCenter.default.post(name: IntroStore.goCameraPage, object: nil) }
             }
         }
     }

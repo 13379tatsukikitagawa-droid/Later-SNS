@@ -10,7 +10,6 @@ struct LaterWidgetBundle: WidgetBundle {
         LattagLensWidget()
         LattagUntil9Widget()
         LattagFriendWidget()
-        LattagMondoWidget()
         LattagFriendsWidget()
         LattagYesterdayWidget()
         LattagTripWidget()

@@ -83,10 +83,7 @@ struct IntroSceneView: View {
             case (.trip, 1): TBoard(t: t)
             case (.trip, 2): TShare(t: t)
             case (.trip, _): TDevelop(t: t)
-            case (.mondo, 0): MLook(t: t)
-            case (.mondo, 1): MMatch(t: t)
-            case (.mondo, 2): MRank(t: t)
-            default: MUnlock(t: t)
+            default: EmptyView()
             }
         }
         .frame(width: 390, height: 440)
@@ -400,132 +397,6 @@ private struct TDevelop: View {
                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(lime, lineWidth: 2.5))
                 .background(RoundedRectangle(cornerRadius: 8).fill(.black.opacity(0.6)))
                 .rotationEffect(.degrees(-12)).scaleEffect(t >= 2.45 ? 1 + 1.2 * (1 - M.pop(t, 2.45, 0.3)) : 1).opacity(t >= 2.45 ? 1 : 0).position(x: 290, y: 330)
-        }
-    }
-}
-
-// MARK: - Mondo
-
-private struct DotGlobeTexture: View {
-    var body: some View {
-        Canvas { c, s in
-            let cols = 52, rows = 26
-            for r in 0..<rows { for q in 0..<cols {
-                // 陸っぽい 偏り(説明用・ざっくり)
-                let h = sin(Double(q) * 0.7) * cos(Double(r) * 0.9) + sin(Double(q + r) * 0.31)
-                guard h > -0.15 else { continue }
-                let x = (Double(q) + 0.5) * s.width / Double(cols), y = (Double(r) + 0.5) * s.height / Double(rows)
-                c.fill(Path(ellipseIn: CGRect(x: x - 1.5, y: y - 1.5, width: 3, height: 3)), with: .color(lime.opacity(0.75)))
-            } }
-        }.frame(width: 520, height: 260).drawingGroup()
-    }
-}
-
-private struct MLook: View {
-    let t: Double
-    private let pins: [(CGFloat, CGFloat, String, Double)] = [(-70, -50, "TOKYO", 0.5), (40, -70, "PARIS", 0.9), (80, 10, "SEOUL", 1.3), (-30, 50, "LIMA", 1.7), (10, -10, "NYC", 2.1)]
-    var body: some View {
-        ZStack {
-            ZStack {
-                let off = CGFloat((t / 9).truncatingRemainder(dividingBy: 1)) * 520
-                HStack(spacing: 0) { DotGlobeTexture(); DotGlobeTexture() }.frame(width: 1040).offset(x: -off - 260 + 260)
-                    .frame(width: 260, height: 260, alignment: .leading)
-                Circle().fill(RadialGradient(colors: [.clear, .black.opacity(0.85)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 60, endRadius: 190))
-            }
-            .frame(width: 260, height: 260).clipShape(Circle()).overlay(Circle().strokeBorder(lime.opacity(0.25)))
-            Ellipse().strokeBorder(.white.opacity(0.18), lineWidth: 1).frame(width: 340, height: 90).rotationEffect(.degrees(-20))
-            ForEach(0..<5, id: \.self) { i in
-                let p = pins[i], a = p.3
-                ZStack {
-                    Circle().stroke(lime, lineWidth: 2).frame(width: 14, height: 14).scaleEffect(1 + (t - a).truncatingRemainder(dividingBy: 1.2) * 0.8).opacity(t >= a ? max(0, 1 - (t - a).truncatingRemainder(dividingBy: 1.2)) : 0)
-                    Circle().fill(lime).frame(width: 9, height: 9).scaleEffect(M.pop(t, a, 0.3))
-                    VStack(spacing: 2) {
-                        ICheki(i: i, w: 34)
-                        Text(p.2).font(LF.mono(8.5)).foregroundStyle(.white.opacity(0.8))
-                    }.offset(y: -42).scaleEffect(M.pop(t, a + 0.1, 0.4)).opacity(t >= a + 0.1 ? 1 : 0)
-                }.offset(x: p.0, y: p.1)
-            }
-        }.position(x: 195, y: 230)
-    }
-}
-
-private struct MMatch: View {
-    let t: Double
-    private let towns = ["TOKYO", "PARIS", "SEOUL", "LIMA", "OSLO", "CAIRO"]
-    var body: some View {
-        ZStack {
-            ForEach(0..<6, id: \.self) { i in
-                let a = 0.45 + 0.25 * Double(i)
-                let ang = Double(i) / 6 * 2 * .pi - .pi / 2
-                let rx = 125 * cos(ang), ry = 125 * sin(ang)
-                let p = M.ease(t, a, 0.6)
-                Path { q in q.move(to: CGPoint(x: 195, y: 220)); q.addLine(to: CGPoint(x: 195 + rx, y: 220 + ry)) }
-                    .trim(from: 0, to: M.ease(t, a + 0.1, 0.5)).stroke(lime.opacity(0.5), lineWidth: 1.5)
-                VStack(spacing: 2) { ICheki(i: i, w: 46); Text(towns[i]).font(LF.mono(8)).foregroundStyle(.white.opacity(0.7)) }
-                    .rotationEffect(.degrees((1 - p) * 220))
-                    .position(x: 195 + rx * p + (1 - p) * (rx > 0 ? 220 : -220), y: 220 + ry * p + (1 - p) * (ry > 0 ? 150 : -150))
-                    .opacity(M.clamp(p * 3))
-            }
-            let pulse = t > 2.1 ? 1 + 0.06 * sin((t - 2.1) * 6) : 1.0
-            Text("#夕焼け").font(LF.inter(900, 22)).foregroundStyle(lime).shadow(color: lime.opacity(0.8), radius: 10)
-                .scaleEffect(M.pop(t, 0.15) * pulse).position(x: 195, y: 220)
-        }
-    }
-}
-
-private struct MRank: View {
-    let t: Double
-    private let tags = ["#夕焼け", "#帰り道", "#雨の日", "#部活", "#いい匂い"]
-    private let finals: [Double] = [480, 470, 352, 301, 244]
-    var body: some View {
-        let swap = M.ease(t, 1.9, 0.4)
-        let count = M.ease(t, 0.2, 1.6)
-        ZStack(alignment: .topLeading) {
-            ForEach(0..<5, id: \.self) { i in
-                // 2位(i=1)が 1位(i=0)を 追いこす
-                let v: Double = i == 1 ? finals[1] * count + 26 * swap : finals[i] * count
-                let rank: Double = i == 0 ? swap : (i == 1 ? 1 - swap : Double(i))
-                let top = (i == 1 && swap > 0.5) || (i == 0 && swap <= 0.5)
-                HStack(spacing: 10) {
-                    Text("\(Int(rank.rounded()) + 1)").font(LF.inter(900, 20)).foregroundStyle(top ? lime : .white.opacity(0.5)).frame(width: 24)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(tags[i]).font(LF.inter(800, 15)).foregroundStyle(.white)
-                        GeometryReader { g in Capsule().fill(.white.opacity(0.1)).overlay(alignment: .leading) { Capsule().fill(lime).frame(width: g.size.width * v / 520) } }.frame(height: 5)
-                    }
-                    Text("\(Int(v))").font(LF.mono(13)).foregroundStyle(.white.opacity(0.7)).frame(width: 44, alignment: .trailing).contentTransition(.numericText())
-                }
-                .padding(.horizontal, 14).frame(width: 340, height: 62)
-                .background(RoundedRectangle(cornerRadius: 20).fill(Color(hex: "161618")))
-                .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(top ? lime : .white.opacity(0.06), lineWidth: top ? 2 : 1))
-                .offset(x: 25, y: 10 + CGFloat(rank) * 70)
-                .opacity(M.ease(t, 0.05 * Double(i), 0.3))
-            }
-        }
-        .frame(width: 390, height: 440, alignment: .topLeading)
-    }
-}
-
-private struct MUnlock: View {
-    let t: Double
-    var body: some View {
-        let open = M.ease(t, 1.75, 0.4)
-        ZStack {
-            // 2 × 2 の ぼけた 写真 → くっきり
-            ForEach(0..<4, id: \.self) { i in
-                ZStack {
-                    IntroPhoto.fill(i).blur(radius: 14).opacity(1 - open)
-                    IntroPhoto.fill(i).opacity(open)
-                }
-                .frame(width: 140, height: 120).clipShape(RoundedRectangle(cornerRadius: 14))
-                .position(x: 195 + CGFloat(i % 2 == 0 ? -75 : 75), y: 100 + CGFloat(i / 2) * 130)
-            }
-            // かぎ
-            Image(systemName: open > 0.6 ? "lock.open.fill" : "lock.fill").font(.system(size: 34, weight: .bold)).foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.5), radius: 6).scaleEffect(1 + 0.3 * open).opacity(1 - open).position(x: 195, y: 165)
-            // Lattag の アイコン(撮影ボタン)に ライムが 下から たまる
-            ShutterIconV94(progress: M.clamp((t - 0.4) / 1.2), holding: t > 0.4 && t < 1.7, video: false, recording: false, dead: false, late: false, snapToken: 0)
-                .frame(width: 84, height: 84).position(x: 195, y: 360)
-            Color.white.opacity(t >= 1.7 ? max(0, 0.85 * (1 - (t - 1.7) / 0.35)) : 0).frame(width: 390, height: 440).allowsHitTesting(false)
         }
     }
 }

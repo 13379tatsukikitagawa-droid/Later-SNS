@@ -36,7 +36,6 @@ struct HomeV64Input {
     var yesterdayThumbs: [HomeV64Thumb] = []
     var trip: HomeV64TripInfo? = nil
     var tripSamples: [UIImage] = []
-    var mondo = HomeV64MondoInfo()
     var lower = HomeV64LowerData()
     var debugScroll: CGFloat = 0
     /// DEBUG:セクションの 頭を 画面の このへんに あわせる(例 \"sec-mondo:157\")
@@ -63,7 +62,6 @@ struct HomeV64Actions {
     var openFriends: () -> Void = {}
     var openTrip: () -> Void = {}
     var openTripHome: (_ id: UUID) -> Void = { _ in }
-    var openMondo: () -> Void = {}
     var openProfile: () -> Void = {}
     var openDevelop: () -> Void = {}
     var openLive: () -> Void = {}
@@ -163,8 +161,8 @@ struct HomeV64View: View {
         }
         .sheet(isPresented: $showWidgetGuide) { WidgetGuideV96Sheet(firstTime: true) { showWidgetGuide = false } }
         .onChange(of: page) { _, p in
-            // v99:Friends(1)・ Trip(2)・ Mondo(3)に はじめて 来て 0.62秒 とどまったら 説明を 出す(素通りは 出さない)
-            guard (1...3).contains(p), let kind = IntroKind.allCases[safe: p - 1], !IntroStore.seen(kind) else { return }
+            // v99:Friends(1)・ Trip(2)に はじめて 来て 0.62秒 とどまったら 説明を 出す(素通りは 出さない)
+            guard (1...2).contains(p), let kind = IntroKind.allCases[safe: p - 1], !IntroStore.seen(kind) else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
                 guard page == p, tourStep == nil, !input.spotlight, !showLive, !IntroStore.seen(kind) else { return }
                 let d = UserDefaults.standard
@@ -216,7 +214,6 @@ struct HomeV64View: View {
             AnyView(cameraPage(f)),
             AnyView(HVFriendsPage(input: input, cardW: cardW, actions: actions)),
             AnyView(HVTripPage(input: input, cardW: cardW, actions: actions)),
-            AnyView(HVMondoPage(input: input, cardW: cardW, actions: actions)),
         ]
         return ZStack(alignment: .topLeading) {
             // ページは 画面の はばで 切る(# の 横の 棒が 画面の はしまで とどく ように)。中身の はばは カードの まま
@@ -340,7 +337,7 @@ struct HVDock: View {
     let onSelect: (Int) -> Void
     @Namespace private var ns
     // Camera は # の 画面。そこでは 出さない(v79)。ほかの ページでは 左に 小さな 丸(字 なし)= Camera へ もどる
-    private let items: [(Int, HVIconKind, String)] = [(1, .friends, "Friends"), (2, .trip, "Trip"), (3, .mondo, "Mondo")]
+    private let items: [(Int, HVIconKind, String)] = [(1, .friends, "Friends"), (2, .trip, "Trip")]
 
     var body: some View {
         HStack(spacing: 4) {

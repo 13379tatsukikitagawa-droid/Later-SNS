@@ -139,8 +139,6 @@ enum WidgetSnapshotWriter {
             trip = TripSnap(id: g.id.uuidString, title: g.name, sub: "\(sd.string(from: now).uppercased()) ・ \(g.members.count)人", day: day, count: min(total, todays.count), total: total, passNo: Self.passNumber(g.name), filled: Array(0..<min(total, todays.count)), cover: cover)
         }
 
-        let mondo = WorldWordsStore.entries(now: now)
-        let world = WorldCountStore.shared
         let snapshot = WidgetSnapshot(
             dayKey: dayKey,
             writtenAt: now,
@@ -153,9 +151,6 @@ enum WidgetSnapshotWriter {
             yesterday: summary(prevPhotos, key: LaterDay.key(for: prevStart, calendar: calendar)),
             yesterdayPhotos: yPhotos,
             lockedPreviews: locked,
-            mondoTag: mondo.words.first.map { "#\($0.tag)" },
-            mondoCount: world.count,
-            mondoCountries: mondo.countries ?? world.countryCount,
             trip: trip,
             next: nil,
             myRecordName: input.myRecordName,
@@ -250,7 +245,7 @@ enum WidgetSnapshotWriter {
     }
 }
 
-// MARK: - ウィジェットからの 行き先(lattag://shoot ・ develop ・ friends ・ yesterday?f= ・ mondo ・ trip/<id>)
+// MARK: - ウィジェットからの 行き先(lattag://shoot ・ develop ・ friends ・ yesterday?f= ・ trip/<id>)
 
 /// ウィジェットを 押して ひらいた 行き先。Home(HomeV64Host)が 出たら 受けとって ひらく(起動 直後でも 消えない)。
 @MainActor
@@ -259,7 +254,7 @@ final class WidgetRouteStore {
     static let shared = WidgetRouteStore()
 
     enum Route: Equatable {
-        case shoot, develop, friends, mondo
+        case shoot, develop, friends
         case yesterday(friend: String?)
         case trip(String)
     }
@@ -272,7 +267,7 @@ final class WidgetRouteStore {
         case "shoot": return .shoot
         case "develop": return .develop
         case "friends": return .friends
-        case "mondo": return .mondo
+        case "mondo": return .friends   // 前の ウィジェット / リンク:Mondo は なくした(Friends へ)
         case "yesterday":
             let f = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "f" }?.value
             return .yesterday(friend: f)

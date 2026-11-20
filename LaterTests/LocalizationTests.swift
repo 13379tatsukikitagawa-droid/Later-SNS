@@ -33,11 +33,4 @@ struct LocalizationTests {
         #expect(InviteConfig.shareMessage(groupName: "club", url: url, english: true)
                 == "You're invited to \"club\". Open yesterday together on Lattag.\nlattag://join?shareUrl=https://www.icloud.com/share/abc")
     }
-
-    @Test func 国名はLocaleから() {
-        #expect(MondoGeo.latinCountryName("JP") == "Japan")
-        #expect(MondoGeo.latinCountryName("US") == "USA")
-        #expect(MondoGeo.latinCountryName("BT") == "Bhutan")
-        #expect(MondoGeo.localCountryName("ZZ-unknown", fallback: "どこか") == "どこか")
-    }
 }

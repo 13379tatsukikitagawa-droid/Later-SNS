@@ -45,43 +45,6 @@ struct HomeV5OverflowTests {
     }
 
     @Test(arguments: HomeV5LayoutSnapshotTests.devices)
-    func mondoContentNeverWiderThanTheScreen(_ device: HomeV5LayoutSnapshotTests.Device) async throws {
-        let dayKey = "2026-10-26"
-        let data = summary(dayKey: dayKey)
-        for typeSize in [DynamicTypeSize.large, .xxxLarge, .accessibility3] {
-            let page = ZStack(alignment: .top) {
-                V5Backdrop(isAnimating: false)
-                HomeV5MondoPage(phase: .ready(data), dayKey: dayKey, isActive: false, topInset: 59, onTick: {}, onSettings: {},
-                                onRetry: {}, onOpenTag: { _, _, _ in }, onOpenAll: { _, _ in })
-                LaterHeader(home: .yesterday, avatarName: "さ", showsBadge: false)
-                    .padding(.top, 59)
-            }
-            let (window, root) = try host(page, width: device.size.width, height: device.size.height, typeSize: typeSize)
-            try await Task.sleep(for: .milliseconds(400))
-            root.layoutIfNeeded()
-            let scrolls = scrollViews(in: root)
-            #expect(!scrolls.isEmpty)
-            for scroll in scrolls {
-                // v37:WORDS の横スクロール(ピル)は、画面より広い中身を持ってよい(見るのは、はみ出していないこと)
-                let frame = scroll.convert(scroll.bounds, to: nil)
-                #expect(frame.width <= device.size.width + 0.5, "\(device.name) \(typeSize): frame.width=\(frame.width)")
-                let isHorizontalScroll = scroll.contentSize.width > scroll.bounds.width + 0.5 && scroll.contentSize.height <= scroll.bounds.height + 0.5
-                if !isHorizontalScroll {
-                    #expect(scroll.contentSize.width <= device.size.width + 0.5, "\(device.name) \(typeSize): contentSize.width=\(scroll.contentSize.width)")
-                }
-            }
-            if typeSize == .large, let dir = HomeSnapshotTests.outputDirectory {
-                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-                let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
-                    window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-                }
-                try #require(image.pngData()).write(to: dir.appendingPathComponent("v5_mondo_real_\(device.name).png"))
-            }
-            window.isHidden = true
-        }
-    }
-
-    @Test(arguments: HomeV5LayoutSnapshotTests.devices)
     func groupContentNeverWiderThanTheScreen(_ device: HomeV5LayoutSnapshotTests.Device) async throws {
         let page = ZStack(alignment: .top) {
             V5Backdrop(isAnimating: false)

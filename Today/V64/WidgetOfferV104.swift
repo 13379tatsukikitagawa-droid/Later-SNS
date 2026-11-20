@@ -18,16 +18,15 @@ enum WidgetPlacement {
 }
 
 enum WidgetChoice: String, CaseIterable, Identifiable {
-    case lens, until9, friend, mondo
+    case lens, until9, friend
     var id: String { rawValue }
-    var title: String { switch self { case .lens: "レンズ"; case .until9: "9:00 まで"; case .friend: "友だちの 1枚"; case .mondo: "Mondo" } }
-    var desc: String { switch self { case .lens: "押すと すぐ 撮れる"; case .until9: "現像が ひらくまで"; case .friend: "きのうの 友だちを 1枚ずつ"; case .mondo: "世界の きのうの お題" } }
+    var title: String { switch self { case .lens: "レンズ"; case .until9: "9:00 まで"; case .friend: "友だちの 1枚" } }
+    var desc: String { switch self { case .lens: "押すと すぐ 撮れる"; case .until9: "現像が ひらくまで"; case .friend: "きのうの 友だちを 1枚ずつ" } }
     @ViewBuilder func widget(_ m: WidgetModel) -> some View {
         switch self {
         case .lens: LattagLensView(model: m)
         case .until9: LattagUntil9View(model: m)
         case .friend: LattagFriendView(entry: LattagEntry(date: Date(), model: m, hourIndex: 0))
-        case .mondo: LattagMondoView(model: m)
         }
     }
     var bg: Color { self == .until9 ? WColor.lime : WColor.ground }

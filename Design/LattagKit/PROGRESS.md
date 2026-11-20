@@ -339,7 +339,7 @@
 | P50 | v107 質感(A 写真 / B 送る ・ 見せる / C 動画 / D はかる)| ☐ ☐ ☐ ☐ | 手順 0 報告まで |
 | P51 | Xcode 27 切りかえ(期限 2027年4月 ・ 目安 1〜2日)| ☐ | P50 の あと。Firebase 12 系 / AppDelegate の コメント直し / import SwiftData 2件 / UIScreen.main 置きかえ / 警告の 整理 |
 | P52 | v108 相互フォロー ・ お知らせ ・ リンク | △ | 下の v108 を 見る |
-| P54 | v110(A Mondo ・ タブ / B ポップの 部品 / C Friends / D Trip / E ほかの 画面)| ☐ ☐ ☐ ☐ ☐ | |
+| P54 | v110(A Mondo ・ タブ / B ポップの 部品 / C Friends / D Trip / E ほかの 画面)| ✓ ☐ ☐ ☐ ☐ | A 済み(Mondo 削除 ・ Friends｜Trip タブ ・ 入れ物の TripHubView) |
 
 ## v107 P50
 - ✓ A 写真:`FilmLook.chekiJPEG`(撮った 時に 1回 ・ 1440px ・ LUT ・ にじみ ・ ビネット ・ 粒子 ・ EXIF なし)・ `filmVersion = 2`(LaterPhoto ・ CKRecord `filmVersion` ・ PendingShot)・ 解禁の 直前に もう 焼かない(filmVersion が ない 写真だけ 旧 FilmEmulation を 1回 → `filmVersion = 1`)・ 古い 写真への 遡り 焼きこみは やめた。LUT の 色見本テスト(±3)。

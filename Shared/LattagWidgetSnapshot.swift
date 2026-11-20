@@ -25,7 +25,6 @@ enum LattagShared {
         static let lens = "LattagLens"          // S1
         static let until9 = "LattagUntil9"      // S2
         static let friendPhoto = "LattagFriend" // S3
-        static let mondo = "LattagMondo"        // S4
         static let friends = "LattagFriends"    // M1
         static let yesterday = "LattagYesterday" // M2
         static let trip = "LattagTrip"          // M3
@@ -34,7 +33,7 @@ enum LattagShared {
         static let lockOpen = "LattagLockOpen"  // 円 ②
         static let lockRect = "LattagLockRect"  // 長方形
         static let lockInline = "LattagLockInline" // 1行
-        static let all = [lens, until9, friendPhoto, mondo, friends, yesterday, trip, board, lockRing, lockOpen, lockRect, lockInline]
+        static let all = [lens, until9, friendPhoto, friends, yesterday, trip, board, lockRing, lockOpen, lockRect, lockInline]
     }
 
     // タップの 行き先(PROMPT_v96 §0)
@@ -42,7 +41,6 @@ enum LattagShared {
         static let shoot = URL(string: "lattag://shoot")!
         static let develop = URL(string: "lattag://develop")!
         static let friends = URL(string: "lattag://friends")!
-        static let mondo = URL(string: "lattag://mondo")!
         static func yesterday(friend uid: String? = nil) -> URL {
             guard let uid, !uid.isEmpty else { return URL(string: "lattag://yesterday")! }
             var c = URLComponents(); c.scheme = "lattag"; c.host = "yesterday"; c.queryItems = [URLQueryItem(name: "f", value: uid)]
@@ -135,16 +133,13 @@ struct WidgetSnapshot: Codable, Equatable {
     var yesterdayPhotos: [YPhoto]
     /// ロック中に 見せる 「1回 ぼかした」 画像(ファイル名)
     var lockedPreviews: [String]
-    var mondoTag: String?
-    var mondoCount: Int?
-    var mondoCountries: Int?
     var trip: TripSnap?
     var next: NextItem?
     /// 自分
     var myRecordName: String?
     var myName: String
 
-    static let empty = WidgetSnapshot(dayKey: "", writtenAt: .distantPast, shots: 0, limit: 3, shotTimes: [], shotBlurs: [], friends: [], today: nil, yesterday: nil, yesterdayPhotos: [], lockedPreviews: [], mondoTag: nil, mondoCount: nil, mondoCountries: nil, trip: nil, next: nil, myRecordName: nil, myName: "")
+    static let empty = WidgetSnapshot(dayKey: "", writtenAt: .distantPast, shots: 0, limit: 3, shotTimes: [], shotBlurs: [], friends: [], today: nil, yesterday: nil, yesterdayPhotos: [], lockedPreviews: [], trip: nil, next: nil, myRecordName: nil, myName: "")
 
     static func decoder() -> JSONDecoder { let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601; return d }
     static func encoder() -> JSONEncoder { let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601; e.outputFormatting = [.sortedKeys]; return e }
@@ -231,9 +226,6 @@ struct WidgetModel: Equatable {
     let yesterdayPhotos: [YPhoto]
     let lockedPreviews: [String]
     let shotBlurs: [String]
-    let mondoTag: String?
-    let mondoCount: Int?
-    let mondoCountries: Int?
     let trip: TripSnap?
     let next: NextItem?
     let myRecordName: String?
@@ -277,9 +269,6 @@ struct WidgetModel: Equatable {
             yesterdayPhotos: photos,
             lockedPreviews: s.lockedPreviews,
             shotBlurs: sameDay ? s.shotBlurs : [],
-            mondoTag: s.mondoTag,
-            mondoCount: s.mondoCount,
-            mondoCountries: s.mondoCountries,
             trip: s.trip,
             next: sameDay ? s.next : nil,
             myRecordName: s.myRecordName,

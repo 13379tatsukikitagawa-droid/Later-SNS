@@ -18,7 +18,6 @@ struct HomeV64Host: View {
     @State private var showShare = false
     @State private var showSelfQR = false
     @State private var showScan = false
-    @State private var mondoStart = false
     /// v96:ウィジェットから 来た 行き先
     @State private var widgetRoute = WidgetRouteStore.shared
     @Query private var profiles: [UserProfile]
@@ -58,7 +57,7 @@ struct HomeV64Host: View {
         .fullScreenCover(isPresented: $showDevelop) {
             DevelopV64View(count: max(1, src.shotsToday), times: { let f = DateFormatter(); f.dateFormat = "HH:mm"; return src.todayShots.map { f.string(from: $0.takenAt) } }(), now: Date(), onShoot: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }) { showDevelop = false }
         }
-        .fullScreenCover(isPresented: $showYesterday, onDismiss: { mondoStart = false }) {
+        .fullScreenCover(isPresented: $showYesterday) {
             YesterdayV64View(input: makeYesterdayInput(now: Date()), actions: makeYesterdayActions())
                 .fullScreenCover(isPresented: $showProfileOverYesterday) {
                     ProfileV82Host(onBack: { showProfileOverYesterday = false }, onShoot: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }, onMe: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenProfile() } })
@@ -77,7 +76,6 @@ struct HomeV64Host: View {
 
     private func makeYesterdayInput(now: Date) -> YesterdayV64Input {
         var y = YesterdayV64Input()
-        y.startTab = mondoStart ? 1 : 0
         let L = src.layerData
         let df = DateFormatter(); df.dateFormat = "HH:mm"
         y.shotsUsed = min(FilmRoll.shotsPerDay, src.shotsToday)
@@ -89,8 +87,7 @@ struct HomeV64Host: View {
         y.friendCount = L.friends.filter { !$0.isMe }.count
         y.shotFriends = L.friends.filter { !$0.isMe && $0.hasShot }.count
         y.avatarName = src.avatarName
-        y.mondoPhoto = L.yesterday.first.flatMap { image($0.imageData, "yd\($0.id)", max: 640) ?? image($0.mosaicTiny, "ym\($0.id)", max: 160) }
-        y.mondoTag = L.words.first.map { "#\($0)" } ?? "#夕焼け"
+        y.trips = src.groups.filter { !$0.isPersonalSpace }.sorted { $0.creationDate > $1.creationDate }.map { g in TripHubItem(id: g.id, name: g.name, members: g.members.count, cover: g.iconImageData.flatMap { UIImage(data: $0) }) }
         if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }
         // v76:友だち 1人 = 1つの 投稿(大きな 1枚 + 小さな 2枚)。自分の 3枚は「あなたの きのう」
         func photo(_ c: HomeYesterdayCard) -> YesterdayV64Input.Photo { .init(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 640) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: c.imageData == nil ? "" : df.string(from: c.captureDate), tag: c.tag, music: c.musicTitle.map { MusicPick(title: $0, artist: c.musicArtist ?? "", artworkURL: c.musicArtworkURL, link: c.musicLink, service: .apple) }) }
@@ -117,9 +114,6 @@ struct HomeV64Host: View {
         }
         if !L.yesterday.isEmpty { y.notices.append(.init(id: "opened", kind: .lattag, name: "Lattag", avatar: nil, text: "きのうの \(mine.count)枚が ひらきました", time: "9:00")) }
         y.requestCount = incoming.count
-        // Mondo:世界の 集計は サーバー側。まだ 無い 間は「今日の Mondo は ありません」
-        y.mondo.hasPosts = false
-        y.mondo.dayLabel = { let f = DateFormatter(); f.dateFormat = "MM/dd"; return f.string(from: Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now) }()
         return y
     }
 
@@ -132,6 +126,9 @@ struct HomeV64Host: View {
         a.addFriends = friends; a.openRequests = friends; a.openFriends = friends; a.scanQR = friends
         a.shoot = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }
         a.openProfile = { showProfileOverYesterday = true }
+        a.openTrip = { id in showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenChat(id) } }
+        a.newTrip = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onCreateGroup() } }
+        a.joinKey = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.passphrase) } }
         a.approve = { id in Task { if let r = incoming.first(where: { $0.id == id }) { _ = await FriendRequests.respond(to: r, accept: true, myName: src.avatarName); await refreshRequests() } } }
         return a
     }
@@ -197,8 +194,6 @@ struct HomeV64Host: View {
                 .init(photo: image(c.imageData, "yd\(c.id)", max: 480) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), own: false, kept: false)
             }
         }
-        low.mondo = L.words.prefix(3).map { (tag: "#\($0)", photo: nil) }
-        input.mondo.tags = L.words.prefix(3).map { "#\($0)" }
         low.albums = L.film.prefix(7).enumerated().map { i, d in
             .init(label: Self.dayLabel(d.date), left: "\(max(0, 7 - d.ago))D LEFT", tiles: [Self.filmImage(d)], more: 0)
         }
@@ -230,11 +225,10 @@ struct HomeV64Host: View {
         a.openDevelop = { showDevelop = true }
         a.openTrip = src.onCreateGroup
         a.openTripHome = { id in src.onOpenChat(id) }
-        a.openMondo = { mondoStart = true; showYesterday = true }   // v95-10:いつでも Mondo タブ
         return a
     }
 
-    /// v96:ウィジェットの 行き先を ひらく(lattag://develop ・ friends ・ yesterday ・ mondo ・ trip/<id>)
+    /// v96:ウィジェットの 行き先を ひらく(lattag://develop ・ friends ・ yesterday ・ trip/<id>)
     private func openWidgetRoute() {
         guard let route = widgetRoute.take() else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -242,8 +236,7 @@ struct HomeV64Host: View {
             case .shoot: makeActions().shoot()
             case .develop: if src.shotsToday > 0 { showDevelop = true } else { makeActions().shoot() }
             case .friends: src.layerActions.openFriends()
-            case .yesterday: mondoStart = false; showYesterday = true
-            case .mondo: mondoStart = true; showYesterday = true
+            case .yesterday: showYesterday = true
             case .trip(let id): if let uuid = UUID(uuidString: id) { src.onOpenChat(uuid) }
             }
         }

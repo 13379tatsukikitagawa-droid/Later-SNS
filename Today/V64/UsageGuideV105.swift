@@ -1,7 +1,7 @@
 import SwiftUI
 
 // v105 設定 > 使いかた。見たい ところを えらぶと、動く 説明(v99 `IntroStoryView`)が はじまる。
-// 「ぜんぶ 見る」= Friends → Trip → Mondo を つづけて。最後まで 見たら 使いかたには もどらない(とじる)。
+// 「ぜんぶ 見る」= Friends → Trip を つづけて。最後まで 見たら 使いかたには もどらない(とじる)。
 // ウィジェット = v104 の「ウィジェット、置きますか?」(ボタンは「とじる」)。
 
 struct UsageGuideV105Sheet: View {
@@ -15,7 +15,6 @@ struct UsageGuideV105Sheet: View {
     private let items: [(IntroKind?, String, String, String)] = [
         (.friends, "Friends", "友だちと 1日 3枚 ・ 9:00 に ひらく", "4 場面"),
         (.trip, "Trip", "旅の あいだ みんなで 23枚", "4 場面"),
-        (.mondo, "Mondo", "世界の きのうの お題", "4 場面"),
         (nil, "ウィジェット", "ホーム画面に 置く", ""),
     ]
 
@@ -27,12 +26,12 @@ struct UsageGuideV105Sheet: View {
                 Button { Haptics.play(.tick); onClose() } label: { Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.1), in: Circle()) }.buttonStyle(.plain).accessibilityLabel("とじる")
             }.padding(.top, 14)
             Text("見たい ところを えらぶと、動く 説明が はじまります").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6)).padding(.top, 2)
-            Button { Haptics.play(.click); play([.friends, .trip, .mondo]) } label: {
+            Button { Haptics.play(.click); play([.friends, .trip]) } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "play.fill").font(.system(size: 14, weight: .black)).foregroundStyle(lime).frame(width: 36, height: 36).background(Color.black, in: Circle())
                     Text("ぜんぶ 見る").font(LF.inter(800, 17)).foregroundStyle(HV.ink)
                     Spacer()
-                    Text("Friends → Trip → Mondo").font(LF.mono(10, bold: false)).foregroundStyle(HV.ink.opacity(0.6))
+                    Text("Friends → Trip").font(LF.mono(10, bold: false)).foregroundStyle(HV.ink.opacity(0.6))
                 }
                 .padding(.horizontal, 14).frame(height: 60).background(lime, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             }.buttonStyle(HVPress(scale: 0.97)).padding(.top, 16)

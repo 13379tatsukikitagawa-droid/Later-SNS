@@ -23,7 +23,6 @@ struct DebugWidgetsView: View {
                 } }
                 if part == "all" || part == "small" { HStack(spacing: 14) {
                     box(158, 158, WColor.ground) { LattagFriendView(entry: e) }
-                    box(158, 158, WColor.ground) { LattagMondoView(model: m) }
                 } }
                 if part == "all" || part == "mid" {
                 box(338, 158, WColor.ground) { LattagFriendsView(model: m) }
@@ -71,7 +70,7 @@ struct DebugWidgetsView: View {
                               friends: friends, today: nil,
                               yesterday: DaySummary(dayKey: key, people: 4, count: 11, tag: "夕焼け", names: ["れな", "あや", "そら", "かい"]),
                               yesterdayPhotos: shots > 0 ? [YPhoto(uid: "れな", name: "れな", time: "21:12", tag: "夕焼け", thumb: a), YPhoto(uid: "あや", name: "あや", time: "17:05", tag: "おやつ", thumb: b)] : [],
-                              lockedPreviews: [c], mondoTag: "夕焼け", mondoCount: 1203, mondoCountries: 128, trip: nil, next: nil, myRecordName: nil, myName: "ゆい")
+                              lockedPreviews: [c], trip: nil, next: nil, myRecordName: nil, myName: "ゆい")
     }
 }
 

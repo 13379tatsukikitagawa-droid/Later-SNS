@@ -151,7 +151,6 @@ struct HomeV64Preview: View {
         low.today = .init(thumbs: [P("c"), P("a"), P("e")], times: ["16:05"])
         low.hero = .init(photo: P("d"), tag: "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: "NOV 15", moments: 6, people: 4, daysLeft: 6)
         low.tiles = [.init(photo: P("d"), name: "あや", time: "17:05"), .init(photo: P("b"), name: "you", time: "16:05", own: true), .init(photo: P("d"), name: "れな", time: "12:40"), .init(photo: P("e"), name: "そら", time: "09:12")]
-        low.mondo = [("#散歩", P("a")), ("#放課後", P("f")), ("#夕焼け", P("a"))]
         low.albums = (1...6).map { k in .init(label: "Nov \(16 - k)", left: "\(7 - k)D LEFT · \(["SUN", "SAT", "FRI", "THU", "WED", "TUE"][k - 1])", tiles: [[P("c"), P("d"), P("e")], [P("e"), P("f"), nil], [P("a"), P("b"), P("c")], [P("d"), P("e"), P("f")], [P("a"), P("c"), P("e")], [P("b"), P("d"), P("f")]][k - 1], more: [8, 5, 12, 3, 9, 6][k - 1]) }
         low.onThisDay = (P("c"), 335, "'26 10 17")
         if d.bool(forKey: "debugTrip") { low.trips = [(id: UUID(), name: "Kyoto", sub: "京都 2泊3日", cover: SampleData.photo("b"), day: "DAY 2 / 3", unread: 2)] }
@@ -188,7 +187,7 @@ extension SampleData {
     }
 }
 
-/// DEBUG:Lattag yesterday(`-debugShots 2 -debugTab 1 -debugNotices 1 -debugMine 1 -debugMondo open|stage|empty -debugFilter 帰り道`)
+/// DEBUG:Lattag yesterday(`-debugShots 2 -debugTab 1 -debugNotices 1 -debugMine 1 -debugFilter 帰り道`)
 struct YesterdayV64Preview: View {
     var body: some View {
         let d = UserDefaults.standard
@@ -219,7 +218,6 @@ struct YesterdayV64Preview: View {
             .init(id: "n2", name: "れな", avatar: ph("c"), text: "コメント「この 空 すき」", time: "14分", isNew: true),
             .init(id: "n3", name: "ひなた", avatar: ph("b"), text: "友だち申請が とどきました", time: "1時間", isNew: true, approveID: "r1"),
             .init(id: "n4", kind: .lattag, name: "Lattag", avatar: nil, text: "きのうの 3枚が ひらきました", time: "9:00"),
-            .init(id: "n5", kind: .mondo, name: "Mondo", avatar: nil, text: "#夕焼け が 世界 1位に", time: "9:00"),
             .init(id: "n6", name: "そら", avatar: ph("d"), text: "あなたの #帰り道 に リアクション", time: "きのう"),
         ]
         switch d.string(forKey: "debugFriendsMode") ?? "" {
@@ -228,17 +226,6 @@ struct YesterdayV64Preview: View {
         case "noown": y.mine = []; y.friendCount = 3
         default: y.friendCount = 3
         }
-        var m = YesterdayMondoInput()
-        let mode = d.string(forKey: "debugMondo") ?? "open"
-        m.hasPosts = mode != "empty"; m.startOpened = mode == "open"; m.filterTag = d.string(forKey: "debugFilter")
-        m.dayLabel = "11/16"
-        m.cities = [.init(id: "tk", name: "TOKYO", lat: 35.7, lon: 139.7, photo: ph("a")), .init(id: "bk", name: "BANGKOK", lat: 13.7, lon: 100.5, photo: ph("e")), .init(id: "sl", name: "SEOUL", lat: 37.5, lon: 127, photo: ph("d")), .init(id: "sy", name: "SYDNEY", lat: -33.9, lon: 151.2, photo: ph("f")), .init(id: "pa", name: "PARIS", lat: 48.9, lon: 2.3, photo: ph("c")), .init(id: "ny", name: "NEW YORK", lat: 40.7, lon: -74, photo: ph("b"))]
-        m.tags = [.init(id: "t1", name: "夕焼け", count: 1203, cities: 92, photos: [ph("a"), ph("c")], delta: 2), .init(id: "t2", name: "帰り道", count: 864, cities: 64, photos: [ph("b")], delta: nil), .init(id: "t3", name: "放課後", count: 712, cities: 48, photos: [ph("d")], delta: -1),
-                  .init(id: "t4", name: "おやつ", count: 540, cities: 30, photos: [ph("e"), ph("a")], delta: 3), .init(id: "t5", name: "雨の日", count: 388, cities: 18, photos: [ph("c"), ph("b")], delta: -2), .init(id: "t6", name: "教室", count: 301, cities: 12, photos: [ph("f"), ph("d")], delta: 1),
-                  .init(id: "t7", name: "電車", count: 257, cities: 10, photos: [ph("b"), ph("a")], delta: nil), .init(id: "t8", name: "自販機", count: 198, cities: 9, photos: [ph("c"), ph("e")], delta: 4)]
-        m.todaysOne = .init(id: "one", photo: ph("a"), city: "鎌倉市", time: "17:42", tag: "夕焼け")
-        m.world = [.init(id: "w1", photo: ph("a"), city: "TOKYO", time: "17:42", tag: "夕焼け"), .init(id: "w2", photo: ph("d"), city: "SEOUL", time: "18:10", tag: "帰り道"), .init(id: "w3", photo: ph("b"), city: "PARIS", time: "10:05", tag: "おやつ"), .init(id: "w4", photo: ph("c"), city: "BANGKOK", time: "15:20", tag: "電車")]
-        y.mondo = m
         return YesterdayV64View(input: y)
     }
 }

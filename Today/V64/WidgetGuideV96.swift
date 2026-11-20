@@ -18,8 +18,7 @@ enum WidgetGuideV96 {
         }
         let snap = WidgetSnapshot(dayKey: key, writtenAt: now, shots: 1, limit: 3, shotTimes: [now.addingTimeInterval(-3600)], shotBlurs: [], friends: friends, today: nil,
                                   yesterday: DaySummary(dayKey: key, people: 4, count: 11, tag: "夕焼け", names: ["れな", "あや", "そら", "かい"]),
-                                  yesterdayPhotos: [], lockedPreviews: [], mondoTag: "夕焼け", mondoCount: 1203, mondoCountries: 128,
-                                  trip: TripSnap(id: "sample", title: "京都 2泊3日", sub: "11/19 THU ・ 3人", day: 2, count: 12, total: 23, passNo: 4065, filled: Array(0..<12), cover: nil),
+                                  yesterdayPhotos: [], lockedPreviews: [], trip: TripSnap(id: "sample", title: "京都 2泊3日", sub: "11/19 THU ・ 3人", day: 2, count: 12, total: 23, passNo: 4065, filled: Array(0..<12), cover: nil),
                                   next: nil, myRecordName: nil, myName: "")
         return WidgetModel.make(snap, now: now)
     }

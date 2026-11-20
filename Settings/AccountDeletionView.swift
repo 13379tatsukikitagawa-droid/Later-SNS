@@ -47,7 +47,7 @@ struct AccountDeletionView: View {
                 .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 10) {
-                bullet("あなたの写真・名前・タグが、すべて消えます。Mondo にならんだ写真も消えます")
+                bullet("あなたの写真・名前・タグが、すべて消えます。公開していた写真も消えます")
                 bullet("入っているグループ(\(groupCount)つ)から、抜けます")
                 bullet("同じ Apple ID でも、引きつげません")
             }

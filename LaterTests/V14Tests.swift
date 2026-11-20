@@ -92,21 +92,6 @@ struct V14Tests {
         #expect(SquishCurve.keys[1].x == 1.07 && SquishCurve.keys[1].y == 0.9)
     }
 
-    // MARK: ① 地球儀
-
-    @Test func 地球儀は縦にも回り_回転は行列のかけ足し() {
-        var r = GlobeRotation.identity
-        // 縦にドラッグ(dy)すると、北極(0,1,0)が手前(z)へ倒れる
-        r = GlobeRotation.step(r, dx: 0, dy: .pi / 2)
-        let pole = GlobeRotation.apply(r, (0, 1, 0))
-        #expect(abs(pole.y) < 1e-9 && abs(abs(pole.z) - 1) < 1e-9)
-        // 横・縦を何度かけても、長さは 1 のまま(逆さまで破綻しない)
-        var m = GlobeRotation.initial
-        for i in 0..<500 { m = GlobeRotation.step(m, dx: 0.03 * Double(i % 7), dy: -0.05) }
-        let v = GlobeRotation.apply(m, (0.6, 0.0, 0.8))
-        #expect(abs((v.x * v.x + v.y * v.y + v.z * v.z) - 1) < 1e-6)
-    }
-
     // MARK: ⑦ カレンダー
 
     @Test func 七日より古い日は_色だけ() {

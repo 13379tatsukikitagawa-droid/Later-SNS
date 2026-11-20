@@ -20,7 +20,7 @@ struct YesterdayV64Input {
         var published = true
     }
     struct Notice: Identifiable {
-        enum Kind { case person, lattag, mondo }
+        enum Kind { case person, lattag }
         let id: String
         var kind: Kind = .person
         var name: String
@@ -38,9 +38,7 @@ struct YesterdayV64Input {
     var requestCount = 0
     var friendCount = 0
     var shotFriends = 0
-    var mondoPhoto: UIImage?
-    var mondoTag = "#夕焼け"
-    var mondoCity = "鎌倉市"
+    var trips: [TripHubItem] = []
     var dateLabel = "NOV 15"
     var avatar: UIImage?
     var avatarName = ""
@@ -58,7 +56,6 @@ struct YesterdayV64Input {
     var openMine = false
     var mineIndex = 1
     var debugScrollY: CGFloat? = nil
-    var mondo = YesterdayMondoInput()
 
     var publishedCount: Int { posts.filter(\.published).count }
     var pendingCount: Int { posts.filter { !$0.published }.count }
@@ -75,12 +72,16 @@ struct YesterdayV64Actions {
     var openProfile: () -> Void = {}
     var scanQR: () -> Void = {}
     var approve: (String) -> Void = { _ in }
+    var openTrip: (UUID) -> Void = { _ in }
+    var newTrip: () -> Void = {}
+    var joinKey: () -> Void = {}
 }
 
 struct YesterdayV64View: View {
     var input: YesterdayV64Input
     var actions = YesterdayV64Actions()
-    @State private var tab = 0   // 0 = Friends ・ 1 = Mondo
+    @State private var tab = 0   // 0 = Friends ・ 1 = Trip
+    @State private var tripPos = ScrollPosition()
     @State private var seeded = false
     @State private var viewing: YesterdayV64Input.Cell?
     @State private var scrollY: CGFloat = 0
@@ -116,13 +117,19 @@ struct YesterdayV64View: View {
         GeometryReader { g in
             ZStack(alignment: .top) {
                 Color.black
-                TabView(selection: $tab) {
-                    Tab("Friends", systemImage: "person.2", value: 0) { friendsTab(w: g.size.width).symbolVariant(.none).ignoresSafeArea(edges: .top) }
-                    Tab("Mondo", systemImage: "globe", value: 1) { YesterdayMondoView(input: input, actions: actions, active: tab == 1, locked: input.locked, onScroll: { v in scrollNow(v, forTab: 1) }).ignoresSafeArea(edges: .top) }
+                ZStack {
+                    friendsTab(w: g.size.width).ignoresSafeArea(edges: .top)
+                        .opacity(tab == 0 ? 1 : 0).allowsHitTesting(tab == 0)
+                    TripHubView(trips: input.trips, onOpen: { actions.openTrip($0) }, onNew: { actions.newTrip() }, onJoinKey: { actions.joinKey() },
+                                position: $tripPos, topInset: 120, onScroll: { v in scrollNow(v, forTab: 1) })
+                        .ignoresSafeArea(edges: .top)
+                        .opacity(tab == 1 ? 1 : 0).allowsHitTesting(tab == 1)
                 }
-                .tint(HV.lime)
                 .preferredColorScheme(.dark)
-                .onChange(of: tab) { _, _ in Haptics.play(.sel); scrollY = 0 }
+                .animation(.easeOut(duration: 0.18), value: tab)
+                .onChange(of: tab) { _, _ in scrollY = 0 }
+                VStack { Spacer(); PopTabBar(selection: $tab, onRepeat: { withAnimation(.easeOut(duration: 0.3)) { if tab == 0 { pos.scrollTo(edge: .top) } else { tripPos.scrollTo(edge: .top) } } }).padding(.bottom, 22) }
+                    .zIndex(3).ignoresSafeArea(.keyboard)
 
                 header(w: g.size.width)
                 if notices { noticePanel(w: g.size.width).zIndex(5) }
@@ -158,10 +165,10 @@ struct YesterdayV64View: View {
             .accessibilityLabel("通知")
             // タブの 名前
             VStack(spacing: 1) {
-                Text(tab == 0 ? "Friends" : "Mondo").font(LF.inter(900, compact ? 17 : 24)).tracking(compact ? -0.7 : -0.96).foregroundStyle(.white).frame(height: compact ? 22 : 30)
+                Text(tab == 0 ? "Friends" : "Trip").font(LF.inter(900, compact ? 17 : 24)).tracking(compact ? -0.7 : -0.96).foregroundStyle(.white).frame(height: compact ? 22 : 30)
                 if !compact {
-                    Text(tab == 0 ? friendsSubtitle : "THE WORLD, YESTERDAY")
-                        .font(tab == 0 ? LF.inter(600, 11.5) : LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.5)).frame(height: 16)
+                    Text(tab == 0 ? friendsSubtitle : "旅の あいだ、みんなで 1日 23枚")
+                        .font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.5)).frame(height: 16)
                 }
             }.frame(width: 250).offset(x: (w - 250) / 2, y: compact ? 58 : 52)
             // 右上 = 自分の アイコン(1回 → プロフィール ・ 2回 → 今日)
@@ -531,7 +538,6 @@ struct YesterdayV64View: View {
             switch n.kind {
             case .person: avatarCircle(n.avatar, name: n.name, size: 42)
             case .lattag: Text("#").font(LF.inter(900, 22)).foregroundStyle(HV.ink).frame(width: 42, height: 42).background(HV.lime, in: Circle())
-            case .mondo: Image(systemName: "globe").font(.system(size: 20, weight: .semibold)).foregroundStyle(HV.ink).frame(width: 42, height: 42).background(HV.lime, in: Circle())
             }
             VStack(alignment: .leading, spacing: 4) {
                 (Text(n.name).font(LF.inter(800, 15)).foregroundColor(.white) + Text(" " + n.text).font(LF.inter(600, 15)).foregroundColor(.white.opacity(0.88))).lineLimit(1).minimumScaleFactor(0.85)

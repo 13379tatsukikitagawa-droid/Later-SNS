@@ -32,8 +32,7 @@ struct HomeV5LayoutSnapshotTests {
                 }
             } else {
                 TwoPageSwitcher(firstTitle: "MONDO", secondTitle: "GROUP", showsSecond: false, onSelect: { _ in }) {
-                    HomeV5MondoPage(phase: .notReady, dayKey: "2026-10-26", isActive: false, topInset: 59, onTick: {}, onSettings: {},
-                                    onRetry: {}, onOpenTag: { _, _, _ in }, onOpenAll: { _, _ in })
+                    Color.clear
                 } second: {
                     Color.clear
                 }

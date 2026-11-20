@@ -11,7 +11,7 @@ struct WidgetOfferV104Tests {
         #expect(await WidgetPlacement.count() == 1)
         #expect(await WidgetPlacement.increased(since: 0))
         #expect(!(await WidgetPlacement.increased(since: 1)))
-        WidgetPlacement.provider = { ["LattagLens", "LattagMondo"] }
+        WidgetPlacement.provider = { ["LattagLens", "LattagUntil9"] }
         #expect(await WidgetPlacement.increased(since: 1))
         WidgetPlacement.provider = { [] }
         #expect(!(await WidgetPlacement.increased(since: 0)))

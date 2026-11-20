@@ -77,7 +77,7 @@ struct AnnouncedPhoto: View {
         Group {
             switch pick.source {
             case .mondo(let entry):
-                MondoTile(entry: entry, cornerRadius: 0)
+                Color(hex: "2A2A2E")
             case .local:
                 Color(hex: "2A2A2E")
                     .overlay(LinearGradient(colors: [.white.opacity(0.08), .black.opacity(0.25)], startPoint: .top, endPoint: .bottom))

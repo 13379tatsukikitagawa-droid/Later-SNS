@@ -94,7 +94,7 @@ struct HVStackGlyph: View {
 }
 
 /// 四すみ・目次の アイコン(線画)。`HVIcon.kind` で えらぶ
-enum HVIconKind { case yesterday, trip, mondo, friends, camera }
+enum HVIconKind { case yesterday, trip, friends, camera }
 
 struct HVIcon: View {
     let kind: HVIconKind
@@ -106,7 +106,6 @@ struct HVIcon: View {
             switch kind {
             case .yesterday: HVStackGlyph(size: size * 0.9, color: color, line: size / 13)
             case .trip: Image(systemName: "briefcase").font(.system(size: size * 0.85, weight: .semibold))
-            case .mondo: Image(systemName: "globe").font(.system(size: size * 0.9, weight: .medium))
             case .friends: Image(systemName: "person.2").font(.system(size: size * 0.85, weight: .semibold))
             case .camera: Image(systemName: "record.circle").font(.system(size: size * 0.95, weight: .medium))
             }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// P04:Home の 下(スクロール した 所)。上から Today(今日の フィルム)→ Active → Yesterday → Mondo → Albums → On this day → Friends。
+// P04:Home の 下(スクロール した 所)。上から Today(今日の フィルム)→ Active → Yesterday → Albums → On this day → Friends。
 // 見本:L01〜L11(mock/src/app.js の arcToday / arcActive / arcYesterday / arcMondo / arcAlbums / arcFriends)。背景は #0A0A0B。
 
 struct HomeV64LowerData {
@@ -11,7 +11,6 @@ struct HomeV64LowerData {
     var today = Today()
     var hero: Hero?
     var tiles: [Tile] = []
-    var mondo: [(tag: String, photo: UIImage?)] = []
     var albums: [Album] = []
     var onThisDay: (photo: UIImage?, daysLeft: Int, date: String)?
     var trips: [(id: UUID?, name: String, sub: String, cover: UIImage?, day: String, unread: Int)] = []
@@ -180,10 +179,6 @@ struct HVYesterdayBlock: View {
             stat("\(h?.moments ?? 6)", "Moments").frame(width: 100).offset(x: 31, y: 296)
             ZStack { Ellipse().stroke(HV.green, lineWidth: 2.5).frame(width: 68, height: 46).rotationEffect(.degrees(-4)); stat("\(h?.daysLeft ?? 6)d", "Left") }.frame(width: 100).offset(x: 131, y: 296)
             stat("\(h?.people ?? 4)", "People ›").frame(width: 100).offset(x: 231, y: 296)
-            Button { Haptics.play(.pop); locked ? Haptics.play(.warn) : actions.openMondo() } label: {
-                HStack(spacing: 8) { Image(systemName: "globe").font(.system(size: 17, weight: .semibold)); Text("Mondo").font(LF.inter(800, 17)) }
-                    .foregroundStyle(HV.ink).frame(width: 268, height: 54).background(.white, in: Capsule())
-            }.buttonStyle(HVPress(scale: 0.97)).offset(x: 16, y: 382)
             Image(systemName: "bubble.left").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 54, height: 54).background(Color.white.opacity(0.14), in: Circle()).offset(x: 292, y: 382)
             if !locked, let h { Text(h.tag).font(LF.inter(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 8).background(h.tagColor, in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(8)).offset(x: 293, y: 18) }
         }
@@ -245,38 +240,6 @@ struct HVAnchor: View {
     /// かぎ付き(撮る まえの Yesterday ・ Mondo)= knock
     var locked = false
     var body: some View { Color.clear.frame(height: 0).id(id).hapticSection(id, locked: locked) }
-}
-
-/// Mondo の 列(人気タグ):高さ 188 の 縦長カード(数字 ・ タグ)
-struct HVMondoRow: View {
-    let input: HomeV64Input
-    let data: HomeV64LowerData
-    let actions: HomeV64Actions
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HVAnchor(id: "sec-mondo", locked: input.locked)
-            Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
-            HVLabel(text: "MONDO", trailing: "TOP 5").padding(.top, 18)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 9) {
-                    ForEach(Array(data.mondo.enumerated()), id: \.offset) { i, m in
-                        Button { input.locked ? Haptics.play(.warn) : actions.openMondo() } label: {
-                            ZStack(alignment: .bottomLeading) {
-                                LinearGradient(colors: [Color(hex: "3A2E3A"), Color(hex: "14100F")], startPoint: .top, endPoint: .bottom)
-                                if let img = m.photo { Image(uiImage: img).resizable().scaledToFill().frame(width: 142, height: 188).clipped().blur(radius: input.locked ? 10 : 0) }
-                                LinearGradient(colors: [.black.opacity(0.1), .clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                                Text(String(format: "%02d", i + 1)).font(LF.serif(40, italic: true)).foregroundStyle(.white.opacity(0.95)).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(.leading, 12).padding(.top, 6)
-                                Text(m.tag).font(LGFont.mincho(21)).foregroundStyle(.white).padding(14)
-                                if input.locked { Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.white).frame(width: 30, height: 30).background(Color.black.opacity(0.6), in: Circle()).frame(maxWidth: .infinity, maxHeight: .infinity) }
-                            }
-                            .frame(width: 142, height: 188).clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
-                        }.buttonStyle(HVPress(scale: 0.97))
-                    }
-                }.padding(.horizontal, 14)
-            }.padding(.top, 14)
-        }
-    }
 }
 
 /// Albums(7日):日ごとに 3枚 + 「+N」(4列)
@@ -360,7 +323,6 @@ struct HVLowerSections: View {
             HVActiveRow(data: data, input: input, actions: actions)
             HVYesterdayBlock(input: input, data: data, actions: actions)
             if !input.isFirstDay {
-                HVMondoRow(input: input, data: data, actions: actions)
                 HVAlbums(data: data, actions: actions)
                 HVOnThisDay(data: data)
             }

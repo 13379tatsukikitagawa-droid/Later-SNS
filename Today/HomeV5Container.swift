@@ -66,7 +66,6 @@ struct HomeV5Container: View {
     @State private var calendarTop = 0
     /// カレンダーの NavigationStack(日の詳細は、ここに1段だけ push する。値は yyyy-MM-dd)
     @State private var calendarPath: [String] = []
-    @State private var loader = MondoV5Loader()
     @State private var viewer: ViewerState?
     @State private var viewerShown = false
     @State private var roomGroupID: UUID?
@@ -256,24 +255,6 @@ struct HomeV5Container: View {
     /// iOS 26 純正の TabView(Tab(...))に する。バーの 後ろに 不透明な 面は 置かない(中身が 下を くぐって 透ける)。
     private func pagesLayer(top: CGFloat, proxy: GeometryProxy) -> some View {
         TabView(selection: tabBinding) {
-            Tab("Mondo", systemImage: "globe", value: HomeTab.mondo) {
-                HomeV5MondoPage(
-                    phase: loader.phase,
-                    dayKey: dayKey,
-                    isActive: isCalm && tab == .mondo,
-                    topInset: top + Self.headerExtra,
-                    onTick: {}, // v14:触覚は V5Globe の中で Haptics.tick(12°ごと・55ms)
-                    onSettings: { showsMondoSettings = true },
-                    onRetry: { Task { await loader.load(now: now, blocked: MondoService.blockedMondoIDs(blockedUsers), force: true) } },
-                    onOpenTag: openTagFeed,
-                    onOpenAll: openAll,
-                    announced: picks.world(day: dayKey),
-                    onOpenAnnounced: openAnnouncedWorld,
-                    scrollToTopToken: mondoTop,
-                    locked: locked
-                )
-            }
-
             Tab("Groups", systemImage: "person.2.fill", value: HomeTab.group) {
                 HomeV5GroupPage(
                     sections: sections,
@@ -398,14 +379,6 @@ struct HomeV5Container: View {
                     .transition(.opacity)
                     .zIndex(5)
             }
-            if showsWelcome {
-                MondoWelcomeView(haptics: haptics) {
-                    mondoSeen = true
-                    withAnimation(.easeOut(duration: 0.4)) { showsWelcome = false }
-                }
-                .transition(.opacity)
-                .zIndex(6)
-            }
             // はじめての使い方カード(1回だけ)。暗くするだけで、下は触れる(タブは止めない)。
             if signals.isShowingCoach {
                 ZStack {
@@ -418,14 +391,6 @@ struct HomeV5Container: View {
             }
             .environment(\.colorScheme, .dark)
         }
-        .sheet(isPresented: $showsMondoSettings) {
-            MondoSettingsSheet(haptics: haptics, onShowWelcome: {
-                showsMondoSettings = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { withAnimation { showsWelcome = true } }
-            })
-            .presentationDetents([.medium, .large])
-            .presentationBackground(Color(hex: "121214"))
-        }
         .alert("この位置を、グループに見せますか?", isPresented: Binding(get: { pendingLocation != nil }, set: { if !$0 { pendingLocation = nil } })) {
             Button("共有する") {
                 LocationShareStore.hasConfirmed = true
@@ -435,9 +400,6 @@ struct HomeV5Container: View {
             Button("やめる", role: .cancel) { pendingLocation = nil }
         } message: {
             Text("そのグループの人だけに、約500mの範囲(撮った場所)が見えます。正確な場所は、どこにも保存されません。いつでもオフにでき、オフにすると保存した位置も消えます。")
-        }
-        .task(id: dayKey) {
-            await loader.load(now: now, blocked: MondoService.blockedMondoIDs(blockedUsers))
         }
         .onAppear {
             lampBoard.prune(now: now)
@@ -635,51 +597,6 @@ struct HomeV5Container: View {
         }
     }
 
-    /// MONDO:ランキングの行(または行の中の写真)→ そのタグの写真が、全画面で縦に並ぶ。続けて次のタグへ。
-    private func openTagFeed(point: CGPoint, tag: String, entryID: String?) {
-        guard case .ready(let summary) = loader.phase else { return }
-        haptics.playPattern(HomeHapticPattern.light)
-        let ranking = TagRanking.rank(summary.topTags, dayKey: summary.dayKey)
-        let feed = TagFeed.pages(ranking: ranking, entries: summary.entries, dayKey: summary.dayKey)
-        guard !feed.isEmpty else { return }
-        var pages = feed.map { page in
-            ViewerPage(
-                id: page.id,
-                source: .mondo(page.entry),
-                tags: page.entry.tags,
-                dayText: V5.monthDay(fromDayKey: page.entry.dayKey),
-                label: "#\(page.tag)",
-                counter: page.counterText,
-                moreEntry: page.entry,
-                lamp: worldLamp(for: page.entry)
-            )
-        }
-        // 最後は「今日の Mondo は、ここまで。」の終わりのページ
-        pages.append(ViewerPage(id: "end", kind: .end(title: "今日の Mondo は、ここまで。", body: "あしたの朝、また新しい世界がひらきます")))
-        present(pages: pages, start: TagFeed.startIndex(in: feed, tag: tag, entryID: entryID), at: point)
-    }
-
-    /// MONDO:「すべての昨日」のカード
-    private func openAll(point: CGPoint, index: Int) {
-        guard case .ready(let summary) = loader.phase else { return }
-        haptics.playPattern(HomeHapticPattern.light)
-        let list = Array(summary.entries.prefix(MondoConfig.maxCards))
-        var pages = list.enumerated().map { offset, entry in
-            ViewerPage(
-                id: "all|" + entry.id,
-                source: .mondo(entry),
-                tags: entry.tags,
-                dayText: V5.monthDay(fromDayKey: entry.dayKey),
-                label: "Mondo",
-                counter: TagFeed.counterText(index: offset, total: list.count),
-                moreEntry: entry,
-                lamp: worldLamp(for: entry)
-            )
-        }
-        pages.append(ViewerPage(id: "end", kind: .end(title: "今日の Mondo は、ここまで。", body: "あしたの朝、また新しい世界がひらきます")))
-        present(pages: pages, start: index, at: point)
-    }
-
     /// GROUP:タイル → そのグループの昨日の写真が縦に並ぶ。解禁前のタイルは、鍵つきのモザイクのページ。
     private func openGroupTile(point: CGPoint, groupID: UUID, tileID: String) {
         guard let section = sections.first(where: { $0.id == groupID }),
@@ -812,26 +729,7 @@ struct HomeV5Container: View {
 
     @ViewBuilder
     private var reportLayer: some View {
-        if let entry = reportEntry {
-            MondoReportSheet(
-                entry: entry,
-                haptics: haptics,
-                onReport: {
-                    await MondoService.shared.report(entry)
-                    await loader.load(now: now, blocked: MondoService.blockedMondoIDs(blockedUsers), force: true)
-                },
-                onBlock: {
-                    await MondoService.shared.block(entry, modelContext: modelContext)
-                },
-                onWithdraw: {
-                    await MondoService.shared.withdraw([entry.id])
-                    MondoLocalStore.hide(entry.id)
-                    await loader.load(now: now, blocked: MondoService.blockedMondoIDs(blockedUsers), force: true)
-                },
-                onClose: { reportEntry = nil }
-            )
-            .zIndex(7)
-        }
+        EmptyView()
     }
 }
 
