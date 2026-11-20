@@ -103,6 +103,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     /// CKSubscriptionによるプッシュを受けて、CloudKitManagerに即座にfetchさせる。
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any]) async -> UIBackgroundFetchResult {
+        // v108 つなぎ:友だち申請の 通知 → 裏で 同期(A → B の Friendship を すぐ つくる)
+        if let n = CKNotification(fromRemoteNotificationDictionary: userInfo), FriendRequestBridgeV108.isBridgeNotification(subscriptionID: n.subscriptionID) {
+            await FriendRequestBridgeV108.handlePush()
+            return .newData
+        }
         await CloudKitManager.current?.handleRemoteNotification()
         return .newData
     }

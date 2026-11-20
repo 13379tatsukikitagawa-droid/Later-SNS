@@ -61,8 +61,11 @@ enum FriendRequests {
         record["toUsername"] = ""
         record["status"] = "pending"
         record["createdAt"] = Date()
-        do { _ = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys); return true }
+        do { _ = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys) }
         catch { print("[FriendRequests] send failed: \(error)"); return false }
+        // v108 つなぎ:相手が すでに こちらに 申請 して いたら、承認 なしで すぐ 相互
+        await acceptCrossed(myName: myName)
+        return true
     }
 
     /// とどいている 申請(返事まえ)
@@ -93,6 +96,7 @@ enum FriendRequests {
     /// 自分が 出した 申請に 「承認」が 返って きて いたら、こちら側の Friendship も つくる(あいてが もう 友だち なら なにも しない)
     @MainActor static func syncAccepted(myName: String) async {
         guard let database, let me else { return }
+        await acceptCrossed(myName: myName)   // v108 つなぎ
         let mine = await requests(database, field: "fromUserID", equals: me)
         let resp = await responses(database, field: "requesterID", equals: me)
         let targets = acceptedTargets(myRequests: mine, responses: resp, me: me)
@@ -103,6 +107,14 @@ enum FriendRequests {
         }
     }
 
+
+    /// v108 つなぎ:おたがいに 申請 して いる 相手は 承認 なしで 相互に する(返事 + 自分 → 相手)
+    @MainActor static func acceptCrossed(myName: String) async {
+        guard let database, let me else { return }
+        let mine = await requests(database, field: "fromUserID", equals: me)
+        let crossed = FriendRequestBridgeV108.crossedTargets(myRequests: mine, incoming: await incoming(), me: me)
+        for r in crossed { _ = await respond(to: r, accept: true, myName: myName) }
+    }
 
     // MARK: 読みとり
 

@@ -119,6 +119,7 @@ final class CloudKitManager: NSObject {
 
         if let currentUserRecordName {
             await PhotoNotificationService.setupNotificationSubscriptions(for: currentUserRecordName, container: container)
+            await FriendRequestBridgeV108.setupSubscriptions(for: currentUserRecordName, container: container)   // v108 つなぎ
             SignInPerf.mark("通知の登録が終わった(サブスクリプション)")
         }
 
