@@ -11,7 +11,7 @@ crons = ["0 18 * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "later-social"
-database_id = "REPLACE_WITH_D1_ID"
+database_id = "ab4f30f1-7a6b-40cf-b592-f7832831dd38"
 
 [vars]
 FIREBASE_PROJECT_ID = "later-app-f2606"
