@@ -1,0 +1,23 @@
+# 友だち ・ 申請 ・ お知らせ ・ 通知(v103 / v108)。Cloudflare Workers + D1(カード登録 なしで 使える)。
+name = "later-social"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# 毎日 3:00(UTC):7日 たった 申請 ・ 30日 たった お知らせを 消す
+[triggers]
+crons = ["0 18 * * *"]
+
+# `wrangler d1 create later-social` の 結果の database_id に 差しかえる(あなたの 作業)
+[[d1_databases]]
+binding = "DB"
+database_name = "later-social"
+database_id = "REPLACE_WITH_D1_ID"
+
+[vars]
+FIREBASE_PROJECT_ID = "later-app-f2606"
+APNS_BUNDLE_ID = "com.tatsukikitagawa.laternew2"
+# 開発中の 端末(Xcode から 入れた アプリ)= development、TestFlight / App Store = production
+APNS_ENVIRONMENT = "development"
+REQUEST_TTL_DAYS = "7"
+NOTICE_TTL_DAYS = "30"
+# APNS_KEY_ID ・ APNS_TEAM_ID ・ APNS_PRIVATE_KEY(.p8 の 中身)は `wrangler secret put` で 入れる(ここに 書かない ・ チャットに 貼らない)
