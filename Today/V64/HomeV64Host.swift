@@ -84,6 +84,7 @@ struct HomeV64Host: View {
         y.cells = L.yesterday.map { c in
             .init(id: c.id, photo: image(c.imageData, "yd\(c.id)", max: 480) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), tag: c.tag)
         }
+        y.todayPhoto = UserProfile.current(from: profiles).flatMap { u in u.photos.filter { Calendar.current.isDateInToday($0.captureDate) }.max(by: { $0.captureDate < $1.captureDate }) }.flatMap { image($0.imageData, "tp\($0.id)", max: 240) }
         y.friendCount = L.friends.filter { !$0.isMe }.count
         y.shotFriends = L.friends.filter { !$0.isMe && $0.hasShot }.count
         y.avatarName = src.avatarName
@@ -102,9 +103,9 @@ struct HomeV64Host: View {
             let f = others.first { $0.name == name }
             let last = cs.first?.captureDate
             return .init(id: name, name: name, avatar: f.flatMap { image($0.avatarData, "av\($0.id)", max: 96) ?? image($0.mosaicTiny, "mt\($0.id)", max: 96) },
-                         place: f?.city ?? "", when: last.map { "きのう \(df.string(from: $0))" } ?? "きのう", photos: cs.prefix(3).map(photo), caption: nil, reactors: [], published: true)
+                         place: f?.city ?? "", when: last.map { "きのう \(df.string(from: $0))" } ?? "きのう", photos: cs.prefix(3).map(photo), caption: nil, reactors: [], published: true, friendID: f?.id ?? "")
         } + others.filter { f in !order.contains(f.name) }.map { f in
-            YesterdayV64Input.Post(id: f.id, name: f.name, avatar: image(f.avatarData, "av\(f.id)", max: 96) ?? image(f.mosaicTiny, "mt\(f.id)", max: 96), photos: [], caption: nil, published: false)
+            YesterdayV64Input.Post(id: f.id, name: f.name, avatar: image(f.avatarData, "av\(f.id)", max: 96) ?? image(f.mosaicTiny, "mt\(f.id)", max: 96), photos: [], caption: nil, published: false, friendID: f.id)
         }
         // 通知:来て いる 友だち申請 + きのうが ひらいた 合図(リアクション ・ コメントの 通知は データが できたら 足す)
         y.notices = incoming.prefix(5).map { r in
@@ -126,6 +127,7 @@ struct HomeV64Host: View {
         a.addFriends = friends; a.openRequests = friends; a.openFriends = friends; a.scanQR = friends
         a.shoot = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }
         a.openProfile = { showProfileOverYesterday = true }
+        a.openChat = { id, name in showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { chatWith = (id, name) } }
         a.openTrip = { id in showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenChat(id) } }
         a.newTrip = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onCreateGroup() } }
         a.joinKey = { showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.passphrase) } }

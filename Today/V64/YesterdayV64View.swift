@@ -18,6 +18,7 @@ struct YesterdayV64Input {
         var caption: String?
         var reactors: [UIImage?] = []
         var published = true
+        var friendID = ""
     }
     struct Notice: Identifiable {
         enum Kind { case person, lattag }
@@ -39,6 +40,7 @@ struct YesterdayV64Input {
     var friendCount = 0
     var shotFriends = 0
     var trips: [TripHubItem] = []
+    var todayPhoto: UIImage?
     var dateLabel = "NOV 15"
     var avatar: UIImage?
     var avatarName = ""
@@ -72,6 +74,7 @@ struct YesterdayV64Actions {
     var openProfile: () -> Void = {}
     var scanQR: () -> Void = {}
     var approve: (String) -> Void = { _ in }
+    var openChat: (String, String) -> Void = { _, _ in }
     var openTrip: (UUID) -> Void = { _ in }
     var newTrip: () -> Void = {}
     var joinKey: () -> Void = {}
@@ -204,24 +207,14 @@ struct YesterdayV64View: View {
     // MARK: Friends
 
     private func friendsTab(w: CGFloat) -> some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                Color.clear.frame(height: 120)
-                if hasMine { myBlock(w: w) } else { firstShot }
-                if noFriends { inviteBlock.padding(.top, hasMine ? 30 : 34) }
-                if input.locked && hasMine { lockBand.padding(.horizontal, 16).padding(.top, 14) }
-                VStack(spacing: 0) {
-                    ForEach(input.posts) { post in postView(post, w: w).hapticSection(post.id, locked: input.locked) }
-                }.padding(.top, input.locked ? 14 : 22)
-                FeedEndV106(empty: noFriends, shotToday: input.shotsUsed > 0, onAdd: { actions.openFriends() }, onShoot: { actions.shoot() })
-                Color.clear.frame(height: 150)
-            }
-        }
-        .scrollHaptics()
-        .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, v in scrollNow(v, forTab: 0) }
-        .scrollPosition($pos)
-        .onAppear { if let y = input.debugScrollY, tab == 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { pos.scrollTo(y: y) } } }
-        .background(Color.black)
+        FriendsTabV110(input: input, actions: actions, w: w,
+                       onViewPhoto: { c in viewing = c },
+                       onOpenMine: { i in mineIndex = i; withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { mine = true } },
+                       invite: { AnyView(inviteBlock) },
+                       lockBand: { AnyView(lockBand.padding(.top, 0)) },
+                       position: $pos,
+                       onScroll: { v in scrollNow(v, forTab: 0) })
+            .onAppear { if let y = input.debugScrollY, tab == 0 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { pos.scrollTo(y: y) } } }
     }
 
     // ① はじめの 1枚(自分の きのう が ない 時)

@@ -207,11 +207,11 @@ struct YesterdayV64Preview: View {
         y.mine = [.init(id: "m1", image: ph("b"), time: "09:12", tag: "帰り道"), .init(id: "m2", image: ph("d"), time: "13:40", tag: "放課後"), .init(id: "m3", image: ph("e"), time: "18:05", tag: "夕焼け")]
         let rx: [UIImage?] = [ph("d"), ph("a"), ph("f")]
         y.posts = [
-            .init(id: "rena", name: "れな", avatar: ph("d"), place: "鎌倉市", when: "きのう 17:00", photos: [.init(id: "r1", image: ph("a"), time: "17:00", tag: "夕焼け"), .init(id: "r2", image: ph("b"), time: "13:10", tag: "おやつ"), .init(id: "r3", image: ph("c"), time: "09:30", tag: "電車")], caption: nil, reactors: rx),
-            .init(id: "aya", name: "あや", avatar: ph("a"), place: "横浜市", when: "きのう 18:05", photos: [.init(id: "a1", image: ph("e"), time: "18:05", tag: "おやつ"), .init(id: "a2", image: ph("f"), time: "12:40", tag: "教室"), .init(id: "a3", image: ph("a"), time: "17:30", tag: "夕焼け")], caption: "この 自販機 すき", reactors: [ph("d"), ph("a"), ph("e")]),
-            .init(id: "hina", name: "ひなた", avatar: ph("b"), photos: [.init(id: "h1", image: ph("f"), time: "", tag: nil)], caption: nil, published: false),
-            .init(id: "sora", name: "そら", avatar: ph("c"), place: "藤沢市", when: "きのう 09:12", photos: [.init(id: "s1", image: ph("c"), time: "09:12", tag: "電車"), .init(id: "s2", image: ph("d"), time: "16:00", tag: "帰り道")], caption: nil, reactors: [ph("a")]),
-            .init(id: "yui", name: "ゆい", avatar: ph("e"), photos: [.init(id: "y1", image: ph("a"), time: "", tag: nil)], caption: nil, published: false),
+            .init(id: "rena", name: "れな", avatar: ph("d"), place: "鎌倉市", when: "きのう 17:00", photos: [.init(id: "r1", image: ph("a"), time: "17:00", tag: "夕焼け"), .init(id: "r2", image: ph("b"), time: "13:10", tag: "おやつ"), .init(id: "r3", image: ph("c"), time: "09:30", tag: "電車")], caption: nil, reactors: rx, friendID: "rena"),
+            .init(id: "aya", name: "あや", avatar: ph("a"), place: "横浜市", when: "きのう 18:05", photos: [.init(id: "a1", image: ph("e"), time: "18:05", tag: "おやつ"), .init(id: "a2", image: ph("f"), time: "12:40", tag: "教室"), .init(id: "a3", image: ph("a"), time: "17:30", tag: "夕焼け")], caption: "この 自販機 すき", reactors: [ph("d"), ph("a"), ph("e")], friendID: "aya"),
+            .init(id: "hina", name: "ひなた", avatar: ph("b"), photos: [.init(id: "h1", image: ph("f"), time: "", tag: nil)], caption: nil, published: false, friendID: "hina"),
+            .init(id: "sora", name: "そら", avatar: ph("c"), place: "藤沢市", when: "きのう 09:12", photos: [.init(id: "s1", image: ph("c"), time: "09:12", tag: "電車"), .init(id: "s2", image: ph("d"), time: "16:00", tag: "帰り道")], caption: nil, reactors: [ph("a")], friendID: "sora"),
+            .init(id: "yui", name: "ゆい", avatar: ph("e"), photos: [.init(id: "y1", image: ph("a"), time: "", tag: nil)], caption: nil, published: false, friendID: "yui"),
         ]
         y.cells = [.init(id: "a1", photo: ph("a"), name: "あや", time: "17:05", tag: "夕焼け"), .init(id: "m", photo: ph("a"), name: "鎌倉市", time: nil, tag: "夕焼け")]
         y.notices = [

@@ -193,6 +193,7 @@
 		B6A1C0010000000000000106 /* ProfileShot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A1C0010000000000000105 /* ProfileShot.swift */; };
 		B7824F0868F782C69F76B8D7 /* OnboardingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BF6389BC965BF1D800AEC6D /* OnboardingComponents.swift */; };
 		B80C9B2C4B6FC1C947110095 /* ModerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8289C9CCB22AFFDABCEC81E /* ModerationService.swift */; };
+		4F4A3EFFD58BA245053568DF /* FriendsTabV110.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0ADF9AD150A2DAD2701C54 /* FriendsTabV110.swift */; };
 		B9144BB237EBBF08EDC37109 /* V64/FriendRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */; };
 		B9215E512ED464628620F989 /* V64/HomeV64Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F9F503048AA20B929468DC /* V64/HomeV64Parts.swift */; };
 		BA5B232F292F7B074BA071CA /* Moderation/BlockedUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44A391CFCECDF1D934A1C686 /* Moderation/BlockedUser.swift */; };
@@ -400,6 +401,7 @@
 		0548D25953234EAF947739A5 /* ImageCacheLimits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCacheLimits.swift; sourceTree = "<group>"; };
 		06663B61C77C6DDC2FA74575 /* V64/RecapPlayerV86View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/RecapPlayerV86View.swift; sourceTree = "<group>"; };
 		07AD18FC5056259AA8291B04 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		AB0ADF9AD150A2DAD2701C54 /* FriendsTabV110.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FriendsTabV110.swift; sourceTree = "<group>"; };
 		090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FriendRequestsView.swift; sourceTree = "<group>"; };
 		0936F8145E634A46BB2AB934 /* LaterColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterColor.swift; sourceTree = "<group>"; };
 		0A0CDE87376944EE8E6DF443 /* Fonts/Inter-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Inter-Medium.ttf"; sourceTree = "<group>"; };
@@ -1100,6 +1102,7 @@
 				72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */,
 				99250B0EB5E496A94CD226D2 /* V64/DirectMessageService.swift */,
 				090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */,
+				AB0ADF9AD150A2DAD2701C54 /* FriendsTabV110.swift */,
 				BC3012A6FB5BD1E2E2C92483 /* V64/TripHubView.swift */,
 				3EB7A3A6D3218BE29D165973 /* V64/FriendLinkSheetV108.swift */,
 				F95D76C6B24BB950715937B0 /* V64/InboxV108View.swift */,
@@ -1736,6 +1739,7 @@
 				095C9283B37335410D2F8521 /* V64/DirectMessageView.swift in Sources */,
 				73AE4F5B71C4CE851B12BD98 /* V64/DirectMessageService.swift in Sources */,
 				B9144BB237EBBF08EDC37109 /* V64/FriendRequestsView.swift in Sources */,
+				4F4A3EFFD58BA245053568DF /* FriendsTabV110.swift in Sources */,
 				CB59C20B23F89C01E9E9F2A9 /* V64/TripHubView.swift in Sources */,
 				86FB53D29B7AA4667C798E00 /* V64/FriendLinkSheetV108.swift in Sources */,
 				D471AEE121D1C216B0E9EDC9 /* V64/InboxV108View.swift in Sources */,
