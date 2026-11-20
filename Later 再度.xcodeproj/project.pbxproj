@@ -167,6 +167,10 @@
 		A70FCBF38ADE5FEE4F0C2E0A /* V64/HomeViewSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5AB9DB36D920AC00893439 /* V64/HomeViewSwitch.swift */; };
 		A76B1D8370E9671F3A761E47 /* ChekiPhotoFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDF5F2153F01F43089097247 /* ChekiPhotoFrame.swift */; };
 		A8D588FAFE0DF0D7EEB5F8BF /* DebugStateMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D881D698B13AD2783A958080 /* DebugStateMenu.swift */; };
+		BAFA62E77B385F4EC8FCC806 /* PopColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA8A488F1FFC6077E23CA40 /* PopColor.swift */; };
+		42665476D9385007E3880C1A /* PopSticker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A19E043AC12326DE665B4A /* PopSticker.swift */; };
+		697E0EF3BB22DEDCF9251572 /* PopParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3636F8CD3ED8AA8707BC4A11 /* PopParts.swift */; };
+		1931DD08FB41A42C7B239207 /* PopPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A7A36861A3E59526C9F364D /* PopPreview.swift */; };
 		A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB985051FDA08E630C624743 /* LGGlass.swift */; };
 		A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF193B5747AE398EAD547C74 /* OnboardingModel.swift */; };
 		AA02B084116A54FB2CDB13B8 /* ProfileImmersiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */; };
@@ -708,6 +712,10 @@
 		F96A2FC5BB25046D2619C704 /* LattagWidgetProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetProvider.swift; sourceTree = "<group>"; };
 		F96C7548AF2068DC5BCAAB24 /* AccountDeletionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccountDeletionService.swift; sourceTree = "<group>"; };
 		FAA8B76602A62DD91102D131 /* V64/SheetFitV104.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/SheetFitV104.swift; sourceTree = "<group>"; };
+		0CA8A488F1FFC6077E23CA40 /* PopColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Pop/PopColor.swift; sourceTree = "<group>"; };
+		88A19E043AC12326DE665B4A /* PopSticker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Pop/PopSticker.swift; sourceTree = "<group>"; };
+		3636F8CD3ED8AA8707BC4A11 /* PopParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Pop/PopParts.swift; sourceTree = "<group>"; };
+		3A7A36861A3E59526C9F364D /* PopPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Pop/PopPreview.swift; sourceTree = "<group>"; };
 		FB985051FDA08E630C624743 /* LGGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGGlass.swift; sourceTree = "<group>"; };
 		FBAFB5A35389E3CFDF883284 /* CKRecordConvertible.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CKRecordConvertible.swift; sourceTree = "<group>"; };
 		FCD537320C68487D59243FA3 /* V64/MEV86Host.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/MEV86Host.swift; sourceTree = "<group>"; };
@@ -1349,6 +1357,10 @@
 				0159D1A97715D4F4D7AB1471 /* LGMotion.swift */,
 				48D0F07632A5009E1A3721A3 /* LGPressable.swift */,
 				FB985051FDA08E630C624743 /* LGGlass.swift */,
+				3A7A36861A3E59526C9F364D /* PopPreview.swift */,
+				3636F8CD3ED8AA8707BC4A11 /* PopParts.swift */,
+				88A19E043AC12326DE665B4A /* PopSticker.swift */,
+				0CA8A488F1FFC6077E23CA40 /* PopColor.swift */,
 				80947753BA895EFEC606555B /* ../Pop/PopTabBar.swift */,
 				5D2C0176784786DBB57ACFA7 /* GlassShapes.swift */,
 				606521BC8FC62EDC1F11ECBF /* ScrollHapticsV100.swift */,
@@ -1628,6 +1640,10 @@
 				F27CC6ECC52DCB98DAD70845 /* LGMotion.swift in Sources */,
 				7D2B3A15DF15DC3713D1B8B1 /* LGPressable.swift in Sources */,
 				A94C41DB3DFE5C7C2AB18099 /* LGGlass.swift in Sources */,
+				1931DD08FB41A42C7B239207 /* PopPreview.swift in Sources */,
+				697E0EF3BB22DEDCF9251572 /* PopParts.swift in Sources */,
+				42665476D9385007E3880C1A /* PopSticker.swift in Sources */,
+				BAFA62E77B385F4EC8FCC806 /* PopColor.swift in Sources */,
 				26809E5E4FDE2F3C8AD3F554 /* ../Pop/PopTabBar.swift in Sources */,
 				76F30A3A8131BF96BC72EA11 /* GlassShapes.swift in Sources */,
 				5502F7A1F4FA81887C4CA804 /* ScrollHapticsV100.swift in Sources */,

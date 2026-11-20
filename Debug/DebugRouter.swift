@@ -23,6 +23,7 @@ enum DebugRouter {
         case "develop": show(DevelopV64View(count: 3, times: ["11:57", "12:30", "14:02"], now: Calendar.current.date(bySettingHour: 11, minute: 57, second: 0, of: Date()) ?? Date()))
         case "friends": showRaw(FriendsV68Preview())
         case "trip": showRaw(TripV83Preview())
+        case "pop": showRaw(PopPreview())
         case "triphome": showRaw(TripHomeV83Preview())
         case "tripsettings": showRaw(TripSettingsPreviewV106())
         case "tripend": showRaw(TripLeavePreviewV106())
