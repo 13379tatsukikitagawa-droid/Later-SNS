@@ -1,12 +1,13 @@
 import { verifyFirebaseToken } from "./auth.ts";
 import { sendPush, type ApnsEnv } from "./apns.ts";
-import { decideRequest, isExpired, noticeText, normalizeHandle, pair, validHandle, type NoticeKind } from "./logic.ts";
+import { dayKey, decideRequest, isExpired, noticeText, normalizeHandle, pair, validHandle, withinDailyLimit, type NoticeKind } from "./logic.ts";
 
 interface Env extends ApnsEnv {
   DB: D1Database;
   FIREBASE_PROJECT_ID: string;
   REQUEST_TTL_DAYS: string;
   NOTICE_TTL_DAYS: string;
+  REQUEST_DAILY_LIMIT: string;
   APNS_ENVIRONMENT: string;
 }
 
@@ -43,6 +44,7 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
       await env.DB.prepare("INSERT INTO users (uid, handle, name, record_name, updated_at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT(uid) DO UPDATE SET handle=excluded.handle, name=excluded.name, record_name=excluded.record_name, updated_at=excluded.updated_at")
         .bind(me, handle || null, name, body.recordName ? String(body.recordName) : null, Date.now()).run();
     } catch { return err(409, "handle_taken"); }
+    if (body.recordName) await resolveLegacy(env, String(body.recordName));
     return json({ ok: true });
   }
 
@@ -68,12 +70,16 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
     let to = String(body.toUid ?? "");
     if (!to && body.handle) to = (await env.DB.prepare("SELECT uid FROM users WHERE handle = ?").bind(normalizeHandle(String(body.handle))).first<{ uid: string }>())?.uid ?? "";
     if (!to) return err(404, "not_found");
+    const day = dayKey(Date.now());
+    const used = (await env.DB.prepare("SELECT n FROM request_counts WHERE uid=? AND day=?").bind(me, day).first<{ n: number }>())?.n ?? 0;
+    if (!withinDailyLimit(used, Number(env.REQUEST_DAILY_LIMIT || 50))) return err(429, "too_many_requests");
     const [a, b] = pair(me, to);
     const already = !!(await env.DB.prepare("SELECT 1 x FROM friendships WHERE a=? AND b=?").bind(a, b).first());
     const reverse = !!(await env.DB.prepare("SELECT 1 x FROM friend_requests WHERE from_uid=? AND to_uid=?").bind(to, me).first());
     const out = decideRequest(me, to, { alreadyFriends: already, reversePending: reverse });
     if (out.kind === "self") return err(400, "self");
     if (out.kind === "already") return json({ status: "already" });
+    await env.DB.prepare("INSERT INTO request_counts (uid, day, n) VALUES (?1, ?2, 1) ON CONFLICT(uid, day) DO UPDATE SET n = n + 1").bind(me, day).run();
     if (out.kind === "mutual") { await makeFriends(env, ctx, me, to, "mutual"); return json({ status: "mutual" }); }
     await env.DB.prepare("INSERT INTO friend_requests (from_uid, to_uid, created_at) VALUES (?1, ?2, ?3) ON CONFLICT(from_uid, to_uid) DO UPDATE SET created_at=excluded.created_at").bind(me, to, Date.now()).run();
     await notify(env, ctx, to, "request", me, {});
@@ -91,6 +97,17 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
   if (p === "/v1/requests/decline" && req.method === "POST") {   // 相手には 知らせない
     await env.DB.prepare("DELETE FROM friend_requests WHERE from_uid=? AND to_uid=?").bind(String(body.fromUid ?? ""), me).run();
     return json({ ok: true });
+  }
+
+  // CloudKit の 友だち(両方向が ある 組 だけ)を 1回 だけ 移す。両方が 申し出た 時に 友だちに する
+  if (p === "/v1/migrate/friends" && req.method === "POST") {
+    const rec = String(body.recordName ?? "");
+    const mine = await env.DB.prepare("SELECT record_name r FROM users WHERE uid = ?").bind(me).first<{ r: string | null }>();
+    if (!rec || mine?.r !== rec) return err(400, "register_first");   // /v1/me で recordName を 先に 登録
+    const list = (Array.isArray(body.friends) ? body.friends : []).map(String).filter((x) => x && x !== rec).slice(0, 500);
+    if (list.length) await env.DB.batch(list.map((o) => env.DB.prepare("INSERT OR IGNORE INTO legacy_claims (reporter_rec, other_rec, created_at) VALUES (?, ?, ?)").bind(rec, o, Date.now())));
+    const made = await resolveLegacy(env, rec);
+    return json({ claimed: list.length, connected: made });
   }
 
   if (p === "/v1/inbox" && req.method === "GET") {
@@ -131,4 +148,18 @@ async function notify(env: Env, ctx: ExecutionContext, toUid: string, kind: Noti
       if (r === "gone") await env.DB.prepare("DELETE FROM devices WHERE token = ?").bind(d.token).run();
     }
   })());
+}
+
+/** 両方が 申し出た 組(どちらの 記録名も 登録ずみ)を 友だちに する */
+async function resolveLegacy(env: Env, rec: string): Promise<number> {
+  const rows = await env.DB.prepare(
+    "SELECT u1.uid a_uid, u2.uid b_uid FROM legacy_claims c1 JOIN legacy_claims c2 ON c2.reporter_rec = c1.other_rec AND c2.other_rec = c1.reporter_rec JOIN users u1 ON u1.record_name = c1.reporter_rec JOIN users u2 ON u2.record_name = c1.other_rec WHERE c1.reporter_rec = ?"
+  ).bind(rec).all<{ a_uid: string; b_uid: string }>();
+  let n = 0;
+  for (const r of rows.results) {
+    const [a, b] = pair(r.a_uid, r.b_uid);
+    const res = await env.DB.prepare("INSERT OR IGNORE INTO friendships (a, b, created_at) VALUES (?, ?, ?)").bind(a, b, Date.now()).run();
+    n += res.meta.changes ?? 0;
+  }
+  return n;
 }

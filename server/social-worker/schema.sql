@@ -39,3 +39,18 @@ CREATE TABLE IF NOT EXISTS notifications (
   read_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS n_uid ON notifications(uid, created_at);
+
+-- 1日の 申請の 回数(1人 1日 50件)
+CREATE TABLE IF NOT EXISTS request_counts (
+  uid TEXT NOT NULL,
+  day TEXT NOT NULL,             -- YYYY-MM-DD(UTC)
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (uid, day)
+);
+-- CloudKit から 1回 だけ 移す 友だち(おたがいに 申し出た 組 だけ 友だちに する)
+CREATE TABLE IF NOT EXISTS legacy_claims (
+  reporter_rec TEXT NOT NULL,    -- 申し出た 人の CloudKit 記録名
+  other_rec TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (reporter_rec, other_rec)
+);

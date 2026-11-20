@@ -20,4 +20,6 @@ APNS_BUNDLE_ID = "com.tatsukikitagawa.laternew2"
 APNS_ENVIRONMENT = "development"
 REQUEST_TTL_DAYS = "7"
 NOTICE_TTL_DAYS = "30"
+# 1人 1日 の 申請の 上限
+REQUEST_DAILY_LIMIT = "50"
 # APNS_KEY_ID ・ APNS_TEAM_ID ・ APNS_PRIVATE_KEY(.p8 の 中身)は `wrangler secret put` で 入れる(ここに 書かない ・ チャットに 貼らない)

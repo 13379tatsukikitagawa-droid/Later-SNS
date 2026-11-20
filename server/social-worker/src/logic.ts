@@ -43,3 +43,7 @@ export function noticeText(kind: NoticeKind, p: { name: string; handle?: string;
     case "trip_joined": return { title: `${name} が『${p.group ?? ""}』に 入りました`, body: `いま ${p.members ?? 0}人` };
   }
 }
+
+/** 1日の 申請の 上限(1人 50件) */
+export function withinDailyLimit(countToday: number, limit: number): boolean { return countToday < limit; }
+export function dayKey(nowMs: number): string { return new Date(nowMs).toISOString().slice(0, 10); }

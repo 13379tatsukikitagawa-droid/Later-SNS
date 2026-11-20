@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decideRequest, isExpired, noticeText, normalizeHandle, pair, validHandle } from "../src/logic.ts";
+import { dayKey, withinDailyLimit, decideRequest, isExpired, noticeText, normalizeHandle, pair, validHandle } from "../src/logic.ts";
 
 test("申請: 自分 ・ すでに 友だち ・ おたがい ・ ふつう", () => {
   assert.equal(decideRequest("a", "a", { alreadyFriends: false, reversePending: false }).kind, "self");
@@ -25,4 +25,9 @@ test("通知の 文(v108 §4)", () => {
   assert.equal(noticeText("mutual", { name: "りこ" }).title, "りこ と 友だちに なりました");
   assert.equal(noticeText("trip_invite", { name: "たつき", group: "大阪", dates: "11/21〜11/23" }).title, "たつき から『大阪』の Trip に 招待");
   assert.equal(noticeText("trip_joined", { name: "れな", group: "大阪", members: 4 }).body, "いま 4人");
+});
+test("1日 50件", () => {
+  assert.equal(withinDailyLimit(49, 50), true);
+  assert.equal(withinDailyLimit(50, 50), false);
+  assert.equal(dayKey(Date.UTC(2026, 10, 20, 23, 59)), "2026-11-20");
 });
