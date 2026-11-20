@@ -1,0 +1,55 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trip に 招待されました ・ Lattag</title>
+<meta name="description" content="旅の あいだ、みんなで 1日 23枚。あした 9:00 に ひらく。">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Lattag">
+<meta property="og:title" content="Trip に 招待されました"><meta property="og:description" content="旅の あいだ、みんなで 1日 23枚。あした 9:00 に ひらく。">
+<meta property="og:image" content="https://later-app-f2606.firebaseapp.com/og/trip.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="apple-itunes-app" content="app-id=6797838593">
+<meta name="theme-color" content="#000000">
+<style>
+:root{--lime:#C8F25A;--bg:#000;--card:#141416;--ink:#fff;--sub:#8C8C93}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
+main{max-width:440px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:18px;min-height:100vh}
+.lg{display:flex;align-items:center;gap:10px;font:900 26px/1 Inter,-apple-system,sans-serif;letter-spacing:-.05em}
+.lg i{width:38px;height:38px;border-radius:9px;background:var(--lime);color:#111;display:grid;place-items:center;font-style:normal;font-size:22px}
+.k{font:700 11px ui-monospace,Menlo,monospace;letter-spacing:.2em;color:var(--lime)}
+h1{margin:0;font-size:30px;line-height:1.3;font-weight:900;text-wrap:balance}
+.who{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;background:var(--card)}
+.who .av{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#C8F25A,#EE5E9C);display:grid;place-items:center;color:#111;font-weight:900;font-size:22px}
+.who b{display:block;font-size:17px}.who small{color:var(--sub);font:700 12px ui-monospace,Menlo,monospace}
+.key{font:900 28px ui-monospace,Menlo,monospace;color:var(--lime)}
+p{margin:0;color:var(--sub);font-size:14px;line-height:1.6}
+.btn{display:flex;align-items:center;justify-content:center;height:56px;border-radius:28px;font-weight:800;font-size:16px;text-decoration:none;border:0;width:100%;cursor:pointer}
+.p{background:var(--lime);color:#111}.s{background:#1C1C1F;color:#fff}
+.steps{margin:0;padding:14px 16px;border-radius:20px;background:var(--card);list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.5}
+.steps li{display:flex;gap:10px}.steps em{flex:none;width:22px;height:22px;border-radius:11px;background:var(--lime);color:#111;font:800 12px/22px sans-serif;text-align:center;font-style:normal}
+.tip{display:none;padding:12px 14px;border-radius:16px;background:#2A2A10;color:#F4F1EA;font-size:13px;line-height:1.5}
+.line .tip{display:block}
+.ok{color:var(--lime);font-size:13px;min-height:18px;text-align:center}
+footer{margin-top:auto;color:#5D5D63;font-size:11px;text-align:center}
+</style></head><body><main>
+<div class="lg"><i>#</i>Lattag</div>
+<div class="tip">LINE の 中で ひらいて います。右上(または 下)の メニューから「ブラウザで 開く」を えらぶと、アプリが ひらきます。</div>
+<span class="k">TRIP PASS</span>
+<h1 id="h">Trip に 招待されました</h1>
+<div class="who"><span class="av" style="border-radius:14px;background:#C8F25A">#</span><span><b>招待の リンク</b><small>24時間 有効 ・ アプリで 参加</small></span></div><p>アプリで ひらくと、Trip の 名前 ・ 日にち ・ メンバーを 見てから 参加 できます。KEY を もらって いる 時は、アプリの「KEY で 入る」でも 入れます。</p>
+<button class="btn p" id="open">アプリで ひらく</button>
+<a class="btn s" href="https://apps.apple.com/app/id6797838593">App Store で 入れる</a>
+<ol class="steps"><li><em>1</em><span>アプリを 入れる</span></li><li><em>2</em><span>この ページに もどって「リンクを コピー」</span></li><li><em>3</em><span>アプリの「招待されて 来ましたか?」→「招待リンクを 貼りつける」</span></li></ol>
+<button class="btn s" id="copy">リンクを コピー</button><div class="ok" id="ok" role="status"></div>
+<p>Lattag は、1日 3枚 撮って、あした 9:00 に みんなで ひらく 写真アプリです。</p>
+<footer>Lattag ・ later-app-f2606.firebaseapp.com</footer>
+</main><script>
+(function(){
+  var ua=navigator.userAgent||'';if(/\bLine\//i.test(ua))document.body.classList.add('line');
+  var parts=location.pathname.split('/').filter(Boolean),code=decodeURIComponent((parts[0]==='t'?parts[1]:'')||location.hash.slice(1)||'').replace(/[^A-Za-z0-9_.\-]/g,'').slice(0,40);
+  var clean='https://later-app-f2606.firebaseapp.com/t/'+code;
+  
+  document.getElementById('open').onclick=function(){location.href='later://t/'+encodeURIComponent(code)};
+  document.getElementById('copy').onclick=function(){var ok=document.getElementById('ok');
+    function done(){ok.textContent='コピー しました'}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(clean).then(done,function(){ok.textContent=clean})}else{ok.textContent=clean}};
+})();
+</script></body></html>

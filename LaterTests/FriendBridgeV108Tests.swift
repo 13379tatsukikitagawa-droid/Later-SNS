@@ -20,3 +20,17 @@ struct FriendBridgeV108Tests {
         #expect(!FriendRequestBridgeV108.isBridgeNotification(subscriptionID: nil))
     }
 }
+
+struct AppLinksV108Tests {
+    @Test func parsesFriendAndTrip() {
+        #expect(AppLinks.parse(URL(string: "https://later-app-f2606.firebaseapp.com/u/yui_0612?openExternalBrowser=1")!) == .friend(handle: "yui_0612"))
+        #expect(AppLinks.parse(URL(string: "https://later-app-f2606.firebaseapp.com/t/maple24")!) == .trip(token: "maple24"))
+        #expect(AppLinks.parse(URL(string: "https://lattag.app/t/maple24")!) == .trip(token: "maple24"))
+        #expect(AppLinks.parse(URL(string: "later://u/yui_0612")!) == .friend(handle: "yui_0612"))
+        #expect(AppLinks.parse(URL(string: "https://example.com/u/yui_0612")!) == nil)
+        #expect(AppLinks.parse(URL(string: "https://later-app-f2606.firebaseapp.com/g/abc")!) == nil)
+    }
+    @Test func parsesPastedText() {
+        #expect(AppLinks.parse(text: "ゆい から\n↓\nhttps://later-app-f2606.firebaseapp.com/u/yui_0612?openExternalBrowser=1\n\nアプリが") == .friend(handle: "yui_0612"))
+    }
+}

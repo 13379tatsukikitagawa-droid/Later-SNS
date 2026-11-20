@@ -338,7 +338,7 @@
 - 未: §6 ぬける/おわる の 長押し ・ やぶれる 演出 ・ Home の カード 消え(いまは 今までの 確認 + 演出)/ §5 の 日にち ・ メンバーの ✕(データが ない)/ §7-1 起動の 軽量化 ・ サムネ キャッシュ(数字を 見てから)
 | P50 | v107 質感(A 写真 / B 送る ・ 見せる / C 動画 / D はかる)| ☐ ☐ ☐ ☐ | 手順 0 報告まで |
 | P51 | Xcode 27 切りかえ(期限 2027年4月 ・ 目安 1〜2日)| ☐ | P50 の あと。Firebase 12 系 / AppDelegate の コメント直し / import SwiftData 2件 / UIScreen.main 置きかえ / 警告の 整理 |
-| P52 | v108 相互フォロー ・ お知らせ ・ リンク(手順 0 報告 → 1 相互 / 2 Home 上 / 3 お知らせ / 4 通知 / 5 リンク)| ☐ | 手順 0 報告まで |
+| P52 | v108 相互フォロー ・ お知らせ ・ リンク | △ | 下の v108 を 見る |
 
 ## v107 P50
 - ✓ A 写真:`FilmLook.chekiJPEG`(撮った 時に 1回 ・ 1440px ・ LUT ・ にじみ ・ ビネット ・ 粒子 ・ EXIF なし)・ `filmVersion = 2`(LaterPhoto ・ CKRecord `filmVersion` ・ PendingShot)・ 解禁の 直前に もう 焼かない(filmVersion が ない 写真だけ 旧 FilmEmulation を 1回 → `filmVersion = 1`)・ 古い 写真への 遡り 焼きこみは やめた。LUT の 色見本テスト(±3)。
@@ -346,3 +346,9 @@
 - ✓ B(外共有の 白い 枠 `InstaxShareFrame` + テスト ・ 遡り 焼きこみを 削除。**表示時の フィルターは もともと 写真に かけて いない**ので 削る もの なし)
 - △ C 動画(撮る 設定は 動画モードの 間だけ HDR オフ ・ sRGB ・ .standard を `setVideoLook` で 入れ、写真モードで もどす ・ 粒子 0.15 ・ 2こまに 1回 ・ 10秒 約 4.4MB)。以前の メモ:書き出しを `FilmLook.retro8Frame`(LUT + シャープ + 動く 粒子)に 置きかえ ・ `filmVersion = 2`。1080p 6Mbps は 10秒 約 9MB(前 1.45MB の 約 6倍)→ 規則どおり 720p30 3.5Mbps(約 4.7MB ・ 約 3.2倍)。撮る 設定(1080p30 ・ HDR オフ ・ sRGB ・ H.264)は **写真と 同じ セッション(.photo)の ため 未実施**(確認待ち)
 - △ D はかる(シミュレータ ・ 12MP):写真 1枚 約 110ms ・ メモリの 山 +約 49MB(読む 時に 1440px へ 縮めて 234MB → 49MB)・ 大きさ 約 0.12〜0.36MB ・ 動画 10秒 書き出し 約 6.6秒 / 約 4.7MB(前 1.45MB)。**実機の ms ・ ヒッチ(Instruments)は 実機で**
+
+## v108 P52(相互フォロー ・ お知らせ ・ リンク)
+- ✓ つなぎ(Worker が できるまで・「v108 つなぎ」で 検索して 消す):おたがいの 申請は 承認 なしで 相互(`FriendRequests.acceptCrossed`)/ 公開DB の CKQuerySubscription 2つ(申請が とどいた ・ 承認された。文に 名前なし ・ `shouldSendContentAvailable`)→ 裏で `syncAccepted`(`FriendRequestBridgeV108`)。
+- ✓ §2 Home の 上(まんなかに Lattag ・ 左に ベル + 数 ・ 右に アイコン)/ ✓ §3 お知らせ(`InboxV108View`:友だち申請 + Trip の 招待 ・ これまで 30日 ・ 承認の 動き)。データは 今の CloudKit。
+- ✓ §5 `AppLinks`(ドメイン ・ ストア)・ `/u/<ID>` カード(`FriendLinkSheetV108`)・ `/t/<トークン>` は 今ある KEY 参加へ ・ 友だちの 送る 文 ・ `hosting/` を `server/invite-web` に 合わせた(deploy は あなた)。
+- ☐ Worker(`server/social-worker` ・ D1)・ APNs ・ Trip の 送る 文(トークンは Worker 後)・ 貼りつけ画面の `/u` `/t` ・ Home の NEXT の 申請の 行の 見た目の 差。

@@ -16,6 +16,7 @@
 		095C9283B37335410D2F8521 /* V64/DirectMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */; };
 		0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F36AA1B5669102F3368268 /* DebugRouter.swift */; };
 		0B36F566AEEEC1ABA30B7529 /* ExposureCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A061D0EFB35BCE1AF35412 /* ExposureCameraView.swift */; };
+		51D3F1BB64CCDDDE7F4E5F70 /* AppLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECCC00BCA5A54F4A846C711F /* AppLinks.swift */; };
 		0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA74312F8635A2490D14152A /* AppDelegate.swift */; };
 		0C070EC8EDB0F20FE25FE959 /* AccountDeletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DBC3939C57455DE3F1BBC4D /* AccountDeletionView.swift */; };
 		0CB5597A41C7748CA695DC8A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 07AD18FC5056259AA8291B04 /* GoogleService-Info.plist */; };
@@ -183,6 +184,7 @@
 		B7824F0868F782C69F76B8D7 /* OnboardingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BF6389BC965BF1D800AEC6D /* OnboardingComponents.swift */; };
 		B80C9B2C4B6FC1C947110095 /* ModerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8289C9CCB22AFFDABCEC81E /* ModerationService.swift */; };
 		D471AEE121D1C216B0E9EDC9 /* V64/InboxV108View.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95D76C6B24BB950715937B0 /* V64/InboxV108View.swift */; };
+		86FB53D29B7AA4667C798E00 /* V64/FriendLinkSheetV108.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB7A3A6D3218BE29D165973 /* V64/FriendLinkSheetV108.swift */; };
 		B9144BB237EBBF08EDC37109 /* V64/FriendRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */; };
 		B9215E512ED464628620F989 /* V64/HomeV64Parts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F9F503048AA20B929468DC /* V64/HomeV64Parts.swift */; };
 		BA5B232F292F7B074BA071CA /* Moderation/BlockedUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44A391CFCECDF1D934A1C686 /* Moderation/BlockedUser.swift */; };
@@ -397,6 +399,7 @@
 		06663B61C77C6DDC2FA74575 /* V64/RecapPlayerV86View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/RecapPlayerV86View.swift; sourceTree = "<group>"; };
 		07AD18FC5056259AA8291B04 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		F95D76C6B24BB950715937B0 /* V64/InboxV108View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/InboxV108View.swift; sourceTree = "<group>"; };
+		3EB7A3A6D3218BE29D165973 /* V64/FriendLinkSheetV108.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FriendLinkSheetV108.swift; sourceTree = "<group>"; };
 		090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/FriendRequestsView.swift; sourceTree = "<group>"; };
 		0936F8145E634A46BB2AB934 /* LaterColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaterColor.swift; sourceTree = "<group>"; };
 		09B7A294C6B1D08D337C329D /* V64/YesterdayMondoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/YesterdayMondoView.swift; sourceTree = "<group>"; };
@@ -553,6 +556,7 @@
 		B7570F235D7BDA9A5DBA8EF6 /* V64/HandleChangeSheetV94.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HandleChangeSheetV94.swift; sourceTree = "<group>"; };
 		B8289C9CCB22AFFDABCEC81E /* ModerationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ModerationService.swift; sourceTree = "<group>"; };
 		B909DDF30E54B848F50C1D3D /* V64/CountdownV100.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/CountdownV100.swift; sourceTree = "<group>"; };
+		ECCC00BCA5A54F4A846C711F /* AppLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinks.swift; sourceTree = "<group>"; };
 		BA74312F8635A2490D14152A /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BA84EA66CE370FBE2BD026CF /* V64/WidgetHowToV104.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/WidgetHowToV104.swift; sourceTree = "<group>"; };
 		BB1CA2432BC34861C0931894 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
@@ -892,6 +896,7 @@
 				F9612F605BB474FC37B37D9C /* WidgetSnapshotWriter.swift */,
 				C40820EF7D2A1C5D7C5062D9 /* LattagLiveManager.swift */,
 				BA74312F8635A2490D14152A /* AppDelegate.swift */,
+				ECCC00BCA5A54F4A846C711F /* AppLinks.swift */,
 				A3B62837302D73920010ACBB /* SceneDelegate.swift */,
 			);
 			path = Services;
@@ -1091,6 +1096,7 @@
 				72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */,
 				99250B0EB5E496A94CD226D2 /* V64/DirectMessageService.swift */,
 				090516FB3D910A3FF4F34981 /* V64/FriendRequestsView.swift */,
+				3EB7A3A6D3218BE29D165973 /* V64/FriendLinkSheetV108.swift */,
 				F95D76C6B24BB950715937B0 /* V64/InboxV108View.swift */,
 				DF437A3BCC3AC311F165505A /* V64/FriendRequestService.swift */,
 				28B69966E3153288F3B80519 /* V64/YesterdayV64View.swift */,
@@ -1720,6 +1726,7 @@
 				095C9283B37335410D2F8521 /* V64/DirectMessageView.swift in Sources */,
 				73AE4F5B71C4CE851B12BD98 /* V64/DirectMessageService.swift in Sources */,
 				B9144BB237EBBF08EDC37109 /* V64/FriendRequestsView.swift in Sources */,
+				86FB53D29B7AA4667C798E00 /* V64/FriendLinkSheetV108.swift in Sources */,
 				D471AEE121D1C216B0E9EDC9 /* V64/InboxV108View.swift in Sources */,
 				5A83367B525A88BA2B2BB5CE /* V64/FriendRequestService.swift in Sources */,
 				DA19C87ED77467007061BD3E /* V64/YesterdayV64View.swift in Sources */,
@@ -1842,6 +1849,7 @@
 				E4A000000000000000000028 /* CloudDiagnostics.swift in Sources */,
 				83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */,
 				0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */,
+				51D3F1BB64CCDDDE7F4E5F70 /* AppLinks.swift in Sources */,
 				8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */,
 				71A7B7ACD65CEE59BD4CB060 /* FilmCameraController.swift in Sources */,
 				0B36F566AEEEC1ABA30B7529 /* ExposureCameraView.swift in Sources */,

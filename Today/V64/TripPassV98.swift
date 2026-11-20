@@ -13,10 +13,8 @@ enum TripKeyLink {
 
     /// `https://lattag.app/t/<key>` から key。ちがう URL なら nil
     static func key(from text: String) -> String? {
-        guard let url = URL(string: text), let host = url.host?.lowercased(), host == Brand.domain || host == "www." + Brand.domain else { return nil }
-        let parts = url.pathComponents.filter { $0 != "/" }
-        guard parts.count == 2, parts[0] == "t", !parts[1].isEmpty, parts[1].count <= 40 else { return nil }
-        return parts[1]
+        guard let url = URL(string: text), case .trip(let token)? = AppLinks.parse(url) else { return nil }   // v108:どの ドメインでも
+        return token
     }
 }
 

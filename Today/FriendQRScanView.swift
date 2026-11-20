@@ -216,11 +216,8 @@ struct FriendQRScanView: View {
     }
 
     static func handle(from url: URL) -> String? {
-        guard let host = url.host?.lowercased(), host == "lattag.app" || host == "www.lattag.app" else { return nil }
-        let parts = url.pathComponents.filter { $0 != "/" }
-        guard parts.count == 2, parts[0] == "u" else { return nil }
-        let h = HandleRules.normalize(parts[1])
-        return HandleRules.validate(h) == nil ? h : nil
+        if case .friend(let h)? = AppLinks.parse(url) { return h }   // v108:どの ドメインでも
+        return nil
     }
 
     private func lock() { camera.isPaused = true; locked = true; notLattag = false; Haptics.play(.success) }

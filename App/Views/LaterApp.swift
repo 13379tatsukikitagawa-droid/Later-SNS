@@ -58,6 +58,7 @@ struct RootView: View {
     @State private var cloudKitManager: CloudKitManager?
     @State private var sharedProfile: UserProfile?
     @State private var showingSharedProfile = false
+    @State private var friendLinkHandle: String?   // v108:/u/<ID> を ひらいた
     @State private var groupJoinAlertTitle = ""
     @State private var groupJoinAlertMessage = ""
     @State private var showingGroupJoinAlert = false
@@ -352,6 +353,11 @@ struct RootView: View {
                 }
                 return
             }
+            // v108 §5-4:/u/<ID>(どの ドメインでも)→ その 人の カード。ログイン前は 相手を 控えて おく
+            if case .friend(let h)? = AppLinks.parse(url) {
+                handleFriendLink(handle: h)
+                return
+            }
             // 友だちリンク(lattag://friend?u=…):相手を 控えて おく(初回設定の「ともだちを さがす」で 申請の 行に 出る)
             if let friend = FriendRules.recordName(from: url) {
                 UserDefaults.standard.set(friend, forKey: "pendingFriendRecordName")
@@ -381,6 +387,12 @@ struct RootView: View {
             print("[Group Join] onContinueUserActivity(BrowsingWeb)受信: \(url.absoluteString)")
             if let shareURL = InviteConfig.shareURL(from: url) {
                 handleInviteLink(shareURL)
+            }
+        }
+        .sheet(isPresented: Binding(get: { friendLinkHandle != nil }, set: { if !$0 { friendLinkHandle = nil } })) {
+            if let h = friendLinkHandle {
+                let me = UserProfile.current(from: (try? modelContext.fetch(FetchDescriptor<UserProfile>())) ?? [])
+                FriendLinkSheetV108(handle: h, myName: me?.name ?? "", myUsername: me?.username ?? "")
             }
         }
         .sheet(isPresented: $showingSharedProfile) {
@@ -442,6 +454,20 @@ struct RootView: View {
     /// 無ければ名前だけの仮プロフィールをその場で作成してプロフィール詳細画面を即座に開き、
     /// 裏でUserDirectoryService(Public DB)から本当のユーザー名・アイコンを取得できれば
     /// 上書きする(相手が一度もプロフィールを保存/編集していない場合は取得できないまま)。
+    /// v108:ログイン前 / 初回設定の 前は 相手の 記録名を 控える(はじめての 設定の「ともだちを さがす」で 出る)
+    private func handleFriendLink(handle: String) {
+        guard isSignedIn, isSetupCompleted else {
+            Task {
+                if let rn = await UserDirectoryService.searchUsers(handle).first(where: { $0.kind == .exact })?.profile.cloudKitUserRecordName {
+                    UserDefaults.standard.set(rn, forKey: "pendingFriendRecordName")
+                    NotificationCenter.default.post(name: .friendLinkOpened, object: rn)
+                }
+            }
+            return
+        }
+        friendLinkHandle = handle
+    }
+
     private func handleIncomingProfileLink(_ url: URL) {
         guard let parsed = QRCodeGenerator.parseUserQRData(url.absoluteString),
               let id = UUID(uuidString: parsed.id) else { return }

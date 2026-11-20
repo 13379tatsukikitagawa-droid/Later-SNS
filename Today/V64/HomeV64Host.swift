@@ -22,6 +22,14 @@ struct HomeV64Host: View {
     /// v96:ウィジェットから 来た 行き先
     @State private var widgetRoute = WidgetRouteStore.shared
     @Query private var profiles: [UserProfile]
+    /// v108 §5-2:LINE などへ 送る 文(友だち)。ID が 無い 時は 今までの リンク
+    private var myShare: [Any] {
+        let me = UserProfile.current(from: profiles)
+        let h = HandleRules.normalize(me?.username ?? "")
+        guard !h.isEmpty, let url = AppLinks.friendURL(handle: h) else { return [myLink] }
+        let text = "\(me?.name ?? "")(@\(h))から Lattag の 友だち申請です\n\n↓ タップで ひらく(アプリが ひらきます)\n\(url.absoluteString)\n\nアプリが ない 時は、ひらいた ページから 入れられます"
+        return [text]
+    }
     private var myLink: URL {
         let me = UserProfile.current(from: profiles)
         return FriendRules.link(recordName: CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? "")
@@ -41,7 +49,7 @@ struct HomeV64Host: View {
         }
         .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
         .sheet(isPresented: Binding(get: { chatWith != nil }, set: { if !$0 { chatWith = nil } })) { if let c = chatWith { DirectMessageView(friendID: c.id, friendName: c.name) } }
-        .sheet(isPresented: $showShare) { ShareSheet(activityItems: [myLink]) { _ in showShare = false }.presentationDetents([.medium, .large]) }
+        .sheet(isPresented: $showShare) { ShareSheet(activityItems: myShare) { _ in showShare = false }.presentationDetents([.medium, .large]) }
         .fullScreenCover(isPresented: $showSelfQR) { SelfQRChekiHost(onScan: { showSelfQR = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showScan = true } }, onClose: { showSelfQR = false }) }
         .fullScreenCover(isPresented: $showScan) {
             FriendQRScanView(myName: src.avatarName, friendCount: src.layerData.friends.filter { !$0.isMe }.count, friendIDs: Set(src.layerData.friends.map(\.id)), myUsername: UserProfile.current(from: profiles)?.username ?? "", onSearchID: { openSearch() }) { src.layerActions.toast($0) }
