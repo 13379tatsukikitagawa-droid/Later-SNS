@@ -128,17 +128,6 @@ struct OnboardingV64View: View {
                 .presentationDetents([.large]).presentationBackground(Color(hex: "141516"))
         }
         .sheet(isPresented: $showingShare) { ShareSheet(activityItems: shareItems) { _ in } }
-        .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkOpened)) { _ in
-            guard step == .mail || step == .sent else { return }
-            say("確認しています…")
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .emailSignInLinkFailed)) { note in
-            guard step == .mail || step == .sent else { return }
-            let failure = (note.object as? Error).map { EmailSignInFailure.from($0) } ?? .missingEmail
-            Haptics.play(.warn)
-            say(failure.title.replacingOccurrences(of: "\n", with: ""))
-            if step == .sent { go(.mail, back: true) }
-        }
     }
 
     // MARK: - 画面(上から 下まで・キーボードで ずれない)
@@ -237,28 +226,7 @@ struct OnboardingV64View: View {
                 .accessibilityElement(children: .ignore).accessibilityLabel("昨日を 共有する SNS")
             }
             .frame(width: W).offset(y: 372 + mid)
-        case .mail:
-            heading([("メールアドレス", false)]).offset(y: 448 + mid)
-            VStack(spacing: 0) {
-                ZStack {
-                    if email.isEmpty { Text(verbatim: "you@example.com").font(LF.inter(700, 19)).foregroundStyle(OB.sub.opacity(0.5)) }
-                    TextField("", text: $email)
-                        .font(LF.inter(700, 19)).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
-                        .keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-                        .submitLabel(.send).focused($focus, equals: .mail).onSubmit(sendLink)
-                }
-                .frame(height: 58)
-                Rectangle().fill(focus == .mail ? OB.accent : .white).frame(height: 2.5)
-                Text("パスワードは いりません").font(LF.inter(500, 13)).foregroundStyle(OB.sub).padding(.top, 9)
-            }
-            .frame(width: w).offset(x: 24, y: 513.3 + mid)
-        case .sent:
-            VStack(spacing: 9) {
-                heading([("メールを\nおくりました", false)])
-                Text("\(sentAddress)\nリンクを タップすると、もどってきます").font(LF.inter(500, 13)).lineSpacing(7.8)
-                    .foregroundStyle(OB.sub).multilineTextAlignment(.center)
-            }
-            .frame(width: W).offset(y: 448 + mid)
+        case .mail, .sent: EmptyView()   // v104:メールの リンクは やめた
         case .name:
             VStack(spacing: 0) {
                 Text("Name").font(LF.serif(editing ? 38 : 64, italic: true)).tracking(editing ? -0.76 : -1.28).foregroundStyle(.white).frame(height: editing ? 38 : 64)
@@ -463,17 +431,7 @@ struct OnboardingV64View: View {
                         .font(LF.inter(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).frame(height: 44).padding(.vertical, -10)
                     }
                     .padding(.bottom, 28)
-                case .mail:
-                    VStack(spacing: 10) {
-                        Button { sendLink() } label: { Text("リンクを おくる") }
-                            .buttonStyle(OBButtonStyle()).disabled(!Self.isValidEmail(email) || busy)
-                        Button { Haptics.play(.tick); go(.signin, back: true) } label: { Text("ほかの 方法") }.buttonStyle(OBButtonStyle(kind: .plain))
-                    }.padding(.bottom, 34)
-                case .sent:
-                    VStack(spacing: 10) {
-                        Button { openMailApp() } label: { Text("メールを ひらく") }.buttonStyle(OBButtonStyle())
-                        Button { resend() } label: { Text("もういちど おくる") }.buttonStyle(OBButtonStyle(kind: .plain))
-                    }.padding(.bottom, 34)
+                case .mail, .sent: EmptyView()
                 case .name:
                     Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!validName).padding(.bottom, editing ? 10 : 34)
                 case .id:
@@ -571,7 +529,6 @@ struct OnboardingV64View: View {
 
     private func resumeStep() -> OBStep? {
         let signedIn = !appleUserID.isEmpty || !firebaseUID.isEmpty
-        if let p = FirebaseAuthService.pendingEmail, savedStep == OBStep.sent.rawValue, !signedIn { sentAddress = p; return .sent }
         return OnboardingRouter.resume(saved: savedStep, signedIn: signedIn)
     }
 
@@ -619,49 +576,6 @@ struct OnboardingV64View: View {
         c.start()
     }
     @State private var apple: OBAppleCoordinator?
-
-    static func isValidEmail(_ raw: String) -> Bool {
-        let v = raw.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return v.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$"#, options: .regularExpression) != nil
-    }
-
-    private func sendLink() {
-        guard Self.isValidEmail(email), !busy else { return }
-        let address = email.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        sentAddress = address
-        busy = true; focus = nil
-        Haptics.play(.click)
-        Task { @MainActor in
-            defer { busy = false }
-            do {
-                try await withThrowingTaskGroup(of: Void.self) { group in
-                    group.addTask { try await FirebaseAuthService.sendSignInLink(to: address) }
-                    group.addTask { try await Task.sleep(for: .seconds(10)); throw OBSendTimeout() }
-                    try await group.next()
-                    group.cancelAll()
-                }
-                go(.sent)
-            } catch {
-                Haptics.play(.warn)
-                say((error is OBSendTimeout ? EmailSignInFailure.network : EmailSignInFailure.from(error)).title.replacingOccurrences(of: "\n", with: ""))
-            }
-        }
-    }
-
-    private func resend() {
-        guard !sentAddress.isEmpty, !busy else { return }
-        busy = true; Haptics.play(.sel)
-        Task { @MainActor in
-            defer { busy = false }
-            do { try await FirebaseAuthService.sendSignInLink(to: sentAddress); say("もういちど おくりました") }
-            catch { Haptics.play(.warn); say(EmailSignInFailure.from(error).title.replacingOccurrences(of: "\n", with: "")) }
-        }
-    }
-
-    private func openMailApp() {
-        Haptics.play(.success)
-        if let url = URL(string: "message://") { UIApplication.shared.open(url) }
-    }
 
     /// サインインが 済んだ:名前の 画面へ。おかえり の 判定は 公開 ディレクトリの `onboardedAt`(v106)。
     /// 端末に のこった プロフィールが あるだけでは Home に 行かない(途中の 人を つづきの ページへ)。
@@ -862,7 +776,6 @@ struct OnboardingV64View: View {
 
 // MARK: - 小さな 部品
 
-private struct OBSendTimeout: Error {}
 
 private struct OBPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

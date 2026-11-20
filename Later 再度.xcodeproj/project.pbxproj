@@ -107,7 +107,6 @@
 		83AF09928B472D3BC39CB828 /* LattagLiveAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0085A82C81A33EB0CC84F3 /* LattagLiveAttributes.swift */; };
 		8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512B00F2AAA89453E3C98FD5 /* GroupUnlockPolicy.swift */; };
 		8A5236B97D5A98BF504683EE /* V64/RecapV86Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B65E06F99EE28EDBF6A9F6E /* V64/RecapV86Model.swift */; };
-		8AEC2FC399D74E06D7A981E1 /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */; };
 		8AEC2FC399D74E06D7A981E2 /* OnboardingV2Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */; };
 		8F915A14BDB816AAB1E13C14 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B938792A0F07511106FF26 /* HomeView.swift */; };
 		9136131F60AB4354E54032EF /* LattagWidgetParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658706B1F9E04C38EA2862FD /* LattagWidgetParts.swift */; };
@@ -334,7 +333,6 @@
 		F82C8F8187D6C0E8E13DF4F5 /* V64/TripHomeV83View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49028997E3DBDE8B3B4B28F8 /* V64/TripHomeV83View.swift */; };
 		F8A7E335B296727E10CB3A2F /* V64/IntroStoryV99.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8BB7E4F22E6B8A27E143AB /* V64/IntroStoryV99.swift */; };
 		F8E0DFF51C9B372080711A94 /* V64/TripNewV83View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */; };
-		F8F989379BFA17B7600AA6D2 /* EmailSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4223DCBF41BC23820D06D5F9 /* EmailSignInView.swift */; };
 		F9604D53BE6964B061D9D199 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
 		F961362EE48E1FE4EEA0FB5B /* Fonts/SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */; };
 		F961437D7997B742D8DB03BF /* Fonts/Inter-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 27B30D00E22A4904938D7ED6 /* Fonts/Inter-Black.ttf */; };
@@ -428,7 +426,6 @@
 		3BF39B90BD0EE97062274ACA /* DebugDataVolume.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDataVolume.swift; sourceTree = "<group>"; };
 		3DBC3939C57455DE3F1BBC4D /* AccountDeletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDeletionView.swift; sourceTree = "<group>"; };
 		3E20E050E410BA1D32F171B6 /* MainNavigationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainNavigationView.swift; sourceTree = "<group>"; };
-		4223DCBF41BC23820D06D5F9 /* EmailSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmailSignInView.swift; sourceTree = "<group>"; };
 		44A391CFCECDF1D934A1C686 /* Moderation/BlockedUser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Moderation/BlockedUser.swift; sourceTree = "<group>"; };
 		4530102B2BCEFCF4B1CC5136 /* V64/HomeV68Layers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV68Layers.swift; sourceTree = "<group>"; };
 		453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsMid.swift; sourceTree = "<group>"; };
@@ -695,7 +692,6 @@
 		E4A000000000000000000047 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		E4A000000000000000000049 /* AppLanguage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		E8ED391917F67A87CD691ABF /* Fonts/Caveat-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Caveat-Bold.ttf"; sourceTree = "<group>"; };
-		EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingV2Views.swift; sourceTree = "<group>"; };
 		EB0762A3B8CFF1DAFAE1F061 /* InstaxShareFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstaxShareFrame.swift; sourceTree = "<group>"; };
 		ED44F2F13C3467FBD25D831F /* LGFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGFont.swift; sourceTree = "<group>"; };
@@ -1028,11 +1024,9 @@
 				B219B02437086612F96FD945 /* V64/OnboardingV64Parts.swift */,
 				51301EA826D27F08B4232071 /* V64/OnboardingRouter.swift */,
 				9BF6389BC965BF1D800AEC6D /* OnboardingComponents.swift */,
-				EB054598475981D661E7F6F1 /* OnboardingFlowView.swift */,
 				EB054598475981D661E7F6F2 /* OnboardingV2Views.swift */,
 				E1D00000000000000000000A /* WidgetSetupFlow.swift */,
 				9BD678D0F33848FED35DBA5D /* AppleSignInView.swift */,
-				4223DCBF41BC23820D06D5F9 /* EmailSignInView.swift */,
 				549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */,
 				C22FF412000A894263FFAD32 /* Services/AppleFirebaseAuth.swift */,
 				FDDA929744097E460EF15420 /* Services/FirebaseConfigurator.swift */,
@@ -1628,7 +1622,6 @@
 				E7390D2B2CBE0B9D3FC410BD /* V64/OnboardingV64Parts.swift in Sources */,
 				41E3D45A5E19E47B47B1F589 /* V64/OnboardingRouter.swift in Sources */,
 				B7824F0868F782C69F76B8D7 /* OnboardingComponents.swift in Sources */,
-				8AEC2FC399D74E06D7A981E1 /* OnboardingFlowView.swift in Sources */,
 				8AEC2FC399D74E06D7A981E2 /* OnboardingV2Views.swift in Sources */,
 				E1D000000000000000000044 /* WidgetSetupFlow.swift in Sources */,
 				A3B62838302D73920010ACBB /* SceneDelegate.swift in Sources */,
@@ -1901,7 +1894,6 @@
 				EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */,
 				C17D40A7096ABD32830661B7 /* HandleService.swift in Sources */,
 				2353164534C48640CDB4FB82 /* ProfileChekiCard.swift in Sources */,
-				F8F989379BFA17B7600AA6D2 /* EmailSignInView.swift in Sources */,
 				F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */,
 				01DECCAA22A03B7652DD3EEB /* Services/AppleFirebaseAuth.swift in Sources */,
 				6FF9E04CEF4832D96D2A16D4 /* Services/FirebaseConfigurator.swift in Sources */,

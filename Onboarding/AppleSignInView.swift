@@ -15,7 +15,6 @@ struct AppleSignInView: View {
 
     @State private var errorMessage: String?
     @State private var isLoading = false
-    @State private var showingEmailSignIn = false
 
     private let backgroundBlack = Color(hex: "121212")
     private let warmGlow = Color(red: 0.141, green: 0.122, blue: 0.094)         // #241f18
@@ -89,16 +88,6 @@ struct AppleSignInView: View {
                 .shadow(color: ivoryShadow.opacity(0.25), radius: 18, y: 8)
                 .padding(.horizontal, 40)
 
-                Button {
-                    showingEmailSignIn = true
-                } label: {
-                    Text("メールでサインインする")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .underline()
-                }
-                .padding(.top, -16)
-
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.caption)
@@ -116,9 +105,6 @@ struct AppleSignInView: View {
                 ProgressView()
                     .tint(.white)
             }
-        }
-        .sheet(isPresented: $showingEmailSignIn) {
-            EmailSignInView()
         }
     }
 

@@ -39,7 +39,7 @@ struct OnboardingHeadline: View {
     let title: String
     var sub: String?
     var titleColor: Color = OnboardingPalette.text
-    let phase: OnboardingFlowView.ContentPhase
+    let phase: OnboardingContentPhase
     let reduceMotion: Bool
 
     var body: some View {
@@ -1117,5 +1117,38 @@ struct OnboardingFlowLayout: Layout {
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
+    }
+}
+
+/// 見出しの 出入りの 段階(旧 OnboardingFlowView の 中に あった もの)
+enum OnboardingContentPhase { case hidden, leaving, shown }
+private struct FloatIn: ViewModifier {
+    let phase: OnboardingContentPhase
+    let index: Int
+    let reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        let opacity: Double = phase == .shown ? 1 : 0
+        let offset: CGFloat = reduceMotion ? 0 : (phase == .leaving ? -10 : (phase == .hidden ? 14 : 0))
+        let blur: CGFloat = reduceMotion ? 0 : (phase == .shown ? 0 : 5)
+        let animation: Animation? = {
+            if reduceMotion { return .easeInOut(duration: 0.25) }
+            switch phase {
+            case .shown: return .timingCurve(0.2, 0.7, 0.2, 1, duration: 0.6).delay(0.15 + 0.11 * Double(index))
+            case .leaving: return .easeIn(duration: 0.25)
+            case .hidden: return nil
+            }
+        }()
+        return content
+            .opacity(opacity)
+            .offset(y: offset)
+            .blur(radius: blur)
+            .animation(animation, value: phase)
+    }
+}
+
+extension View {
+    func floatIn(_ phase: OnboardingContentPhase, index: Int, reduceMotion: Bool) -> some View {
+        modifier(FloatIn(phase: phase, index: index, reduceMotion: reduceMotion))
     }
 }

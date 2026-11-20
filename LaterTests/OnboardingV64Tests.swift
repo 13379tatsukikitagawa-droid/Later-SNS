@@ -21,14 +21,6 @@ struct OnboardingV64Tests {
         for n in ["あや", "Ken", "ゆい", "a", "🙂"] { #expect((0..<OB.palette.count).contains(OB.colorIndex(for: n))) }
     }
 
-    @Test func メールの形() {
-        #expect(OnboardingV64View.isValidEmail("you@example.com"))
-        #expect(OnboardingV64View.isValidEmail("  You@Example.com "))
-        #expect(!OnboardingV64View.isValidEmail("you@example"))
-        #expect(!OnboardingV64View.isValidEmail("you example.com"))
-        #expect(!OnboardingV64View.isValidEmail(""))
-    }
-
     @Test func 名前とタグのきまりはそのまま() {
         #expect(OnboardingRules.validateName("あや").problem == nil)
         #expect(OnboardingRules.validateName("").problem == .empty)

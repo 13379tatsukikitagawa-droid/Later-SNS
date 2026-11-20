@@ -114,7 +114,7 @@ struct WidgetSetupFlow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @State private var stage: Stage = .intro
-    @State private var phase: OnboardingFlowView.ContentPhase = .hidden
+    @State private var phase: OnboardingContentPhase = .hidden
     @State private var place: WidgetPlace = .home
     @State private var haptics = ExposureHaptics()
     @State private var check: PlacementCheck?

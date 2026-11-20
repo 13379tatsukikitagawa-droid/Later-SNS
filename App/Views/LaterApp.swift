@@ -270,9 +270,9 @@ struct RootView: View {
         .task(id: appleUserID) {
             // P47 A:Firebase の 入った まま なら uid を ひろう。前から Apple の 人は 起動の とき 1回 だけ「つなぎなおす」
             AppleFirebaseAuth.adoptExistingSession()
-            guard isSetupCompleted, AppleFirebaseAuth.needsReconnect else { return }
+            guard isSetupCompleted, AppleFirebaseAuth.needsReconnect, !AppleFirebaseAuth.snoozed else { return }
             try? await Task.sleep(for: .seconds(4))
-            if AppleFirebaseAuth.needsReconnect { showAppleReconnect = true }
+            if AppleFirebaseAuth.needsReconnect, !AppleFirebaseAuth.snoozed { AppleFirebaseAuth.snooze(); showAppleReconnect = true }   // 出した 時から 24時間 は 出さない
         }
         .sheet(isPresented: $showAppleReconnect) { AppleReconnectSheet() }
         .task(id: appleUserID + firebaseUID) {
@@ -317,27 +317,6 @@ struct RootView: View {
             #if DEBUG
             if DebugRouter.handle(url) { return }
             #endif
-            if FirebaseAuthService.isSignInLink(url) {
-                // 初回設定の画面を「確認中」にする。同じ端末でリンクを開けた場合(pendingEmailが
-                // 残っている)は、ここでそのままサインインを完了する。別の端末で開いた場合は、
-                // 初回設定の画面で同じアドレスを入れ直してもらう(emailSignInLinkFailed)。
-                NotificationCenter.default.post(name: .emailSignInLinkOpened, object: nil)
-                guard let email = FirebaseAuthService.pendingEmail else {
-                    NotificationCenter.default.post(name: .emailSignInLinkFailed, object: nil)
-                    return
-                }
-                Task {
-                    do {
-                        let result = try await FirebaseAuthService.completeSignIn(withLink: url.absoluteString, email: email)
-                        UserDefaults.standard.set(result.email ?? email, forKey: "firebaseEmail")
-                        firebaseUID = result.uid
-                    } catch {
-                        print("[Firebase] onOpenURL経由のサインイン完了に失敗: \(error)")
-                        NotificationCenter.default.post(name: .emailSignInLinkFailed, object: error)
-                    }
-                }
-                return
-            }
             // v96 ウィジェット:lattag://shoot ・ develop ・ friends ・ yesterday?f= ・ mondo ・ trip/<id>
             if let route = WidgetRouteStore.route(from: url) {
                 NotificationCenter.default.post(name: .photoNotificationTapped, object: nil)

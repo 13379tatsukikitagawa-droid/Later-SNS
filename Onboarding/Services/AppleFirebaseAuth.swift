@@ -31,6 +31,11 @@ enum AppleFirebaseAuth {
         return result.user.uid
     }
 
+    static let snoozeKey = "appleReconnectSnoozeUntil"
+    /// 「あとで」/ 閉じた あとは 24時間 出さない
+    static var snoozed: Bool { Date().timeIntervalSince1970 < UserDefaults.standard.double(forKey: snoozeKey) }
+    static func snooze(hours: Double = 24) { UserDefaults.standard.set(Date().addingTimeInterval(hours * 3600).timeIntervalSince1970, forKey: snoozeKey) }
+
     /// つなぎなおしが 要る 人(Apple で 入って いるが Firebase の uid が 無い)
     static var needsReconnect: Bool {
         let d = UserDefaults.standard
