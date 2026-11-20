@@ -1457,6 +1457,13 @@ struct NewGroupFlowView: View {
         group.colorIndex = GroupPalette.index(forName: finalName)
         group.faceStyle = GroupFaceStyle.aura
         group.showsInitial = true
+        // v110:日にちと 色(When で えらんだ 日 ・ 作った 順の 色)
+        if let a = tripStartDay, let b = tripEndDay {
+            let cal = Calendar.current
+            group.tripStart = cal.date(byAdding: .day, value: a, to: cal.startOfDay(for: Date()))
+            group.tripEnd = cal.date(byAdding: .day, value: b, to: cal.startOfDay(for: Date()))
+        }
+        group.tripColor = TripHubRules.nextColor(existing: (try? modelContext.fetch(FetchDescriptor<LaterGroup>())) ?? [])
         // v58 §3 Cover:選んだ 表紙(既存の iconImageData フィールド。新しい保存先は 作らない)
         if let coverImageData { group.iconImageData = coverImageData }
         group.joinedAt = Date()

@@ -132,6 +132,14 @@ struct HomeV64Preview: View {
             input.yesterdayPhoto = SampleData.photo("a") ?? SampleData.blurryPhoto(seed: 2)
         }
         input.page = d.integer(forKey: "debugPage")
+        if d.string(forKey: "debugTrips") != "none" {
+            let cal = Calendar.current, today = cal.startOfDay(for: Date())
+            func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today) ?? today }
+            func ti(_ name: String, _ s: Int, _ e: Int, _ color: Int, _ cover: String, shots: Int = 0) -> TripHubItem {
+                TripHubItem(id: UUID(), name: name, members: 3, memberImages: [SampleData.photo("a"), SampleData.photo("b"), SampleData.photo("c")], memberNames: ["よ", "れ", "か"], cover: SampleData.photo(cover), start: day(s), end: day(e), created: day(s - 5), color: color, shotsToday: shots, photoCount: 20)
+            }
+            input.tripItems = [ti("大阪", -1, 1, 0, "e", shots: 14), ti("部活の 合宿", 4, 6, 2, "c"), ti("京都", -28, -26, 3, "a")]
+        }
         let names = ["あや", "れな", "そら"], cols = [Color(hex: "61DD7A"), Color(hex: "7FB0FF"), Color(hex: "6FCB8C")]
         input.friends = (0..<min(3, friends)).map { HomeV64Friend(id: "fr\($0)", name: names[$0], color: cols[$0], image: SampleData.photo(["b", "b", "f"][$0]), shots: [3, 2, 0][$0], time: ["17:05", "12:40", nil][$0]) }
         if input.requestCount > 0 {
@@ -226,6 +234,15 @@ struct YesterdayV64Preview: View {
         case "nofriends": y.posts = []; y.friendCount = 0
         case "noown": y.mine = []; y.friendCount = 3
         default: y.friendCount = 3
+        }
+        if d.string(forKey: "debugTrips") != "none" {
+            let cal = Calendar.current, today = cal.startOfDay(for: Date())
+            func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today) ?? today }
+            func item(_ name: String, _ s: Int, _ e: Int, _ color: Int, cover: String, members: Int = 3, shots: Int = 0, photos: Int = 0) -> TripHubItem {
+                TripHubItem(id: UUID(), name: name, members: members, memberImages: [ph("a"), ph("b"), ph("c")], memberNames: ["よ", "れ", "か"], cover: ph(cover), start: day(s), end: day(e), created: day(s - 5), color: color, shotsToday: shots, photoCount: photos)
+            }
+            y.trips = [item("大阪", -1, 1, 0, cover: "e", shots: 14), item("部活の 合宿", 4, 6, 2, cover: "c", members: 5), item("沖縄", 13, 16, 1, cover: "d"),
+                       item("京都", -28, -26, 3, cover: "a", photos: 41), item("伊豆", -50, -48, 1, cover: "b", photos: 18)]
         }
         return YesterdayV64View(input: y)
     }

@@ -205,8 +205,10 @@ extension TripPassData {
     init(group: LaterGroup, key: String, link: String) {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US"); f.dateFormat = "MMM dd"
         let cal = Calendar.current
-        let day = max(1, (cal.dateComponents([.day], from: cal.startOfDay(for: group.creationDate), to: cal.startOfDay(for: Date())).day ?? 0) + 1)
-        self.init(name: group.name, sub: "", from: f.string(from: group.creationDate).uppercased(), to: f.string(from: Date()).uppercased(), days: day,
+        // v110:日にちが 保存されて いれば それを 出す(ない 時は 今までどおり 作った 日 → 今日)
+        let start = group.tripStart ?? group.creationDate, end = group.tripEnd ?? Date()
+        let day = max(1, (cal.dateComponents([.day], from: cal.startOfDay(for: start), to: cal.startOfDay(for: end)).day ?? 0) + 1)
+        self.init(name: group.name, sub: "", from: f.string(from: start).uppercased(), to: f.string(from: end).uppercased(), days: day,
                   key: key, link: link,
                   cover: V64Images.image(key: "tg\(group.id)", data: group.iconImageData, maxPixel: 360),
                   members: group.members.map { V64Images.image(key: "tm\($0.id)", data: $0.profileImageData, maxPixel: 120) },

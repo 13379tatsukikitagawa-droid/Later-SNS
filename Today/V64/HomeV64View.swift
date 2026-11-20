@@ -35,6 +35,7 @@ struct HomeV64Input {
     var requests: [HomeV64Request] = []
     var yesterdayThumbs: [HomeV64Thumb] = []
     var trip: HomeV64TripInfo? = nil
+    var tripItems: [TripHubItem] = []
     var tripSamples: [UIImage] = []
     var lower = HomeV64LowerData()
     var debugScroll: CGFloat = 0
@@ -62,6 +63,7 @@ struct HomeV64Actions {
     var openFriends: () -> Void = {}
     var openTrip: () -> Void = {}
     var openTripHome: (_ id: UUID) -> Void = { _ in }
+    var joinKey: () -> Void = {}
     var openProfile: () -> Void = {}
     var openDevelop: () -> Void = {}
     var openLive: () -> Void = {}

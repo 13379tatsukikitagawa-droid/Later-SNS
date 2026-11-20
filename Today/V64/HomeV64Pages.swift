@@ -282,96 +282,20 @@ struct HVFriendsPage: View {
     }
 }
 
-// MARK: - 2 Trip
+// MARK: - 2 Trip(v110:一覧は TripHubView 1つ。きのうの Trip タブと 同じ もの)
 
 struct HVTripPage: View {
     let input: HomeV64Input
     let cardW: CGFloat
     let actions: HomeV64Actions
+    @State private var pos = ScrollPosition()
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            if let trip = input.trip {
-                ZStack {
-                    Color(hex: "1A1614")
-                    if let c = trip.cover { Image(uiImage: c).resizable().scaledToFill() }
-                    LinearGradient(stops: [.init(color: .black.opacity(0.4), location: 0), .init(color: .black.opacity(0.1), location: 0.3), .init(color: .black.opacity(0.6), location: 0.65), .init(color: .black.opacity(0.9), location: 1)], startPoint: .top, endPoint: .bottom)
-                }.frame(width: cardW, height: 508).clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-            } else { HVPageBackdrop(photo: input.tripSamples[safe: 1] ?? input.backdrop.first) }
-            if let trip = input.trip {
-                tripActive(trip)
-            } else {
-                // 写真が 3枚 重なった 絵
-                let imgs = input.tripSamples
-                ZStack {
-                    stackedPhoto(imgs[safe: 0]).frame(width: 118, height: 150).overlay(Color.black.opacity(0.25)).rotationEffect(.degrees(-8)).offset(x: -46, y: 10)
-                    stackedPhoto(imgs[safe: 2]).frame(width: 118, height: 150).overlay(Color.black.opacity(0.25)).rotationEffect(.degrees(8)).offset(x: 46, y: 10)
-                    stackedPhoto(imgs[safe: 1]).frame(width: 118, height: 150).offset(y: -2)
-                }
-                .frame(width: cardW, height: 200).offset(y: 25)
-                Text("02 / 03 ・ TRIP").font(LF.mono(9)).tracking(1.8).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 24, y: 252)
-                Text("Take a trip,").font(LF.serif(40)).foregroundStyle(.white).frame(height: 40, alignment: .leading).fixedSize().offset(x: 24, y: 273)
-                Text("together.").font(LF.serif(40, italic: true)).foregroundStyle(HV.lime).frame(height: 40, alignment: .leading).fixedSize().offset(x: 24, y: 313)
-                Text("旅行 ・ 合宿 ・ イベント。1日 23枚を、みんなで。").font(LF.inter(500, 12.5)).foregroundStyle(Color(hex: "8C8C93")).fixedSize().offset(x: 24, y: 366)
-                HStack(spacing: 8) {
-                    Button { Haptics.play(.click); actions.openTrip() } label: {
-                        HStack { Text("New trip").font(LF.inter(800, 17)).foregroundStyle(HV.ink); Spacer()
-                            Image(systemName: "plus").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 42, height: 42).background(HV.ink, in: Circle()) }
-                            .padding(.leading, 22).padding(.trailing, 7).frame(width: 270, height: 56).background(Color(hex: "F4F1EA"), in: Capsule())
-                    }.buttonStyle(HVPress(scale: 0.97))
-                    Button { Haptics.play(.sel); actions.scanQR() } label: {
-                        Image(systemName: "viewfinder").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
-                            .frame(width: 56, height: 56).background(Color.white.opacity(0.10), in: Circle())
-                    }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("QR を よむ")
-                }.offset(x: 18, y: 386)
-            }
-        }
-        .frame(width: cardW, height: 508, alignment: .topLeading)
-    }
-
-    private func stackedPhoto(_ img: UIImage?) -> some View {
-        ZStack {
-            Rectangle().fill(Color(hex: "3A3A3C"))
-            if let img { Image(uiImage: img).resizable().scaledToFill() }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 3)).shadow(color: .black.opacity(0.9), radius: 15, y: 18)
-    }
-
-    @ViewBuilder
-    private func tripActive(_ trip: HomeV64TripInfo) -> some View {
-        let shots = trip.frames.filter { $0 != nil }.count
-        return ZStack(alignment: .topLeading) {
-            Color.clear.frame(width: cardW, height: 508)
-            Text("TRIP ・ \(trip.dayText)").font(LF.mono(11)).tracking(2.2).foregroundStyle(.white.opacity(0.85)).offset(x: 24, y: 30)
-            HStack(spacing: 8) {
-                tripRoundButton("qrcode") { actions.openTripHome(trip.id ?? UUID()) }
-                tripRoundButton("ellipsis") { actions.openTripHome(trip.id ?? UUID()) }
-            }.offset(x: cardW - 24 - 88 - 8, y: 20)
-            Text(trip.name).font(LF.serif(60)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5).frame(width: cardW - 48, alignment: .leading).offset(x: 24, y: 93)
-            Text(trip.sub).font(LF.mono(13)).foregroundStyle(.white.opacity(0.7)).offset(x: 24, y: 170)
-            ZStack { Circle().fill(Color(hex: "0A0A0B")).overlay(Circle().strokeBorder(.white.opacity(0.15), lineWidth: 2)); Text(String(format: "%02d", shots)).font(LF.mono(26)).fontWeight(.bold).foregroundStyle(.white) }.frame(width: 62, height: 62).offset(x: 14, y: 213)
-            Text("SHOTS TODAY").font(LF.mono(10.5)).tracking(2).foregroundStyle(.white.opacity(0.5)).offset(x: 98, y: 214)
-            HStack(alignment: .firstTextBaseline, spacing: 3) { Text("\(shots)").font(LF.serif(36, italic: true)).foregroundStyle(.white); Text("/23").font(LF.serif(20, italic: true)).foregroundStyle(.white.opacity(0.4)) }.offset(x: 98, y: 224)
-            HStack(spacing: -7) { ForEach(Array(trip.members.prefix(4).enumerated()), id: \.offset) { i, m in
-                ZStack { if let im = m.image { Image(uiImage: im).resizable().scaledToFill() } else { m.color; Text(m.initial).font(LF.inter(800, 11)).foregroundStyle(.white) } }.frame(width: 24, height: 24).clipShape(Circle()).overlay(Circle().strokeBorder(.black, lineWidth: 1.5)) } }.offset(x: 98, y: 266)
-            HVTripFilm(trip: trip, height: 44).frame(width: cardW - 24).offset(x: 12, y: 283)
-            Text("あした 9:00、みんなで 現像").font(LF.mono(11.5)).foregroundStyle(.white.opacity(0.6)).offset(x: 22, y: 352)
-        }.frame(width: cardW, height: 508, alignment: .topLeading)
-        .overlay(alignment: .topLeading) {
-            HStack(spacing: 8) {
-                Button { Haptics.play(.shutter); actions.shoot() } label: {
-                    HStack(spacing: 10) { Image(systemName: "camera").font(.system(size: 19, weight: .semibold)); Text("Shoot for trip").font(LF.inter(800, 18)) }.foregroundStyle(HV.ink).frame(width: 270, height: 56).background(Color(hex: "F4F1EA"), in: Capsule())
-                }.buttonStyle(HVPress(scale: 0.97))
-                Button { Haptics.play(.sel); if let id = trip.id { actions.openTripHome(id) } } label: {
-                    Image(systemName: "bubble.left").font(.system(size: 21, weight: .semibold)).foregroundStyle(.white).frame(width: 56, height: 56).background(Color.black.opacity(0.4), in: Circle()).background(.ultraThinMaterial, in: Circle())
-                        .overlay(alignment: .topTrailing) { if trip.unread > 0 { Text("\(trip.unread)").font(LF.inter(800, 11)).foregroundStyle(.white).frame(width: 20, height: 20).background(Color(hex: "E02B2B"), in: Circle()).offset(x: 6, y: -6) } }
-                }.buttonStyle(HVPress(scale: 0.94))
-            }.offset(x: 18, y: 386)
-        }
-    }
-
-    private func tripRoundButton(_ icon: String, _ a: @escaping () -> Void) -> some View {
-        Button { Haptics.play(.tick); a() } label: { Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white).frame(width: 40, height: 40).background(.white.opacity(0.14), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 1)) }.buttonStyle(HVPress(scale: 0.92))
+        TripHubView(items: input.tripItems, now: input.now, onOpen: { actions.openTripHome($0) }, onNew: { actions.openTrip() }, onJoinKey: { actions.joinKey() },
+                    position: $pos, topInset: 10)
+            .frame(width: cardW, height: 508)
+            .background(Color.black.opacity(0.62))
+            .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
     }
 }
 

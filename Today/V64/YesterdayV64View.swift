@@ -100,6 +100,12 @@ struct YesterdayV64View: View {
 
     private var compact: Bool { scrollY > 24 }
 
+    /// いま 1 ・ これから 2 ・ おわった 2
+    private var tripSubtitle: String {
+        let c = TripHubRules.counts(input.trips, now: input.now)
+        return "いま \(c.live) ・ これから \(c.upcoming) ・ おわった \(c.ended)"
+    }
+
     private var hasMine: Bool { !input.mine.isEmpty }
     private var noFriends: Bool { input.friendCount == 0 && input.posts.isEmpty }
     /// 上の 題の 下:はじめて(両方 ない)= DAY 1 ・ 友だち 0人 = きのう
@@ -123,9 +129,10 @@ struct YesterdayV64View: View {
                 ZStack {
                     friendsTab(w: g.size.width).ignoresSafeArea(edges: .top)
                         .opacity(tab == 0 ? 1 : 0).allowsHitTesting(tab == 0)
-                    TripHubView(trips: input.trips, onOpen: { actions.openTrip($0) }, onNew: { actions.newTrip() }, onJoinKey: { actions.joinKey() },
-                                position: $tripPos, topInset: 120, onScroll: { v in scrollNow(v, forTab: 1) })
+                    TripHubView(items: input.trips, now: input.now, onOpen: { actions.openTrip($0) }, onNew: { actions.newTrip() }, onJoinKey: { actions.joinKey() },
+                                position: $tripPos, topInset: 118, onScroll: { v in scrollNow(v, forTab: 1) })
                         .ignoresSafeArea(edges: .top)
+                        .onAppear { if let y = input.debugScrollY, tab == 1 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { tripPos.scrollTo(y: y) } } }
                         .opacity(tab == 1 ? 1 : 0).allowsHitTesting(tab == 1)
                 }
                 .preferredColorScheme(.dark)
@@ -170,7 +177,7 @@ struct YesterdayV64View: View {
             VStack(spacing: 1) {
                 Text(tab == 0 ? "Friends" : "Trip").font(LF.inter(900, compact ? 17 : 24)).tracking(compact ? -0.7 : -0.96).foregroundStyle(.white).frame(height: compact ? 22 : 30)
                 if !compact {
-                    Text(tab == 0 ? friendsSubtitle : "旅の あいだ、みんなで 1日 23枚")
+                    Text(tab == 0 ? friendsSubtitle : tripSubtitle)
                         .font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.5)).frame(height: 16)
                 }
             }.frame(width: 250).offset(x: (w - 250) / 2, y: compact ? 58 : 52)

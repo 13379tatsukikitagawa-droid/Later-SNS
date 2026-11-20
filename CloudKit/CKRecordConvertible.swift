@@ -196,6 +196,9 @@ extension LaterGroup {
         record["colorIndex"] = colorIndex
         record["faceStyle"] = faceStyle
         record["showsInitial"] = showsInitial ? 1 as Int64 : 0 as Int64
+        record["tripStart"] = tripStart
+        record["tripEnd"] = tripEnd
+        record["tripColor"] = tripColor
         logger.debug("[GroupSync] toCKRecord: autoGenerateMissionを設定中")
         record["autoGenerateMission"] = autoGenerateMission
         logger.debug("[GroupSync] toCKRecord: isPrivateを設定中")
@@ -250,6 +253,9 @@ extension LaterGroup {
         memberLimit = record["memberLimit"] as? Int ?? memberLimit
         colorIndex = record["colorIndex"] as? Int ?? colorIndex
         faceStyle = record["faceStyle"] as? String ?? faceStyle
+        tripStart = record["tripStart"] as? Date ?? tripStart
+        tripEnd = record["tripEnd"] as? Date ?? tripEnd
+        tripColor = record["tripColor"] as? Int ?? tripColor
         if let initialFlag = record["showsInitial"] as? Int64 { showsInitial = initialFlag != 0 }
         if let asset = record["icon"] as? CKAsset, let fileURL = asset.fileURL {
             iconImageData = try? Data(contentsOf: fileURL)

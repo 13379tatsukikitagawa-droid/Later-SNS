@@ -19,12 +19,21 @@ struct TripSettingsV106Sheet: View {
     @State private var coverData: Data?
     @State private var picker: PhotosPickerItem?
     @State private var chatOn = true
+    @State private var hasDates = false
+    @State private var start = Calendar.current.startOfDay(for: Date())
+    @State private var end = Calendar.current.startOfDay(for: Date())
     @State private var pulse = false
     @State private var saving = false
     @State private var toast: String?
     @FocusState private var focused: Bool
 
-    private var changed: Bool { GroupEditRules.canSave(originalName: group.name, name: name, photoChanged: coverData != nil, colorChanged: false) }
+    private var datesChanged: Bool {
+        guard hasDates else { return false }
+        let cal = Calendar.current
+        guard let s = group.tripStart, let e = group.tripEnd else { return true }
+        return !cal.isDate(s, inSameDayAs: start) || !cal.isDate(e, inSameDayAs: end)
+    }
+    private var changed: Bool { GroupEditRules.canSave(originalName: group.name, name: name, photoChanged: coverData != nil, colorChanged: false) || datesChanged }
     private var tripPhotos: [LaterPhoto] { Array(group.photos.sorted { $0.captureDate > $1.captureDate }.prefix(24)) }
 
     var body: some View {
@@ -37,6 +46,7 @@ struct TripSettingsV106Sheet: View {
                         passPreview.frame(maxWidth: .infinity).padding(.top, 6)
                         coverRow
                         nameRow
+                        whenRow
                         membersRow
                         noticeRow
                         redZone
@@ -53,7 +63,9 @@ struct TripSettingsV106Sheet: View {
             name = group.name
             cover = group.iconImageData.flatMap { UIImage(data: $0) }
             chatOn = !GroupChatStore.shared.isMuted(group.id)
+            if let s = group.tripStart, let e = group.tripEnd { hasDates = true; start = s; end = e }
         }
+        .onChange(of: start) { _, v in if end < v { end = v } }
         .onChange(of: name) { _, v in name = GroupNameRules.sanitizeInput(v); bump() }
         .onChange(of: picker) { _, item in
             guard let item else { return }
@@ -148,6 +160,33 @@ struct TripSettingsV106Sheet: View {
         }
     }
 
+    /// v110 §5:日にち(週の 帯 ・ いま / これから / おわった に 使う)。なければ「日にちを 入れる」
+    private var whenRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            label("WHEN")
+            VStack(spacing: 0) {
+                if hasDates {
+                    HStack {
+                        Text("はじまり").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.7))
+                        Spacer()
+                        DatePicker("", selection: $start, displayedComponents: .date).labelsHidden().tint(HV.lime)
+                    }.padding(.horizontal, 16).frame(height: 52)
+                    Divider().overlay(.white.opacity(0.08))
+                    HStack {
+                        Text("おわり").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.7))
+                        Spacer()
+                        DatePicker("", selection: $end, in: start..., displayedComponents: .date).labelsHidden().tint(HV.lime)
+                    }.padding(.horizontal, 16).frame(height: 52)
+                } else {
+                    Button { Haptics.play(.pop); withAnimation(.easeOut(duration: 0.2)) { hasDates = true } } label: {
+                        HStack { Image(systemName: "calendar.badge.plus").font(.system(size: 16, weight: .semibold)); Text("日にちを 入れる").font(LF.inter(800, 15)); Spacer() }
+                            .foregroundStyle(HV.lime).padding(.horizontal, 16).frame(height: 54)
+                    }.buttonStyle(.plain)
+                }
+            }.background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
     private var membersRow: some View {
         VStack(alignment: .leading, spacing: 10) {
             label("MEMBERS")
@@ -201,7 +240,9 @@ struct TripSettingsV106Sheet: View {
         Task { @MainActor in
             defer { saving = false }
             do {
-                try await GroupSettingsService.save(group: group, name: name, iconData: coverData.map { Optional($0) }, colorIndex: nil, context: modelContext)
+                var ts: Date?? = nil, te: Date?? = nil
+                if datesChanged { ts = .some(Calendar.current.startOfDay(for: start)); te = .some(Calendar.current.startOfDay(for: end)) }
+                try await GroupSettingsService.save(group: group, name: name, iconData: coverData.map { Optional($0) }, colorIndex: nil, tripStart: ts, tripEnd: te, context: modelContext)
                 Haptics.play(.success)
                 withAnimation { toast = "Trip を 更新しました" }
                 try? await Task.sleep(for: .seconds(0.9))

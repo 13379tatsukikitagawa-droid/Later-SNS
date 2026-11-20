@@ -176,7 +176,7 @@ enum GroupCreateFailureText {
 
 extension LaterGroup {
     /// あとから 足した フィールド(本番に まだ ないと、保存ぜんたいが 失敗する)
-    static let lateCloudFields = ["memberLimit", "colorIndex", "faceStyle", "showsInitial"]
+    static let lateCloudFields = ["memberLimit", "colorIndex", "faceStyle", "showsInitial", "tripStart", "tripEnd", "tripColor"]
 }
 
 extension UserProfile {

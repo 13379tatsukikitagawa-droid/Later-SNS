@@ -20,6 +20,10 @@ class LaterGroup {
     var memberLimit: Int = GroupMembershipPolicy.maxMembersPerGroup
     /// 顔の色(GroupPalette の番号)。-1 なら未設定(IDから決める)
     var colorIndex: Int = -1
+    /// v110:Trip の はじまり / おわりの 日(なくても よい。作り話で うめない)と、Trip の 色(0 pink ・ 1 sky ・ 2 sun ・ 3 lime。-1 = 未設定)
+    var tripStart: Date?
+    var tripEnd: Date?
+    var tripColor: Int = -1
     /// 顔のしゅるい:"aura"(色)/ "photo"(みんなが撮った今日の写真。まだ1枚もない日は色)
     var faceStyle: String = GroupFaceStyle.aura
     /// 顔に、名前の1文字目を入れるか

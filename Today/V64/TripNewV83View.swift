@@ -537,6 +537,11 @@ enum TripCreator {
         group.colorIndex = GroupPalette.index(forName: name)
         group.faceStyle = GroupFaceStyle.aura
         group.showsInitial = true
+        // v110:日にちと 色(作った 順に pink → sky → sun → lime)
+        let cal = Calendar.current
+        group.tripStart = cal.startOfDay(for: draft.start)
+        group.tripEnd = cal.startOfDay(for: draft.end)
+        group.tripColor = TripHubRules.nextColor(existing: (try? context.fetch(FetchDescriptor<LaterGroup>())) ?? [])
         if let data = cover?.jpegData(compressionQuality: 0.8) { group.iconImageData = data }
         group.joinedAt = Date()
         _ = group.addMember(user)

@@ -177,12 +177,15 @@ enum GroupSettingsService {
 
     /// 名前と顔を保存する。メンバー全員が書ける(共有は readWrite)。競合は同期の仕組みが、あとの保存を勝ちにして送りなおす。
     /// 送信はデリゲートのコールバックの外で(sendPendingChangesNow)。
-    static func save(group: LaterGroup, name: String, iconData: Data??, colorIndex: Int?, context: ModelContext) async throws {
+    static func save(group: LaterGroup, name: String, iconData: Data??, colorIndex: Int?, tripStart: Date?? = nil, tripEnd: Date?? = nil, tripColor: Int? = nil, context: ModelContext) async throws {
         guard ConnectivityMonitor.shared.isOnline else { throw SaveError.offline }
         guard let cloudKitManager = CloudKitManager.current else { throw SaveError.notReady }
         group.name = GroupNameRules.finalize(name)
         if let iconData { group.iconImageData = iconData }
         if let colorIndex { group.colorIndex = colorIndex }
+        if let tripStart { group.tripStart = tripStart }
+        if let tripEnd { group.tripEnd = tripEnd }
+        if let tripColor { group.tripColor = tripColor }
         try? context.save()
         cloudKitManager.markForUpload(group: group)
         await cloudKitManager.sendPendingChangesNow()

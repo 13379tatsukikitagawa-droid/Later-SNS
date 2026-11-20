@@ -105,7 +105,7 @@ struct HVIcon: View {
         Group {
             switch kind {
             case .yesterday: HVStackGlyph(size: size * 0.9, color: color, line: size / 13)
-            case .trip: Image(systemName: "briefcase").font(.system(size: size * 0.85, weight: .semibold))
+            case .trip: PopTicketIcon().frame(width: size * 1.05, height: size * 0.76)   // v110:チケット(地球 ・ かばんは 使わない)
             case .friends: Image(systemName: "person.2").font(.system(size: size * 0.85, weight: .semibold))
             case .camera: Image(systemName: "record.circle").font(.system(size: size * 0.95, weight: .medium))
             }

@@ -88,7 +88,7 @@ struct HomeV64Host: View {
         y.friendCount = L.friends.filter { !$0.isMe }.count
         y.shotFriends = L.friends.filter { !$0.isMe && $0.hasShot }.count
         y.avatarName = src.avatarName
-        y.trips = src.groups.filter { !$0.isPersonalSpace }.sorted { $0.creationDate > $1.creationDate }.map { g in TripHubItem(id: g.id, name: g.name, members: g.members.count, cover: g.iconImageData.flatMap { UIImage(data: $0) }) }
+        y.trips = TripHubRules.items(from: src.groups, now: now)
         if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }
         // v76:友だち 1人 = 1つの 投稿(大きな 1枚 + 小さな 2枚)。自分の 3枚は「あなたの きのう」
         func photo(_ c: HomeYesterdayCard) -> YesterdayV64Input.Photo { .init(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 640) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: c.imageData == nil ? "" : df.string(from: c.captureDate), tag: c.tag, music: c.musicTitle.map { MusicPick(title: $0, artist: c.musicArtist ?? "", artworkURL: c.musicArtworkURL, link: c.musicLink, service: .apple) }) }
@@ -177,6 +177,7 @@ struct HomeV64Host: View {
             let sd = DateFormatter(); sd.dateFormat = "MM.dd"
             input.trip = HomeV64TripInfo(id: g.id, name: g.name, members: mem, frames: frames, cover: g.iconImageData.flatMap { UIImage(data: $0) }, sub: "\(sd.string(from: g.creationDate)) ・ \(mem.count)人", dayText: "DAY \(n)")
         }
+        input.tripItems = TripHubRules.items(from: src.groups, now: now)
         input.isFirstDay = L.yesterday.isEmpty
         input.yesterdayPhoto = myYesterday.first
         let df = DateFormatter(); df.dateFormat = "HH:mm"
@@ -227,6 +228,7 @@ struct HomeV64Host: View {
         a.openDevelop = { showDevelop = true }
         a.openTrip = src.onCreateGroup
         a.openTripHome = { id in src.onOpenChat(id) }
+        a.joinKey = { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.passphrase) }
         return a
     }
 
