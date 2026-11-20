@@ -739,7 +739,7 @@ struct QRScanView: View {
         if let url = URL(string: code), let shareURL = InviteConfig.shareURL(from: url) {
             lock(shareURL, haptic: true)
         } else if let key = TripKeyLink.key(from: code) {
-            // v98:Trip の パスの QR(https://lattag.app/t/<key>)
+            // v98:Trip の パスの QR(https://later-app-f2606.firebaseapp.com/t/<key>)
             guard ignoredCode != code else { return }
             ignoredCode = code
             Task {

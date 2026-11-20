@@ -170,7 +170,12 @@ struct GroupSheet: View {
             guard let link = try? await GroupInviteService.link(for: group, context: modelContext) else { return }
             let shareURL = InviteConfig.shareURL(from: link) ?? link
             let join = GroupJoinLink.buildURL(shareURL: shareURL) ?? shareURL
-            shareItems = [ShareLinkItemSource(text: InviteConfig.shareMessage(groupName: group.name, url: join), title: "「\(group.name)」に招待されました。")]
+            // v108 §5-2:LINE で 押せる https の 文(KEY)。KEY が とれない 時だけ 今までの 文
+            if let key = try? await GroupInviteService.passphrase(for: group, context: modelContext) {
+                shareItems = [ShareLinkItemSource(text: ShareTextV108.trip(host: ShareTextV108.me.name, name: group.name, dates: nil, members: nil, key: key), title: "「\(group.name)」に招待されました。")]
+            } else {
+                shareItems = [ShareLinkItemSource(text: InviteConfig.shareMessage(groupName: group.name, url: join), title: "「\(group.name)」に招待されました。")]
+            }
         }
     }
 

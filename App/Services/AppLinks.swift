@@ -12,7 +12,7 @@ enum AppLinks {
 
     enum Link: Equatable { case friend(handle: String), trip(token: String) }
 
-    /// どの ドメインの `/u/<ID>` `/t/<トークン>` も うけとる(古い lattag.app の リンクも)
+    /// どの ドメインの `/u/<ID>` `/t/<トークン>` も うけとる(持って いない ドメインの リンクは 受けない)
     static func parse(_ url: URL) -> Link? {
         // ページの「アプリで ひらく」:later://u/<ID> ・ later://t/<トークン>
         if Brand.isOurScheme(url), let h = url.host?.lowercased(), h == "u" || h == "t" {
@@ -22,7 +22,7 @@ enum AppLinks {
             let n = HandleRules.normalize(id)
             return HandleRules.validate(n) == nil ? .friend(handle: n) : nil
         }
-        guard let host = url.host?.lowercased(), host == webHost || host == Brand.domain || host == "www." + Brand.domain else { return nil }
+        guard let host = url.host?.lowercased(), host == webHost else { return nil }
         let parts = url.pathComponents.filter { $0 != "/" }
         guard parts.count == 2, !parts[1].isEmpty, parts[1].count <= 40 else { return nil }
         switch parts[0] {

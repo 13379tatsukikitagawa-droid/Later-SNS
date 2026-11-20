@@ -13,8 +13,8 @@ enum Brand {
     static let scheme = "lattag"
     /// 古い 招待リンク(`later://`)も 開く
     static let legacyScheme = "later"
-    /// `https://lattag.app/u/<id>`(ドメイン 取得前は 今の ドメインの まま 使える よう 1か所に)
-    static let domain = "lattag.app"
+    /// `https://later-app-f2606.firebaseapp.com/u/<id>`(ドメイン 取得前は 今の ドメインの まま 使える よう 1か所に)
+    static let domain = "later-app-f2606.firebaseapp.com"   // v108:持って いる ドメインだけ(lattag.app は 持って いない)
 
     /// 受けつける URL スキーム(新しい もの + 古い もの)
     static let acceptedSchemes: Set<String> = [scheme, legacyScheme, "laterapp"]

@@ -28,18 +28,18 @@ struct StyledQRTests {
 
     @Test func Tripの招待URLを表紙つきで読める() {
         let link = TripKeyLink.url(forKey: "#meadow95")
-        #expect(link == "https://lattag.app/t/meadow95")
+        #expect(link == "https://later-app-f2606.firebaseapp.com/t/meadow95")
         guard let m = QRMatrix.make(link) else { Issue.record("no matrix"); return }
         let cover = UIGraphicsImageRenderer(size: CGSize(width: 60, height: 60)).image { c in UIColor.darkGray.setFill(); c.fill(CGRect(x: 0, y: 0, width: 60, height: 60)) }
         let view = StyledQRView(matrix: m, progress: 1, side: 124, coverImage: cover).padding(20).background(Color(hex: "FBFAF6"))
         let r = ImageRenderer(content: view); r.scale = 4
         #expect(r.uiImage?.cgImage.flatMap(Self.read) == link)
         #expect(TripKeyLink.key(from: link) == "meadow95")
-        #expect(TripKeyLink.key(from: "https://lattag.app/u/yui") == nil)
+        #expect(TripKeyLink.key(from: "https://later-app-f2606.firebaseapp.com/u/yui") == nil)
     }
 
     @Test func 短いURLも読める() {
-        let link = "https://lattag.app/u/yui_0612"
+        let link = "https://later-app-f2606.firebaseapp.com/u/yui_0612"
         #expect(decode(link) == link)
     }
 }
@@ -47,11 +47,11 @@ struct StyledQRTests {
 @MainActor
 struct VisionSanity {
     @Test func 普通のQRは読める() {
-        let img = QRImage.make("https://lattag.app/u/yui_0612")!
+        let img = QRImage.make("https://later-app-f2606.firebaseapp.com/u/yui_0612")!
         let padded = UIGraphicsImageRenderer(size: CGSize(width: img.size.width + 80, height: img.size.height + 80)).image { c in
             UIColor.white.setFill(); c.fill(CGRect(origin: .zero, size: CGSize(width: img.size.width + 80, height: img.size.height + 80)))
             img.draw(at: CGPoint(x: 40, y: 40))
         }
-        #expect(StyledQRTests.read(padded.cgImage!) == "https://lattag.app/u/yui_0612")
+        #expect(StyledQRTests.read(padded.cgImage!) == "https://later-app-f2606.firebaseapp.com/u/yui_0612")
     }
 }

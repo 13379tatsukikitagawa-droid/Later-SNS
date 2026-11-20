@@ -103,7 +103,7 @@ struct FriendsV68View: View {
         .onReceive(NotificationCenter.default.publisher(for: .friendsSearchFocus)) { _ in searching = true }
         .fullScreenCover(isPresented: $showsScan) { FriendQRScanView(myName: myName, friendCount: list.count, friendIDs: Set(list.map(\.id)), myUsername: me?.username ?? "", onSearchID: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { searching = true } }) { show($0) } }
         .sheet(isPresented: $showsID) {
-            FriendIDSearchSheet(myName: myName, seed: idSeed, onQR: { showsMyQR = true }, onLink: { shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }, onScan: { showsScan = true }) { show($0) }
+            FriendIDSearchSheet(myName: myName, seed: idSeed, onQR: { showsMyQR = true }, onLink: { shareItems = [FriendRules.shareText(myName: myName, recordName: myRecordName)] }, onScan: { showsScan = true }) { show($0) }
         }
         .sheet(isPresented: Binding(get: { shareItems != nil }, set: { if !$0 { shareItems = nil } })) {
             ShareSheet(activityItems: shareItems ?? []) { done in shareItems = nil; if done { Haptics.play(.success) } }.presentationDetents([.medium, .large])
@@ -240,7 +240,7 @@ struct FriendsV68View: View {
     private var pathsRow: some View {
         HStack(spacing: 8) {
             path("viewfinder", "QR を 読む", lime: true) { Haptics.play(.click); showsScan = true }
-            path("link", "リンク", lime: false) { Haptics.play(.tick); shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] }
+            path("link", "リンク", lime: false) { Haptics.play(.tick); shareItems = [FriendRules.shareText(myName: myName, recordName: myRecordName)] }
             path("person.crop.circle", "連絡先", lime: false) { Haptics.play(.tick); show("連絡先は ゆるした とき だけ つかいます(じゅんび中)") }
         }.padding(.horizontal, 16).padding(.top, 10)
     }
@@ -263,7 +263,7 @@ struct FriendsV68View: View {
                 VStack(spacing: 10) {
                     Text("見つかりません").font(LF.serif(30)).foregroundStyle(.white)
                     Text("名前 か @ID を たしかめて ください。\n名前で 見つかるのは「名前で 見つかる」が オンの 人 だけです。").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.55)).multilineTextAlignment(.center)
-                    Button { Haptics.play(.tick); shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"] } label: { Text("リンクを 送る").font(LF.inter(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 20).frame(height: 44).background(HV.lime, in: Capsule()) }.buttonStyle(.plain)
+                    Button { Haptics.play(.tick); shareItems = [FriendRules.shareText(myName: myName, recordName: myRecordName)] } label: { Text("リンクを 送る").font(LF.inter(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 20).frame(height: 44).background(HV.lime, in: Capsule()) }.buttonStyle(.plain)
                 }.frame(maxWidth: .infinity).padding(.top, 50).padding(.horizontal, 24)
             } else {
                 ForEach(Array(hits.enumerated()), id: \.element.id) { i, h in

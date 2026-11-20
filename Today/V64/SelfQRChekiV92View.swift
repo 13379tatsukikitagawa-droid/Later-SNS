@@ -231,7 +231,7 @@ struct SelfQRChekiHost: View {
         let user = me
         let rn = recordName ?? user?.cloudKitUserRecordName ?? user?.username ?? ""
         let since: String = { let f = DateFormatter(); f.dateFormat = "yyyy"; return f.string(from: user?.photos.map(\.captureDate).min() ?? Date()) }()
-        SelfQRChekiV92View(name: user?.name ?? "", username: user?.username ?? "", link: FriendRules.link(recordName: rn).absoluteString,
+        SelfQRChekiV92View(name: user?.name ?? "", username: user?.username ?? "", link: FriendRules.shareLink(recordName: rn).absoluteString,
                            photo: user?.profileImageData.flatMap { UIImage(data: $0) }, tags: user?.selfTags ?? [], since: since, onScan: onScan, onClose: onClose)
     }
 }

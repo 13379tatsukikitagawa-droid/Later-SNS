@@ -32,7 +32,7 @@ struct HomeV64Host: View {
     }
     private var myLink: URL {
         let me = UserProfile.current(from: profiles)
-        return FriendRules.link(recordName: CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? "")
+        return FriendRules.shareLink(recordName: CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? "")
     }
 
     var body: some View {

@@ -16,6 +16,7 @@
 		095C9283B37335410D2F8521 /* V64/DirectMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F0A712E9D7577866622E8A /* V64/DirectMessageView.swift */; };
 		0A858ECCFA2D97F9BEF51949 /* DebugRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F36AA1B5669102F3368268 /* DebugRouter.swift */; };
 		0B36F566AEEEC1ABA30B7529 /* ExposureCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A061D0EFB35BCE1AF35412 /* ExposureCameraView.swift */; };
+		848DB1D440F9752D3A131235 /* ShareTextV108.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BD81E4CD7276BCE0B93E88 /* ShareTextV108.swift */; };
 		51D3F1BB64CCDDDE7F4E5F70 /* AppLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECCC00BCA5A54F4A846C711F /* AppLinks.swift */; };
 		0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA74312F8635A2490D14152A /* AppDelegate.swift */; };
 		0C070EC8EDB0F20FE25FE959 /* AccountDeletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DBC3939C57455DE3F1BBC4D /* AccountDeletionView.swift */; };
@@ -558,6 +559,7 @@
 		B7570F235D7BDA9A5DBA8EF6 /* V64/HandleChangeSheetV94.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HandleChangeSheetV94.swift; sourceTree = "<group>"; };
 		B8289C9CCB22AFFDABCEC81E /* ModerationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ModerationService.swift; sourceTree = "<group>"; };
 		B909DDF30E54B848F50C1D3D /* V64/CountdownV100.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/CountdownV100.swift; sourceTree = "<group>"; };
+		C8BD81E4CD7276BCE0B93E88 /* ShareTextV108.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareTextV108.swift; sourceTree = "<group>"; };
 		ECCC00BCA5A54F4A846C711F /* AppLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinks.swift; sourceTree = "<group>"; };
 		BA74312F8635A2490D14152A /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BA84EA66CE370FBE2BD026CF /* V64/WidgetHowToV104.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/WidgetHowToV104.swift; sourceTree = "<group>"; };
@@ -899,6 +901,7 @@
 				C40820EF7D2A1C5D7C5062D9 /* LattagLiveManager.swift */,
 				BA74312F8635A2490D14152A /* AppDelegate.swift */,
 				ECCC00BCA5A54F4A846C711F /* AppLinks.swift */,
+				C8BD81E4CD7276BCE0B93E88 /* ShareTextV108.swift */,
 				A3B62837302D73920010ACBB /* SceneDelegate.swift */,
 			);
 			path = Services;
@@ -1854,6 +1857,7 @@
 				83848BF5BFBD2E14928E6472 /* ShareInviteInbox.swift in Sources */,
 				0BC726225AD5144348F88108 /* AppDelegate.swift in Sources */,
 				51D3F1BB64CCDDDE7F4E5F70 /* AppLinks.swift in Sources */,
+				848DB1D440F9752D3A131235 /* ShareTextV108.swift in Sources */,
 				8725090CB95701BECDA08BC4 /* GroupUnlockPolicy.swift in Sources */,
 				71A7B7ACD65CEE59BD4CB060 /* FilmCameraController.swift in Sources */,
 				0B36F566AEEEC1ABA30B7529 /* ExposureCameraView.swift in Sources */,

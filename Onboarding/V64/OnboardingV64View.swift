@@ -770,7 +770,7 @@ struct OnboardingV64View: View {
 
     private var shareItems: [Any] {
         guard let rn = CloudKitManager.current?.currentUserRecordName else { return ["\(Brand.name) で ともだちに なろう"] }
-        return ["\(Brand.name) で ともだちに なろう", FriendRules.link(recordName: rn)]
+        return ["\(Brand.name) で ともだちに なろう", FriendRules.shareLink(recordName: rn)]
     }
 }
 

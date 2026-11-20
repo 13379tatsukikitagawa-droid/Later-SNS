@@ -252,7 +252,7 @@ private struct FConnect: View {
 /// 小さい パス(幅 266)。プリンターの 口から 6段で 出る
 private struct MiniPass: View {
     let t: Double
-    private let link = "https://lattag.app/t/meadow95"
+    private let link = "https://later-app-f2606.firebaseapp.com/t/meadow95"
     var body: some View {
         let step = min(6, Int(t / (1.3 / 6)))
         let passH: CGFloat = 270
@@ -316,7 +316,7 @@ private struct TBoard: View {
             // メッセージの 吹き出し(左上)
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 5).fill(IntroPhoto.fill(0)).frame(width: 34, height: 40)
-                VStack(alignment: .leading, spacing: 1) { Text("Trip の 招待").font(LF.inter(800, 12)).foregroundStyle(.white); Text("lattag.app/t/meadow95").font(LF.inter(600, 10)).foregroundStyle(.white.opacity(0.6)) }
+                VStack(alignment: .leading, spacing: 1) { Text("Trip の 招待").font(LF.inter(800, 12)).foregroundStyle(.white); Text("later-app-f2606.firebaseapp.com/t/meadow95").font(LF.inter(600, 10)).foregroundStyle(.white.opacity(0.6)) }
             }
             .padding(10).background(RoundedRectangle(cornerRadius: 18).fill(Color(hex: "2A2A2E")))
             .position(x: 140, y: 60).offset(x: CGFloat(1 - M.ease(t, 0, 0.45)) * -40).opacity(M.ease(t, 0, 0.3)).scaleEffect(0.9 + 0.1 * M.pop(t, 0.1))

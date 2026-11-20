@@ -607,7 +607,7 @@ struct ProfileShelfView: View {
 
     private var selfChekiQRBack: some View {
         VStack(spacing: 10) {
-            if let recordName = myRecordName, let qr = QRImage.make(FriendRules.link(recordName: recordName).absoluteString) {
+            if let recordName = myRecordName, let qr = QRImage.make(FriendRules.shareLink(recordName: recordName).absoluteString) {
                 Image(uiImage: qr).resizable().frame(width: 140, height: 140)
             }
             Text("SCAN TO ADD").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(.black.opacity(0.6))
@@ -757,7 +757,7 @@ struct ProfileShelfView: View {
                 actionButton("square.and.arrow.up", "Share") {
                     haptics.play(.light)
                     if let recordName = myRecordName {
-                        shareItems = ["\(displayName) と Lattag で つながろう\n\(FriendRules.link(recordName: recordName).absoluteString)"]
+                        shareItems = [FriendRules.shareText(myName: displayName, recordName: recordName)]
                     }
                 }
                 actionButton("qrcode.viewfinder", "Scan") {
@@ -960,7 +960,7 @@ struct ProfileSelfQRSheet: View {
         VStack(spacing: 20) {
             Capsule().fill(.white.opacity(0.25)).frame(width: 36, height: 5).padding(.top, 10)
             Text(name).font(.system(size: 18, weight: .heavy)).foregroundStyle(.white)
-            if let recordName, let qr = QRImage.make(FriendRules.link(recordName: recordName).absoluteString) {
+            if let recordName, let qr = QRImage.make(FriendRules.shareLink(recordName: recordName).absoluteString) {
                 Image(uiImage: qr)
                     .interpolation(.none)
                     .resizable()

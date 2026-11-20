@@ -361,7 +361,7 @@ struct RootView: View {
                 NotificationCenter.default.post(name: .friendLinkOpened, object: friend)
                 return
             }
-            // v98:Trip の パスの QR / リンク(https://lattag.app/t/<key>):KEY から グループを 探して 入る
+            // v98:Trip の パスの QR / リンク(https://later-app-f2606.firebaseapp.com/t/<key>):KEY から グループを 探して 入る
             if let key = TripKeyLink.key(from: url.absoluteString) {
                 Task { @MainActor in
                     if let shareURL = try? await GroupInviteService.resolve(passphrase: key, timeout: 10) { handleInviteLink(shareURL) }

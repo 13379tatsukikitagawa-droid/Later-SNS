@@ -230,7 +230,7 @@ struct ProfileV82Host: View {
         return d
     }
 
-    private func share() { if let rn = recordName { shareItems = ["\(me?.name ?? "") と Lattag で つながろう\n\(FriendRules.link(recordName: rn).absoluteString)"] } }
+    private func share() { if let rn = recordName { shareItems = [FriendRules.shareText(myName: me?.name ?? "", recordName: rn)] } }
 
     private func saveProfile(_ name: String, _ tags: [String]) {
         guard let p = me else { return }

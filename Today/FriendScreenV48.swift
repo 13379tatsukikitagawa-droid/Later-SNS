@@ -445,7 +445,7 @@ struct FriendScreenV48: View {
 
     private var qrBack: some View {
         VStack(spacing: 10) {
-            if let qr = QRImage.make(FriendRules.link(recordName: myRecordName).absoluteString) {
+            if let qr = QRImage.make(FriendRules.shareLink(recordName: myRecordName).absoluteString) {
                 Image(uiImage: qr).resizable().frame(width: 140, height: 140)
             }
             Text("SCAN TO ADD").font(Darkroom.mono(10)).foregroundStyle(.black.opacity(0.6))
@@ -511,7 +511,7 @@ struct FriendScreenV48: View {
             }
             connectTile(icon: "link", title: "Link", primary: false) {
                 guard !isFull else { refuseFull(); return }
-                shareItems = ["\(myName) と Lattag で つながろう\n\(FriendRules.link(recordName: myRecordName).absoluteString)"]
+                shareItems = [FriendRules.shareText(myName: myName, recordName: myRecordName)]
             }
         }
         .padding(.horizontal, 14)

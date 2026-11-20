@@ -5,13 +5,13 @@ import Photos
 // 作られる 時(newlyMade)だけ:プリンターの 口から 6段で 出てくる → QR の 点 → ISSUED の はんこ → ボタン。
 // 写真に 保存:ImageRenderer(scale 3)→ PHPhotoLibrary(追加 だけ の 許可)。
 
-/// Trip の 招待 URL(`https://lattag.app/t/<key>`)。QR の 中身。
+/// Trip の 招待 URL(`https://later-app-f2606.firebaseapp.com/t/<key>`)。QR の 中身。
 enum TripKeyLink {
     static func url(forKey key: String) -> String {
         "https://\(Brand.domain)/t/\(key.hasPrefix("#") ? String(key.dropFirst()) : key)"
     }
 
-    /// `https://lattag.app/t/<key>` から key。ちがう URL なら nil
+    /// `https://later-app-f2606.firebaseapp.com/t/<key>` から key。ちがう URL なら nil
     static func key(from text: String) -> String? {
         guard let url = URL(string: text), case .trip(let token)? = AppLinks.parse(url) else { return nil }   // v108:どの ドメインでも
         return token
@@ -243,7 +243,9 @@ struct TripPassView: View {
     private var actions: some View {
         HStack(spacing: 8) {
             passButton("square.and.arrow.up", "送る", 0) {
-                shareItems = ["\(data.name) に きて ね\n\(data.key.isEmpty ? data.link : TripKeyLink.url(forKey: data.key))"]
+                let dates = [ShareTextV108.shortDate(data.from), ShareTextV108.shortDate(data.to)].compactMap { $0 }
+                let range = dates.count == 2 ? "\(dates[0])〜\(dates[1])" : nil
+                shareItems = data.key.isEmpty ? ["\(data.name) に きて ね\n\(data.link)"] : [ShareTextV108.trip(host: ShareTextV108.me.name, name: data.name, dates: range, members: data.names.count, key: data.key)]
             }
             passButton(saved ? "checkmark" : "arrow.down.to.line", saved ? "保存しました" : "写真に 保存", 1, ok: saved) { Task { await savePass() } }
             passButton("doc.on.doc", copied ? "コピー ずみ" : "KEY を コピー", 2, ok: copied) {

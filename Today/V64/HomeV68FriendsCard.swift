@@ -163,7 +163,7 @@ struct HVFriendsCard: View {
 
     private var myLinkText: String {
         let me = UserProfile.current(from: profiles)
-        return FriendRules.link(recordName: CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? "").absoluteString
+        return FriendRules.shareLink(recordName: CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? "").absoluteString
     }
 
     private var bento: some View {

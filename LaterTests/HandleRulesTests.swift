@@ -41,9 +41,9 @@ struct DirectoryNameKeyTests {
 
 struct QRHandleParseTests {
     @Test func lattagURLからIDを読む() {
-        #expect(FriendQRScanView.handle(from: URL(string: "https://lattag.app/u/yui_0612")!) == "yui_0612")
+        #expect(FriendQRScanView.handle(from: URL(string: "https://later-app-f2606.firebaseapp.com/u/yui_0612")!) == "yui_0612")
         #expect(FriendQRScanView.handle(from: URL(string: "https://example.com/u/yui_0612")!) == nil)
-        #expect(FriendQRScanView.handle(from: URL(string: "https://lattag.app/x/yui_0612")!) == nil)
-        #expect(FriendQRScanView.handle(from: URL(string: "https://lattag.app/u/admin")!) == nil)
+        #expect(FriendQRScanView.handle(from: URL(string: "https://later-app-f2606.firebaseapp.com/x/yui_0612")!) == nil)
+        #expect(FriendQRScanView.handle(from: URL(string: "https://later-app-f2606.firebaseapp.com/u/admin")!) == nil)
     }
 }

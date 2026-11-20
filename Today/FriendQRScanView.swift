@@ -4,7 +4,7 @@ import PhotosUI
 import SwiftData
 
 /// v94 D:QR を 読む = Lattag の カメラ(F10 F35 ・ M36)。
-/// 友だちの QR(later://friend?u=… / https://lattag.app/u/<id>)を 読む → 下から プロフィールの カード → 申請する。
+/// 友だちの QR(later://friend?u=… / https://later-app-f2606.firebaseapp.com/u/<id>)を 読む → 下から プロフィールの カード → 申請する。
 /// Lattag の QR では ない ものは 断る。グループ参加の QRScanView には さわらない。
 struct FriendQRScanView: View {
     let myName: String
@@ -133,7 +133,7 @@ struct FriendQRScanView: View {
     private var miniCheki: some View {
         let me = UserProfile.current(from: profiles)
         let rn = CloudKitManager.current?.currentUserRecordName ?? me?.cloudKitUserRecordName ?? me?.username ?? ""
-        let m = QRMatrix.make(FriendRules.link(recordName: rn).absoluteString)
+        let m = QRMatrix.make(FriendRules.shareLink(recordName: rn).absoluteString)
         return VStack(spacing: 4) {
             Group { if let m { StyledQRView(matrix: m, side: 64) } else { Color.clear } }.frame(width: 64, height: 64)
             Text("自分の QR").font(LF.inter(800, 9.5)).foregroundStyle(Color(hex: "1A1A1C"))
