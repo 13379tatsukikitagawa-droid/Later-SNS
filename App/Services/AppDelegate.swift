@@ -101,8 +101,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         return configuration
     }
 
+    // v108 (2):APNs の 端末トークン。Worker に 登録するのは 切りかえの スイッチが オンの とき(LaterApp)
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
+        UserDefaults.standard.set(hex, forKey: "apnsTokenHex")
+        if SocialFlag.useWorker { Task { await SocialClient.registerDevice(tokenHex: hex) } }
+    }
+
     /// CKSubscriptionによるプッシュを受けて、CloudKitManagerに即座にfetchさせる。
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any]) async -> UIBackgroundFetchResult {
+        // v108 (2):Worker からの 通知(`kind` つき)→ 裏で 友だちを 反映
+        if SocialFlag.useWorker, userInfo["kind"] != nil {
+            await FriendRequestBridgeV108.handlePush()
+            return .newData
+        }
         // v108 つなぎ:友だち申請の 通知 → 裏で 同期(A → B の Friendship を すぐ つくる)
         if let n = CKNotification(fromRemoteNotificationDictionary: userInfo), FriendRequestBridgeV108.isBridgeNotification(subscriptionID: n.subscriptionID) {
             await FriendRequestBridgeV108.handlePush()

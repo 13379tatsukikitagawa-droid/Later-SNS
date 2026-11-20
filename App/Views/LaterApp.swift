@@ -274,6 +274,15 @@ struct RootView: View {
             try? await Task.sleep(for: .seconds(4))
             if AppleFirebaseAuth.needsReconnect, !AppleFirebaseAuth.snoozed { AppleFirebaseAuth.snooze(); showAppleReconnect = true }   // 出した 時から 24時間 は 出さない
         }
+        .task(id: firebaseUID) {
+            // v108 (2):Worker へ(切りかえの スイッチが オンの とき だけ)。ID ・ 名前の 登録 → 端末トークン → 友だちの 移行(1回)
+            guard SocialFlag.useWorker, !firebaseUID.isEmpty, isSetupCompleted else { return }
+            let me = UserProfile.current(from: (try? modelContext.fetch(FetchDescriptor<UserProfile>())) ?? [])
+            let rn = CloudKitManager.current?.currentUserRecordName
+            await SocialClient.registerMe(handle: HandleRules.normalize(me?.username ?? ""), name: me?.name ?? "", recordName: rn)
+            if let hex = UserDefaults.standard.string(forKey: "apnsTokenHex") { await SocialClient.registerDevice(tokenHex: hex) }
+            if let rn { await SocialClient.migrateLegacyFriendsOnce(recordName: rn) }
+        }
         .sheet(isPresented: $showAppleReconnect) { AppleReconnectSheet() }
         .task(id: appleUserID + firebaseUID) {
             // Sign in with Apple・メールのマジックリンクいずれかの完了後に

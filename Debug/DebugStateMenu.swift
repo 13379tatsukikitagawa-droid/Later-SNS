@@ -84,6 +84,9 @@ struct DebugStateMenu: View {
                 Section("データの 量(v106)") {
                     Button("データの 量を 見る") { showVolume = true }
                 }
+                Section("友だちの Worker(v108)") {
+                    Toggle("Worker を つかう(切りかえ ・ 再起動)", isOn: Binding(get: { SocialFlag.useWorker }, set: { UserDefaults.standard.set($0, forKey: SocialFlag.key) }))
+                }
                 Section("質感(v107)") {
                     Button("焼いた 写真 ・ 動画を すぐ 見る") { showFilmCompare = true }
                     Button("質感の 数字") { showFilmMetrics = true }

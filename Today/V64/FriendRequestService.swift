@@ -51,6 +51,11 @@ enum FriendRequests {
 
     /// 申請を 送る(同じ 相手への 2回目は 上書き)
     @MainActor static func send(to other: String, toName: String, myName: String, myUsername: String = "") async -> Bool {
+        if SocialFlag.useWorker {   // v108 (2):Worker(切りかえの スイッチ オン の とき だけ)
+            guard let r = await SocialClient.send(toRecordName: other) else { return false }
+            if r.status == "mutual" || r.status == "already" { _ = await FriendCloud.connect(to: other, myName: myName, myCount: 0, theirCount: 0) }
+            return true
+        }
         guard let database, let me, me != other else { return false }
         let record = CKRecord(recordType: requestType, recordID: CKRecord.ID(recordName: "req_\(me)_\(other)"))
         record["fromUserID"] = me
@@ -70,6 +75,12 @@ enum FriendRequests {
 
     /// とどいている 申請(返事まえ)
     @MainActor static func incoming() async -> [Request] {
+        if SocialFlag.useWorker {
+            return await SocialClient.inbox().compactMap { r in
+                guard let rn = r.recordName, !rn.isEmpty else { return nil }
+                return Request(id: "w_" + r.uid, fromUserID: rn, toUserID: me ?? "", fromName: r.name ?? "", createdAt: Date(timeIntervalSince1970: r.createdAt / 1000), fromUsername: r.handle ?? "")
+            }
+        }
         guard let database, let me else { return [] }
         let reqs = await requests(database, field: "toUserID", equals: me)
         let myResp = await responses(database, field: "responderID", equals: me)
@@ -78,6 +89,14 @@ enum FriendRequests {
 
     /// 承認 / 見おくり
     @MainActor static func respond(to r: Request, accept: Bool, myName: String) async -> Bool {
+        if SocialFlag.useWorker {
+            if accept {
+                guard await SocialClient.accept(fromRecordName: r.fromUserID) else { return false }
+                _ = await FriendCloud.connect(to: r.fromUserID, myName: myName, myCount: 0, theirCount: 0)
+                return true
+            }
+            return await SocialClient.decline(fromRecordName: r.fromUserID)
+        }
         guard let database, let me else { return false }
         let record = CKRecord(recordType: responseType, recordID: CKRecord.ID(recordName: "res_\(me)_\(r.fromUserID)"))
         record["requesterID"] = r.fromUserID
@@ -95,6 +114,7 @@ enum FriendRequests {
 
     /// 自分が 出した 申請に 「承認」が 返って きて いたら、こちら側の Friendship も つくる(あいてが もう 友だち なら なにも しない)
     @MainActor static func syncAccepted(myName: String) async {
+        if SocialFlag.useWorker { await SocialClient.mirrorFriendsToCloudKit(myName: myName); return }
         guard let database, let me else { return }
         await acceptCrossed(myName: myName)   // v108 つなぎ
         let mine = await requests(database, field: "fromUserID", equals: me)

@@ -352,3 +352,6 @@
 - ✓ §2 Home の 上(まんなかに Lattag ・ 左に ベル + 数 ・ 右に アイコン)/ ✓ §3 お知らせ(`InboxV108View`:友だち申請 + Trip の 招待 ・ これまで 30日 ・ 承認の 動き)。データは 今の CloudKit。
 - ✓ §5 `AppLinks`(ドメイン ・ ストア)・ `/u/<ID>` カード(`FriendLinkSheetV108`)・ `/t/<トークン>` は 今ある KEY 参加へ ・ 友だちの 送る 文 ・ `hosting/` を `server/invite-web` に 合わせた(deploy は あなた)。
 - ☐ Worker(`server/social-worker` ・ D1)・ APNs ・ Trip の 送る 文(トークンは Worker 後)・ 貼りつけ画面の `/u` `/t` ・ Home の NEXT の 申請の 行の 見た目の 差。
+- ✓ Worker `server/social-worker`(`later-social.later-social.workers.dev`・ D1 `later-social`)deploy 済み。申請 1日 50件 ・ CloudKit の 友だち 1回 移行(両方が 申し出た 組 だけ)。
+- ✓ P47 A:Apple → Firebase(nonce)・ 「Apple で つなぎなおす」(出して から 24時間 は 出さない)・ Google / メールの リンクの コードを 消した。
+- △ (2) つなぎかえ:`SocialClient` + `SocialFlag.useWorker`(**既定 オフ**・ DEBUG 状態メニューで 切りかえ)。実機確認の あと 有効に する。有効に したら「v108 つなぎ」(`FriendRequestBridgeV108`)を 消す。APNs の キー(.p8)は あなたの 作業。
