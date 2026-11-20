@@ -17,6 +17,7 @@ struct HV68Header: View {
     let entered: Bool
     var onYesterday: () -> Void
     var onProfile: () -> Void
+    var onInbox: () -> Void = {}
     var onLive: () -> Void
 
     private static let spring = Animation.timingCurve(0.3, 1.15, 0.4, 1, duration: 0.55)
@@ -42,7 +43,7 @@ struct HV68Header: View {
                     .frame(height: 40, alignment: .leading).fixedSize()
                     .contentShape(Rectangle())
                     .onTapGesture { signTap() }   // v100 §7:Lattag の サイン(ラ・タッ・グ)+ はずむ
-                    .offset(x: 22, y: 56)
+                    .frame(width: f.w).offset(x: 0, y: 56)   // v108:まんなか
             }
             .scaleEffect(compact ? 0.86 : 1, anchor: .topLeading)
             .offset(y: compact ? -10 : 0)
@@ -50,6 +51,7 @@ struct HV68Header: View {
             .allowsHitTesting(!compact)
 
             hud
+            bell
             avatar
         }
         .frame(width: f.w, height: f.h, alignment: .topLeading)
@@ -62,6 +64,28 @@ struct HV68Header: View {
     @State private var avatarPop = false
     @State private var tip = false
     @AppStorage("home.switchTipSeen") private var tipSeen = false
+
+    /// v108 §2:左上の お知らせ(右の アイコンと 同じ 大きさ ・ 数の しるし)
+    private var bell: some View {
+        let size: CGFloat = 56
+        return Button { Haptics.play(.tick); onInbox() } label: {
+            Image(systemName: "bell").font(.system(size: 21, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: size, height: size)
+                .background(Color(red: 28 / 255, green: 28 / 255, blue: 31 / 255).opacity(0.9), in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 1))
+                .overlay(alignment: .topTrailing) {
+                    if input.inboxCount > 0 {
+                        Text(input.inboxCount > 9 ? "9+" : "\(input.inboxCount)").font(LF.inter(800, 11)).foregroundStyle(HV.ink)
+                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20).background(HV.lime, in: Capsule())
+                            .overlay(Capsule().strokeBorder(.black, lineWidth: 2.5)).offset(x: 4, y: -4)
+                    }
+                }
+        }
+        .buttonStyle(HVPress(scale: 0.92))
+        .scaleEffect(compact ? 0.77 : 1, anchor: .leading)
+        .offset(x: 16, y: 47)
+        .accessibilityLabel(input.inboxCount > 0 ? "お知らせ \(input.inboxCount)件" : "お知らせ")
+    }
 
     private var avatar: some View {
         let ratio = input.limit == 0 ? 0 : Double(min(input.shotsUsed, input.limit)) / Double(input.limit)

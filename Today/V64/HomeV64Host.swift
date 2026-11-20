@@ -9,6 +9,8 @@ struct HomeV64Host: View {
     @State private var showYesterday = false
     @State private var showProfileOverYesterday = false
     @State private var showRequests = false
+    @State private var showInbox = false
+    @State private var tripInviteCount = 0
     @State private var showDevelop = false
     @State private var chatWith: (id: String, name: String)?
     @State private var incoming: [FriendRequests.Request] = []
@@ -33,6 +35,10 @@ struct HomeV64Host: View {
         .task { await refreshRequests() }
         .onAppear { openWidgetRoute() }
         .onChange(of: widgetRoute.pending) { _, _ in openWidgetRoute() }
+        .fullScreenCover(isPresented: $showInbox) {
+            InboxV108View(myName: src.avatarName, onChanged: { Task { await refreshRequests() } }, onShareLink: { showShare = true },
+                          onOpenChat: { id, name in chatWith = (id, name) })
+        }
         .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
         .sheet(isPresented: Binding(get: { chatWith != nil }, set: { if !$0 { chatWith = nil } })) { if let c = chatWith { DirectMessageView(friendID: c.id, friendName: c.name) } }
         .sheet(isPresented: $showShare) { ShareSheet(activityItems: [myLink]) { _ in showShare = false }.presentationDetents([.medium, .large]) }
@@ -55,6 +61,7 @@ struct HomeV64Host: View {
     private func refreshRequests() async {
         await FriendRequests.syncAccepted(myName: src.avatarName)
         incoming = await FriendRequests.incoming()
+        tripInviteCount = await FriendCloud.inbox().filter { $0.status == .pending }.count
     }
 
     // MARK: Lattag yesterday(P06)
@@ -130,6 +137,7 @@ struct HomeV64Host: View {
         input.avatar = src.avatarImage
         input.avatarName = src.avatarName
         input.avatarBadge = src.showsAvatarBadge
+        input.inboxCount = incoming.count + tripInviteCount
         let L = src.layerData
         let others = L.friends.filter { !$0.isMe }
         input.friendCount = others.count
@@ -199,7 +207,7 @@ struct HomeV64Host: View {
         a.openYesterday = { showYesterday = true }
         a.openFriends = src.layerActions.openFriends
         a.addFriends = src.layerActions.openFriends
-        a.openRequests = { showRequests = true }
+        a.openRequests = { showInbox = true }; a.openInbox = { showInbox = true }
         a.openChat = { id, name in chatWith = (id, name) }
         a.approve = { id in
             guard let r = incoming.first(where: { $0.id == id }) else { return }

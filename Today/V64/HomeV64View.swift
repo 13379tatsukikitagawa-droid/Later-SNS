@@ -24,6 +24,8 @@ struct HomeV64Input {
     var avatar: UIImage?
     var avatarName = ""
     var avatarBadge = false
+    /// v108:お知らせの 数(未対応の 友だち申請 + Trip の 招待)
+    var inboxCount = 0
     /// うしろに ぼかして 敷く 写真(友だちの 今日 → 自分の きのう → なし)
     var backdrop: [UIImage] = []
     /// 3枚 撮りおわった とき、まんなかの 窓に 出す きのうの 写真
@@ -69,6 +71,7 @@ struct HomeV64Actions {
     var scrollToToday: () -> Void = {}
     var scanQR: () -> Void = {}
     var openRequests: () -> Void = {}
+    var openInbox: () -> Void = {}
     var openChat: (_ friendID: String, _ name: String) -> Void = { _, _ in }
     var approve: (_ requestID: String) -> Void = { _ in }
     var dismissRequest: (_ requestID: String) -> Void = { _ in }
@@ -141,7 +144,7 @@ struct HomeV64View: View {
                 // 上の ブロック(ページの 5まい)は 上へ ながれて うすく なる
                 Group {
                     HV68Header(input: input, f: f, compact: compact, scrollY: scrollY, entered: entered || reduceMotion,
-                               onYesterday: actions.openYesterday, onProfile: actions.openProfile,
+                               onYesterday: actions.openYesterday, onProfile: actions.openProfile, onInbox: actions.openInbox,
                                onLive: { actions.openLive(); withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showLive = true } })
                 }
                 .modifier(HVVeil(on: input.spotlight || showLive, dim: input.spotlight))
