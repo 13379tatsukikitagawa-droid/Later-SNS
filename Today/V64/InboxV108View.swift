@@ -155,8 +155,11 @@ struct InboxV108View: View {
         let invites = await FriendCloud.inbox().filter { $0.status == .pending }
         var linkRow: Row?
         if let token = TripLinkInbox.pending {
-            if let url = try? await GroupInviteService.resolve(passphrase: token, timeout: 10) {
-                linkRow = Row(id: "l-" + token, kind: .trip, title: "Trip に 招待されました", sub: "リンクから ・ 参加の まえに たしかめて ください", linkURL: url, pinned: true)
+            let w = await SocialClient.resolveTripLink(token: token)   // ランダムな トークン(Worker)。古い KEY 形式は nil → そのまま KEY で 探す
+            if let url = try? await GroupInviteService.resolve(passphrase: w?.key ?? token, timeout: 10) {
+                let name = (w?.groupName ?? "").isEmpty ? "Trip に 招待されました" : "『\(w!.groupName!)』に 招待"
+                let from = (w?.fromName ?? "").isEmpty ? "" : "\(w!.fromName!) から ・ "
+                linkRow = Row(id: "l-" + token, kind: .trip, title: name, sub: from + "参加の まえに たしかめて ください", linkURL: url, pinned: true)
             } else {
                 linkRow = Row(id: "l-" + token, kind: .trip, title: "リンクの 期限が 切れました", sub: "もう一度 送って もらって ください", pinned: true, expired: true)
             }

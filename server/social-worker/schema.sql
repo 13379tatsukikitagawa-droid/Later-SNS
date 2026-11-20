@@ -54,3 +54,24 @@ CREATE TABLE IF NOT EXISTS legacy_claims (
   created_at INTEGER NOT NULL,
   PRIMARY KEY (reporter_rec, other_rec)
 );
+
+-- v109:Trip の 招待リンク(ランダムな トークン ・ 24時間 ・ 作った 人が のばせる)。KEY は ページに 出さない
+CREATE TABLE IF NOT EXISTS trip_links (
+  token TEXT PRIMARY KEY,
+  uid TEXT NOT NULL,             -- 作った 人
+  group_name TEXT NOT NULL DEFAULT '',
+  from_name TEXT NOT NULL DEFAULT '',
+  dates TEXT NOT NULL DEFAULT '',   -- 例 11/20〜11/22(なければ 空)
+  members INTEGER NOT NULL DEFAULT 0,
+  key TEXT NOT NULL,             -- 今の KEY(アプリが 参加の 時に 使う)
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS trip_links_exp ON trip_links(expires_at);
+-- 1つの IP で 1分 10回 まで(トークンの 当て推量 よけ)
+CREATE TABLE IF NOT EXISTS rate_hits (
+  ip TEXT NOT NULL,
+  minute INTEGER NOT NULL,
+  n INTEGER NOT NULL,
+  PRIMARY KEY (ip, minute)
+);

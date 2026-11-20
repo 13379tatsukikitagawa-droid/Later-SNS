@@ -1,5 +1,6 @@
 import { verifyFirebaseToken } from "./auth.ts";
 import { sendPush, type ApnsEnv } from "./apns.ts";
+import { LINK_TTL_MS, OG_ORIGIN, aasa, allowedHit, friendCard, newToken, renderPage, tripCard, validToken } from "./links.ts";
 import { dayKey, decideRequest, isExpired, noticeText, normalizeHandle, pair, validHandle, withinDailyLimit, type NoticeKind } from "./logic.ts";
 
 interface Env extends ApnsEnv {
@@ -9,6 +10,7 @@ interface Env extends ApnsEnv {
   NOTICE_TTL_DAYS: string;
   REQUEST_DAILY_LIMIT: string;
   APNS_ENVIRONMENT: string;
+  STORE_URL: string;
 }
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -18,6 +20,8 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/health") return new Response("ok");
+    try { const pub = await publicRoute(request, url, env); if (pub) return pub; }
+    catch (e) { console.log("public error", String(e)); return new Response("error", { status: 500 }); }
     const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
     const uid = bearer ? await verifyFirebaseToken(bearer, env.FIREBASE_PROJECT_ID) : null;
     if (!uid) return err(401, "unauthorized");
@@ -29,8 +33,53 @@ export default {
     const now = Date.now();
     await env.DB.prepare("DELETE FROM friend_requests WHERE created_at < ?").bind(now - Number(env.REQUEST_TTL_DAYS) * 86_400_000).run();
     await env.DB.prepare("DELETE FROM notifications WHERE created_at < ?").bind(now - Number(env.NOTICE_TTL_DAYS) * 86_400_000).run();
+    await env.DB.prepare("DELETE FROM trip_links WHERE expires_at < ?").bind(now - 86_400_000).run();
+    await env.DB.prepare("DELETE FROM rate_hits WHERE minute < ?").bind(Math.floor(now / 60_000) - 5).run();
   },
 };
+
+const html = (body: string, status = 200) => new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-robots-tag": "noindex" } });
+
+/** 1つの IP で 1分 10回 まで(トークンの 当て推量 よけ) */
+async function limited(req: Request, env: Env): Promise<boolean> {
+  const ip = req.headers.get("cf-connecting-ip") ?? "unknown";
+  const minute = Math.floor(Date.now() / 60_000);
+  const row = await env.DB.prepare("INSERT INTO rate_hits (ip, minute, n) VALUES (?1, ?2, 1) ON CONFLICT(ip, minute) DO UPDATE SET n = n + 1 RETURNING n").bind(ip, minute).first<{ n: number }>();
+  return !allowedHit(row?.n ?? 1);
+}
+
+/** ログイン 不要の 経路:AASA(リダイレクト なし)・ /u /t の ページ ・ og 画像 ・ トークンの 解決 */
+async function publicRoute(req: Request, url: URL, env: Env): Promise<Response | null> {
+  const p = url.pathname;
+  if (req.method !== "GET" && req.method !== "HEAD") return null;
+  if (p === "/.well-known/apple-app-site-association") return new Response(aasa(), { headers: { "content-type": "application/json", "cache-control": "public, max-age=300" } });
+  if (p === "/og/friend.png" || p === "/og/trip.png") {
+    const r = await fetch(OG_ORIGIN + p, { cf: { cacheTtl: 86400, cacheEverything: true } } as RequestInit);
+    return new Response(r.body, { status: r.status, headers: { "content-type": "image/png", "cache-control": "public, max-age=86400" } });
+  }
+  const m = /^\/(u|t)\/([^/]+)\/?$/.exec(p);
+  if (m) {
+    const code = decodeURIComponent(m[2]);
+    const o = { host: url.host, path: `/${m[1]}/${encodeURIComponent(code)}`, code, storeURL: env.STORE_URL ?? "" };
+    if (m[1] === "u") {
+      const h = normalizeHandle(code);
+      const u = validHandle(h) ? await env.DB.prepare("SELECT name FROM users WHERE handle = ?").bind(h).first<{ name: string }>() : null;
+      return html(renderPage(friendCard(u?.name ?? null, h || code.slice(0, 30)), { ...o, code: h || code.slice(0, 30) }));
+    }
+    if (await limited(req, env)) return html("しばらく たってから もう一度 ひらいて ください", 429);
+    const t = validToken(code) ? await env.DB.prepare("SELECT group_name, from_name, dates, members FROM trip_links WHERE token = ? AND expires_at > ?").bind(code, Date.now()).first<any>() : null;
+    return html(renderPage(tripCard(t), o), 200);
+  }
+  // アプリが トークンから KEY を 引く(ページには KEY を 出さない)
+  const r = /^\/v1\/trip-links\/([^/]+)$/.exec(p);
+  if (r) {
+    if (await limited(req, env)) return err(429, "rate_limited");
+    const code = decodeURIComponent(r[1]);
+    const t = validToken(code) ? await env.DB.prepare("SELECT key, group_name groupName, from_name fromName, dates, members FROM trip_links WHERE token = ? AND expires_at > ?").bind(code, Date.now()).first<any>() : null;
+    return t ? json(t) : err(404, "expired");
+  }
+  return null;
+}
 
 async function route(req: Request, url: URL, me: string, env: Env, ctx: ExecutionContext): Promise<Response> {
   const p = url.pathname;
@@ -54,6 +103,23 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
     return u ? json(u) : err(404, "not_found");
   }
 
+  // v109:Trip の 招待リンクを 作る(ランダム 12文字 ・ 24時間)/ のばす
+  if (p === "/v1/trip-links" && req.method === "POST") {
+    const key = String(body.key ?? "").replace(/^#/, "").slice(0, 40);
+    if (!key) return err(400, "bad_key");
+    const token = newToken();
+    const now = Date.now();
+    await env.DB.prepare("INSERT INTO trip_links (token, uid, group_name, from_name, dates, members, key, created_at, expires_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)")
+      .bind(token, me, String(body.groupName ?? "").slice(0, 40), String(body.fromName ?? "").slice(0, 24), String(body.dates ?? "").slice(0, 24), Math.max(0, Math.min(99, Number(body.members ?? 0) | 0)), key, now, now + LINK_TTL_MS).run();
+    return json({ token, expiresAt: now + LINK_TTL_MS });
+  }
+  if (p === "/v1/trip-links/extend" && req.method === "POST") {
+    const t = String(body.token ?? "");
+    const exp = Date.now() + LINK_TTL_MS;
+    const res = await env.DB.prepare("UPDATE trip_links SET expires_at = ?1 WHERE token = ?2 AND uid = ?3").bind(exp, t, me).run();
+    return res.meta.changes ? json({ ok: true, expiresAt: exp }) : err(404, "not_found");
+  }
+
   if (p === "/v1/devices" && req.method === "POST") {
     const token = String(body.token ?? "");
     if (!/^[0-9a-f]{32,200}$/i.test(token)) return err(400, "bad_token");
@@ -68,6 +134,7 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
 
   if (p === "/v1/requests" && req.method === "POST") {
     let to = String(body.toUid ?? "");
+    if (!to && body.toRecordName) to = (await env.DB.prepare("SELECT uid FROM users WHERE record_name = ?").bind(String(body.toRecordName)).first<{ uid: string }>())?.uid ?? "";
     if (!to && body.handle) to = (await env.DB.prepare("SELECT uid FROM users WHERE handle = ?").bind(normalizeHandle(String(body.handle))).first<{ uid: string }>())?.uid ?? "";
     if (!to) return err(404, "not_found");
     const day = dayKey(Date.now());
@@ -87,7 +154,8 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
   }
 
   if (p === "/v1/requests/accept" && req.method === "POST") {
-    const from = String(body.fromUid ?? "");
+    let from = String(body.fromUid ?? "");
+    if (!from && body.fromRecordName) from = (await env.DB.prepare("SELECT uid FROM users WHERE record_name = ?").bind(String(body.fromRecordName)).first<{ uid: string }>())?.uid ?? "";
     const row = await env.DB.prepare("SELECT created_at FROM friend_requests WHERE from_uid=? AND to_uid=?").bind(from, me).first<{ created_at: number }>();
     if (!row || isExpired(row.created_at, Date.now(), Number(env.REQUEST_TTL_DAYS))) return err(404, "no_request");
     await makeFriends(env, ctx, from, me, "accepted");
@@ -95,7 +163,9 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
   }
 
   if (p === "/v1/requests/decline" && req.method === "POST") {   // 相手には 知らせない
-    await env.DB.prepare("DELETE FROM friend_requests WHERE from_uid=? AND to_uid=?").bind(String(body.fromUid ?? ""), me).run();
+    let from = String(body.fromUid ?? "");
+    if (!from && body.fromRecordName) from = (await env.DB.prepare("SELECT uid FROM users WHERE record_name = ?").bind(String(body.fromRecordName)).first<{ uid: string }>())?.uid ?? "";
+    await env.DB.prepare("DELETE FROM friend_requests WHERE from_uid=? AND to_uid=?").bind(from, me).run();
     return json({ ok: true });
   }
 
@@ -112,7 +182,7 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
 
   if (p === "/v1/inbox" && req.method === "GET") {
     const cutoff = Date.now() - Number(env.REQUEST_TTL_DAYS) * 86_400_000;
-    const reqs = await env.DB.prepare("SELECT r.from_uid uid, r.created_at createdAt, u.name, u.handle FROM friend_requests r LEFT JOIN users u ON u.uid = r.from_uid WHERE r.to_uid = ? AND r.created_at > ? ORDER BY r.created_at DESC LIMIT 100").bind(me, cutoff).all();
+    const reqs = await env.DB.prepare("SELECT r.from_uid uid, r.created_at createdAt, u.name, u.handle, u.record_name recordName FROM friend_requests r LEFT JOIN users u ON u.uid = r.from_uid WHERE r.to_uid = ? AND r.created_at > ? ORDER BY r.created_at DESC LIMIT 100").bind(me, cutoff).all();
     const notices = await env.DB.prepare("SELECT id, kind, other_uid otherUid, title, body, created_at createdAt, read_at readAt FROM notifications WHERE uid = ? ORDER BY created_at DESC LIMIT 100").bind(me).all();
     return json({ requests: reqs.results, notices: notices.results });
   }

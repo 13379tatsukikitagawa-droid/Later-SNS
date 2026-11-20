@@ -32,6 +32,26 @@ enum SocialClient {
         return data
     }
 
+    // MARK: Trip の 招待リンク(v109)
+
+    struct TripLink: Decodable { let key: String; let groupName: String?; let fromName: String?; let dates: String?; let members: Int? }
+
+    /// 受け取った トークンから KEY と Trip の 名前を 引く(ログイン 不要 ・ 1つの IP で 1分 10回 まで)。古い KEY 形式(maple24)は 404 → nil
+    static func resolveTripLink(token: String) async -> TripLink? {
+        guard let enc = token.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else { return nil }
+        var req = URLRequest(url: baseURL.appendingPathComponent("v1/trip-links/\(enc)"))
+        req.timeoutInterval = 10
+        guard let (data, resp) = try? await URLSession.shared.data(for: req), (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        return try? JSONDecoder().decode(TripLink.self, from: data)
+    }
+
+    /// 招待リンクを 作る(トークンを 返す)。**アプリの 送る 文に つなぐのは、実機で たしかめて から**(いまは 呼ばない)
+    static func createTripLink(key: String, groupName: String, fromName: String, dates: String, members: Int) async -> String? {
+        struct R: Decodable { let token: String }
+        guard let d = try? await call("POST", "/v1/trip-links", body: ["key": key, "groupName": groupName, "fromName": fromName, "dates": dates, "members": members]) else { return nil }
+        return (try? JSONDecoder().decode(R.self, from: d))?.token
+    }
+
     // MARK: 自分
 
     /// ID ・ 名前 ・ CloudKit の 記録名を 登録(起動の たび ・ 同じ 内容なら 何も 変わらない)
