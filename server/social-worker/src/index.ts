@@ -1,7 +1,7 @@
 import { verifyFirebaseToken } from "./auth.ts";
-import { sendPush, type ApnsEnv } from "./apns.ts";
+import { sendPush, sendPushDetailed, type ApnsEnv } from "./apns.ts";
 import { LINK_TTL_MS, OG_ORIGIN, aasa, allowedHit, friendCard, newToken, renderPage, tripCard, validToken } from "./links.ts";
-import { dayKey, decideRequest, isExpired, noticeText, normalizeHandle, pair, validHandle, withinDailyLimit, type NoticeKind } from "./logic.ts";
+import { DEFAULT_PREFS, PREF_KEYS, dayKey, decideRequest, isExpired, noticeText, normalizeHandle, pair, sanitizePrefs, shouldPush, useWorkerFor, validHandle, withinDailyLimit, type NoticeKind, type Prefs } from "./logic.ts";
 
 interface Env extends ApnsEnv {
   DB: D1Database;
@@ -11,6 +11,8 @@ interface Env extends ApnsEnv {
   REQUEST_DAILY_LIMIT: string;
   APNS_ENVIRONMENT: string;
   STORE_URL: string;
+  USE_WORKER?: string;        // "1" で みんな オン(リモート設定)
+  USE_WORKER_UIDS?: string;   // オンに する 人の uid(カンマ 区切り ・ テスト用)
 }
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -120,6 +122,34 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
     return res.meta.changes ? json({ ok: true, expiresAt: exp }) : err(404, "not_found");
   }
 
+  // v111:リモート設定(useWorker を アプリの 外から 切りかえる)
+  if (p === "/v1/config" && req.method === "GET") return json({ useWorker: useWorkerFor(me, env.USE_WORKER, env.USE_WORKER_UIDS) });
+
+  // v111:通知の 種類ごとの 保存
+  if (p === "/v1/prefs" && req.method === "GET") return json(await loadPrefs(env, me));
+  if (p === "/v1/prefs" && (req.method === "POST" || req.method === "PUT")) {
+    const next = sanitizePrefs(body, await loadPrefs(env, me));
+    await env.DB.prepare("INSERT INTO notif_prefs (uid, friend_request, friend_accepted, trip_invite, trip_chat, opened, lastcall, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8) ON CONFLICT(uid) DO UPDATE SET friend_request=excluded.friend_request, friend_accepted=excluded.friend_accepted, trip_invite=excluded.trip_invite, trip_chat=excluded.trip_chat, opened=excluded.opened, lastcall=excluded.lastcall, updated_at=excluded.updated_at")
+      .bind(me, ...PREF_KEYS.map((k) => (next[k] ? 1 : 0)), Date.now()).run();
+    return json(next);
+  }
+
+  // v111:テスト通知(自分の 端末へ)。設定の スイッチに かかわらず 送る。1分 5回まで
+  if (p === "/v1/push/test" && req.method === "POST") {
+    const minute = Math.floor(Date.now() / 60_000);
+    const hit = await env.DB.prepare("INSERT INTO rate_hits (ip, minute, n) VALUES (?1, ?2, 1) ON CONFLICT(ip, minute) DO UPDATE SET n = n + 1 RETURNING n").bind(`push-test:${me}`, minute).first<{ n: number }>();
+    if ((hit?.n ?? 1) > 5) return err(429, "rate_limited");
+    const devices = await env.DB.prepare("SELECT token, env FROM devices WHERE uid = ?").bind(me).all<{ token: string; env: string }>();
+    if (!devices.results.length) return json({ sent: 0, reason: "no_device" });
+    let sent = 0; const reasons: string[] = [];
+    for (const d of devices.results) {
+      const r = await sendPushDetailed(env, d, { title: "Lattag", body: "テスト通知です。届いて います", kind: "test" });
+      if (r.result === "ok") { sent++; if (r.usedEnv !== d.env) await env.DB.prepare("UPDATE devices SET env = ? WHERE token = ?").bind(r.usedEnv, d.token).run(); }
+      else { reasons.push(r.result === "skip" ? "no_key" : (r.reason ?? r.result)); if (r.result === "gone") await env.DB.prepare("DELETE FROM devices WHERE token = ?").bind(d.token).run(); }
+    }
+    return json({ sent, devices: devices.results.length, reason: reasons[0] ?? null });
+  }
+
   if (p === "/v1/devices" && req.method === "POST") {
     const token = String(body.token ?? "");
     if (!/^[0-9a-f]{32,200}$/i.test(token)) return err(400, "bad_token");
@@ -206,11 +236,21 @@ async function makeFriends(env: Env, ctx: ExecutionContext, x: string, y: string
   else { await notify(env, ctx, x, "mutual", y, {}); await notify(env, ctx, y, "mutual", x, {}); }
 }
 
+async function loadPrefs(env: Env, uid: string): Promise<Prefs> {
+  const row = await env.DB.prepare("SELECT friend_request, friend_accepted, trip_invite, trip_chat, opened, lastcall FROM notif_prefs WHERE uid = ?").bind(uid).first<Record<string, number>>();
+  if (!row) return { ...DEFAULT_PREFS };
+  const out = { ...DEFAULT_PREFS };
+  for (const k of PREF_KEYS) out[k] = row[k] === 1;
+  return out;
+}
+
 /** お知らせに のこし、端末へ push(ユーザーの 通知設定 オフ は 端末側で 表示しない)。`otherUid` の 名前を 文に 入れる */
 async function notify(env: Env, ctx: ExecutionContext, toUid: string, kind: NoticeKind, otherUid: string, extra: { group?: string; dates?: string; members?: number }) {
   const o = await env.DB.prepare("SELECT name, handle FROM users WHERE uid = ?").bind(otherUid).first<{ name: string; handle: string | null }>();
   const t = noticeText(kind, { name: o?.name ?? "", handle: o?.handle ?? undefined, ...extra });
   await env.DB.prepare("INSERT INTO notifications (id, uid, kind, other_uid, title, body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(crypto.randomUUID(), toUid, kind, otherUid, t.title, t.body, Date.now()).run();
+  // 送る 時に サーバーで 止める(お知らせの 一覧には のこる)
+  if (!shouldPush(await loadPrefs(env, toUid), kind)) return;
   const devices = await env.DB.prepare("SELECT token, env FROM devices WHERE uid = ?").bind(toUid).all<{ token: string; env: string }>();
   ctx.waitUntil((async () => {
     for (const d of devices.results) {

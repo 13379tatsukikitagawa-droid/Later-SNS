@@ -22,6 +22,9 @@ REQUEST_TTL_DAYS = "7"
 NOTICE_TTL_DAYS = "30"
 # 1人 1日 の 申請の 上限
 REQUEST_DAILY_LIMIT = "50"
+# リモート設定:"1" で 全員 useWorker オン。"0" の 間は USE_WORKER_UIDS(カンマ区切りの uid)の 人 だけ
+USE_WORKER = "0"
+USE_WORKER_UIDS = ""
 # アプリを 入れる ボタンの 行き先(空なら「テスト中」と 出す)
 STORE_URL = "https://apps.apple.com/app/id6797838593"
 # APNS_KEY_ID ・ APNS_TEAM_ID ・ APNS_PRIVATE_KEY(.p8 の 中身)は `wrangler secret put` で 入れる(ここに 書かない ・ チャットに 貼らない)

@@ -31,3 +31,24 @@ test("1日 50件", () => {
   assert.equal(withinDailyLimit(50, 50), false);
   assert.equal(dayKey(Date.UTC(2026, 10, 20, 23, 59)), "2026-11-20");
 });
+
+import { DEFAULT_PREFS, prefKeyFor, sanitizePrefs, shouldPush, useWorkerFor } from "../src/logic.ts";
+test("prefs: 初期は ラストコール だけ オフ", () => {
+  assert.equal(shouldPush(null, "request"), true);
+  assert.equal(shouldPush(null, "lastcall"), false);
+  assert.equal(shouldPush({ ...DEFAULT_PREFS, friend_request: false }, "request"), false);
+  assert.equal(prefKeyFor("mutual"), "friend_accepted");
+  assert.equal(prefKeyFor("trip_joined"), "trip_invite");
+});
+test("prefs: 知らない キー ・ 真偽 でない 値は 捨てる", () => {
+  const p = sanitizePrefs({ friend_request: false, lastcall: "yes", evil: true });
+  assert.equal(p.friend_request, false);
+  assert.equal(p.lastcall, false);
+  assert.equal((p as any).evil, undefined);
+});
+test("config: useWorker は 全員 / 許可リスト", () => {
+  assert.equal(useWorkerFor("a", "1", ""), true);
+  assert.equal(useWorkerFor("a", "0", "x, a"), true);
+  assert.equal(useWorkerFor("b", "0", "x, a"), false);
+  assert.equal(useWorkerFor("b", undefined, undefined), false);
+});

@@ -47,3 +47,40 @@ export function noticeText(kind: NoticeKind, p: { name: string; handle?: string;
 /** 1日の 申請の 上限(1人 50件) */
 export function withinDailyLimit(countToday: number, limit: number): boolean { return countToday < limit; }
 export function dayKey(nowMs: number): string { return new Date(nowMs).toISOString().slice(0, 10); }
+
+/** 通知の 種類ごとの 保存(PROMPT v111 §8-3)。初期は ラストコール だけ オフ */
+export const PREF_KEYS = ["friend_request", "friend_accepted", "trip_invite", "trip_chat", "opened", "lastcall"] as const;
+export type PrefKey = (typeof PREF_KEYS)[number];
+export type Prefs = Record<PrefKey, boolean>;
+export const DEFAULT_PREFS: Prefs = { friend_request: true, friend_accepted: true, trip_invite: true, trip_chat: true, opened: true, lastcall: false };
+
+/** お知らせの 種類 → スイッチ */
+export function prefKeyFor(kind: NoticeKind | "trip_chat" | "opened" | "lastcall"): PrefKey {
+  switch (kind) {
+    case "request": return "friend_request";
+    case "accepted": case "mutual": return "friend_accepted";
+    case "trip_invite": case "trip_joined": return "trip_invite";
+    case "trip_chat": return "trip_chat";
+    case "opened": return "opened";
+    case "lastcall": return "lastcall";
+  }
+}
+
+/** 送る 時に サーバーで 止める。行が 無い 人は 初期値 */
+export function shouldPush(prefs: Partial<Prefs> | null, kind: Parameters<typeof prefKeyFor>[0]): boolean {
+  const k = prefKeyFor(kind);
+  return (prefs?.[k] ?? DEFAULT_PREFS[k]) === true;
+}
+
+/** 受けとった 値を 6つの スイッチ(真偽)に そろえる。知らない キーは 捨てる */
+export function sanitizePrefs(raw: unknown, base: Prefs = DEFAULT_PREFS): Prefs {
+  const out = { ...base };
+  if (raw && typeof raw === "object") for (const k of PREF_KEYS) { const v = (raw as Record<string, unknown>)[k]; if (typeof v === "boolean") out[k] = v; }
+  return out;
+}
+
+/** リモート設定:useWorker。USE_WORKER=1 なら みんな、そうで なければ 許可リスト(uid を カンマ 区切り)の 人 だけ */
+export function useWorkerFor(uid: string, flag: string | undefined, allow: string | undefined): boolean {
+  if ((flag ?? "").trim() === "1") return true;
+  return (allow ?? "").split(",").map((x) => x.trim()).filter(Boolean).includes(uid);
+}

@@ -25,17 +25,41 @@ async function providerToken(env: ApnsEnv): Promise<string | null> {
   return token;
 }
 
-/** 'ok' | 'gone'(トークンが 無効 → 消す)| 'skip'(キー 未設定)| 'fail' */
-export async function sendPush(env: ApnsEnv, device: { token: string; env: string }, n: { title: string; body: string; kind: string }): Promise<"ok" | "gone" | "skip" | "fail"> {
-  const jwt = await providerToken(env);
-  if (!jwt) return "skip";
-  const host = device.env === "development" ? "api.sandbox.push.apple.com" : "api.push.apple.com";
-  const r = await fetch(`https://${host}/3/device/${device.token}`, {
+export type PushResult = "ok" | "gone" | "skip" | "fail";
+export interface PushOutcome { result: PushResult; usedEnv: "development" | "production"; status?: number; reason?: string }
+
+async function post(host: string, jwt: string, env: ApnsEnv, token: string, n: { title: string; body: string; kind: string }) {
+  const r = await fetch(`https://${host}/3/device/${token}`, {
     method: "POST",
     headers: { authorization: `bearer ${jwt}`, "apns-topic": env.APNS_BUNDLE_ID, "apns-push-type": "alert", "apns-priority": "10", "content-type": "application/json" },
     body: JSON.stringify({ aps: { alert: { title: n.title, body: n.body }, sound: "default", "content-available": 1 }, kind: n.kind }),
   });
-  if (r.ok) return "ok";
-  if (r.status === 410 || r.status === 400) { const t = await r.text(); if (r.status === 410 || t.includes("BadDeviceToken") || t.includes("Unregistered")) return "gone"; }
-  return "fail";
+  const text = r.ok ? "" : await r.text();
+  return { ok: r.ok, status: r.status, reason: (() => { try { return JSON.parse(text).reason as string | undefined; } catch { return undefined; } })() };
+}
+
+/**
+ * 端末が 申告した 開発用 / 本番用 の 宛先へ 送る。BadDeviceToken なら もう 一方へ 1回 だけ ためす
+ * (Xcode から 入れた Release は 本番の 見た目でも トークンは 開発用、など)。通った 方を usedEnv で 返す。
+ * 'gone'(トークンが 無効 → 消す)| 'skip'(キー 未設定)| 'fail'
+ */
+export async function sendPushDetailed(env: ApnsEnv, device: { token: string; env: string }, n: { title: string; body: string; kind: string }): Promise<PushOutcome> {
+  const first = device.env === "development" ? "development" : "production";
+  const jwt = await providerToken(env);
+  if (!jwt) return { result: "skip", usedEnv: first };
+  const hostOf = (e: string) => (e === "development" ? "api.sandbox.push.apple.com" : "api.push.apple.com");
+  let used: "development" | "production" = first;
+  let r = await post(hostOf(first), jwt, env, device.token, n);
+  if (!r.ok && r.reason === "BadDeviceToken") {
+    const other = first === "development" ? "production" : "development";
+    const r2 = await post(hostOf(other), jwt, env, device.token, n);
+    if (r2.ok) { r = r2; used = other; }
+  }
+  if (r.ok) return { result: "ok", usedEnv: used };
+  if (r.status === 410 || r.reason === "BadDeviceToken" || r.reason === "Unregistered") return { result: "gone", usedEnv: used, status: r.status, reason: r.reason };
+  return { result: "fail", usedEnv: used, status: r.status, reason: r.reason };
+}
+
+export async function sendPush(env: ApnsEnv, device: { token: string; env: string }, n: { title: string; body: string; kind: string }): Promise<PushResult> {
+  return (await sendPushDetailed(env, device, n)).result;
 }

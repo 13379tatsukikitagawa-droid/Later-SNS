@@ -75,3 +75,15 @@ CREATE TABLE IF NOT EXISTS rate_hits (
   n INTEGER NOT NULL,
   PRIMARY KEY (ip, minute)
 );
+
+-- v111:通知の 種類ごとの スイッチ(行が 無い 人は 初期値:ラストコール だけ オフ)
+CREATE TABLE IF NOT EXISTS notif_prefs (
+  uid TEXT PRIMARY KEY,
+  friend_request  INTEGER NOT NULL DEFAULT 1,
+  friend_accepted INTEGER NOT NULL DEFAULT 1,
+  trip_invite     INTEGER NOT NULL DEFAULT 1,
+  trip_chat       INTEGER NOT NULL DEFAULT 1,
+  opened          INTEGER NOT NULL DEFAULT 1,
+  lastcall        INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL
+);
