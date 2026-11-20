@@ -76,7 +76,7 @@ struct HV68Header: View {
                 .overlay(alignment: .topTrailing) {
                     if input.inboxCount > 0 {
                         Text(input.inboxCount > 9 ? "9+" : "\(input.inboxCount)").font(LF.inter(800, 11)).foregroundStyle(HV.ink)
-                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20).background(HV.lime, in: Capsule())
+                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20).background(PopColor.pink, in: Capsule())
                             .overlay(Capsule().strokeBorder(.black, lineWidth: 2.5)).offset(x: 4, y: -4)
                     }
                 }

@@ -20,6 +20,7 @@ struct TripSettingsV106Sheet: View {
     @State private var picker: PhotosPickerItem?
     @State private var chatOn = true
     @State private var hasDates = false
+    @State private var color = 0
     @State private var start = Calendar.current.startOfDay(for: Date())
     @State private var end = Calendar.current.startOfDay(for: Date())
     @State private var pulse = false
@@ -33,7 +34,11 @@ struct TripSettingsV106Sheet: View {
         guard let s = group.tripStart, let e = group.tripEnd else { return true }
         return !cal.isDate(s, inSameDayAs: start) || !cal.isDate(e, inSameDayAs: end)
     }
-    private var changed: Bool { GroupEditRules.canSave(originalName: group.name, name: name, photoChanged: coverData != nil, colorChanged: false) || datesChanged }
+    private var colorChanged: Bool { color != resolvedColor }
+    private var resolvedColor: Int {
+        TripHubRules.resolveColors((try? modelContext.fetch(FetchDescriptor<LaterGroup>())) ?? [group])[group.id] ?? 0
+    }
+    private var changed: Bool { colorChanged || GroupEditRules.canSave(originalName: group.name, name: name, photoChanged: coverData != nil, colorChanged: false) || datesChanged }
     private var tripPhotos: [LaterPhoto] { Array(group.photos.sorted { $0.captureDate > $1.captureDate }.prefix(24)) }
 
     var body: some View {
@@ -47,6 +52,7 @@ struct TripSettingsV106Sheet: View {
                         coverRow
                         nameRow
                         whenRow
+                        colorRow
                         membersRow
                         noticeRow
                         redZone
@@ -64,6 +70,7 @@ struct TripSettingsV106Sheet: View {
             cover = group.iconImageData.flatMap { UIImage(data: $0) }
             chatOn = !GroupChatStore.shared.isMuted(group.id)
             if let s = group.tripStart, let e = group.tripEnd { hasDates = true; start = s; end = e }
+            color = resolvedColor
         }
         .onChange(of: start) { _, v in if end < v { end = v } }
         .onChange(of: name) { _, v in name = GroupNameRules.sanitizeInput(v); bump() }
@@ -187,6 +194,24 @@ struct TripSettingsV106Sheet: View {
         }
     }
 
+    /// v110 §3-1:Trip の 色(4つの 丸)。週の 帯の 線 ・ いまの カードの ふち ・ 日の ブロックに 使う
+    private var colorRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            label("COLOR")
+            HStack(spacing: 16) {
+                ForEach(0..<4, id: \.self) { i in
+                    Button { Haptics.play(.sel); withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) { color = i } } label: {
+                        Circle().fill(PopColor.trip(i)).frame(width: 40, height: 40)
+                            .overlay(Circle().strokeBorder(.white, lineWidth: color == i ? 3 : 0))
+                            .scaleEffect(color == i ? 1.12 : 1)
+                            .frame(width: 48, height: 48).contentShape(Rectangle())
+                    }.buttonStyle(PopPressStyle()).accessibilityLabel(["ピンク", "空色", "黄色", "ライム"][i]).accessibilityAddTraits(color == i ? .isSelected : [])
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
     private var membersRow: some View {
         VStack(alignment: .leading, spacing: 10) {
             label("MEMBERS")
@@ -242,7 +267,7 @@ struct TripSettingsV106Sheet: View {
             do {
                 var ts: Date?? = nil, te: Date?? = nil
                 if datesChanged { ts = .some(Calendar.current.startOfDay(for: start)); te = .some(Calendar.current.startOfDay(for: end)) }
-                try await GroupSettingsService.save(group: group, name: name, iconData: coverData.map { Optional($0) }, colorIndex: nil, tripStart: ts, tripEnd: te, context: modelContext)
+                try await GroupSettingsService.save(group: group, name: name, iconData: coverData.map { Optional($0) }, colorIndex: nil, tripStart: ts, tripEnd: te, tripColor: colorChanged ? color : nil, context: modelContext)
                 Haptics.play(.success)
                 withAnimation { toast = "Trip を 更新しました" }
                 try? await Task.sleep(for: .seconds(0.9))

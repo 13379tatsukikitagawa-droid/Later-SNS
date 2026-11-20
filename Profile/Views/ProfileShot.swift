@@ -35,8 +35,6 @@ enum ProfileShot {
         guard let profile else { return [] }
         let groupsByID = Dictionary(profile.groups.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let photosByDay = Dictionary(grouping: profile.photos) { ExposureDayStore.dayKey(for: $0.captureDate) }
-        let published = Set(MondoLocalStore.published)
-        let mondoID = MondoIdentity.id
         // 1日1件なので、7日ぶんを見るには新しい数件で足りる
         let sources = exposureDays.prefix(railSlotCount + 3).map { day -> Source in
             let photos = photosByDay[day.dayKey] ?? []
@@ -58,7 +56,7 @@ enum ProfileShot {
                 locationName: day.locationName,
                 tags: photos.first?.tags ?? [],
                 groups: groups,
-                isOnMondo: published.contains(MondoIdentity.recordName(mondoID: mondoID, dayKey: day.dayKey)),
+                isOnMondo: false,   // v110:Mondo は なくした
                 isPosted: photos.allSatisfy(\.isPosted)
             )
         }
@@ -128,12 +126,12 @@ enum ProfileShot {
         if let first = groups.first {
             parts.append(groups.count > 1 ? "\(first.name) ＋\(groups.count - 1)" : first.name)
         }
-        if isOnMondo { parts.append("Mondo") }
+        
         return parts.joined(separator: " ・ ")
     }
 
     /// 読み上げ用:「よいしょー、Mondo」
     static func spokenShareTargets(groups: [ProfileShareGroup], isOnMondo: Bool) -> String {
-        (groups.map(\.name) + (isOnMondo ? ["Mondo"] : [])).joined(separator: "、")
+        groups.map(\.name).joined(separator: "、")
     }
 }

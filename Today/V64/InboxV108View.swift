@@ -61,13 +61,13 @@ struct InboxV108View: View {
                     Image(systemName: "link").font(.system(size: 17, weight: .bold)).foregroundStyle(HV.lime).frame(width: 44, height: 44)
                         .overlay(Circle().strokeBorder(HV.lime.opacity(0.5), lineWidth: 1.5).frame(width: 40, height: 40))
                 }.buttonStyle(.plain).accessibilityLabel("リンクを 送る")
-            }.padding(.horizontal, 16).overlay(Text("お知らせ").font(LF.serif(30)).foregroundStyle(.white))
+            }.padding(.horizontal, 16).overlay(Text("お知らせ").font(LF.inter(900, 20)).foregroundStyle(.white))
             HStack(spacing: 8) {
                 ForEach(Tab.allCases, id: \.self) { t in
                     Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.2)) { tab = t } } label: {
                         HStack(spacing: 6) {
                             Text(t.rawValue).font(LF.inter(800, 13))
-                            if count(t) > 0 { Text("\(count(t))").font(LF.inter(800, 11)).foregroundStyle(HV.ink).padding(.horizontal, 6).frame(minWidth: 18, minHeight: 18).background(HV.lime, in: Capsule()) }
+                            if count(t) > 0 { Text("\(count(t))").font(LF.inter(800, 11)).foregroundStyle(HV.ink).padding(.horizontal, 6).frame(minWidth: 18, minHeight: 18).background(PopColor.pink, in: Capsule()) }
                         }
                         .foregroundStyle(tab == t ? HV.ink : .white).padding(.horizontal, 14).frame(height: 36)
                         .background(tab == t ? Color.white : Color.white.opacity(0.1), in: Capsule())
@@ -125,9 +125,9 @@ struct InboxV108View: View {
             } else {
                 Button { dismissRow(r) } label: { Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(HV.gray).frame(width: 44, height: 44) }.buttonStyle(.plain).accessibilityLabel("消す")
                 if r.expired {
-                    Button { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.passphrase) } } label: { Text("KEY で 入る").font(LF.inter(900, 13)).foregroundStyle(HV.ink).padding(.horizontal, 14).frame(height: 40).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.94))
+                    PopButton(title: "KEY で 入る", kind: .lime, small: true) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.passphrase) } }
                 } else {
-                Button { accept(r) } label: { Text(r.kind == .friend ? "承認" : "参加").font(LF.inter(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 18).frame(height: 40).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.94))
+                PopButton(title: r.kind == .friend ? "承認" : "参加", kind: .lime, small: true) { accept(r) }
                 }
             }
         }

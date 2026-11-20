@@ -38,17 +38,17 @@ struct FriendLinkSheetV108: View {
     @ViewBuilder private var action: some View {
         switch state {
         case .mine:
-            Button { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onShowMine() } } label: { pill("自分の QR を 見る") }.buttonStyle(HVPress(scale: 0.96))
+            PopButton(title: "自分の QR を 見る", kind: .lime) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onShowMine() } }.padding(.top, 8)
         case .sent: pill("申請を 送りました", dim: true)
         case .connected: pill("友だちに なりました", dim: true)
         default:
-            Button { Task { await tap() } } label: { pill(incoming != nil ? "承認" : "友だち申請") }.buttonStyle(HVPress(scale: 0.96))
+            PopButton(title: incoming != nil ? "承認" : "友だち申請", kind: .lime) { Task { await tap() } }.padding(.top, 8)
         }
     }
 
     private func pill(_ t: String, dim: Bool = false) -> some View {
-        Text(t).font(LF.inter(900, 16)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 52)
-            .background(dim ? HV.lime.opacity(0.5) : HV.lime, in: Capsule()).padding(.top, 8)
+        Text(t).font(LF.inter(800, 16)).foregroundStyle(.white.opacity(0.7)).frame(maxWidth: .infinity).frame(height: 50)
+            .background(PopColor.raised, in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1)).padding(.top, 8)
     }
 
     private func load() async {

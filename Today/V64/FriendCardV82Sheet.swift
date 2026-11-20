@@ -153,7 +153,7 @@ struct FriendCardV82Sheet: View {
             VStack(spacing: 6) { Image(systemName: icon).font(.system(size: 17, weight: .semibold)); Text(t).font(LF.inter(800, 13)) }
                 .foregroundStyle(fg).frame(maxWidth: flex ? .infinity : 78).frame(height: 62)
                 .background(bg, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        }.buttonStyle(HVPress(scale: 0.95))
+        }.buttonStyle(PopPressStyle())
     }
 }
 

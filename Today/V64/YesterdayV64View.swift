@@ -170,7 +170,7 @@ struct YesterdayV64View: View {
             Button { Haptics.play(.pop); withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) { notices = true } } label: {
                 Image(systemName: "bell").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44)
                     .background(.white.opacity(0.10), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 0.8))
-                    .overlay(alignment: .topTrailing) { if input.hasNew || input.requestCount > 0 { Circle().fill(Color(hex: "FF3B30")).frame(width: 9, height: 9).offset(x: -6, y: 9) } }
+                    .overlay(alignment: .topTrailing) { if input.hasNew || input.requestCount > 0 { Circle().fill(PopColor.pink).frame(width: 9, height: 9).offset(x: -6, y: 9) } }
             }.buttonStyle(HVPress(scale: 0.92)).scaleEffect(k).offset(x: 12 + (compact ? 4 : 0), y: compact ? 50 : 52)
             .accessibilityLabel("通知")
             // タブの 名前

@@ -228,7 +228,6 @@ struct ProfileFilmPages: View {
                     ForEach(Array(point.groups.enumerated()), id: \.offset) { _, group in
                         shareRow(gradient: Self.groupGradient, title: group.name, isOn: true)
                     }
-                    shareRow(gradient: Self.mondoGradient, title: "Mondo", isOn: point.isOnMondo)
                 }
                 .padding(.top, 22)
 

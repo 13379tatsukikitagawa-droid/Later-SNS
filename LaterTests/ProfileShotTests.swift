@@ -80,9 +80,9 @@ struct ProfileShotTests {
     @Test func 共有先ピルの文言() {
         let other = ProfileShareGroup(name: "かぞく", otherMemberCount: 2)
         let third = ProfileShareGroup(name: "ゼミ", otherMemberCount: 9)
-        #expect(ProfileShot.shareSummary(groups: [Self.group], isOnMondo: true) == "よいしょー ・ Mondo")
+        #expect(ProfileShot.shareSummary(groups: [Self.group], isOnMondo: true) == "よいしょー")   // v110:Mondo は 出さない
         #expect(ProfileShot.shareSummary(groups: [Self.group], isOnMondo: false) == "よいしょー")
         #expect(ProfileShot.shareSummary(groups: [Self.group, other, third], isOnMondo: false) == "よいしょー ＋2")
-        #expect(ProfileShot.spokenShareTargets(groups: [Self.group], isOnMondo: true) == "よいしょー、Mondo")
+        #expect(ProfileShot.spokenShareTargets(groups: [Self.group], isOnMondo: true) == "よいしょー")
     }
 }
