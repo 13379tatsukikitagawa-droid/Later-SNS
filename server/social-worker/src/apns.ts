@@ -28,11 +28,11 @@ async function providerToken(env: ApnsEnv): Promise<string | null> {
 export type PushResult = "ok" | "gone" | "skip" | "fail";
 export interface PushOutcome { result: PushResult; usedEnv: "development" | "production"; status?: number; reason?: string }
 
-async function post(host: string, jwt: string, env: ApnsEnv, token: string, n: { title: string; body: string; kind: string }) {
+async function post(host: string, jwt: string, env: ApnsEnv, token: string, n: { title: string; body: string; kind: string; collapseId?: string }) {
   const r = await fetch(`https://${host}/3/device/${token}`, {
     method: "POST",
-    headers: { authorization: `bearer ${jwt}`, "apns-topic": env.APNS_BUNDLE_ID, "apns-push-type": "alert", "apns-priority": "10", "content-type": "application/json" },
-    body: JSON.stringify({ aps: { alert: { title: n.title, body: n.body }, sound: "default", "content-available": 1 }, kind: n.kind }),
+    headers: { authorization: `bearer ${jwt}`, "apns-topic": env.APNS_BUNDLE_ID, "apns-push-type": "alert", "apns-priority": "10", "content-type": "application/json", ...(n.collapseId ? { "apns-collapse-id": n.collapseId.slice(0, 64) } : {}) },
+    body: JSON.stringify({ aps: { alert: { title: n.title, body: n.body }, sound: "default", "content-available": 1 }, kind: n.kind, ...(n.collapseId ? { tripId: n.collapseId } : {}) }),
   });
   const text = r.ok ? "" : await r.text();
   return { ok: r.ok, status: r.status, reason: (() => { try { return JSON.parse(text).reason as string | undefined; } catch { return undefined; } })() };
@@ -43,7 +43,7 @@ async function post(host: string, jwt: string, env: ApnsEnv, token: string, n: {
  * (Xcode から 入れた Release は 本番の 見た目でも トークンは 開発用、など)。通った 方を usedEnv で 返す。
  * 'gone'(トークンが 無効 → 消す)| 'skip'(キー 未設定)| 'fail'
  */
-export async function sendPushDetailed(env: ApnsEnv, device: { token: string; env: string }, n: { title: string; body: string; kind: string }): Promise<PushOutcome> {
+export async function sendPushDetailed(env: ApnsEnv, device: { token: string; env: string }, n: { title: string; body: string; kind: string; collapseId?: string }): Promise<PushOutcome> {
   const first = device.env === "development" ? "development" : "production";
   const jwt = await providerToken(env);
   if (!jwt) return { result: "skip", usedEnv: first };
@@ -60,6 +60,6 @@ export async function sendPushDetailed(env: ApnsEnv, device: { token: string; en
   return { result: "fail", usedEnv: used, status: r.status, reason: r.reason };
 }
 
-export async function sendPush(env: ApnsEnv, device: { token: string; env: string }, n: { title: string; body: string; kind: string }): Promise<PushResult> {
+export async function sendPush(env: ApnsEnv, device: { token: string; env: string }, n: { title: string; body: string; kind: string; collapseId?: string }): Promise<PushResult> {
   return (await sendPushDetailed(env, device, n)).result;
 }

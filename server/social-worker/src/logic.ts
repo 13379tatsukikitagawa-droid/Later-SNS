@@ -84,3 +84,21 @@ export function useWorkerFor(uid: string, flag: string | undefined, allow: strin
   if ((flag ?? "").trim() === "1") return true;
   return (allow ?? "").split(",").map((x) => x.trim()).filter(Boolean).includes(uid);
 }
+
+export const CHAT_PUSH_INTERVAL_MS = 2 * 60_000;
+export const MAX_TRIP_MEMBERS = 200;
+
+/** Trip の ID(LaterGroup.id の 小文字 UUID)。それ以外は 受けつけない */
+export function validTripId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id);
+}
+
+/** 同じ 人 ・ 同じ Trip へは 2分に 1回 */
+export function chatPushDue(lastAtMs: number | null, nowMs: number): boolean {
+  return lastAtMs === null || nowMs - lastAtMs >= CHAT_PUSH_INTERVAL_MS;
+}
+
+/** 通知に 出す 文(長すぎる 文は 切る ・ 改行は 空白に) */
+export function chatPreview(raw: unknown): string {
+  return String(raw ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
+}

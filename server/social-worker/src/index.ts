@@ -1,7 +1,7 @@
 import { verifyFirebaseToken } from "./auth.ts";
 import { sendPush, sendPushDetailed, type ApnsEnv } from "./apns.ts";
 import { LINK_TTL_MS, OG_ORIGIN, aasa, allowedHit, friendCard, newToken, renderPage, tripCard, validToken } from "./links.ts";
-import { DEFAULT_PREFS, PREF_KEYS, dayKey, decideRequest, isExpired, noticeText, normalizeHandle, pair, sanitizePrefs, shouldPush, useWorkerFor, validHandle, withinDailyLimit, type NoticeKind, type Prefs } from "./logic.ts";
+import { CHAT_PUSH_INTERVAL_MS, DEFAULT_PREFS, MAX_TRIP_MEMBERS, chatPreview, chatPushDue, validTripId, PREF_KEYS, dayKey, decideRequest, isExpired, noticeText, normalizeHandle, pair, sanitizePrefs, shouldPush, useWorkerFor, validHandle, withinDailyLimit, type NoticeKind, type Prefs } from "./logic.ts";
 
 interface Env extends ApnsEnv {
   DB: D1Database;
@@ -36,6 +36,7 @@ export default {
     await env.DB.prepare("DELETE FROM friend_requests WHERE created_at < ?").bind(now - Number(env.REQUEST_TTL_DAYS) * 86_400_000).run();
     await env.DB.prepare("DELETE FROM notifications WHERE created_at < ?").bind(now - Number(env.NOTICE_TTL_DAYS) * 86_400_000).run();
     await env.DB.prepare("DELETE FROM trip_links WHERE expires_at < ?").bind(now - 86_400_000).run();
+    await env.DB.prepare("DELETE FROM trip_chat_push WHERE last_at < ?").bind(now - 86_400_000).run();
     await env.DB.prepare("DELETE FROM rate_hits WHERE minute < ?").bind(Math.floor(now / 60_000) - 5).run();
   },
 };
@@ -148,6 +149,50 @@ async function route(req: Request, url: URL, me: string, env: Env, ctx: Executio
       else { reasons.push(r.result === "skip" ? "no_key" : (r.reason ?? r.result)); if (r.result === "gone") await env.DB.prepare("DELETE FROM devices WHERE token = ?").bind(d.token).run(); }
     }
     return json({ sent, devices: devices.results.length, reason: reasons[0] ?? null });
+  }
+
+  // v111:Trip の メンバー登録(入った 人が 自分で)・ チャットの 通知
+  const tm = /^\/v1\/trips\/([^/]+)\/members$/.exec(p);
+  if (tm && (req.method === "POST" || req.method === "DELETE")) {
+    const tripId = decodeURIComponent(tm[1]).toLowerCase();
+    if (!validTripId(tripId)) return err(400, "bad_trip");
+    if (req.method === "DELETE") {
+      await env.DB.prepare("DELETE FROM trip_members WHERE trip_id = ? AND uid = ?").bind(tripId, me).run();
+      await env.DB.prepare("DELETE FROM trip_chat_push WHERE trip_id = ? AND uid = ?").bind(tripId, me).run();
+      return json({ ok: true });
+    }
+    const cnt = await env.DB.prepare("SELECT COUNT(*) n FROM trip_members WHERE trip_id = ?").bind(tripId).first<{ n: number }>();
+    if ((cnt?.n ?? 0) >= MAX_TRIP_MEMBERS) return err(409, "full");
+    await env.DB.prepare("INSERT OR IGNORE INTO trip_members (trip_id, uid, joined_at) VALUES (?1, ?2, ?3)").bind(tripId, me, Date.now()).run();
+    return json({ ok: true });
+  }
+  if (p === "/v1/push/trip-chat" && req.method === "POST") {
+    const tripId = String(body.tripId ?? "").toLowerCase();
+    if (!validTripId(tripId)) return err(400, "bad_trip");
+    const mine = await env.DB.prepare("SELECT 1 x FROM trip_members WHERE trip_id = ? AND uid = ?").bind(tripId, me).first();
+    if (!mine) return err(403, "not_member");
+    const sender = await env.DB.prepare("SELECT name FROM users WHERE uid = ?").bind(me).first<{ name: string }>();
+    const preview = chatPreview(body.preview);
+    const tripName = String(body.tripName ?? "").slice(0, 40);
+    const others = await env.DB.prepare("SELECT uid FROM trip_members WHERE trip_id = ? AND uid != ?").bind(tripId, me).all<{ uid: string }>();
+    const now = Date.now();
+    let sent = 0;
+    for (const o of others.results) {
+      if (!shouldPush(await loadPrefs(env, o.uid), "trip_chat")) continue;
+      const last = await env.DB.prepare("SELECT last_at FROM trip_chat_push WHERE trip_id = ? AND uid = ?").bind(tripId, o.uid).first<{ last_at: number }>();
+      if (!chatPushDue(last?.last_at ?? null, now)) continue;
+      await env.DB.prepare("INSERT INTO trip_chat_push (trip_id, uid, last_at) VALUES (?1, ?2, ?3) ON CONFLICT(trip_id, uid) DO UPDATE SET last_at = excluded.last_at").bind(tripId, o.uid, now).run();
+      const devices = await env.DB.prepare("SELECT token, env FROM devices WHERE uid = ?").bind(o.uid).all<{ token: string; env: string }>();
+      const n = { title: tripName || "Trip", body: `${sender?.name || "だれか"}:${preview}`, kind: "trip_chat", collapseId: tripId };
+      ctx.waitUntil((async () => {
+        for (const d of devices.results) {
+          const r = await sendPush(env, d, n);
+          if (r === "gone") await env.DB.prepare("DELETE FROM devices WHERE token = ?").bind(d.token).run();
+        }
+      })());
+      sent++;
+    }
+    return json({ ok: true, recipients: sent, intervalMs: CHAT_PUSH_INTERVAL_MS });
   }
 
   if (p === "/v1/devices" && req.method === "POST") {

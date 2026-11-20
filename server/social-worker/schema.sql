@@ -87,3 +87,17 @@ CREATE TABLE IF NOT EXISTS notif_prefs (
   lastcall        INTEGER NOT NULL DEFAULT 0,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS trip_members (
+  trip_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
+  joined_at INTEGER NOT NULL,
+  PRIMARY KEY (trip_id, uid)
+);
+CREATE INDEX IF NOT EXISTS trip_members_uid ON trip_members(uid);
+CREATE TABLE IF NOT EXISTS trip_chat_push (
+  trip_id TEXT NOT NULL,
+  uid TEXT NOT NULL,
+  last_at INTEGER NOT NULL,
+  PRIMARY KEY (trip_id, uid)
+);

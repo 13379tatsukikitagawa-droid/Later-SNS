@@ -52,3 +52,14 @@ test("config: useWorker は 全員 / 許可リスト", () => {
   assert.equal(useWorkerFor("b", "0", "x, a"), false);
   assert.equal(useWorkerFor("b", undefined, undefined), false);
 });
+
+import { chatPreview, chatPushDue, validTripId } from "../src/logic.ts";
+test("trip-chat: ID ・ 2分に 1回 ・ 文の 整え", () => {
+  assert.equal(validTripId("3f2504e0-4f89-11d3-9a0c-0305e82c3301"), true);
+  assert.equal(validTripId("../etc"), false);
+  assert.equal(chatPushDue(null, 1000), true);
+  assert.equal(chatPushDue(1000, 1000 + 119_000), false);
+  assert.equal(chatPushDue(1000, 1000 + 120_000), true);
+  assert.equal(chatPreview("のった〜!\n\n  ほんとに"), "のった〜! ほんとに");
+  assert.equal(chatPreview("あ".repeat(100)).length, 60);
+});
