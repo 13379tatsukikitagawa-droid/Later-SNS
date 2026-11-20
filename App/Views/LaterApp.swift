@@ -361,12 +361,9 @@ struct RootView: View {
                 NotificationCenter.default.post(name: .friendLinkOpened, object: friend)
                 return
             }
-            // v98:Trip の パスの QR / リンク(https://later-app-f2606.firebaseapp.com/t/<key>):KEY から グループを 探して 入る
-            if let key = TripKeyLink.key(from: url.absoluteString) {
-                Task { @MainActor in
-                    if let shareURL = try? await GroupInviteService.resolve(passphrase: key, timeout: 10) { handleInviteLink(shareURL) }
-                    else { presentGroupJoinAlert(title: "見つかりませんでした", message: "KEY を もう一度 たしかめて ください") }
-                }
+            // v98 / v109:Trip の リンク(/t/<トークン または KEY>)→ お知らせの Trip タブ(参加の まえに 1回 たしかめる)
+            if case .trip(let token)? = AppLinks.parse(url) {
+                handleTripLink(token: token)
                 return
             }
             // 招待リンク(later://join)・素の CKShare URL(LINE などから、OS の受け入れ経路が動かなかったとき)
@@ -382,8 +379,11 @@ struct RootView: View {
             // OSの挙動差異に備えて同じ処理へフォールバックできるようにしておく。
             guard let url = activity.webpageURL else { return }
             print("[Group Join] onContinueUserActivity(BrowsingWeb)受信: \(url.absoluteString)")
+            // CKShare の URL を 先に 判定 → つぎに /u /t(v109)
             if let shareURL = InviteConfig.shareURL(from: url) {
                 handleInviteLink(shareURL)
+            } else if let link = AppLinks.parse(url) {
+                handleWebLink(link)
             }
         }
         .sheet(isPresented: Binding(get: { friendLinkHandle != nil }, set: { if !$0 { friendLinkHandle = nil } })) {
@@ -405,6 +405,9 @@ struct RootView: View {
             InvitePasteSheet { shareURL in
                 showingInvitePaste = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { handleInviteLink(shareURL) }
+            } onWebLink: { link in
+                showingInvitePaste = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { handleWebLink(link) }
             } onTripCode: {
                 showingInvitePaste = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { joinFlow = JoinFlowRequest(start: .passphrase) }
@@ -452,6 +455,20 @@ struct RootView: View {
     /// 裏でUserDirectoryService(Public DB)から本当のユーザー名・アイコンを取得できれば
     /// 上書きする(相手が一度もプロフィールを保存/編集していない場合は取得できないまま)。
     /// v108:ログイン前 / 初回設定の 前は 相手の 記録名を 控える(はじめての 設定の「ともだちを さがす」で 出る)
+    private func handleWebLink(_ link: AppLinks.Link) {
+        switch link {
+        case .friend(let h): handleFriendLink(handle: h)
+        case .trip(let t): handleTripLink(token: t)
+        }
+    }
+
+    /// v109 §3-2:おぼえて おいて、お知らせの Trip タブを ひらく(ログイン前 ・ 設定の とちゅうは あとで)
+    private func handleTripLink(token: String) {
+        TripLinkInbox.set(token)
+        guard isSignedIn, isSetupCompleted else { return }
+        NotificationCenter.default.post(name: .tripLinkOpened, object: nil)
+    }
+
     private func handleFriendLink(handle: String) {
         guard isSignedIn, isSetupCompleted else {
             Task {

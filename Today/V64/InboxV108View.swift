@@ -1,5 +1,14 @@
 import SwiftUI
 
+/// v109 §3-2:Trip の リンク(`/t/<トークン または KEY>`)を ひらいた 時の 受け渡し。ログイン前は おぼえて おく。
+enum TripLinkInbox {
+    static let key = "pendingTripLinkToken"
+    static var pending: String? { let t = UserDefaults.standard.string(forKey: key) ?? ""; return t.isEmpty ? nil : t }
+    static func set(_ token: String) { UserDefaults.standard.set(token, forKey: key) }
+    static func clear() { UserDefaults.standard.removeObject(forKey: key) }
+}
+extension Notification.Name { static let tripLinkOpened = Notification.Name("tripLinkOpened") }
+
 /// v108 §3:お知らせ(友だち申請 + Trip の 招待)。Worker が できるまでは 今の CloudKit の 申請で 動かす(v108 つなぎ)。
 struct InboxV108View: View {
     let myName: String
@@ -18,13 +27,16 @@ struct InboxV108View: View {
         var handle: String = ""
         var request: FriendRequests.Request?
         var card: FriendInviteCard?
+        var linkURL: URL?
+        var pinned = false
+        var expired = false
         var state: State = .pending
         enum State { case pending, done, gone }
         static func == (a: Row, b: Row) -> Bool { a.id == b.id && a.state == b.state }
     }
     struct Past: Codable, Identifiable { var id = UUID().uuidString; var text: String; var kind: String; var otherID: String; var name: String; var date: Date }
 
-    @State private var tab: Tab = .all
+    @State private var tab: Tab = TripLinkInbox.pending != nil ? .trip : .all
     @State private var rows: [Row] = []
     @State private var past: [Past] = Self.loadPast()
     @State private var loading = true
@@ -112,11 +124,15 @@ struct InboxV108View: View {
                     .transition(.scale(scale: 0.3).combined(with: .opacity))
             } else {
                 Button { dismissRow(r) } label: { Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(HV.gray).frame(width: 44, height: 44) }.buttonStyle(.plain).accessibilityLabel("消す")
+                if r.expired {
+                    Button { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.passphrase) } } label: { Text("KEY で 入る").font(LF.inter(900, 13)).foregroundStyle(HV.ink).padding(.horizontal, 14).frame(height: 40).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.94))
+                } else {
                 Button { accept(r) } label: { Text(r.kind == .friend ? "承認" : "参加").font(LF.inter(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 18).frame(height: 40).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.94))
+                }
             }
         }
         .padding(12).background(Color(hex: "1C1C1F"), in: RoundedRectangle(cornerRadius: 22))
-        .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(HV.lime, lineWidth: done ? 1.5 : 0))
+        .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(HV.lime, lineWidth: (done || r.pinned) ? 1.5 : 0))
         .overlay(alignment: .trailing) { if burst == r.id { Dots().offset(x: -30) } }
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: done)
     }
@@ -137,10 +153,20 @@ struct InboxV108View: View {
     private func load() async {
         let reqs = await FriendRequests.incoming()
         let invites = await FriendCloud.inbox().filter { $0.status == .pending }
+        var linkRow: Row?
+        if let token = TripLinkInbox.pending {
+            if let url = try? await GroupInviteService.resolve(passphrase: token, timeout: 10) {
+                linkRow = Row(id: "l-" + token, kind: .trip, title: "Trip に 招待されました", sub: "リンクから ・ 参加の まえに たしかめて ください", linkURL: url, pinned: true)
+            } else {
+                linkRow = Row(id: "l-" + token, kind: .trip, title: "リンクの 期限が 切れました", sub: "もう一度 送って もらって ください", pinned: true, expired: true)
+            }
+            TripLinkInbox.clear()
+        }
         var out: [Row] = reqs.map { r in
             Row(id: "f-" + r.id, kind: .friend, title: r.fromName.isEmpty ? "ともだち" : r.fromName, sub: "友だち申請 ・ " + Self.ago(r.createdAt), handle: r.fromUsername, request: r)
         }
         out += invites.map { c in Row(id: "t-" + c.id, kind: .trip, title: "『\(c.groupName)』に 招待", sub: "\(c.fromName) から ・ \(c.memberCount)人", card: c) }
+        if let linkRow { out.insert(linkRow, at: 0) }
         rows = out; loading = false
     }
 
@@ -156,6 +182,13 @@ struct InboxV108View: View {
             Haptics.play(.success); mark(r, .done)
             Task { _ = await FriendRequests.respond(to: req, accept: true, myName: myName); onChanged() }
             finish(r, text: "\(r.title) と 友だちに なりました", kind: "friend", other: req.fromUserID)
+        } else if let url = r.linkURL {
+            Haptics.play(.success); mark(r, .done)
+            finish(r, text: "Trip に 参加しました", kind: "trip", other: "")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+                dismiss()
+                NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.link(url))
+            }
         } else if let card = r.card {
             guard let url = card.shareURL else { Haptics.play(.warn); return }
             InviteCardStore.set(.accepted, for: card.id)

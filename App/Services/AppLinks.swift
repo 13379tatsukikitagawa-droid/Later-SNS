@@ -4,6 +4,9 @@ import Foundation
 enum AppLinks {
     /// いまの 共有リンクの ドメイン(Firebase Hosting)
     static let webHost = "later-app-f2606.firebaseapp.com"
+    /// v109:Worker が 返す リンク(ページ ・ OGP ・ AASA)。前の webHost の リンクも ひらく
+    static let workerHost = "later-social.later-social.workers.dev"
+    static let acceptedHosts: Set<String> = [webHost, workerHost]
     /// 公開前は TestFlight の 公開リンク(あれば)に かえる
     static let storeURL = "https://apps.apple.com/app/id6797838593"
 
@@ -22,7 +25,7 @@ enum AppLinks {
             let n = HandleRules.normalize(id)
             return HandleRules.validate(n) == nil ? .friend(handle: n) : nil
         }
-        guard let host = url.host?.lowercased(), host == webHost else { return nil }
+        guard let host = url.host?.lowercased(), acceptedHosts.contains(host) else { return nil }
         let parts = url.pathComponents.filter { $0 != "/" }
         guard parts.count == 2, !parts[1].isEmpty, parts[1].count <= 40 else { return nil }
         switch parts[0] {

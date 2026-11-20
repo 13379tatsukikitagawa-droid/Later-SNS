@@ -11,6 +11,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:later-app-f2606.firebaseapp.com</string>
+		<string>applinks:later-social.later-social.workers.dev</string>
 	</array>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>

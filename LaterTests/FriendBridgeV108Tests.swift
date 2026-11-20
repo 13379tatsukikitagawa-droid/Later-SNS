@@ -25,6 +25,7 @@ struct AppLinksV108Tests {
     @Test func parsesFriendAndTrip() {
         #expect(AppLinks.parse(URL(string: "https://later-app-f2606.firebaseapp.com/u/yui_0612?openExternalBrowser=1")!) == .friend(handle: "yui_0612"))
         #expect(AppLinks.parse(URL(string: "https://later-app-f2606.firebaseapp.com/t/maple24")!) == .trip(token: "maple24"))
+        #expect(AppLinks.parse(URL(string: "https://later-social.later-social.workers.dev/t/Kx7Qm2pLx9?openExternalBrowser=1")!) == .trip(token: "Kx7Qm2pLx9"))   // v109 Worker
         #expect(AppLinks.parse(URL(string: "https://lattag.app/t/maple24")!) == nil)   // 持って いない ドメインは 受けない
         #expect(AppLinks.parse(URL(string: "later://u/yui_0612")!) == .friend(handle: "yui_0612"))
         #expect(AppLinks.parse(URL(string: "https://example.com/u/yui_0612")!) == nil)

@@ -41,7 +41,8 @@ struct HomeV64Host: View {
         }
         .accessibilityElement(children: .contain)
         .task { await refreshRequests() }
-        .onAppear { openWidgetRoute() }
+        .onAppear { openWidgetRoute(); if TripLinkInbox.pending != nil { showInbox = true } }
+        .onReceive(NotificationCenter.default.publisher(for: .tripLinkOpened)) { _ in showInbox = true }
         .onChange(of: widgetRoute.pending) { _, _ in openWidgetRoute() }
         .fullScreenCover(isPresented: $showInbox) {
             InboxV108View(myName: src.avatarName, onChanged: { Task { await refreshRequests() } }, onShareLink: { showShare = true },

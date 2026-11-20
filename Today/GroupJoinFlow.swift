@@ -1073,6 +1073,7 @@ struct JoinFlowRequest: Identifiable {
 /// OS の「ペースト」ボタンなので、許可のアラートは出ない。外部のサービスは使わない。
 struct InvitePasteSheet: View {
     let onLink: (URL) -> Void
+    var onWebLink: (AppLinks.Link) -> Void = { _ in }
     var onTripCode: () -> Void = {}
     let onDismiss: () -> Void
 
@@ -1094,8 +1095,10 @@ struct InvitePasteSheet: View {
                 .font(.system(size: 13)).foregroundStyle(Color(hex: "BCBBC0")).padding(.top, 8)
             VStack(spacing: 10) {
                 route(0, "link", "招待リンクを 貼りつける") {
-                    PasteButton(payloadType: URL.self) { urls in
-                        if let shareURL = urls.lazy.compactMap(InviteConfig.shareURL(from:)).first { onLink(shareURL) }
+                    PasteButton(payloadType: String.self) { texts in
+                        let tokens = texts.flatMap { $0.split(whereSeparator: { $0.isWhitespace }).compactMap { URL(string: String($0)) } }
+                        if let shareURL = tokens.lazy.compactMap(InviteConfig.shareURL(from:)).first { onLink(shareURL) }
+                        else if let link = tokens.lazy.compactMap({ AppLinks.parse($0) }).first { onWebLink(link) }
                         else { message = "Lattag の招待ではありません" }
                     }
                     .buttonBorderShape(.capsule).controlSize(.large).tint(HV.lime)
