@@ -58,6 +58,7 @@ struct RootView: View {
     @State private var cloudKitManager: CloudKitManager?
     @State private var sharedProfile: UserProfile?
     @State private var showingSharedProfile = false
+    @State private var showAppleReconnect = false   // P47 A
     @State private var friendLinkHandle: String?   // v108:/u/<ID> を ひらいた
     @State private var groupJoinAlertTitle = ""
     @State private var groupJoinAlertMessage = ""
@@ -266,6 +267,14 @@ struct RootView: View {
             resetIfNeeded()
             pruneExpiredPhotos()
         }
+        .task(id: appleUserID) {
+            // P47 A:Firebase の 入った まま なら uid を ひろう。前から Apple の 人は 起動の とき 1回 だけ「つなぎなおす」
+            AppleFirebaseAuth.adoptExistingSession()
+            guard isSetupCompleted, AppleFirebaseAuth.needsReconnect else { return }
+            try? await Task.sleep(for: .seconds(4))
+            if AppleFirebaseAuth.needsReconnect { showAppleReconnect = true }
+        }
+        .sheet(isPresented: $showAppleReconnect) { AppleReconnectSheet() }
         .task(id: appleUserID + firebaseUID) {
             // Sign in with Apple・メールのマジックリンクいずれかの完了後に
             // 一度だけCloudKitManagerを起動する。

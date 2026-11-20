@@ -585,9 +585,16 @@ struct OnboardingV64View: View {
 
     // MARK: - サインイン(しくみは これまでと 同じ)
 
-    private func appleDone(_ result: Result<ASAuthorization, Error>) {
+    private func appleDone(_ result: Result<ASAuthorization, Error>, nonce: String) {
         switch result {
-        case .success:
+        case .success(let authorization):
+            // P47 A:Firebase にも のせる(失敗しても 入れる。あとで「つなぎなおす」で 直る)
+            if let cred = authorization.credential as? ASAuthorizationAppleIDCredential {
+                Task { @MainActor in
+                    do { firebaseUID = try await AppleFirebaseAuth.signIn(cred, rawNonce: nonce) }
+                    catch { print("[AppleFirebase] failed: \(FirebaseAuthService.debugLabel(for: error))") }
+                }
+            }
             if let message = AppleSignInView.applySignIn(result, modelContext: modelContext) {
                 print("[AppleSignIn] 結果の保存に失敗: \(message)")
                 Haptics.play(.warn); say(OnboardingCopy.appleSignInFailed)
@@ -607,31 +614,11 @@ struct OnboardingV64View: View {
         Haptics.play(.click)
         appleError = false
         busy = true
-        let c = OBAppleCoordinator(hideEmail: hideEmail) { result in busy = false; appleDone(result); apple = nil }
+        let c = OBAppleCoordinator(hideEmail: hideEmail) { result, nonce in busy = false; appleDone(result, nonce: nonce); apple = nil }
         apple = c
         c.start()
     }
     @State private var apple: OBAppleCoordinator?
-
-    private func googleSignIn() {
-        guard !busy else { return }
-        busy = true
-        Haptics.play(.click)
-        Task { @MainActor in
-            defer { busy = false }
-            do {
-                let result = try await FirebaseAuthService.signInWithGoogle()
-                UserDefaults.standard.set(result.email ?? "", forKey: "firebaseEmail")
-                Haptics.play(.success)
-                firebaseUID = result.uid
-            } catch FirebaseAuthService.ServiceError.cancelled {
-                return
-            } catch {
-                print("[GoogleSignIn] failed: \(FirebaseAuthService.debugLabel(for: error))")
-                Haptics.play(.warn); say("Google サインインは まだ 使えません")
-            }
-        }
-    }
 
     static func isValidEmail(_ raw: String) -> Bool {
         let v = raw.precomposedStringWithCompatibilityMapping.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -886,21 +873,23 @@ private struct OBPressStyle: ButtonStyle {
 
 /// Sign in with Apple を コードから 出す(名前だけ もらう)
 final class OBAppleCoordinator: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
-    private let done: (Result<ASAuthorization, Error>) -> Void
+    private let done: (Result<ASAuthorization, Error>, String) -> Void
     private let hideEmail: Bool
-    init(hideEmail: Bool = true, done: @escaping (Result<ASAuthorization, Error>) -> Void) { self.hideEmail = hideEmail; self.done = done }
+    private let nonce = AppleFirebaseAuth.Nonce.make()
+    init(hideEmail: Bool = true, done: @escaping (Result<ASAuthorization, Error>, String) -> Void) { self.hideEmail = hideEmail; self.done = done }
 
     @MainActor func start() {
         let request = ASAuthorizationAppleIDProvider().createRequest()
         // メールを かくす = 何も もらわない(名前は つぎの 画面で 自分で 書く)/ オフ = 本人が Apple の 画面で えらぶ
         request.requestedScopes = hideEmail ? [] : [.email]
+        request.nonce = nonce.hashed   // v104:Firebase に のせる ための nonce
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.delegate = self
         controller.presentationContextProvider = self
         controller.performRequests()
     }
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) { done(.success(authorization)) }
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) { done(.failure(error)) }
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) { done(.success(authorization), nonce.raw) }
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) { done(.failure(error), nonce.raw) }
     @MainActor func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
     }
