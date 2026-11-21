@@ -76,197 +76,144 @@ enum HVPage: Int, CaseIterable {
     var icon: HVIconKind { [HVIconKind.camera, .friends, .trip, .yesterday][rawValue] }
 }
 
-// MARK: - ページの 型(背景・ヘッダー行・タイトル・CTA)
-
-/// v68:ページの カードは 透明。うしろの 写真は Home の 全面の 層(`HV68Backdrop`)が ページ位置で 入れかえる。
-struct HVPageBackdrop: View {
-    let photo: UIImage?
-    var body: some View { Color.clear }
-}
-
-/// 上の 行:丸い アイコン(40pt)+ `0N / 03` + 右に 状態
-struct HVPageHeader: View {
-    let page: HVPage
-    let number: Int
-    let status: String?
-    let cardW: CGFloat
-    var iconColor: Color = HV.lime
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            ZStack {
-                Circle().fill(Color.black).offset(y: 3)
-                Circle().fill(iconColor)
-                Circle().strokeBorder(Color.black, lineWidth: 2)
-                HVIcon(kind: page.icon, size: 20, color: .black)
-            }
-            .frame(width: 40, height: 40).offset(x: 22, y: 22)
-            Text(String(format: "%02d / 03", number)).font(Typo.label(9)).tracking(1.62).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 72, y: 35.5)
-            if let k = IntroKind.allCases[safe: page.rawValue - 1], (1...3).contains(page.rawValue) { IntroHelpButton(kind: k).offset(x: 112, y: 20) }
-            if let status {
-                Text(status).font(Typo.label(9.5)).tracking(1.14).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
-                    .frame(width: 200, alignment: .trailing).offset(x: cardW - 22 - 200, y: 35)
-            }
-        }
-    }
-}
-
-struct HVPageTitle: View {
-    let text: String
-    var body: some View { Text(text).font(Typo.title(44)).tracking(-0.88).foregroundStyle(.white).frame(height: 41.8, alignment: .leading).fixedSize() }
-}
-
-/// 下の ボタン(CTA):白い 丸ボタン + 右に 緑の 丸
-struct HVCTA: View {
-    let title: String
-    var locked = false
-    var width: CGFloat
-    var circle: Color = Color(hex: "3BD35A")
-    var icon: String = "arrow.right"
-    var bg: Color = .white
-    let action: () -> Void
-    var body: some View {
-        Button(action: { Haptics.play(.click); action() }) {
-            HStack {
-                Text(title).font(Typo.ui(800, 17)).foregroundStyle(locked ? .white : HV.ink)
-                Spacer(minLength: 0)
-                ZStack {
-                    Circle().fill(locked ? HV.lime : circle)
-                    if locked { HVCameraGlyph(width: 26, line: 1.9, color: .black, showsFlash: false) }
-                    else { Image(systemName: icon).font(.system(size: 17, weight: .bold)).foregroundStyle(HV.ink) }
-                }.frame(width: 42, height: 42)
-            }
-            .padding(.leading, 22).padding(.trailing, 7)
-            .frame(width: width, height: 56)
-            .background(locked ? Color.white.opacity(0.14) : bg, in: Capsule())
-            .overlay(Capsule().strokeBorder(.white.opacity(locked ? 0.34 : 0), lineWidth: 1))
-        }
-        .buttonStyle(HVPress(scale: 0.97))
-    }
-}
-
 // MARK: - 1 Friends
 
+/// v122:横スライドの Friends ページ(1ページ = やる こと 1つ)。上から VStack で 並べる(決めうちの 位置で 置かない)
 struct HVFriendsPage: View {
     let input: HomeV64Input
     let cardW: CGFloat
     let actions: HomeV64Actions
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        let shotFriends = input.friends.filter { $0.shots > 0 }.count
-        ZStack(alignment: .topLeading) {
-            HVPageBackdrop(photo: input.friends.first(where: { $0.image != nil })?.image ?? input.backdrop.first)
-            HVPageHeader(page: .friends, number: 1, status: shotFriends > 0 ? "● \(shotFriends)人 撮った" : nil, cardW: cardW)
-            HVPageTitle(text: "Friends").offset(x: 22, y: 72)
-            if input.friends.isEmpty { emptyBody } else { filledBody(shotFriends) }
-            HVCTA(title: "Friends を ひらく", width: 334) { actions.openFriends() }.offset(x: 18, y: 386)
+        let took = input.friends.filter { $0.shots > 0 }.count
+        let hasFriends = !input.friends.isEmpty
+        let hasReq = input.requestCount > 0
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                Text(verbatim: "Friends").font(Typo.title(50)).tracking(Typo.titleTracking(50)).foregroundStyle(HVCardTint.milk).lineLimit(1)
+                Spacer(minLength: 0)
+                Button {
+                    Haptics.play(.tick)
+                    NotificationCenter.default.post(name: IntroStore.requested, object: IntroRequest(kind: .friends))
+                } label: {
+                    Text(verbatim: "?").font(Typo.ui(800, 11)).foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 22, height: 22).background(Color.white.opacity(0.1), in: Circle())
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(HVPress(scale: 0.9))
+                .accessibilityLabel("Friends の 説明を もう一度")
+                .offset(x: 11, y: -4)
+            }
+            .frame(height: 52)
+            statusLine(took: took, hasFriends: hasFriends).padding(.top, 13)
+            if hasFriends {
+                friendRow.padding(.top, 25)
+                if hasReq { requestRow.padding(.top, 20) }
+                HVLimeLedgeButton(title: "Friends を ひらく", icon: nil, trailing: "arrow.right") { actions.openFriends() }
+                    .padding(.top, hasReq ? 16 : 29)
+            } else {
+                emptyArt(small: hasReq).frame(maxWidth: .infinity).padding(.top, hasReq ? 29 : 39)
+                if hasReq { requestRow.padding(.top, 30) }
+                HVLimeLedgeButton(title: "友だちを よぶ", icon: "person.badge.plus", trailing: nil) { actions.searchByID() }
+                    .padding(.top, hasReq ? 16 : 37)
+                Text("QR ・ リンク ・ @ID で つながる").font(Typo.ui(700, 12.5)).foregroundStyle(Color(hex: "8C8C93")).lineLimit(1)
+                    .frame(maxWidth: .infinity).padding(.top, 14)
+            }
+            Spacer(minLength: 0)
         }
+        .padding(.top, 22).padding(.horizontal, 14)
         .frame(width: cardW, height: 508, alignment: .topLeading)
     }
 
-    // MARK: 友だち 0人(あなたの アイコン + 点線の 輪 + おすすめの 人)
+    @ViewBuilder private func statusLine(took: Int, hasFriends: Bool) -> some View {
+        if !hasFriends {
+            Text("毎朝 9:00 に、きのうを 見せあう").font(Typo.ui(700, 14)).foregroundStyle(Color(hex: "A9A9B0")).lineLimit(1).minimumScaleFactor(0.8)
+        } else if took > 0 {
+            HStack(spacing: 7) {
+                Circle().fill(HV.lime).frame(width: 7, height: 7)
+                Text("\(took)人 撮った ・ 9:00 に ひらく").font(Typo.ui(800, 14)).foregroundStyle(HV.lime).lineLimit(1).minimumScaleFactor(0.8)
+            }
+        } else {
+            Text("きょうは まだ だれも 撮って いない").font(Typo.ui(700, 14)).foregroundStyle(Color(hex: "A9A9B0")).lineLimit(1).minimumScaleFactor(0.8)
+        }
+    }
 
-    private var emptyBody: some View {
-        ZStack(alignment: .topLeading) {
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { ctx in
-                let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
-                ZStack {
-                    Circle().strokeBorder(.white.opacity(0.22), style: StrokeStyle(lineWidth: 1.5, dash: [3, 6])).frame(width: 128, height: 128).rotationEffect(.degrees(t * 6))
-                    Circle().strokeBorder(.white.opacity(0.14), style: StrokeStyle(lineWidth: 1.5, dash: [2, 7])).frame(width: 190, height: 190).rotationEffect(.degrees(-t * 4))
-                    ForEach(0..<3, id: \.self) { k in
-                        let a = Double(k) * 2.094 + 0.6
-                        let bob = sin(t * 0.9 + Double(k) * 1.7) * 4
-                        Circle().strokeBorder(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1.5, dash: [2, 3]))
-                            .background(Circle().fill(.white.opacity(0.06)))
-                            .overlay(Image(systemName: "person.fill").font(.system(size: 13)).foregroundStyle(.white.opacity(0.22)))
-                            .frame(width: 34, height: 34)
-                            .offset(x: CGFloat(cos(a)) * 95, y: CGFloat(sin(a)) * 95 + CGFloat(bob))
-                    }
+    /// 0人:まんなかに 自分の 丸い 写真(ライムの 輪)、左右に 点線の 空きの 丸(+)。動かさない
+    private func emptyArt(small: Bool) -> some View {
+        let me: CGFloat = small ? 100 : 112, gap: CGFloat = small ? 70 : 78
+        return ZStack {
+            HStack(spacing: me - 20) {
+                ForEach(0..<2, id: \.self) { _ in
                     ZStack {
-                        Circle().fill(Color(hex: "3A3A3C")).frame(width: 52, height: 52)
-                        if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill().frame(width: 52, height: 52).clipShape(Circle()) }
-                        else { Text(String(input.avatarName.prefix(1))).font(Typo.ui(800, 20)).foregroundStyle(.white) }
+                        Circle().fill(Color(hex: "111113"))
+                        Circle().strokeBorder(.white.opacity(0.28), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
+                        Image(systemName: "plus").font(.system(size: gap * 0.3, weight: .regular)).foregroundStyle(.white.opacity(0.4))
                     }
-                    .overlay(Circle().strokeBorder(HV.lime, lineWidth: 2.5).padding(-3)).shadow(color: HV.lime.opacity(0.55), radius: 10)
+                    .frame(width: gap, height: gap)
                 }
-                .frame(width: cardW, height: 200)
             }
-            .offset(y: 100)
-            Text("友だちと、毎朝 9:00 に きのうを 見せあう").font(Typo.ui(600, 12.5)).foregroundStyle(.white.opacity(0.65)).lineLimit(1).minimumScaleFactor(0.7)
-                .frame(width: cardW - 36).offset(x: 18, y: 296)
-            HStack(spacing: 8) {
-                tile("qrcode", "QR", lime: true) { actions.showQR() }
-                tile("viewfinder", "読む", lime: false) { actions.scanQR() }
-                tile("at", "@ID", lime: false) { actions.searchByID() }
-                tile("link", "リンク", lime: false) { actions.shareLink() }
-            }.frame(width: cardW - 36).offset(x: 18, y: 324)
+            ZStack {
+                Circle().fill(Color(hex: "3A3A3C"))
+                if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill().clipShape(Circle()) }
+                else { Text(String(input.avatarName.prefix(1))).font(Typo.ui(800, me * 0.36)).foregroundStyle(.white) }
+            }
+            .frame(width: me - 8, height: me - 8)
+            .overlay(Circle().strokeBorder(HV.lime, lineWidth: 3).padding(-4))
         }
+        .frame(height: me)
+        .accessibilityHidden(true)
     }
 
-    private func tile(_ icon: String, _ t: String, lime: Bool, _ a: @escaping () -> Void) -> some View {
-        Button { Haptics.play(.click); a() } label: {
-            VStack(spacing: 4) {
-                Image(systemName: icon).font(.system(size: 17, weight: .bold))
-                Text(t).font(Typo.ui(800, 11.5))
-            }
-            .foregroundStyle(lime ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 50)
-            .background(lime ? HV.lime : Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }.buttonStyle(HVPress(scale: 0.95))
-    }
-
-    // MARK: 友だち あり(ストーリーの 列 ・ 3つの 数字 ・ 申請)
-
-    private func filledBody(_ shotFriends: Int) -> some View {
-        let total = input.friends.count
-        let waiting = total - shotFriends
-        return ZStack(alignment: .topLeading) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 14) {
-                    ForEach(input.friends) { fr in story(fr) }
-                    Button { Haptics.play(.sel); actions.addFriends() } label: {
-                        VStack(spacing: 6) {
-                            ZStack { Circle().strokeBorder(HV.lime.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [5, 4])).frame(width: 64, height: 64); Image(systemName: "plus").font(.system(size: 20, weight: .bold)).foregroundStyle(HV.lime) }
-                            Text("よぶ").font(Typo.ui(700, 10.5)).foregroundStyle(HV.lime)
-                        }
-                    }.buttonStyle(HVPress(scale: 0.94))
-                }.padding(.horizontal, 20)
-            }
-            .frame(width: cardW, height: 100).offset(y: 124)
-            HStack(spacing: 8) {
-                stat("\(shotFriends)/\(total)", "撮った")
-                stat("\(waiting)", "まだ")
-                stat("9:00", "ひらく")
-            }.frame(width: cardW - 36).offset(x: 18, y: 236)
-            if input.requestCount > 0 {
-                Button { Haptics.play(.sel); actions.openRequests() } label: {
-                    HStack(spacing: 8) {
-                        HStack(spacing: -8) {
-                            ForEach(Array(input.requestFaces.prefix(3).enumerated()), id: \.offset) { i, f in
-                                Text(f.initial).font(Typo.ui(800, 10)).foregroundStyle(.white).frame(width: 24, height: 24).background(f.color, in: Circle()).overlay(Circle().strokeBorder(Color(hex: "1C1C1F"), lineWidth: 2)).zIndex(Double(3 - i))
-                            }
-                        }
-                        Text("友だち申請 \(input.requestCount)件").font(Typo.ui(800, 13)).foregroundStyle(HV.ink)
-                        Spacer()
-                        Text("確認 ›").font(Typo.ui(800, 12)).foregroundStyle(HV.ink)
+    /// 申請の 行(写真 ・ 名前 ・ ピンクの「確認」)
+    private var requestRow: some View {
+        let first = input.requests.first?.name
+        let n = max(input.requestCount, input.requests.count)
+        return Button { Haptics.play(.sel); actions.openRequests() } label: {
+            HStack(spacing: 10) {
+                HStack(spacing: -5) {
+                    ForEach(Array(input.requestFaces.prefix(2).enumerated()), id: \.offset) { i, f in
+                        HVCardFace(face: f).frame(width: 34, height: 34).overlay(Circle().strokeBorder(Color(hex: "0B0B0C"), lineWidth: 1.5).padding(-1.5)).zIndex(Double(3 - i))
                     }
-                    .padding(.horizontal, 12).frame(width: cardW - 36, height: 44).background(HV.lime, in: RoundedRectangle(cornerRadius: 20))
-                }.buttonStyle(HVPress(scale: 0.98)).offset(x: 18, y: 316)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(first.map { n > 1 ? "\($0) ほか\(n - 1)人" : $0 } ?? "友だち申請 \(n)件").font(Typo.ui(800, 14.5)).foregroundStyle(Color(hex: "F4F1EA")).lineLimit(1)
+                    Text("友だちに なりたい").font(Typo.ui(700, 11.5)).foregroundStyle(Color(hex: "8C8C93")).lineLimit(1)
+                }
+                Spacer(minLength: 4)
+                Text("確認").font(Typo.ui(800, 13.5)).foregroundStyle(Color(hex: "111113"))
+                    .frame(width: 63, height: 40).background(HVCardTint.friends, in: Capsule())
+            }
+            .padding(.leading, 10).padding(.trailing, 11)
+            .frame(height: 62)
+            .background(Color(hex: "141416"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
+        }
+        .buttonStyle(HVPress(scale: 0.98))
+    }
+
+    /// 友だちの 丸の 列(輪 = 撮った 枚数)+ 最後に「よぶ」
+    private var friendRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 10) {
+                ForEach(input.friends) { fr in story(fr) }
+                Button { Haptics.play(.sel); actions.searchByID() } label: {
+                    VStack(spacing: 6) {
+                        ZStack {
+                            Circle().fill(Color(hex: "141416"))
+                            Circle().strokeBorder(.white.opacity(0.18), lineWidth: 1.5)
+                            Image(systemName: "plus").font(.system(size: 17, weight: .bold)).foregroundStyle(HV.lime)
+                        }.frame(width: 54, height: 54).frame(width: 68, height: 68)
+                        Text("よぶ").font(Typo.ui(800, 11.5)).foregroundStyle(Color(hex: "E9E9EC"))
+                    }
+                }.buttonStyle(HVPress(scale: 0.94))
             }
         }
+        .scrollClipDisabled()
     }
 
-    private func stat(_ big: String, _ small: String) -> some View {
-        VStack(spacing: 3) {
-            Text(big).font(Typo.ui(900, 20)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
-            Text(small).font(Typo.ui(600, 10)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.6)
-        }.frame(maxWidth: .infinity).frame(height: 56).background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
-    /// 64 の 丸 + 外に 3つに 分かれた 輪(撮った こま)
     private func story(_ fr: HomeV64Friend) -> some View {
         Button { Haptics.play(.sel); actions.openChat(fr.id, fr.name) } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 3) {
                 ZStack {
                     ForEach(0..<3, id: \.self) { k in
                         Circle().trim(from: 0.012, to: 0.32).stroke(k < fr.shots ? HV.lime : Color.white.opacity(0.2), style: StrokeStyle(lineWidth: 3, lineCap: .round))
@@ -274,13 +221,51 @@ struct HVFriendsPage: View {
                     }
                     ZStack {
                         Circle().fill(fr.color)
-                        if let img = fr.image { Image(uiImage: img).resizable().scaledToFill().clipShape(Circle()) }
+                        if let img = fr.avatar ?? fr.image { Image(uiImage: img).resizable().scaledToFill().clipShape(Circle()) }
                         else { Text(String(fr.name.prefix(1))).font(Typo.ui(800, 18)).foregroundStyle(.white) }
-                    }.frame(width: 54, height: 54).saturation(fr.shots > 0 ? 1 : 0.2)
+                    }.frame(width: 54, height: 54)
                 }.frame(width: 68, height: 68)
-                Text(fr.name).font(Typo.ui(700, 10.5)).foregroundStyle(Color(hex: "C9C9CF")).lineLimit(1).frame(width: 68)
+                Text(fr.name).font(Typo.ui(800, 11.5)).foregroundStyle(Color(hex: "E9E9EC")).lineLimit(1).frame(width: 68)
+                Text(fr.shots > 0 ? "\(fr.shots)/3" : "まだ").font(Typo.ui(800, 9.5)).foregroundStyle(fr.shots > 0 ? HV.lime : Color(hex: "8C8C93"))
             }
         }.buttonStyle(HVPress(scale: 0.94))
+    }
+}
+
+/// v122:ライムの 大きな ボタン(高さ 60 ・ 角丸 30 ・ 段 6pt #97C235 ・ 押すと 4pt しずむ)
+struct HVLimeLedgeButton: View {
+    let title: String
+    var icon: String?
+    var trailing: String?
+    let action: () -> Void
+    var body: some View {
+        Button { Haptics.play(.click); action() } label: {
+            HStack(spacing: 8) {
+                if let icon { Image(systemName: icon).font(.system(size: 17, weight: .bold)) }
+                Text(title).font(Typo.ui(800, 17)).lineLimit(1)
+                if let trailing { Image(systemName: trailing).font(.system(size: 16, weight: .bold)) }
+            }
+            .foregroundStyle(Color(hex: "111111"))
+            .frame(maxWidth: .infinity).frame(height: 60)
+        }
+        .buttonStyle(HVLedgePress(face: HV.lime, ledge: Color(hex: "97C235"), radius: 30, depth: 6))
+    }
+}
+
+/// 押せる 物の 下に 色の 段。押すと しずむ(段 6 → 2)
+struct HVLedgePress: ButtonStyle {
+    let face: Color
+    let ledge: Color
+    var radius: CGFloat = 30
+    var depth: CGFloat = 6
+    func makeBody(configuration: Configuration) -> some View {
+        let down = configuration.isPressed ? depth - 2 : 0
+        return configuration.label
+            .background(face, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .offset(y: down)
+            .background { RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ledge).offset(y: depth) }
+            .padding(.bottom, depth)
+            .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.16), value: configuration.isPressed)
     }
 }
 
