@@ -45,6 +45,7 @@ struct HVNextCapsule: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @State private var index = 0
+    @ObservedObject private var frameStore = ScreenFrameStore.shared
     @State private var forward = true
     @State private var tick = 0
 
@@ -118,7 +119,7 @@ struct HVNextCapsule: View {
         .frame(width: 330, height: 66)
         .background(Color(hex: "F7F5EF"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(alignment: .top) {
-            Rectangle().fill(HVNextCapsule.tapeColor.opacity(0.9)).frame(width: 58, height: 18).rotationEffect(.degrees(3)).offset(y: -9)
+            Rectangle().fill(tapeColor.opacity(0.9)).frame(width: 58, height: 18).rotationEffect(.degrees(3)).offset(y: -9)
         }
         .rotationEffect(.degrees(-1.2))
         .shadow(color: .black.opacity(0.45), radius: 13, y: 12)
@@ -126,7 +127,7 @@ struct HVNextCapsule: View {
     }
 
     /// テープの 色 = 画面の フレームの 色(フレームが なし の 時は ライム)
-    static var tapeColor: Color { HV.lime }
+    private var tapeColor: Color { frameStore.accent }
 
     private func tap(_ it: HVNextItem) {
         Haptics.play(.pop)

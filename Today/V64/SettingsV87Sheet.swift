@@ -36,6 +36,8 @@ struct SettingsV87Sheet: View {
     @State private var showsBlocked = false
     @State private var hapticLevel = AppHapticsSetting.level
     @State private var showsHandle = false
+    @State private var showsFrame = false
+    @ObservedObject private var frameStore = ScreenFrameStore.shared
     @State private var showsHowTo = false
     @State private var legal: LegalLink?
     @State private var confirmLogout = false
@@ -95,6 +97,8 @@ struct SettingsV87Sheet: View {
                             }
                         }.padding(4).background(.white.opacity(0.07), in: Capsule())
                     }.padding(.horizontal, 16).frame(height: 64)
+                    divider
+                    linkRow("フレームの色", value: frameStore.current.title) { showsFrame = true }
                 }
                 header("アカウント")
                 group {
@@ -126,6 +130,7 @@ struct SettingsV87Sheet: View {
         .sheet(isPresented: $showsBlocked) { SettingsBlockedList() }
         .sheet(isPresented: $showsHandle) { HandleChangeHost { _ in showsHandle = false } }
         .sheet(isPresented: $showsHowTo) { UsageGuideV105Sheet { showsHowTo = false } }
+        .sheet(isPresented: $showsFrame) { ScreenFrameColorSheet { showsFrame = false } }
         .legalSheet($legal)
         .sheet(isPresented: $showsDelete) { AccountDeletionView(groupCount: groupCount, onDeleted: { signOutState(); onLoggedOut() }) }
         .confirmationDialog("ログアウト しますか?", isPresented: $confirmLogout, titleVisibility: .visible) {

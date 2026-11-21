@@ -227,6 +227,7 @@ struct RootView: View {
                 groupJoinProgressOverlay
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openingFinished)) { _ in ScreenFrameStore.shared.visible = true }
         .onAppear {
             if opening == nil {
                 // オープニングを 出さない(設定オフ)とき:Home の 登場だけ 流す
@@ -234,6 +235,8 @@ struct RootView: View {
             }
             // 初回起動(初回設定がまだ)は、起動アニメーションではなくオンボーディング。
             if !isSetupCompleted { LaunchCoordinator.hasPlayedInProcess = true }
+            // v112:画面の フレーム(重ねた 窓)。オープニングが 終わったら ふわっと 出す
+            ScreenFrameInstaller.install()
             #if DEBUG
             DebugMenuInstaller.install()  // 3本指 長押しで 状態メニュー
             DebugRouter.runLaunchRoute()
