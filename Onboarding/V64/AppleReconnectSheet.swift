@@ -12,15 +12,15 @@ struct AppleReconnectSheet: View {
     var body: some View {
         VStack(spacing: 14) {
             Capsule().fill(.white.opacity(0.2)).frame(width: 36, height: 4).padding(.top, 8)
-            Text("Apple で つなぎなおす").font(LF.inter(800, 20)).foregroundStyle(.white).padding(.top, 8)
+            Text("Apple で つなぎなおす").font(Typo.ui(800, 20)).foregroundStyle(.white).padding(.top, 8)
             Text("これまでの 友だちや 写真は そのままです。1回 だけ Apple で 確認すると、友だちの しくみが あたらしく なります。")
-                .font(LF.inter(500, 13)).foregroundStyle(HV.gray).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                .font(Typo.ui(500, 13)).foregroundStyle(HV.gray).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             Button(action: start) {
                 HStack(spacing: 8) { Image(systemName: "apple.logo"); Text("Apple で つなぎなおす") }
-                    .font(LF.inter(800, 16)).foregroundStyle(.black).frame(maxWidth: .infinity).frame(height: 52).background(.white, in: Capsule())
+                    .font(Typo.ui(800, 16)).foregroundStyle(.black).frame(maxWidth: .infinity).frame(height: 52).background(.white, in: Capsule())
             }.buttonStyle(.plain).disabled(busy)
-            if let message { Text(message).font(LF.inter(600, 12)).foregroundStyle(HV.red) }
-            Button("あとで") { dismiss() }.font(LF.inter(700, 14)).foregroundStyle(HV.gray).frame(height: 44)
+            if let message { Text(message).font(Typo.ui(600, 12)).foregroundStyle(HV.red) }
+            Button("あとで") { dismiss() }.font(Typo.ui(700, 14)).foregroundStyle(HV.gray).frame(height: 44)
         }
         .padding(.horizontal, 24).padding(.bottom, 12).frame(maxWidth: .infinity)
         .background(Color(hex: "111113").ignoresSafeArea()).preferredColorScheme(.dark)

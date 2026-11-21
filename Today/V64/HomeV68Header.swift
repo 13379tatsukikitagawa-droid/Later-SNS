@@ -37,7 +37,7 @@ struct HV68Header: View {
 
             // ロゴ ・ モード(まとまる とき 上へ 10pt + 0.86倍 + 消える)
             Group {
-                Text(Brand.name).font(LF.inter(900, 30)).tracking(-1.95).foregroundStyle(.white)
+                Text(Brand.name).font(Typo.ui(900, 30)).tracking(-1.95).foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.35), radius: 7, y: 1)
                     .scaleEffect(logoScale, anchor: .leading)
                     .frame(height: 40, alignment: .leading).fixedSize()
@@ -75,7 +75,7 @@ struct HV68Header: View {
                 .overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 1))
                 .overlay(alignment: .topTrailing) {
                     if input.inboxCount > 0 {
-                        Text(input.inboxCount > 9 ? "9+" : "\(input.inboxCount)").font(LF.inter(800, 11)).foregroundStyle(HV.ink)
+                        Text(input.inboxCount > 9 ? "9+" : "\(input.inboxCount)").font(Typo.ui(800, 11)).foregroundStyle(HV.ink)
                             .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20).background(PopColor.pink, in: Capsule())
                             .overlay(Capsule().strokeBorder(.black, lineWidth: 2.5)).offset(x: 4, y: -4)
                     }
@@ -96,7 +96,7 @@ struct HV68Header: View {
                 Circle().trim(from: 0, to: ratio).stroke(HV.lime, style: StrokeStyle(lineWidth: 1.6, lineCap: .round)).rotationEffect(.degrees(-90)).frame(width: size, height: size)
                 Group {
                     if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
-                    else { Circle().fill(Self.color(input.avatarName)).overlay(Text(String(input.avatarName.prefix(1))).font(LF.inter(800, 18)).foregroundStyle(HV.ink)) }
+                    else { Circle().fill(Self.color(input.avatarName)).overlay(Text(String(input.avatarName.prefix(1))).font(Typo.ui(800, 18)).foregroundStyle(HV.ink)) }
                 }
                 .frame(width: 48, height: 48).clipShape(Circle())
                 .overlay(Circle().strokeBorder(.white, lineWidth: 2))
@@ -117,7 +117,7 @@ struct HV68Header: View {
         }
         .onTapGesture { Haptics.play(.tick); onProfile() }
         .overlay(alignment: .bottom) {
-            if tip { Text("2回 タップで きのうへ").font(LF.inter(700, 12)).foregroundStyle(.white).fixedSize().padding(.horizontal, 12).padding(.vertical, 7).background(Color.black.opacity(0.85), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1)).offset(y: 40).transition(.opacity.combined(with: .scale(scale: 0.9))) }
+            if tip { Text("2回 タップで きのうへ").font(Typo.ui(700, 12)).foregroundStyle(.white).fixedSize().padding(.horizontal, 12).padding(.vertical, 7).background(Color.black.opacity(0.85), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1)).offset(y: 40).transition(.opacity.combined(with: .scale(scale: 0.9))) }
         }
         .offset(x: f.w - 72, y: 47)
         .onAppear {
@@ -242,19 +242,19 @@ struct HV68Header: View {
     private func fullRow(_ t: HV68Clock, label: Bool) -> some View {
         HStack(spacing: 0) {
             ring(t, scale: 1)
-            if label { Text(t.label).font(LF.inter(700, 12)).foregroundStyle(.white.opacity(0.6)).lineLimit(1).fixedSize().padding(.leading, 10) }
+            if label { Text(t.label).font(Typo.ui(700, 12)).foregroundStyle(.white.opacity(0.6)).lineLimit(1).fixedSize().padding(.leading, 10) }
             HStack(spacing: 0) {
                 Text(t.hms.0).foregroundStyle(.white)
                 Text(t.hms.1).foregroundStyle(.white.opacity(0.35))
             }
-            .font(LF.inter(700, 21)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+            .font(Typo.ui(700, 21)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
             .contentTransition(.numericText(countsDown: true)).padding(.leading, 8)
             Spacer(minLength: 8)
             Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 22).padding(.trailing, 10)
             frames.fixedSize()
             HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text("\(input.remaining)").font(LF.inter(800, 17)).foregroundStyle(.white)
-                Text("枚").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.8))
+                Text("\(input.remaining)").font(Typo.ui(800, 17)).foregroundStyle(.white)
+                Text("枚").font(Typo.ui(700, 14)).foregroundStyle(.white.opacity(0.8))
             }.fixedSize().padding(.leading, 8)
         }.padding(.leading, 9).padding(.trailing, 16)
     }
@@ -263,10 +263,10 @@ struct HV68Header: View {
         HStack(spacing: 0) {
             ring(t, scale: 0.8).padding(.leading, 3)
             HStack(spacing: 0) { Text(t.hms.0).foregroundStyle(.white); Text(t.hms.1).foregroundStyle(.white.opacity(0.35)) }
-                .font(LF.inter(700, 16)).monospacedDigit().lineLimit(1).padding(.leading, 6)
+                .font(Typo.ui(700, 16)).monospacedDigit().lineLimit(1).padding(.leading, 6)
             Spacer(minLength: 4)
             Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 16).padding(.trailing, 8)
-            Text("\(input.remaining)").font(LF.inter(800, 15)).foregroundStyle(HV.lime).padding(.trailing, 12)
+            Text("\(input.remaining)").font(Typo.ui(800, 15)).foregroundStyle(HV.lime).padding(.trailing, 12)
         }
     }
 }

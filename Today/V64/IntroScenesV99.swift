@@ -23,7 +23,7 @@ private struct IAvatar: View {
     var body: some View {
         ZStack {
             Circle().fill(IntroPhoto.fill(i + 2))
-            Text(String(name.prefix(1))).font(LF.inter(800, d * 0.38)).foregroundStyle(.white.opacity(0.92))
+            Text(String(name.prefix(1))).font(Typo.ui(800, d * 0.38)).foregroundStyle(.white.opacity(0.92))
         }
         .frame(width: d, height: d)
         .overlay(Circle().strokeBorder(ring ? lime : .clear, lineWidth: 3))
@@ -139,7 +139,7 @@ private struct FSleep: View {
                 Text("23:59").offset(y: -CGFloat(p) * 34).opacity(1 - p)
                 Text("0:00").offset(y: CGFloat(1 - p) * 34).opacity(p)
             }
-            .font(LF.mono(34)).foregroundStyle(lime).frame(height: 44).clipped().position(x: 195, y: 70)
+            .font(Typo.label(34)).foregroundStyle(lime).frame(height: 44).clipped().position(x: 195, y: 70)
             // 3枚の チェキが 集まり、1枚ずつ 裏がえる
             ForEach(0..<3, id: \.self) { i in
                 let g = M.ease(t, 0.3, 0.9)
@@ -166,7 +166,7 @@ private struct FOpen: View {
     let t: Double
     var body: some View {
         ZStack {
-            Text("9:00").font(LF.mono(34)).foregroundStyle(lime).position(x: 195, y: 44).opacity(M.ease(t, 0, 0.4))
+            Text("9:00").font(Typo.label(34)).foregroundStyle(lime).position(x: 195, y: 44).opacity(M.ease(t, 0, 0.4))
             // 地平線から ライムの 朝日
             ZStack {
                 Circle().fill(RadialGradient(colors: [lime, lime.opacity(0.0)], center: .center, startRadius: 20, endRadius: 150)).frame(width: 300, height: 300).opacity(0.7)
@@ -207,7 +207,7 @@ private struct FConnect: View {
             // さがす 欄
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
-                Text(String(text.prefix(n))).font(LF.mono(17)).foregroundStyle(.white)
+                Text(String(text.prefix(n))).font(Typo.label(17)).foregroundStyle(.white)
                 Rectangle().fill(lime).frame(width: 2, height: 20).opacity(Int(t * 2.4) % 2 == 0 && t < 1.1 ? 1 : 0)
                 Spacer()
             }
@@ -218,7 +218,7 @@ private struct FConnect: View {
             let c = M.pop(t, 1.05, 0.4)
             HStack(spacing: 12) {
                 IAvatar(name: "ゆ", i: 1, d: 46)
-                VStack(alignment: .leading, spacing: 2) { Text("ゆい").font(LF.inter(800, 16)).foregroundStyle(.white); Text("@yui_k").font(LF.mono(12)).foregroundStyle(.white.opacity(0.55)) }
+                VStack(alignment: .leading, spacing: 2) { Text("ゆい").font(Typo.ui(800, 16)).foregroundStyle(.white); Text("@yui_k").font(Typo.label(12)).foregroundStyle(.white.opacity(0.55)) }
                 Spacer()
                 let ok = t >= 2.0
                 ZStack { Circle().fill(lime); Image(systemName: ok ? "checkmark" : "plus").font(.system(size: 15, weight: .heavy)).foregroundStyle(.black) }
@@ -256,7 +256,7 @@ private struct MiniPass: View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Circle().fill(t >= 2.5 ? lime : Color(hex: "FF7A2F")).frame(width: 6, height: 6)
-                Text(t >= 2.5 ? "LATTAG" : "PRINTING").font(LF.mono(8)).tracking(2).foregroundStyle(Color(hex: "6E6E75"))
+                Text(t >= 2.5 ? "LATTAG" : "PRINTING").font(Typo.label(8)).tracking(2).foregroundStyle(Color(hex: "6E6E75"))
             }.frame(width: 284, height: 22).background(RoundedRectangle(cornerRadius: 11).fill(Color(hex: "1A1A1D"))).zIndex(2)
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
@@ -264,16 +264,16 @@ private struct MiniPass: View {
                         IntroPhoto.fill(0)
                         LinearGradient(colors: [.clear, .black.opacity(0.7)], startPoint: .top, endPoint: .bottom)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("京都 2泊3日").font(LF.inter(900, 22)).foregroundStyle(.white)
-                            Text("NOV 18 → NOV 20").font(LF.mono(9)).foregroundStyle(.white.opacity(0.8))
+                            Text("京都 2泊3日").font(Typo.ui(900, 22)).foregroundStyle(.white)
+                            Text("NOV 18 → NOV 20").font(Typo.label(9)).foregroundStyle(.white.opacity(0.8))
                         }.padding(12)
                     }.frame(height: 150)
                     HStack(spacing: 10) {
                         Group { if let m = QRMatrix.make(link) { StyledQRView(matrix: m, progress: M.clamp((t - 1.3) / 0.8), side: 78) } else { Color.clear } }
                             .frame(width: 78, height: 78).padding(4).background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: "FBFAF6")))
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("KEY").font(LF.mono(7)).tracking(1.5).foregroundStyle(Color(hex: "8A857B"))
-                            (Text("#meadow").foregroundColor(Color(hex: "0B0C0D")) + Text("95").foregroundColor(Color(hex: "5E8A12"))).font(LF.inter(900, 17))
+                            Text("KEY").font(Typo.label(7)).tracking(1.5).foregroundStyle(Color(hex: "8A857B"))
+                            (Text("#meadow").foregroundColor(Color(hex: "0B0C0D")) + Text("95").foregroundColor(Color(hex: "5E8A12"))).font(Typo.ui(900, 17))
                         }
                         Spacer(minLength: 0)
                     }.padding(.horizontal, 12).frame(height: 100).background(Color(hex: "F4F1EA"))
@@ -283,7 +283,7 @@ private struct MiniPass: View {
             }
             .frame(width: 266, height: 270, alignment: .top).clipped()
             .overlay(alignment: .topTrailing) {
-                VStack(spacing: 0) { Text("ISSUED").font(LF.mono(7)).tracking(1.4); Text("NOV 19").font(LF.inter(900, 11)) }
+                VStack(spacing: 0) { Text("ISSUED").font(Typo.label(7)).tracking(1.4); Text("NOV 19").font(Typo.ui(900, 11)) }
                     .foregroundStyle(lime).padding(.horizontal, 8).padding(.vertical, 4)
                     .background(RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.6)))
                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(lime, lineWidth: 2))
@@ -313,12 +313,12 @@ private struct TBoard: View {
             // メッセージの 吹き出し(左上)
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 5).fill(IntroPhoto.fill(0)).frame(width: 34, height: 40)
-                VStack(alignment: .leading, spacing: 1) { Text("Trip の 招待").font(LF.inter(800, 12)).foregroundStyle(.white); Text("later-app-f2606.firebaseapp.com/t/meadow95").font(LF.inter(600, 10)).foregroundStyle(.white.opacity(0.6)) }
+                VStack(alignment: .leading, spacing: 1) { Text("Trip の 招待").font(Typo.ui(800, 12)).foregroundStyle(.white); Text("later-app-f2606.firebaseapp.com/t/meadow95").font(Typo.ui(600, 10)).foregroundStyle(.white.opacity(0.6)) }
             }
             .padding(10).background(RoundedRectangle(cornerRadius: 18).fill(Color(hex: "2A2A2E")))
             .position(x: 140, y: 60).offset(x: CGFloat(1 - M.ease(t, 0, 0.45)) * -40).opacity(M.ease(t, 0, 0.3)).scaleEffect(0.9 + 0.1 * M.pop(t, 0.1))
             // 座席表
-            Text("FRONT").font(LF.mono(8)).tracking(2.4).foregroundStyle(Color(hex: "4A4A50")).position(x: 195, y: 218)
+            Text("FRONT").font(Typo.label(8)).tracking(2.4).foregroundStyle(Color(hex: "4A4A50")).position(x: 195, y: 218)
             ForEach(0..<8, id: \.self) { i in
                 let on = i == 0 || t >= 0.9 + 0.34 * Double(i) + 0.34
                 let p = seat(i)
@@ -335,7 +335,7 @@ private struct TBoard: View {
                 let x = from.x + (to.x - from.x) * p, y = from.y + (to.y - from.y) * p - sin(p * .pi) * 60
                 IAvatar(name: names[i], i: i, d: 36).position(x: x, y: y).opacity(p > 0 && p < 1 ? 1 : 0)
             }
-            Text("\(landed + (landed > 0 ? 0 : 1)) / 8").font(LF.mono(12)).foregroundStyle(lime).tracking(1.5).position(x: 195, y: 392)
+            Text("\(landed + (landed > 0 ? 0 : 1)) / 8").font(Typo.label(12)).foregroundStyle(lime).tracking(1.5).position(x: 195, y: 392)
                 .contentTransition(.numericText())
         }
     }
@@ -348,8 +348,8 @@ private struct TShare: View {
         ZStack {
             HStack(spacing: 10) { ForEach(0..<5, id: \.self) { i in IAvatar(name: ["ゆ", "れ", "そ", "み", "こ"][i], i: i, d: 44).scaleEffect(M.pop(t, 0.05 * Double(i))) } }.position(x: 195, y: 36)
             VStack(spacing: 0) {
-                Text("\(23 - drops)").font(LF.serif(128, italic: true)).foregroundStyle(lime).contentTransition(.numericText(countsDown: true)).frame(height: 130)
-                Text("LEFT TODAY").font(LF.mono(10)).tracking(3).foregroundStyle(.white.opacity(0.6))
+                Text("\(23 - drops)").font(Typo.title(128, italic: true)).foregroundStyle(lime).contentTransition(.numericText(countsDown: true)).frame(height: 130)
+                Text("LEFT TODAY").font(Typo.label(10)).tracking(3).foregroundStyle(.white.opacity(0.6))
             }.position(x: 195, y: 190)
             // フィルムの 帯
             ZStack {
@@ -374,7 +374,7 @@ private struct TDevelop: View {
     let t: Double
     var body: some View {
         ZStack {
-            Text("AM 9:00").font(LF.mono(20)).tracking(2).foregroundStyle(lime).position(x: 195, y: 36).opacity(M.ease(t, 0, 0.4))
+            Text("AM 9:00").font(Typo.label(20)).tracking(2).foregroundStyle(lime).position(x: 195, y: 36).opacity(M.ease(t, 0, 0.4))
             // 朝日
             Circle().fill(RadialGradient(colors: [lime.opacity(0.9), lime.opacity(0)], center: .center, startRadius: 6, endRadius: 120)).frame(width: 240, height: 240)
                 .position(x: 195, y: 330 - 90 * CGFloat(M.ease(t, 0.3, 1.0))).opacity(0.7)
@@ -393,7 +393,7 @@ private struct TDevelop: View {
                 .position(x: 195 + CGFloat(c - 1) * 92, y: 200 + CGFloat(r - 1) * 92)
                 .opacity(M.ease(t, 0.1 + 0.03 * Double(i), 0.3))
             }
-            Text("DAY 1").font(LF.mono(13)).tracking(2).foregroundStyle(lime).padding(.horizontal, 12).padding(.vertical, 5)
+            Text("DAY 1").font(Typo.label(13)).tracking(2).foregroundStyle(lime).padding(.horizontal, 12).padding(.vertical, 5)
                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(lime, lineWidth: 2.5))
                 .background(RoundedRectangle(cornerRadius: 8).fill(.black.opacity(0.6)))
                 .rotationEffect(.degrees(-12)).scaleEffect(t >= 2.45 ? 1 + 1.2 * (1 - M.pop(t, 2.45, 0.3)) : 1).opacity(t >= 2.45 ? 1 : 0).position(x: 290, y: 330)

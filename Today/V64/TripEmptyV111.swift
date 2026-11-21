@@ -38,15 +38,15 @@ struct TripEmptyV111: View {
     private var board: some View {
         VStack(spacing: 7) {
             HStack {
-                HStack(spacing: 6) { Image(systemName: "airplane").font(.system(size: 13, weight: .bold)); Text("DEPARTURES").font(LF.mono(11)).tracking(2.2) }
+                HStack(spacing: 6) { Image(systemName: "airplane").font(.system(size: 13, weight: .bold)); Text("DEPARTURES").font(Typo.label(11)).tracking(2.2) }
                 Spacer(minLength: 0)
                 TimelineView(.everyMinute) { ctx in
-                    Text(ctx.date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))).font(LF.mono(11)).tracking(0.9).foregroundStyle(.white.opacity(0.5))
+                    Text(ctx.date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))).font(Typo.label(11)).tracking(0.9).foregroundStyle(.white.opacity(0.5))
                 }
             }.foregroundStyle(PopColor.lime).padding(.horizontal, 2).padding(.bottom, 4)
-            row(time: "--:--", dest: "NEXT TRIP", status: AnyView(Text("OPEN").font(LF.mono(10)).foregroundStyle(Color(hex: "111113")).padding(.horizontal, 6).padding(.vertical, 3).background(PopColor.lime, in: RoundedRectangle(cornerRadius: 5)).modifier(BlinkWhileVisible())), hot: true)
-            row(time: "--:--", dest: "-------", status: AnyView(Text("—").font(LF.mono(10)).foregroundStyle(Color(hex: "4A4A50"))), hot: false)
-            row(time: "--:--", dest: "-------", status: AnyView(Text("—").font(LF.mono(10)).foregroundStyle(Color(hex: "4A4A50"))), hot: false)
+            row(time: "--:--", dest: "NEXT TRIP", status: AnyView(Text("OPEN").font(Typo.label(10)).foregroundStyle(Color(hex: "111113")).padding(.horizontal, 6).padding(.vertical, 3).background(PopColor.lime, in: RoundedRectangle(cornerRadius: 5)).modifier(BlinkWhileVisible())), hot: true)
+            row(time: "--:--", dest: "-------", status: AnyView(Text("—").font(Typo.label(10)).foregroundStyle(Color(hex: "4A4A50"))), hot: false)
+            row(time: "--:--", dest: "-------", status: AnyView(Text("—").font(Typo.label(10)).foregroundStyle(Color(hex: "4A4A50"))), hot: false)
         }
         .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 12)
         .background(Color(hex: "0E0E10"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -72,9 +72,9 @@ struct TripEmptyV111: View {
         Button { Haptics.play(.pop); onNew() } label: {
             ZStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("TRIP PASS").font(LF.mono(10.5)).tracking(2.1).foregroundStyle(PopColor.lime)
+                    Text("TRIP PASS").font(Typo.label(10.5)).tracking(2.1).foregroundStyle(PopColor.lime)
                     Text("どこへ いく?").font(.system(size: 28, weight: .black)).foregroundStyle(.white)
-                    Text("FROM ・ TO ・ 23 SHOTS / DAY").font(LF.mono(10.5)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text("FROM ・ TO ・ 23 SHOTS / DAY").font(Typo.label(10.5)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 30).padding(.trailing, 20).padding(.vertical, 20)
                 .background(
@@ -114,7 +114,7 @@ private struct FlapCell: View {
     }
 
     var body: some View {
-        Text(String(shown)).font(LF.mono(13)).foregroundStyle(color)
+        Text(String(shown)).font(Typo.label(13)).foregroundStyle(color)
             .frame(width: 15, height: 24)
             .background(Color(hex: "1B1B1E"), in: RoundedRectangle(cornerRadius: 3))
             .overlay(Rectangle().fill(.black.opacity(0.7)).frame(height: 1))

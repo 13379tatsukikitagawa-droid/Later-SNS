@@ -102,7 +102,7 @@ struct OnboardingV64View: View {
                 OBFinishView(start: finishStart, onDone: completeFinish).ignoresSafeArea()
             }
             if let toast {
-                Text(toast).font(LF.inter(700, 13)).foregroundStyle(.white)
+                Text(toast).font(Typo.ui(700, 13)).foregroundStyle(.white)
                     .padding(.horizontal, 16).padding(.vertical, 10)
                     .lgGlass(radius: 18)
                     .frame(maxHeight: .infinity, alignment: .bottom).padding(.bottom, 190)
@@ -188,8 +188,8 @@ struct OnboardingV64View: View {
 
     private var brandHeader: some View {
         HStack(alignment: .top, spacing: 3) {
-            Text(Brand.name).font(LF.inter(900, 34)).tracking(-0.065 * 34).foregroundStyle(.white).frame(height: 34)
-            Text("today").font(LF.serif(15, italic: true)).foregroundStyle(OB.sub)
+            Text(Brand.name).font(Typo.ui(900, 34)).tracking(-0.065 * 34).foregroundStyle(.white).frame(height: 34)
+            Text("today").font(Typo.title(15, italic: true)).foregroundStyle(OB.sub)
         }
         .frame(maxWidth: .infinity)
     }
@@ -197,11 +197,11 @@ struct OnboardingV64View: View {
     private func pageMark(_ n: Int) -> some View {
         HStack(spacing: 10) {
             HStack(spacing: 0) {
-                Text(String(format: "%02d", n)).font(LF.mono(13)).tracking(0.78).foregroundStyle(.white)
-                Text(" / 04").font(LF.mono(11)).tracking(1.54).foregroundStyle(OB.sub)
+                Text(String(format: "%02d", n)).font(Typo.label(13)).tracking(0.78).foregroundStyle(.white)
+                Text(" / 04").font(Typo.label(11)).tracking(1.54).foregroundStyle(OB.sub)
             }
             Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 18)
-            Text(step.pageLabel).font(LF.mono(11)).tracking(1.54).foregroundStyle(OB.stamp)
+            Text(step.pageLabel).font(Typo.label(11)).tracking(1.54).foregroundStyle(OB.stamp)
         }
         .frame(maxWidth: .infinity).frame(height: 20)
     }
@@ -216,7 +216,7 @@ struct OnboardingV64View: View {
             VStack(spacing: 12) {
                 HStack(spacing: 8) {
                     Circle().fill(OB.stamp).frame(width: 6, height: 6).shadow(color: OB.stamp, radius: 4)
-                    Text("FILM FOR TOMORROW").font(LF.mono(10)).tracking(2.4).foregroundStyle(OB.kicker)
+                    Text("FILM FOR TOMORROW").font(Typo.label(10)).tracking(2.4).foregroundStyle(OB.kicker)
                 }
                 VStack(spacing: 0) {
                     Text("昨日を").foregroundColor(.white).frame(height: 50)
@@ -229,13 +229,13 @@ struct OnboardingV64View: View {
         case .mail, .sent: EmptyView()   // v104:メールの リンクは やめた
         case .name:
             VStack(spacing: 0) {
-                Text("Name").font(LF.serif(editing ? 38 : 64, italic: true)).tracking(editing ? -0.76 : -1.28).foregroundStyle(.white).frame(height: editing ? 38 : 64)
-                if !editing { Text("\(Brand.name) で よばれる なまえ").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8) }
+                Text("Name").font(Typo.title(editing ? 38 : 64, italic: true)).tracking(editing ? -0.76 : -1.28).foregroundStyle(.white).frame(height: editing ? 38 : 64)
+                if !editing { Text("\(Brand.name) で よばれる なまえ").font(Typo.ui(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8) }
             }
             .frame(width: W).offset(y: editing ? 222 : 453 + mid)
             VStack(alignment: .leading, spacing: 0) {
                 TextField("", text: $name, prompt: Text("なまえ").foregroundColor(OB.sub.opacity(0.5)))
-                    .font(LF.inter(900, 27)).tracking(-0.54).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
+                    .font(Typo.ui(900, 27)).tracking(-0.54).foregroundStyle(.white).tint(OB.accent).multilineTextAlignment(.center)
                     .submitLabel(.next).focused($focus, equals: .name)
                     .onSubmit { if validName { next() } }
                     .onChange(of: name) { _, v in
@@ -246,7 +246,7 @@ struct OnboardingV64View: View {
                     .frame(height: editing ? 50 : 58)
                 Rectangle().fill(focus == .name ? OB.accent : .white).frame(height: 2.5)
                 // v106 §2:字数は 線の 下 ・ 右(上から 4pt)。線の 中には 置かない
-                Text("\(name.count) / 12").font(LF.mono(11)).foregroundStyle(.white.opacity(0.4)).frame(maxWidth: .infinity, alignment: .trailing).padding(.top, 4).allowsHitTesting(false)
+                Text("\(name.count) / 12").font(Typo.label(11)).foregroundStyle(.white.opacity(0.4)).frame(maxWidth: .infinity, alignment: .trailing).padding(.top, 4).allowsHitTesting(false)
             }
             .frame(width: w).offset(x: 24, y: editing ? 268 : 691 + mid)
             Button { Haptics.play(.click); showsIcon = true } label: {
@@ -255,13 +255,13 @@ struct OnboardingV64View: View {
                         ZStack {
                             Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing))
                             if let d = iconData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() }
-                            else { Text(String(name.prefix(1))).font(LF.inter(900, 28)).foregroundStyle(.white) }
+                            else { Text(String(name.prefix(1))).font(Typo.ui(900, 28)).foregroundStyle(.white) }
                         }.frame(width: editing ? 60 : 76, height: editing ? 60 : 76).clipShape(Circle()).overlay(Circle().strokeBorder(OB.accent, lineWidth: 3).padding(-3))
                         Image(systemName: "plus").font(.system(size: 13, weight: .black)).foregroundStyle(HV.ink).frame(width: 28, height: 28).background(OB.accent, in: Circle()).overlay(Circle().strokeBorder(.black, lineWidth: 2)).offset(x: 4, y: 4)
                     }
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("アイコンの 写真").font(LF.inter(800, 16)).foregroundStyle(.white)
-                        Text("タップして えらぶ ・ あとで かえられます").font(LF.inter(600, 13)).foregroundStyle(OB.sub).lineLimit(1).minimumScaleFactor(0.75)
+                        Text("アイコンの 写真").font(Typo.ui(800, 16)).foregroundStyle(.white)
+                        Text("タップして えらぶ ・ あとで かえられます").font(Typo.ui(600, 13)).foregroundStyle(OB.sub).lineLimit(1).minimumScaleFactor(0.75)
                     }
                     Spacer()
                 }
@@ -271,8 +271,8 @@ struct OnboardingV64View: View {
             }.buttonStyle(.plain).frame(width: w).offset(x: 24, y: editing ? 340 : 592 + mid)
         case .id:
             VStack(spacing: 0) {
-                Text("ID").font(LF.serif(editing ? 44 : 64, italic: true)).tracking(editing ? -0.88 : -1.28).foregroundStyle(.white).frame(height: editing ? 44 : 64)
-                if !editing { Text("友だちが さがす ときに つかう ・ あとで かえられる").font(LF.inter(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8) }
+                Text("ID").font(Typo.title(editing ? 44 : 64, italic: true)).tracking(editing ? -0.88 : -1.28).foregroundStyle(.white).frame(height: editing ? 44 : 64)
+                if !editing { Text("友だちが さがす ときに つかう ・ あとで かえられる").font(Typo.ui(500, 12.5)).tracking(0.25).foregroundStyle(OB.sub).padding(.top, 8) }
             }
             .frame(width: W).offset(y: editing ? 214 : 453 + mid)
             HandleField(text: $handle, ownerKey: UserProfile.current(from: profiles)?.id.uuidString ?? currentProfileID, suggestions: HandleRules.suggestions(fromName: name), autofocus: true) { handleState = $0 }
@@ -287,20 +287,20 @@ struct OnboardingV64View: View {
                 if let invitedBy { inviteRow(invitedBy) }
                 Button { Haptics.play(.click); say("連絡先の 許可は このあと 友だちの 画面で") } label: {
                     HStack(spacing: 8) { Image(systemName: "person.badge.plus").font(.system(size: 16, weight: .bold)); Text("連絡先から さがす") }
-                        .font(LF.inter(800, 15)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 56)
+                        .font(Typo.ui(800, 15)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 56)
                         .background(OB.line, in: RoundedRectangle(cornerRadius: 20))
                 }.buttonStyle(.plain)
                 HStack(spacing: 12) {
                     Button { Haptics.play(.pop); showingShare = true } label: { Text("リンクを おくる").frame(height: 44).padding(.horizontal, 12) }
                 }
-                .font(LF.inter(700, 13)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2)
+                .font(Typo.ui(700, 13)).foregroundStyle(OB.sub).buttonStyle(.plain).padding(.top, 2)
             }
             .frame(width: w).offset(x: 24, y: 489 + mid)
         case .nt:
             VStack(spacing: 9) {
-                (Text("9:00").font(LF.serif(36, italic: true)).foregroundColor(OB.stamp) + Text(" に、しらせる。").font(LGFont.mincho(29)).foregroundColor(.white))
+                (Text("9:00").font(Typo.title(36, italic: true)).foregroundColor(OB.stamp) + Text(" に、しらせる。").font(LGFont.mincho(29)).foregroundColor(.white))
                     .lineSpacing(0)
-                Text("朝の 1回と、なかまの ことだけ").font(LF.inter(500, 13)).foregroundStyle(OB.sub)
+                Text("朝の 1回と、なかまの ことだけ").font(Typo.ui(500, 13)).foregroundStyle(OB.sub)
             }
             .frame(width: W).offset(y: 492 + mid)
         case .go:
@@ -346,7 +346,7 @@ struct OnboardingV64View: View {
         ForEach(OB.tags + custom, id: \.self) { t in
             let on = tags.contains(String(t.dropFirst()))
             Button { toggleTag(String(t.dropFirst())) } label: {
-                Text(t).font(LF.inter(700, 14)).foregroundStyle(on ? Color(hex: "111111") : .white)
+                Text(t).font(Typo.ui(700, 14)).foregroundStyle(on ? Color(hex: "111111") : .white)
                     .padding(.horizontal, 14).frame(height: 38)
                     .background(on ? Color.white : OB.line, in: Capsule())
             }
@@ -354,16 +354,16 @@ struct OnboardingV64View: View {
         }
         if addingTag {
             ZStack(alignment: .leading) {
-                if customDraft.isEmpty { Text("#じぶんで").font(LF.inter(700, 14)).foregroundStyle(OB.sub.opacity(0.5)) }
+                if customDraft.isEmpty { Text("#じぶんで").font(Typo.ui(700, 14)).foregroundStyle(OB.sub.opacity(0.5)) }
                 TextField("", text: $customDraft)
-                    .font(LF.inter(700, 14)).foregroundStyle(.white).tint(OB.accent)
+                    .font(Typo.ui(700, 14)).foregroundStyle(.white).tint(OB.accent)
                     .focused($focus, equals: .tag).submitLabel(.done).onSubmit(commitCustomTag)
             }
             .padding(.horizontal, 14).frame(width: 120, height: 38)
                 .overlay(Capsule().strokeBorder(OB.accent, lineWidth: 1.5))
         } else {
             Button { Haptics.play(.sel); addingTag = true; focus = .tag } label: {
-                Text("+ じぶんで").font(LF.inter(700, 14)).foregroundStyle(.white).padding(.horizontal, 14).frame(height: 38)
+                Text("+ じぶんで").font(Typo.ui(700, 14)).foregroundStyle(.white).padding(.horizontal, 14).frame(height: 38)
                     .background(OB.line, in: Capsule())
             }
             .buttonStyle(OBChipPress())
@@ -372,17 +372,17 @@ struct OnboardingV64View: View {
 
     private func inviteRow(_ n: String) -> some View {
         HStack(spacing: 12) {
-            Text(String(n.prefix(1))).font(LF.inter(800, 15)).foregroundStyle(.white)
+            Text(String(n.prefix(1))).font(Typo.ui(800, 15)).foregroundStyle(.white)
                 .frame(width: 40, height: 40).background(LinearGradient(colors: [colors.0, colors.1], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text(n).font(LF.inter(800, 15)).foregroundStyle(.white)
-                Text("招待してくれた").font(LF.inter(500, 11)).foregroundStyle(OB.sub)
+                Text(n).font(Typo.ui(800, 15)).foregroundStyle(.white)
+                Text("招待してくれた").font(Typo.ui(500, 11)).foregroundStyle(OB.sub)
             }
             Spacer(minLength: 0)
             Button {
                 requestedInvite.toggle(); Haptics.play(requestedInvite ? .pop : .tick)
             } label: {
-                Text(requestedInvite ? "申請した" : "申請").font(LF.inter(900, 13))
+                Text(requestedInvite ? "申請した" : "申請").font(Typo.ui(900, 13))
                     .foregroundStyle(requestedInvite ? OB.sub : Color(hex: "111111")).padding(.horizontal, 16).frame(height: 36)
                     .background(requestedInvite ? Color.clear : Color.white, in: Capsule())
                     .overlay(Capsule().strokeBorder(requestedInvite ? OB.line : .clear, lineWidth: 1.2))
@@ -403,10 +403,10 @@ struct OnboardingV64View: View {
                 case .signin:
                     VStack(spacing: 0) {
                         OBAppleCircle(busy: busy, glow: appleGlow, reduceMotion: reduceMotion) { startApple() }
-                        Text("Apple で つづける").font(LF.inter(800, 16)).foregroundStyle(.white).padding(.top, 10)
+                        Text("Apple で つづける").font(Typo.ui(800, 16)).foregroundStyle(.white).padding(.top, 10)
                         HStack(spacing: 10) {
                             Image(systemName: "eye.slash").font(.system(size: 15, weight: .semibold)).foregroundStyle(HV.lime)
-                            Text("メールは かくす").font(LF.inter(800, 13)).foregroundStyle(.white)
+                            Text("メールは かくす").font(Typo.ui(800, 13)).foregroundStyle(.white)
                             Toggle("", isOn: $hideEmail).labelsHidden().tint(HV.lime).scaleEffect(0.85)
                                 .onChange(of: hideEmail) { _, _ in Haptics.play(.sel) }
                         }
@@ -418,7 +418,7 @@ struct OnboardingV64View: View {
                         .accessibilityLabel("メールは かくす").accessibilityValue(hideEmail ? "オン" : "オフ")
                         .accessibilityAddTraits(.isButton).accessibilityAction { hideEmail.toggle() }
                         Text(appleError ? "サインインできませんでした。もう一度 どうぞ" : (hideEmail ? "Lattag は メールアドレスを うけとりません" : "Apple の 画面で メールの あつかいを えらべます"))
-                            .font(LF.inter(500, 11.5)).foregroundStyle(appleError ? Color(hex: "FF453A") : OB.sub).multilineTextAlignment(.center).padding(.top, 10).frame(minHeight: 16)
+                            .font(Typo.ui(500, 11.5)).foregroundStyle(appleError ? Color(hex: "FF453A") : OB.sub).multilineTextAlignment(.center).padding(.top, 10).frame(minHeight: 16)
                         HStack(spacing: 0) {
                             Text("つづけると ")
                             Button { legalLink = .terms } label: { Text("利用規約").underline().frame(minHeight: 44).contentShape(Rectangle()) }
@@ -428,7 +428,7 @@ struct OnboardingV64View: View {
                                 .accessibilityAddTraits(.isLink).accessibilityLabel("プライバシー")
                             Text(" に 同意(13歳以上)")
                         }
-                        .font(LF.inter(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).frame(height: 44).padding(.vertical, -10)
+                        .font(Typo.ui(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).frame(height: 44).padding(.vertical, -10)
                     }
                     .padding(.bottom, 28)
                 case .mail, .sent: EmptyView()
@@ -451,8 +451,8 @@ struct OnboardingV64View: View {
                             holdLevel = level
                             if level > 0.05 { spawnSpark() }
                         }, onFinish: beginFinish)
-                        Text("HOLD").font(LF.mono(10)).tracking(2.6).foregroundStyle(OB.sub).padding(.top, 27)
-                        Text("ながおしで はじめる").font(LF.inter(500, 11.5)).tracking(0.23).foregroundStyle(OB.sub).padding(.top, 6)
+                        Text("HOLD").font(Typo.label(10)).tracking(2.6).foregroundStyle(OB.sub).padding(.top, 27)
+                        Text("ながおしで はじめる").font(Typo.ui(500, 11.5)).tracking(0.23).foregroundStyle(OB.sub).padding(.top, 6)
                     }.padding(.bottom, 44)
                 }
             }
@@ -912,7 +912,7 @@ struct OBFinishView: View {
         let dy: CGFloat = reduceMotion || sh <= 0 || sh >= 1 ? 0 : [3, -4, 2, 0][min(3, Int(sh * 4))]
         return ZStack {
             Color.black
-            Text(Brand.name).font(LF.inter(900, 112)).tracking(-0.075 * 112).foregroundStyle(.white).fixedSize()
+            Text(Brand.name).font(Typo.ui(900, 112)).tracking(-0.075 * 112).foregroundStyle(.white).fixedSize()
                 .scaleEffect(scale).blur(radius: reduceMotion ? 0 : 16 * (1 - k)).opacity(reduceMotion ? 1 : k)
                 .offset(x: dx, y: dy)
             Color.white.opacity(flash)

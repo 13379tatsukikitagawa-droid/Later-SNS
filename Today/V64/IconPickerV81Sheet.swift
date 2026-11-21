@@ -29,29 +29,29 @@ struct IconPickerV81Sheet: View {
         VStack(spacing: 0) {
             Capsule().fill(.white.opacity(0.25)).frame(width: 40, height: 5).padding(.top, 10)
             HStack {
-                Text("アイコン").font(LF.inter(900, 22)).foregroundStyle(.white)
+                Text("アイコン").font(Typo.ui(900, 22)).foregroundStyle(.white)
                 Spacer()
                 Button { Haptics.play(.tick); onClose() } label: { Image(systemName: "xmark").font(.system(size: 14, weight: .black)).foregroundStyle(.white).frame(width: 40, height: 40).background(.white.opacity(0.12), in: Circle()) }.buttonStyle(.plain)
             }.padding(.horizontal, 18).padding(.top, 16)
             previewCircle.padding(.top, 18)
             HStack(spacing: 12) {
-                Text("小").font(LF.inter(700, 12)).foregroundStyle(.white.opacity(0.45))
+                Text("小").font(Typo.ui(700, 12)).foregroundStyle(.white.opacity(0.45))
                 Slider(value: $zoom, in: 1...2).tint(HV.lime)
-                Text("大").font(LF.inter(700, 12)).foregroundStyle(.white.opacity(0.45))
+                Text("大").font(Typo.ui(700, 12)).foregroundStyle(.white.opacity(0.45))
             }.padding(.horizontal, 28).padding(.top, 12)
             HStack(spacing: 8) {
                 actionButton("camera", "写真を 撮る", red: false) { showsCamera = true }
                 PhotosPicker(selection: $picked, matching: .images, photoLibrary: .shared()) { actionLabel("photo", "ライブラリ", red: false) }
                 actionButton("trash", "写真を 消す", red: true) { Haptics.play(.warn); preview = nil; removed = true; selected = nil }
             }.padding(.horizontal, 16).padding(.top, 16)
-            Text("最近の 写真").font(LF.inter(700, 13)).foregroundStyle(.white.opacity(0.45)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 18).padding(.top, 18)
+            Text("最近の 写真").font(Typo.ui(700, 13)).foregroundStyle(.white.opacity(0.45)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 18).padding(.top, 18)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
                 ForEach(recent.prefix(8), id: \.id) { r in
                     Button { Haptics.play(.sel); withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { preview = r.image; selected = r.id; removed = false; zoom = 1 } } label: {
                         ZStack(alignment: .bottomLeading) {
                             Color(hex: "2A2326")
                             if let im = r.image { Image(uiImage: im).resizable().scaledToFill() }
-                            if let l = r.label { Text(l).font(LF.inter(800, 10)).foregroundStyle(.white).padding(6) }
+                            if let l = r.label { Text(l).font(Typo.ui(800, 10)).foregroundStyle(.white).padding(6) }
                         }.aspectRatio(1, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(HV.lime, lineWidth: selected == r.id ? 3 : 0))
                     }.buttonStyle(.plain)
@@ -59,7 +59,7 @@ struct IconPickerV81Sheet: View {
             }.padding(.horizontal, 16).padding(.top, 8)
             Spacer(minLength: 8)
             Button { Haptics.play(.success); onSave(removed ? nil : Self.circleData(preview, zoom: zoom)); onClose() } label: {
-                Text("これに する").font(LF.inter(800, 18)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 54).background(HV.lime, in: Capsule())
+                Text("これに する").font(Typo.ui(800, 18)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 54).background(HV.lime, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.98)).padding(.horizontal, 16).padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color(hex: "141516"))
@@ -76,7 +76,7 @@ struct IconPickerV81Sheet: View {
             Circle().fill(Color.black).frame(width: 188, height: 188)
             Group {
                 if let preview { Image(uiImage: preview).resizable().scaledToFill().scaleEffect(zoom) }
-                else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(LF.inter(900, 72)).foregroundStyle(.white)) }
+                else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, 72)).foregroundStyle(.white)) }
             }.frame(width: 182, height: 182).clipShape(Circle())
             Circle().strokeBorder(HV.lime, lineWidth: 2).frame(width: 196, height: 196)
         }.frame(width: 200, height: 200)
@@ -86,7 +86,7 @@ struct IconPickerV81Sheet: View {
         Button { Haptics.play(.click); a() } label: { actionLabel(icon, t, red: red) }.buttonStyle(HVPress(scale: 0.96))
     }
     private func actionLabel(_ icon: String, _ t: String, red: Bool) -> some View {
-        VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 20, weight: .semibold)); Text(t).font(LF.inter(800, 14)) }
+        VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 20, weight: .semibold)); Text(t).font(Typo.ui(800, 14)) }
             .foregroundStyle(red ? Color(hex: "FF6B6B") : .white).frame(maxWidth: .infinity).frame(height: 64).background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 

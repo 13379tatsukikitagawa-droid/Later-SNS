@@ -7,7 +7,7 @@ struct PopTag: View {
     var tilt: Double = -2
 
     var body: some View {
-        Text(text).font(LF.mono(11)).tracking(0.66).foregroundStyle(Color(hex: "111113"))
+        Text(text).font(Typo.label(11)).tracking(0.66).foregroundStyle(Color(hex: "111113"))
             .padding(.horizontal, 9).padding(.vertical, 5)
             .background(color, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(.white, lineWidth: 2.5))
@@ -70,7 +70,7 @@ struct PopButton: View {
 
     var body: some View {
         Button { Haptics.play(.pop); action() } label: {
-            Text(title).font(LF.inter(800, small ? 13 : 16))
+            Text(title).font(Typo.ui(800, small ? 13 : 16))
                 .foregroundStyle(kind == .ghost ? .white : Color(hex: "111113"))
                 .frame(maxWidth: small ? nil : .infinity, minHeight: small ? 36 : 50)
                 .padding(.horizontal, small ? 14 : 0)

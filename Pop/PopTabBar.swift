@@ -27,7 +27,7 @@ struct PopTabBar: View {
                         HStack(spacing: 7) {
                             if item.1 == 0 { Image(systemName: "person.2.fill").font(.system(size: 17, weight: .semibold)) }
                             else { PopTicketIcon().frame(width: 22, height: 16) }
-                            Text(item.0).font(LF.inter(800, 15))
+                            Text(item.0).font(Typo.ui(800, 15))
                         }
                         .foregroundStyle(on ? Self.ink : .white.opacity(0.78))
                         .frame(width: 108, height: 58)

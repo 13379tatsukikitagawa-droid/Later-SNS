@@ -169,7 +169,7 @@ struct OBCheki: View {
                     Image(uiImage: photo).resizable().scaledToFill()
                 } else {
                     LinearGradient(colors: [colors.0, colors.1], startPoint: UnitPoint(x: 0.1, y: 0), endPoint: UnitPoint(x: 0.9, y: 1))
-                    Text(initial).font(LF.inter(900, 76)).foregroundStyle(.white).shadow(color: .black.opacity(0.18), radius: 7, y: 2)
+                    Text(initial).font(Typo.ui(900, 76)).foregroundStyle(.white).shadow(color: .black.opacity(0.18), radius: 7, y: 2)
                 }
                 // ミルク色の 膜(現像前)+ さっと 光が 走る
                 ZStack {
@@ -182,7 +182,7 @@ struct OBCheki: View {
             .frame(width: 160, height: 160)
             .clipShape(RoundedRectangle(cornerRadius: 2))
             .offset(x: 10, y: 10)
-            Text(OpeningStyle.shortDate(Date(), apostrophe: true)).font(LF.mono(10)).tracking(0.6)
+            Text(OpeningStyle.shortDate(Date(), apostrophe: true)).font(Typo.label(10)).tracking(0.6)
                 .foregroundStyle(OB.stamp).shadow(color: Color(red: 1, green: 0.48, blue: 0.16).opacity(0.55), radius: 6)
                 .fixedSize()
                 .frame(width: 180 - 12, height: 12, alignment: .trailing)
@@ -191,7 +191,7 @@ struct OBCheki: View {
             ForEach(Array(tags.prefix(3).enumerated()), id: \.offset) { i, tag in
                 let s = OB.tagStyle[i]
                 // v95-2: 頭文字に かからない 3つの 席(左上の 角 / 右の ふち / 左下)
-                Text("#" + tag).font(LF.inter(900, 12.5)).foregroundStyle(s.fg).lineLimit(1).fixedSize()
+                Text("#" + tag).font(Typo.ui(900, 12.5)).foregroundStyle(s.fg).lineLimit(1).fixedSize()
                     .padding(.horizontal, 10).padding(.vertical, 6)
                     .background(s.bg, in: RoundedRectangle(cornerRadius: 10))
                     .shadow(color: .black.opacity(0.6), radius: 6, y: 6)
@@ -202,7 +202,7 @@ struct OBCheki: View {
             }
             // ういている 友だちの 丸(申請した 人)
             ForEach(Array(friendInitials.prefix(6).enumerated()), id: \.offset) { i, f in
-                Text(f.0).font(LF.inter(800, 13)).foregroundStyle(.white)
+                Text(f.0).font(Typo.ui(800, 13)).foregroundStyle(.white)
                     .frame(width: 34, height: 34).background(f.1, in: Circle())
                     .overlay(Circle().stroke(Color(hex: "070708"), lineWidth: 2.5).padding(-2.5))
                     .overlay(Circle().stroke(.white.opacity(0.35), lineWidth: 1.5).padding(-4))
@@ -244,17 +244,17 @@ struct OBButtonStyle: ButtonStyle {
         Group {
             switch kind {
             case .primary:
-                label.font(LF.inter(800, 16.5)).tracking(0.165)
+                label.font(Typo.ui(800, 16.5)).tracking(0.165)
                     .foregroundStyle(enabled ? Color(hex: "111111") : OB.sub)
                     .frame(maxWidth: .infinity).frame(height: 60)
                     .background(enabled ? Color.white : OB.line, in: Capsule())
             case .secondary:
-                label.font(LF.inter(800, 16)).foregroundStyle(.white)
+                label.font(Typo.ui(800, 16)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 56)
                     .background(Color.white.opacity(0.08), in: Capsule())
                     .overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 1))
             case .plain:
-                label.font(LF.inter(700, 13.5)).foregroundStyle(OB.sub)
+                label.font(Typo.ui(700, 13.5)).foregroundStyle(OB.sub)
                     .frame(maxWidth: .infinity).frame(height: 36)
                     .contentShape(Rectangle().inset(by: -4))   // 押せる 広さは 44pt
             }
@@ -274,7 +274,7 @@ struct OBHeading: View {
             acc + Text(p.0).foregroundColor(p.1 ? OB.stamp : .white)
         }
         .font(LGFont.mincho(size))
-        .lineSpacing(size * 1.42 - (UIFont(name: "NotoSerifJP-Bold", size: size)?.lineHeight ?? size * 1.45))
+        .lineSpacing(size * 1.42 - (UIFont(name: Typo.minchoName, size: size)?.lineHeight ?? size * 1.45))
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -352,14 +352,14 @@ struct OBHoldButton: View {
 struct OBNoticeCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Text("9:00").font(LF.mono(12)).foregroundStyle(OB.accent).shadow(color: OB.accent, radius: 4)
+            Text("9:00").font(Typo.label(12)).foregroundStyle(OB.accent).shadow(color: OB.accent, radius: 4)
                 .frame(width: 42, height: 42).background(Color(hex: "0B0B0D"), in: RoundedRectangle(cornerRadius: 11))
                 .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                 .padding(.top, 14)
             VStack(alignment: .leading, spacing: 2) {
-                HStack { Text(Brand.name).font(LF.inter(700, 13.5)); Spacer(); Text("9:00").font(LF.inter(500, 12)).foregroundStyle(.white.opacity(0.55)) }
+                HStack { Text(Brand.name).font(Typo.ui(700, 13.5)); Spacer(); Text("9:00").font(Typo.ui(500, 12)).foregroundStyle(.white.opacity(0.55)) }
                     .frame(height: 16)
-                Text("きのうが、ひらきました").font(LF.inter(500, 14.5)).frame(height: 21, alignment: .leading)
+                Text("きのうが、ひらきました").font(Typo.ui(500, 14.5)).frame(height: 21, alignment: .leading)
             }
             .foregroundStyle(.white)
             .padding(.top, 8.3)

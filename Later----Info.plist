@@ -33,14 +33,8 @@
 		<string>YuseiMagic-Later.ttf</string>
 		<string>InstrumentSerif-Regular.ttf</string>
 		<string>InstrumentSerif-Italic.ttf</string>
-		<string>Inter-Medium.ttf</string>
-		<string>Inter-Bold.ttf</string>
-		<string>Inter-ExtraBold.ttf</string>
-		<string>Inter-Black.ttf</string>
 		<string>Caveat-SemiBold.ttf</string>
-		<string>NotoSerifJP-Bold.ttf</string>
-		<string>SpaceMono-Regular.ttf</string>
-		<string>SpaceMono-Bold.ttf</string>
+		<string>LaterMincho-Black.otf</string>
 		<string>KleeOne-SemiBold.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>

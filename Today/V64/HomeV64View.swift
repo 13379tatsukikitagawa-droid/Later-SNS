@@ -355,7 +355,7 @@ struct HVDock: View {
                 Button { Haptics.play(.tick); onSelect(item.0) } label: {
                     HStack(spacing: 7) {
                         HVIcon(kind: item.1, size: 20, color: on ? HV.ink : .white.opacity(0.78))
-                        if on { Text(item.2.uppercased()).font(LF.mono(10)).tracking(1.2).foregroundStyle(HV.ink).fixedSize() }
+                        if on { Text(item.2.uppercased()).font(Typo.label(10)).tracking(1.2).foregroundStyle(HV.ink).fixedSize() }
                     }
                     .padding(.leading, on ? 13 : 12).padding(.trailing, on ? 16 : 12)
                     .frame(height: 44).frame(minWidth: 44)
@@ -448,7 +448,7 @@ struct HVMoon: View {
                 VStack(spacing: 15) {
                     HStack(spacing: 9) {
                         if !input.done { HVCameraGlyph(width: 26, line: 1.8, color: .white, showsFlash: false) }
-                        Text(title).font(LF.inter(800, 21)).tracking(-0.21).foregroundStyle(input.done ? .white.opacity(0.6) : .white).shadow(color: .black.opacity(0.75), radius: 7, y: 2)
+                        Text(title).font(Typo.ui(800, 21)).tracking(-0.21).foregroundStyle(input.done ? .white.opacity(0.6) : .white).shadow(color: .black.opacity(0.75), radius: 7, y: 2)
                     }
                     .frame(height: 30)
                     HStack(spacing: 8) {
@@ -459,7 +459,7 @@ struct HVMoon: View {
                                 }
                             }
                         }
-                        Text(sub).font(LF.mono(10.5)).tracking(1.47).foregroundStyle(.white.opacity(0.7))
+                        Text(sub).font(Typo.label(10.5)).tracking(1.47).foregroundStyle(.white.opacity(0.7))
                     }
                     .frame(height: 16)
                 }
@@ -480,7 +480,7 @@ struct HVHintBubble: View {
     var body: some View {
         HStack(spacing: 8) {
             Circle().fill(Color(hex: "25A93F")).frame(width: 8, height: 8)
-            Text(text).font(LF.inter(800, 13.5)).tracking(-0.135).foregroundStyle(.white).fixedSize()
+            Text(text).font(Typo.ui(800, 13.5)).tracking(-0.135).foregroundStyle(.white).fixedSize()
         }
         .padding(.leading, 12).padding(.trailing, 16).frame(height: 38)
         .background(Color(hex: "111111"), in: Capsule())

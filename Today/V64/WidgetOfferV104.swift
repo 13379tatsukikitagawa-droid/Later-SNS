@@ -48,26 +48,26 @@ struct WidgetGuideV96Sheet: View {
         let m = WidgetGuideV96.sample()
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("ウィジェット、置きますか?").font(LF.inter(900, 22)).foregroundStyle(.white)
+                Text("ウィジェット、置きますか?").font(Typo.ui(900, 22)).foregroundStyle(.white)
                 Spacer(minLength: 8)
                 Button { Haptics.play(.tick); onClose() } label: { Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.1), in: Circle()) }.buttonStyle(.plain).accessibilityLabel("とじる")
             }.padding(.top, 14)
-            Text("ホーム画面に 置くと、撮りたくなる ・ 待ちたくなる。\n1つ えらんで ください。").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+            Text("ホーム画面に 置くと、撮りたくなる ・ 待ちたくなる。\n1つ えらんで ください。").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true).padding(.top, 2)
             VStack(spacing: 8) {
                 ForEach(WidgetChoice.allCases) { c in row(c, m) }
             }.padding(.top, 16)
             Button { start() } label: {
-                Text("ホームで 置く").font(LF.inter(800, 17)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(HV.lime, in: Capsule())
+                Text("ホームで 置く").font(Typo.ui(800, 17)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(HV.lime, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.97)).padding(.top, 16)
             Button { Haptics.play(.soft); onClose() } label: {
-                Text(firstTime ? "あとで ・ 設定から できます" : "とじる").font(LF.inter(600, 14)).foregroundStyle(.white.opacity(0.55)).frame(maxWidth: .infinity, minHeight: 44)
+                Text(firstTime ? "あとで ・ 設定から できます" : "とじる").font(Typo.ui(600, 14)).foregroundStyle(.white.opacity(0.55)).frame(maxWidth: .infinity, minHeight: 44)
             }.buttonStyle(.plain).padding(.top, 2).padding(.bottom, 12)
         }
         .padding(.horizontal, 20)
         .sheetFitsContent()
         .background(Color(hex: "141516").ignoresSafeArea())
         .environment(\.colorScheme, .dark)
-        .overlay(alignment: .top) { if let toast { Text(toast).font(LF.inter(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 40).background(HV.lime, in: Capsule()).padding(.top, 14).transition(.move(edge: .top).combined(with: .opacity)) } }
+        .overlay(alignment: .top) { if let toast { Text(toast).font(Typo.ui(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 40).background(HV.lime, in: Capsule()).padding(.top, 14).transition(.move(edge: .top).combined(with: .opacity)) } }
         .fullScreenCover(isPresented: $showsGuide) {
             WidgetHowToV104(choice: choice, sample: m, onBack: { returned() })
         }
@@ -80,8 +80,8 @@ struct WidgetGuideV96Sheet: View {
             HStack(spacing: 12) {
                 c.widget(m).frame(width: 158, height: 158).scaleEffect(52.0 / 158.0).frame(width: 52, height: 52).background(c.bg).clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous)).allowsHitTesting(false)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(c.title).font(LF.inter(800, 16)).foregroundStyle(.white)
-                    Text(c.desc).font(LF.inter(500, 12)).foregroundStyle(.white.opacity(0.6))
+                    Text(c.title).font(Typo.ui(800, 16)).foregroundStyle(.white)
+                    Text(c.desc).font(Typo.ui(500, 12)).foregroundStyle(.white.opacity(0.6))
                 }
                 Spacer(minLength: 0)
                 Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.system(size: 22)).foregroundStyle(on ? HV.lime : .white.opacity(0.3))

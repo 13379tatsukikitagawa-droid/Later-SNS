@@ -29,9 +29,9 @@ struct HVLabel: View {
     var trailing: String? = nil
     var body: some View {
         HStack {
-            Text(text).font(LF.mono(10.5)).tracking(2.1).foregroundStyle(HVL.label)
+            Text(text).font(Typo.label(10.5)).tracking(2.1).foregroundStyle(HVL.label)
             Spacer()
-            if let trailing { Text(trailing).font(LF.mono(10)).tracking(2.0).foregroundStyle(HVL.label.opacity(0.8)) }
+            if let trailing { Text(trailing).font(Typo.label(10)).tracking(2.0).foregroundStyle(HVL.label.opacity(0.8)) }
         }
         .padding(.horizontal, 18)
     }
@@ -50,29 +50,29 @@ struct HVTodayPanel: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Today").font(LF.serif(34)).tracking(-0.34).foregroundStyle(.white)
+                    Text("Today").font(Typo.title(34)).tracking(-0.34).foregroundStyle(.white)
                     Spacer()
-                    (Text("\(n)").font(LF.serif(30, italic: true)) + Text("/3").font(LF.serif(20, italic: true)).foregroundColor(Color(hex: "6E6E75"))).foregroundStyle(.white)
+                    (Text("\(n)").font(Typo.title(30, italic: true)) + Text("/3").font(Typo.title(20, italic: true)).foregroundColor(Color(hex: "6E6E75"))).foregroundStyle(.white)
                 }
                 HStack(spacing: 7) {
                     Circle().fill(HV.lime).frame(width: 6, height: 6)
-                    Text("\(n > 0 ? "DEVELOPING" : "EMPTY FILM") · \(df.string(from: input.now).uppercased())").font(LF.mono(10)).tracking(1.6).foregroundStyle(Color(hex: "9A9AA0"))
+                    Text("\(n > 0 ? "DEVELOPING" : "EMPTY FILM") · \(df.string(from: input.now).uppercased())").font(Typo.label(10)).tracking(1.6).foregroundStyle(Color(hex: "9A9AA0"))
                 }
                 HStack(spacing: 8) {
                     ForEach(0..<3, id: \.self) { i in
                         ZStack {
                             RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(i < n ? 0.12 : 0.05))
                             if i < n, let img = data.today.thumbs[safe: i] ?? nil { Image(uiImage: img).resizable().scaledToFill().blur(radius: 6).saturation(0.4) }
-                            if i == n { VStack(spacing: 4) { Image(systemName: "plus").font(.system(size: 14, weight: .bold)); Text("SHOOT").font(LF.mono(8)).tracking(1.2) }.foregroundStyle(HV.lime) }
+                            if i == n { VStack(spacing: 4) { Image(systemName: "plus").font(.system(size: 14, weight: .bold)); Text("SHOOT").font(Typo.label(8)).tracking(1.2) }.foregroundStyle(HV.lime) }
                         }
                         .frame(maxWidth: .infinity).frame(height: 118).clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.10), lineWidth: 1))
                     }
                 }
                 HStack {
-                    Text(n > 0 ? "\(data.today.times.first ?? "") shot" : "9:00 start").font(LF.mono(10)).foregroundStyle(.white)
+                    Text(n > 0 ? "\(data.today.times.first ?? "") shot" : "9:00 start").font(Typo.label(10)).foregroundStyle(.white)
                     Spacer()
-                    Text(n > 0 ? "opens 9:00" : "lights out · 24:00").font(LF.serif(14, italic: true)).foregroundStyle(Color(hex: "9A9AA0"))
+                    Text(n > 0 ? "opens 9:00" : "lights out · 24:00").font(Typo.title(14, italic: true)).foregroundStyle(Color(hex: "9A9AA0"))
                 }
             }
             .padding(18)
@@ -102,15 +102,15 @@ struct HVActiveRow: View {
                                 HVL.card
                                 if let c = t.cover { Image(uiImage: c).resizable().scaledToFill().frame(width: 195, height: 248).clipped() }
                                 LinearGradient(colors: [.black.opacity(0.3), .clear, .black.opacity(0.8)], startPoint: .top, endPoint: .bottom)
-                                Text(t.day).font(LF.mono(10)).tracking(1.5).foregroundStyle(.white).padding(16)
+                                Text(t.day).font(Typo.label(10)).tracking(1.5).foregroundStyle(.white).padding(16)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Spacer()
-                                    Text(t.name).font(LF.serif(36)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
-                                    Text(t.sub).font(LF.mono(11)).foregroundStyle(.white.opacity(0.75))
+                                    Text(t.name).font(Typo.title(36)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
+                                    Text(t.sub).font(Typo.label(11)).foregroundStyle(.white.opacity(0.75))
                                     HVTripFilm(trip: input.trip ?? HomeV64TripInfo(name: t.name, members: [], frames: []), height: 28, numbers: false).padding(.top, 6)
-                                    Text("\(input.trip?.frames.filter { $0 != nil }.count ?? 0)/23").font(LF.serif(15, italic: true)).foregroundStyle(.white.opacity(0.7))
+                                    Text("\(input.trip?.frames.filter { $0 != nil }.count ?? 0)/23").font(Typo.title(15, italic: true)).foregroundStyle(.white.opacity(0.7))
                                 }.padding(14)
-                                if t.unread > 0 { Text("\(t.unread)").font(LF.inter(800, 12)).foregroundStyle(.white).frame(width: 24, height: 24).background(Color(hex: "E02B2B"), in: Circle()).frame(maxWidth: .infinity, alignment: .trailing).padding(16) }
+                                if t.unread > 0 { Text("\(t.unread)").font(Typo.ui(800, 12)).foregroundStyle(.white).frame(width: 24, height: 24).background(Color(hex: "E02B2B"), in: Circle()).frame(maxWidth: .infinity, alignment: .trailing).padding(16) }
                             }.frame(width: 195, height: 248).clipShape(RoundedRectangle(cornerRadius: 24))
                                 .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                         }.buttonStyle(HVPress(scale: 0.97))
@@ -126,8 +126,8 @@ struct HVActiveRow: View {
                             }
                             Image(systemName: "plus").font(.system(size: 15, weight: .semibold)).foregroundStyle(HV.ink)
                                 .frame(width: 34, height: 34).background(Color(hex: "F4EFEA"), in: Circle()).offset(x: 68, y: 106)
-                            Text("New trip").font(LF.serif(24)).foregroundStyle(.white).frame(width: 170).offset(y: 143)
-                            Text("旅行 ・ 合宿 ・ イベント").font(LF.inter(600, 10.5)).foregroundStyle(HVL.label).frame(width: 170).offset(y: 182)
+                            Text("New trip").font(Typo.title(24)).foregroundStyle(.white).frame(width: 170).offset(y: 143)
+                            Text("旅行 ・ 合宿 ・ イベント").font(Typo.ui(600, 10.5)).foregroundStyle(HVL.label).frame(width: 170).offset(y: 182)
                         }
                         .frame(width: 170, height: 248)
                         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 1))
@@ -170,17 +170,17 @@ struct HVYesterdayBlock: View {
                 LinearGradient(colors: [.black.opacity(0.1), .black.opacity(0.28), .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
             }
             if locked {
-                HStack(spacing: 8) { Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)); Text("shoot today to open").font(LF.inter(800, 13)) }
+                HStack(spacing: 8) { Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)); Text("shoot today to open").font(Typo.ui(800, 13)) }
                     .foregroundStyle(HV.ink).frame(width: 177, height: 38).background(.white, in: Capsule()).offset(x: 92, y: 150)
             }
             let h = data.hero
-            Text("Yesterday").font(LF.serif(54)).foregroundStyle(.white).frame(width: 362, height: 78).offset(y: 206)
-            Text(h?.dateLabel ?? "NOV 15").font(LF.mono(10.5)).tracking(3).foregroundStyle(.white.opacity(0.7)).frame(width: 362).offset(y: 268)
+            Text("Yesterday").font(Typo.title(54)).foregroundStyle(.white).frame(width: 362, height: 78).offset(y: 206)
+            Text(h?.dateLabel ?? "NOV 15").font(Typo.label(10.5)).tracking(3).foregroundStyle(.white.opacity(0.7)).frame(width: 362).offset(y: 268)
             stat("\(h?.moments ?? 6)", "Moments").frame(width: 100).offset(x: 31, y: 296)
             ZStack { Ellipse().stroke(HV.green, lineWidth: 2.5).frame(width: 68, height: 46).rotationEffect(.degrees(-4)); stat("\(h?.daysLeft ?? 6)d", "Left") }.frame(width: 100).offset(x: 131, y: 296)
             stat("\(h?.people ?? 4)", "People ›").frame(width: 100).offset(x: 231, y: 296)
             Image(systemName: "bubble.left").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 54, height: 54).background(Color.white.opacity(0.14), in: Circle()).offset(x: 292, y: 382)
-            if !locked, let h { Text(h.tag).font(LF.inter(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 8).background(h.tagColor, in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(8)).offset(x: 293, y: 18) }
+            if !locked, let h { Text(h.tag).font(Typo.ui(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 8).background(h.tagColor, in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(8)).offset(x: 293, y: 18) }
         }
         .frame(width: 362, height: 452).clipShape(RoundedRectangle(cornerRadius: 30))
         .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(.white.opacity(0.08), lineWidth: 1))
@@ -199,13 +199,13 @@ struct HVYesterdayBlock: View {
                         .rotationEffect(.degrees(Double(sgn) * 10)).offset(x: CGFloat(sgn) * 70, y: 12)
                 }
                 RoundedRectangle(cornerRadius: 6).strokeBorder(.white.opacity(0.5), lineWidth: 1).background(RadialGradient(colors: [HV.lime.opacity(0.18), .clear], center: .center, startRadius: 0, endRadius: 60), in: RoundedRectangle(cornerRadius: 6)).frame(width: 96, height: 118)
-                    .overlay(Text("TODAY'S 1ST").font(LF.mono(9)).tracking(1.6).foregroundStyle(HV.lime).padding(.bottom, 12), alignment: .bottom)
+                    .overlay(Text("TODAY'S 1ST").font(Typo.label(9)).tracking(1.6).foregroundStyle(HV.lime).padding(.bottom, 12), alignment: .bottom)
             }.frame(height: 150).padding(.top, 26)
-            Text("Yesterday").font(LF.serif(52)).tracking(-1).foregroundStyle(.white).padding(.top, 40)
-            Text("今日 撮った 1枚が、あしたの 朝 9:00 に\nここで ひらきます。").font(LF.inter(500, 13)).foregroundStyle(.white.opacity(0.66)).multilineTextAlignment(.center).lineSpacing(4).padding(.top, 30)
+            Text("Yesterday").font(Typo.title(52)).tracking(-1).foregroundStyle(.white).padding(.top, 40)
+            Text("今日 撮った 1枚が、あしたの 朝 9:00 に\nここで ひらきます。").font(Typo.ui(500, 13)).foregroundStyle(.white.opacity(0.66)).multilineTextAlignment(.center).lineSpacing(4).padding(.top, 30)
             HStack(spacing: 10) {
                 HVLiveDot()
-                Text("9:00 まで \(sec / 3600)h \(String(format: "%02d", (sec % 3600) / 60))m").font(LF.mono(11, bold: true).italic()).tracking(1.4).foregroundStyle(.white.opacity(0.85))
+                Text("9:00 まで \(sec / 3600)h \(String(format: "%02d", (sec % 3600) / 60))m").font(Typo.label(11, bold: true).italic()).tracking(1.4).foregroundStyle(.white.opacity(0.85))
             }.padding(.horizontal, 18).frame(height: 34).background(Color.white.opacity(0.06), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 1)).padding(.vertical, 20)
         }
         .frame(width: 362).background(Color(hex: "161618"), in: RoundedRectangle(cornerRadius: 30))
@@ -213,7 +213,7 @@ struct HVYesterdayBlock: View {
     }
 
     private func stat(_ n: String, _ l: String) -> some View {
-        VStack(spacing: 2) { Text(n).font(LF.serif(34, italic: true)).foregroundStyle(.white); Text(l).font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.75)) }
+        VStack(spacing: 2) { Text(n).font(Typo.title(34, italic: true)).foregroundStyle(.white); Text(l).font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.75)) }
     }
 
     private func tile(_ t: HomeV64LowerData.Tile, locked: Bool) -> some View {
@@ -222,10 +222,10 @@ struct HVYesterdayBlock: View {
             if let img = t.photo { Image(uiImage: img).resizable().scaledToFill().blur(radius: locked ? 14 : 0).saturation(locked ? 0.4 : 1) }
             LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
             HStack {
-                if !locked { Text("\(t.name).").font(LF.serif(20, italic: true)).foregroundStyle(.white) }
+                if !locked { Text("\(t.name).").font(Typo.title(20, italic: true)).foregroundStyle(.white) }
                 Spacer()
                 if locked { Image(systemName: "lock.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white) }
-                else if let tm = t.time { Text(tm).font(LF.mono(9.5)).foregroundStyle(Color(hex: "FF9A3C")) }
+                else if let tm = t.time { Text(tm).font(Typo.label(9.5)).foregroundStyle(Color(hex: "FF9A3C")) }
             }.padding(14)
         }
         .frame(height: 212).clipShape(RoundedRectangle(cornerRadius: 26))
@@ -254,9 +254,9 @@ struct HVAlbums: View {
             ForEach(Array(data.albums.enumerated()), id: \.element.id) { k, a in
                 VStack(alignment: .leading, spacing: 9) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(a.label).font(LF.serif(26)).tracking(-0.26).foregroundStyle(.white).frame(height: 25)
+                        Text(a.label).font(Typo.title(26)).tracking(-0.26).foregroundStyle(.white).frame(height: 25)
                         Spacer()
-                        Text(a.left).font(LF.mono(9.5)).tracking(1.6).foregroundStyle(HVL.label)
+                        Text(a.left).font(Typo.label(9.5)).tracking(1.6).foregroundStyle(HVL.label)
                     }.padding(.horizontal, 18)
                     HStack(spacing: 7) {
                         ForEach(0..<3, id: \.self) { j in
@@ -268,7 +268,7 @@ struct HVAlbums: View {
                         }
                         ZStack {
                             if let img = a.tiles.first ?? nil { Image(uiImage: img).resizable().scaledToFill().blur(radius: 10).brightness(-0.1) }
-                            Text("+\(a.more)").font(LF.inter(600, 18)).foregroundStyle(.white)
+                            Text("+\(a.more)").font(Typo.ui(600, 18)).foregroundStyle(.white)
                         }.frame(maxWidth: .infinity).frame(height: 112).background(HVL.card).clipShape(RoundedRectangle(cornerRadius: 18))
                     }.padding(.horizontal, 14)
                 }
@@ -293,14 +293,14 @@ struct HVOnThisDay: View {
                         RoundedRectangle(cornerRadius: 4).fill(Color(hex: "F4F1EA"))
                         ZStack { Rectangle().fill(Color(hex: "3A3A3C")); if let img = o.photo { Image(uiImage: img).resizable().scaledToFill() } }
                             .frame(width: 136, height: 146).clipped().offset(x: 9, y: 9)
-                        Text(o.date).font(LF.mono(9)).foregroundStyle(Color(hex: "FF9A3C")).offset(x: 86, y: 134)
+                        Text(o.date).font(Typo.label(9)).foregroundStyle(Color(hex: "FF9A3C")).offset(x: 86, y: 134)
                         Image(systemName: "sparkle").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: "FFD60A")).offset(x: 10, y: 160)
                     }.frame(width: 154, height: 186).rotationEffect(.degrees(-4)).shadow(color: .black.opacity(0.6), radius: 14, y: 10)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Oct 17").font(LF.serif(44)).tracking(-0.9).foregroundStyle(.white).padding(.top, 14)
-                        Text("1 month ago").font(LF.serif(19, italic: true)).foregroundStyle(HVL.label)
+                        Text("Oct 17").font(Typo.title(44)).tracking(-0.9).foregroundStyle(.white).padding(.top, 14)
+                        Text("1 month ago").font(Typo.title(19, italic: true)).foregroundStyle(HVL.label)
                         ZStack(alignment: .leading) { Capsule().fill(Color.white.opacity(0.08)).frame(height: 3); Capsule().fill(Color(hex: "24A03C")).frame(width: 150, height: 3) }.padding(.top, 14)
-                        Text("\(o.daysLeft) DAYS LEFT").font(LF.mono(10)).tracking(2).foregroundStyle(HVL.label)
+                        Text("\(o.daysLeft) DAYS LEFT").font(Typo.label(10)).tracking(2).foregroundStyle(HVL.label)
                         HStack(spacing: 5) { Capsule().fill(.white).frame(width: 14, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5) }
                     }
                     Spacer(minLength: 0)

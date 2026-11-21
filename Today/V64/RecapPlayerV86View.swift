@@ -43,7 +43,7 @@ struct RecapPlayer: View {
             }
             Button { Haptics.play(.tick); onClose() } label: { Image(systemName: "xmark").font(.system(size: 16, weight: .black)).foregroundStyle(.white).frame(width: 40, height: 40).background(.black.opacity(0.35), in: Circle()) }
                 .buttonStyle(.plain).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing).padding(.trailing, 14).padding(.top, 78)
-            if let toast { Text(toast).font(LF.inter(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 36).background(.white, in: Capsule()).frame(maxHeight: .infinity, alignment: .bottom).padding(.bottom, 130) }
+            if let toast { Text(toast).font(Typo.ui(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 36).background(.white, in: Capsule()).frame(maxHeight: .infinity, alignment: .bottom).padding(.bottom, 130) }
         }
         .task {
             while !Task.isCancelled {
@@ -81,7 +81,7 @@ struct RecapPlayer: View {
     private func title(_ t: Double) -> some View {
         func line(_ s: String, _ at: Double, size: CGFloat = 84, italic: Bool = false, color: Color = .white, mono: Bool = false) -> some View {
             let u = max(0, min(1, (t - at) / 0.6))
-            return Group { if mono { Text(s).font(LF.mono(12)).tracking(3).foregroundStyle(color) } else { Text(s).font(LF.serif(size, italic: italic)).foregroundStyle(color) } }
+            return Group { if mono { Text(s).font(Typo.label(12)).tracking(3).foregroundStyle(color) } else { Text(s).font(Typo.title(size, italic: italic)).foregroundStyle(color) } }
                 .blur(radius: 10 * (1 - u)).opacity(u).offset(y: 24 * (1 - u))
         }
         return VStack(alignment: .leading, spacing: 0) {
@@ -104,8 +104,8 @@ struct RecapPlayer: View {
             if let im = s.image { Image(uiImage: im).resizable().scaledToFill().scaleEffect(reduceMotion ? 1 : 1.14 - 0.12 * u).offset(x: reduceMotion ? 0 : CGFloat((i % 2 == 0 ? -1 : 1)) * 12 * CGFloat(u)) }
             LinearGradient(colors: [.black.opacity(0.4), .clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 4) {
-                Text(df.string(from: s.date).uppercased()).font(LF.serif(64)).foregroundStyle(.white)
-                HStack(spacing: 10) { Text(tf.string(from: s.date)).font(LF.mono(13)).foregroundStyle(HV.lime); if let tag = s.tag { Text("#\(tag)").font(LF.inter(800, 14)).foregroundStyle(.white) } }
+                Text(df.string(from: s.date).uppercased()).font(Typo.title(64)).foregroundStyle(.white)
+                HStack(spacing: 10) { Text(tf.string(from: s.date)).font(Typo.label(13)).foregroundStyle(HV.lime); if let tag = s.tag { Text("#\(tag)").font(Typo.ui(800, 14)).foregroundStyle(.white) } }
             }.padding(.horizontal, 24).padding(.bottom, 60)
         }.clipped().id(i).transition(.opacity)
     }
@@ -128,12 +128,12 @@ struct RecapPlayer: View {
     private var endCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: 110)
-            Text("Your").font(LF.serif(64)).foregroundStyle(.white).frame(height: 56, alignment: .leading)
-            Text("week.").font(LF.serif(64, italic: true)).foregroundStyle(HV.lime).frame(height: 60, alignment: .leading)
+            Text("Your").font(Typo.title(64)).foregroundStyle(.white).frame(height: 56, alignment: .leading)
+            Text("week.").font(Typo.title(64, italic: true)).foregroundStyle(HV.lime).frame(height: 60, alignment: .leading)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                 cell("\(recap.shots)", "SHOTS"); cell("\(recap.days)", "DAYS"); cell("\(recap.kept)", "KEPT ★"); cell(recap.peakHour.map { "\($0):00" } ?? "—", "よく 撮る 時間")
             }.padding(.top, 22)
-            if let tag = recap.topTag { HStack { Text("いちばん 多い タグ").font(LF.inter(700, 13)).foregroundStyle(HV.ink.opacity(0.7)); Spacer(); Text("#\(tag)").font(LF.inter(900, 18)).foregroundStyle(HV.ink) }.padding(.horizontal, 18).frame(height: 56).background(HV.lime, in: RoundedRectangle(cornerRadius: 18, style: .continuous)).padding(.top, 8) }
+            if let tag = recap.topTag { HStack { Text("いちばん 多い タグ").font(Typo.ui(700, 13)).foregroundStyle(HV.ink.opacity(0.7)); Spacer(); Text("#\(tag)").font(Typo.ui(900, 18)).foregroundStyle(HV.ink) }.padding(.horizontal, 18).frame(height: 56).background(HV.lime, in: RoundedRectangle(cornerRadius: 18, style: .continuous)).padding(.top, 8) }
             Spacer()
             HStack(spacing: 8) {
                 endButton(exporting ? "作って います…" : "保存", white: false) { save() }
@@ -143,10 +143,10 @@ struct RecapPlayer: View {
         }.padding(.horizontal, 20).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
     private func cell(_ n: String, _ l: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) { Text(n).font(LF.inter(900, 34)).foregroundStyle(.white); Text(l).font(LF.mono(10)).tracking(1.5).foregroundStyle(.white.opacity(0.5)) }.padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color(hex: "141517"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        VStack(alignment: .leading, spacing: 4) { Text(n).font(Typo.ui(900, 34)).foregroundStyle(.white); Text(l).font(Typo.label(10)).tracking(1.5).foregroundStyle(.white.opacity(0.5)) }.padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color(hex: "141517"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
     private func endButton(_ t: String, white: Bool, _ a: @escaping () -> Void) -> some View {
-        Button { Haptics.play(.click); a() } label: { Text(t).font(LF.inter(800, 16)).foregroundStyle(white ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 56).background(white ? Color.white : Color.white.opacity(0.12), in: Capsule()) }.buttonStyle(HVPress(scale: 0.97))
+        Button { Haptics.play(.click); a() } label: { Text(t).font(Typo.ui(800, 16)).foregroundStyle(white ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 56).background(white ? Color.white : Color.white.opacity(0.12), in: Capsule()) }.buttonStyle(HVPress(scale: 0.97))
     }
 
     // 保存 ・ シェア(動画に する 時だけ。サーバーには 上げない)

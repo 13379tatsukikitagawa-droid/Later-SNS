@@ -143,7 +143,7 @@ struct FriendScreenV48: View {
     /// v54:見本 C01 の .ftl em:Instrument Serif(立体)44px、字間 -0.44px
     private var friendTitle: some View {
         Text(verbatim: "Friend")
-            .font(LF.serif(44))
+            .font(Typo.title(44))
             .tracking(-0.44)
             .foregroundStyle(.white)
     }
@@ -163,7 +163,7 @@ struct FriendScreenV48: View {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 friendTitle
                 Text(verbatim: "\(list.count) / \(Self.seatCount)")
-                    .font(LF.mono(11, bold: true)).tracking(1.54)
+                    .font(Typo.label(11, bold: true)).tracking(1.54)
                     .foregroundStyle(LaterColor.filmLight)
             }
             Spacer(minLength: 0)
@@ -171,7 +171,7 @@ struct FriendScreenV48: View {
                 Haptics.play(.tick)
                 showsFriendScan = true
             } label: {
-                Text("Add").font(LF.inter(800, 14)).foregroundStyle(.black)
+                Text("Add").font(Typo.ui(800, 14)).foregroundStyle(.black)
                     .padding(.horizontal, 18).frame(height: 38).background(Capsule().fill(.white))
             }
             .buttonStyle(.plain)
@@ -403,7 +403,7 @@ struct FriendScreenV48: View {
                     Text(initial).font(.system(size: 64, weight: .heavy)).foregroundStyle(.white.opacity(0.9))
                 }
                 Text(verbatim: Self.stampDate(Date()))
-                    .font(LF.mono(11, bold: true)).tracking(0.66)
+                    .font(Typo.label(11, bold: true)).tracking(0.66)
                     .foregroundStyle(LaterColor.stamp)
                     .padding(8)
             }
@@ -411,7 +411,7 @@ struct FriendScreenV48: View {
             .clipped()
             VStack(spacing: 2) {
                 Text(myName).font(LF.hand(34)).foregroundStyle(Color(hex: "1A1A1D"))
-                Text(verbatim: "@\(String(myRecordName.suffix(8)).lowercased())").font(LF.mono(9, bold: true)).tracking(0.95).foregroundStyle(.black.opacity(0.5))
+                Text(verbatim: "@\(String(myRecordName.suffix(8)).lowercased())").font(Typo.label(9, bold: true)).tracking(0.95).foregroundStyle(.black.opacity(0.5))
             }
             .padding(.top, 227 + 12)
             .frame(maxWidth: .infinity)
@@ -435,7 +435,7 @@ struct FriendScreenV48: View {
 
     private func hashtag(_ text: String, bg: Color, ink: Color) -> some View {
         Text(verbatim: "#\(text)")
-            .font(LF.inter(900, 13))
+            .font(Typo.ui(900, 13))
             .tracking(-0.3)
             .foregroundStyle(ink)
             .padding(.horizontal, 8).padding(.vertical, 5)

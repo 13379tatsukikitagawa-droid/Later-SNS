@@ -431,7 +431,7 @@ struct NewGroupFlowView: View {
     private var coverStep: some View {
         VStack(spacing: 18) {
             Spacer(minLength: 0)
-            Text(verbatim: "Cover").font(LF.serif(26)).foregroundStyle(.white)
+            Text(verbatim: "Cover").font(Typo.title(26)).foregroundStyle(.white)
             PhotosPicker(selection: $coverPickerItem, matching: .images) {
                 ZStack {
                     if let coverImageData, let uiImage = UIImage(data: coverImageData) {
@@ -496,7 +496,7 @@ struct NewGroupFlowView: View {
     private var whereStepView: some View {
         VStack(spacing: 18) {
             Spacer(minLength: 0)
-            Text(verbatim: "Where").font(LF.serif(26)).foregroundStyle(.white)
+            Text(verbatim: "Where").font(Typo.title(26)).foregroundStyle(.white)
             nameField
             destinationChips
             Spacer(minLength: 0)
@@ -510,7 +510,7 @@ struct NewGroupFlowView: View {
         VStack(spacing: 18) {
             Spacer(minLength: 0)
             HStack {
-                Text(verbatim: "When").font(LF.serif(26)).foregroundStyle(.white)
+                Text(verbatim: "When").font(Typo.title(26)).foregroundStyle(.white)
                 Spacer()
                 if let days = tripDays {
                     Text(verbatim: "\(days) DAYS")
@@ -583,7 +583,7 @@ struct NewGroupFlowView: View {
     private var whoStepView: some View {
         VStack(spacing: 18) {
             Spacer(minLength: 0)
-            Text(verbatim: "Who").font(LF.serif(26)).foregroundStyle(.white)
+            Text(verbatim: "Who").font(Typo.title(26)).foregroundStyle(.white)
             friendsRow
             Spacer(minLength: 0)
         }
@@ -611,7 +611,7 @@ struct NewGroupFlowView: View {
                         withAnimation { wizardStep = WizardStep(rawValue: wizardStep.rawValue + 1) ?? .who }
                     } label: {
                         Text(verbatim: "Next →")
-                            .font(LF.inter(800, 17))
+                            .font(Typo.ui(800, 17))
                             .foregroundStyle(Color(hex: "111111"))
                             .frame(maxWidth: .infinity, minHeight: 58)
                             .background(Capsule().fill(Color(hex: "F5F0E8")))
@@ -620,7 +620,7 @@ struct NewGroupFlowView: View {
                 } else if existingGroup != nil {
                     Button(action: saveChanges) {
                         Text(verbatim: "Save changes")
-                            .font(LF.inter(800, 17))
+                            .font(Typo.ui(800, 17))
                             .foregroundStyle(canSaveSettings ? Color(hex: "111111") : .white.opacity(0.4))
                             .frame(maxWidth: .infinity, minHeight: 58)
                             .background(Capsule().fill(canSaveSettings ? Color(hex: "F5F0E8") : Color(hex: "1E1E1F")))
@@ -630,7 +630,7 @@ struct NewGroupFlowView: View {
                 } else {
                     Button(action: submit) {
                         Text(verbatim: "Create trip →")
-                            .font(LF.inter(800, 17))
+                            .font(Typo.ui(800, 17))
                             .foregroundStyle(canCreate ? Color(hex: "111111") : .white.opacity(0.4))
                             .frame(maxWidth: .infinity, minHeight: 58)
                             .background(Capsule().fill(canCreate ? Color(hex: "F5F0E8") : Color(hex: "1E1E1F")))

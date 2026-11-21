@@ -75,7 +75,7 @@ struct OBIntroView: View {
                     LinearGradient(colors: [Color(hex: "EAF1EC"), Color(hex: "DCE6E6")], startPoint: UnitPoint(x: 0.3, y: 0), endPoint: UnitPoint(x: 0.7, y: 1)).opacity(milk)
                 }
                 .frame(width: 192, height: 206).clipShape(RoundedRectangle(cornerRadius: 2)).offset(x: 11, y: 11)
-                Text(OpeningStyle.shortDate(Date(), apostrophe: true)).font(LF.mono(10)).tracking(0.6)
+                Text(OpeningStyle.shortDate(Date(), apostrophe: true)).font(Typo.label(10)).tracking(0.6)
                     .foregroundStyle(Color(hex: "E0481A")).opacity(0.9).fixedSize()
                     .offset(x: 14, y: ckH - 15 - 15)
                 SevenSegmentText(text: "9:00", height: 16.7, color: t >= 1.88 ? OB.stamp : Color(hex: "3A2010"))
@@ -87,7 +87,7 @@ struct OBIntroView: View {
             .clipped()
             .position(x: size.width / 2, y: 198 + (300 - 2) / 2 + yOff)
             // 大きな Lattag(104pt・印刷ズレつき)
-            Text(Brand.name).font(LF.inter(900, 104)).tracking(-0.075 * 104)
+            Text(Brand.name).font(Typo.ui(900, 104)).tracking(-0.075 * 104)
                 .foregroundStyle(.white)
                 .fixedSize()
                 .scaleEffect(logoScale).blur(radius: 10 * (1 - logo)).opacity(logo)

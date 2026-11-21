@@ -55,19 +55,19 @@ struct InboxV108View: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { dismiss() } label: { Text("とじる").font(LF.inter(700, 15)).foregroundStyle(.white).frame(height: 44).padding(.horizontal, 4) }.buttonStyle(.plain)
+                Button { dismiss() } label: { Text("とじる").font(Typo.ui(700, 15)).foregroundStyle(.white).frame(height: 44).padding(.horizontal, 4) }.buttonStyle(.plain)
                 Spacer()
                 Button { Haptics.play(.sel); onShareLink() } label: {
                     Image(systemName: "link").font(.system(size: 17, weight: .bold)).foregroundStyle(HV.lime).frame(width: 44, height: 44)
                         .overlay(Circle().strokeBorder(HV.lime.opacity(0.5), lineWidth: 1.5).frame(width: 40, height: 40))
                 }.buttonStyle(.plain).accessibilityLabel("リンクを 送る")
-            }.padding(.horizontal, 16).overlay(Text("お知らせ").font(LF.inter(900, 20)).foregroundStyle(.white))
+            }.padding(.horizontal, 16).overlay(Text("お知らせ").font(Typo.ui(900, 20)).foregroundStyle(.white))
             HStack(spacing: 8) {
                 ForEach(Tab.allCases, id: \.self) { t in
                     Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.2)) { tab = t } } label: {
                         HStack(spacing: 6) {
-                            Text(t.rawValue).font(LF.inter(800, 13))
-                            if count(t) > 0 { Text("\(count(t))").font(LF.inter(800, 11)).foregroundStyle(HV.ink).padding(.horizontal, 6).frame(minWidth: 18, minHeight: 18).background(PopColor.pink, in: Capsule()) }
+                            Text(t.rawValue).font(Typo.ui(800, 13))
+                            if count(t) > 0 { Text("\(count(t))").font(Typo.ui(800, 11)).foregroundStyle(HV.ink).padding(.horizontal, 6).frame(minWidth: 18, minHeight: 18).background(PopColor.pink, in: Capsule()) }
                         }
                         .foregroundStyle(tab == t ? HV.ink : .white).padding(.horizontal, 14).frame(height: 36)
                         .background(tab == t ? Color.white : Color.white.opacity(0.1), in: Capsule())
@@ -81,7 +81,7 @@ struct InboxV108View: View {
                     else if shown.isEmpty && pastShown.isEmpty { empty }
                     ForEach(shown) { r in row(r).transition(.opacity.combined(with: .offset(x: -40))) }
                     if !pastShown.isEmpty {
-                        Text("これまで").font(LF.inter(800, 12)).tracking(0.8).foregroundStyle(HV.gray).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
+                        Text("これまで").font(Typo.ui(800, 12)).tracking(0.8).foregroundStyle(HV.gray).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
                         ForEach(pastShown) { p in pastRow(p) }
                     }
                 }.padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 40)
@@ -96,8 +96,8 @@ struct InboxV108View: View {
     private var empty: some View {
         VStack(spacing: 8) {
             Image(systemName: "bell").font(.system(size: 36, weight: .regular)).foregroundStyle(HV.gray)
-            Text("お知らせは ありません").font(LF.inter(800, 16)).foregroundStyle(.white)
-            Text("友だち申請 と Trip の 招待が ここに 来ます").font(LF.inter(500, 13)).foregroundStyle(HV.gray)
+            Text("お知らせは ありません").font(Typo.ui(800, 16)).foregroundStyle(.white)
+            Text("友だち申請 と Trip の 招待が ここに 来ます").font(Typo.ui(500, 13)).foregroundStyle(HV.gray)
         }.padding(.top, 80)
     }
 
@@ -105,17 +105,17 @@ struct InboxV108View: View {
         let done = r.state == .done
         return HStack(spacing: 12) {
             if r.kind == .friend {
-                Text(String(r.title.prefix(1))).font(LF.inter(800, 18)).foregroundStyle(HV.ink).frame(width: 48, height: 48).background(Color(hex: "61DD7A"), in: Circle())
+                Text(String(r.title.prefix(1))).font(Typo.ui(800, 18)).foregroundStyle(HV.ink).frame(width: 48, height: 48).background(Color(hex: "61DD7A"), in: Circle())
             } else {
                 RoundedRectangle(cornerRadius: 10).fill(Color(hex: "2A2A2E")).frame(width: 48, height: 60)
                     .overlay(alignment: .bottomTrailing) { Image(systemName: "suitcase.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(HV.ink).frame(width: 20, height: 20).background(HV.lime, in: Circle()).offset(x: 5, y: 5) }
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(r.title).font(LF.inter(800, 16)).foregroundStyle(.white).lineLimit(1)
-                if done { Text(r.kind == .friend ? "友だちに なりました ・ あしたの 9:00 から 見せあえます" : "参加しました").font(LF.inter(600, 12)).foregroundStyle(HV.lime).fixedSize(horizontal: false, vertical: true) }
+                Text(r.title).font(Typo.ui(800, 16)).foregroundStyle(.white).lineLimit(1)
+                if done { Text(r.kind == .friend ? "友だちに なりました ・ あしたの 9:00 から 見せあえます" : "参加しました").font(Typo.ui(600, 12)).foregroundStyle(HV.lime).fixedSize(horizontal: false, vertical: true) }
                 else {
-                    if !r.handle.isEmpty { Text("@\(r.handle)").font(LF.inter(600, 12)).foregroundStyle(HV.gray).lineLimit(1) }
-                    Text(r.sub).font(LF.inter(500, 12)).foregroundStyle(HV.gray).lineLimit(1)
+                    if !r.handle.isEmpty { Text("@\(r.handle)").font(Typo.ui(600, 12)).foregroundStyle(HV.gray).lineLimit(1) }
+                    Text(r.sub).font(Typo.ui(500, 12)).foregroundStyle(HV.gray).lineLimit(1)
                 }
             }
             Spacer(minLength: 4)
@@ -140,7 +140,7 @@ struct InboxV108View: View {
     private func pastRow(_ p: Past) -> some View {
         HStack(spacing: 12) {
             Image(systemName: p.kind == "friend" ? "person.fill" : "suitcase.fill").font(.system(size: 14, weight: .bold)).foregroundStyle(HV.gray).frame(width: 36, height: 36).background(Color.white.opacity(0.08), in: Circle())
-            Text(p.text).font(LF.inter(600, 14)).foregroundStyle(.white.opacity(0.85)).lineLimit(2)
+            Text(p.text).font(Typo.ui(600, 14)).foregroundStyle(.white.opacity(0.85)).lineLimit(2)
             Spacer()
             if p.kind == "friend", !p.otherID.isEmpty {
                 Button { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { onOpenChat(p.otherID, p.name) } } label: { Image(systemName: "bubble.left").font(.system(size: 15, weight: .semibold)).foregroundStyle(HV.lime).frame(width: 44, height: 44) }.buttonStyle(.plain).accessibilityLabel("チャット")

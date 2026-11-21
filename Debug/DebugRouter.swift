@@ -338,7 +338,7 @@ struct DebugMockChrome: View {
                     p.addRoundedRect(in: CGRect(origin: .zero, size: size), cornerSize: CGSize(width: 50, height: 50), style: .continuous)
                     ctx.fill(p, with: .color(Color(hex: "0D0D0F")), style: FillStyle(eoFill: true))
                 }
-                Text(clock).font(LF.inter(700, 16)).foregroundStyle(UserDefaults.standard.bool(forKey: "debugChromeLight") ? .white : ink).offset(x: 42, y: 19)
+                Text(clock).font(Typo.ui(700, 16)).foregroundStyle(UserDefaults.standard.bool(forKey: "debugChromeLight") ? .white : ink).offset(x: 42, y: 19)
                 Capsule().fill(.black).frame(width: 122, height: 35).offset(x: (g.size.width - 122) / 2, y: 11)
                 Image(systemName: "cellularbars").font(.system(size: 13, weight: .bold)).foregroundStyle(UserDefaults.standard.bool(forKey: "debugChromeLight") ? .white : ink).offset(x: 310, y: 21)
                 RoundedRectangle(cornerRadius: 4).stroke(UserDefaults.standard.bool(forKey: "debugChromeLight") ? .white : ink, lineWidth: 1).frame(width: 25, height: 12).offset(x: 333, y: 23).opacity(0.9)

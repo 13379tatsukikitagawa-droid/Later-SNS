@@ -22,9 +22,9 @@ struct HandleField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Text("@").font(LF.inter(800, 20)).foregroundStyle(lime)
+                Text("@").font(Typo.ui(800, 20)).foregroundStyle(lime)
                 TextField("", text: $text, prompt: Text("your_id").foregroundColor(.white.opacity(0.25)))
-                    .font(LF.mono(19)).foregroundStyle(.white).tint(lime).focused($focus)
+                    .font(Typo.label(19)).foregroundStyle(.white).tint(lime).focused($focus)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.asciiCapable).submitLabel(.done)
                     .onChange(of: text) { _, v in
                         let n = HandleRules.normalize(v)
@@ -41,7 +41,7 @@ struct HandleField: View {
             if case .taken = state, !altChips.isEmpty {
                 HStack(spacing: 8) {
                     ForEach(altChips, id: \.self) { c in
-                        Button { Haptics.play(.tick); text = c } label: { Text(c).font(LF.mono(12)).foregroundStyle(lime).padding(.horizontal, 12).frame(minHeight: 44).background(lime.opacity(0.10), in: Capsule()) }.buttonStyle(.plain)
+                        Button { Haptics.play(.tick); text = c } label: { Text(c).font(Typo.label(12)).foregroundStyle(lime).padding(.horizontal, 12).frame(minHeight: 44).background(lime.opacity(0.10), in: Capsule()) }.buttonStyle(.plain)
                     }
                 }.transition(.opacity)
             }
@@ -55,8 +55,8 @@ struct HandleField: View {
         else {
             switch state {
             case .ok, .mine: Image(systemName: "checkmark").font(.system(size: 15, weight: .black)).foregroundStyle(HV.ink).frame(width: 26, height: 26).background(lime, in: Circle())
-            case .taken: Text("!").font(LF.inter(900, 15)).foregroundStyle(.white).frame(width: 26, height: 26).background(red, in: Circle())
-            case .invalid: if !text.isEmpty { Text("!").font(LF.inter(900, 15)).foregroundStyle(.white).frame(width: 26, height: 26).background(red, in: Circle()) }
+            case .taken: Text("!").font(Typo.ui(900, 15)).foregroundStyle(.white).frame(width: 26, height: 26).background(red, in: Circle())
+            case .invalid: if !text.isEmpty { Text("!").font(Typo.ui(900, 15)).foregroundStyle(.white).frame(width: 26, height: 26).background(red, in: Circle()) }
             case .unknown: EmptyView()
             }
         }
@@ -73,7 +73,7 @@ struct HandleField: View {
                 case .unknown: Text("ネットワークを たしかめて ください").foregroundStyle(.white.opacity(0.45))
                 }
             }
-        }.font(LF.inter(600, 13)).padding(.leading, 4)
+        }.font(Typo.ui(600, 13)).padding(.leading, 4)
     }
 
     /// 0.35秒 まって から たしかめる

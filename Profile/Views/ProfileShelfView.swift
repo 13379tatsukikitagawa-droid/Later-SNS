@@ -41,9 +41,7 @@ enum ProfilePersonaName {
 enum ShelfFont {
     /// 名前:Inter Black(Home の「Later」と同じ)
     static func black(_ size: CGFloat) -> Font {
-        UIFont(name: "Inter-Black", size: size) != nil
-            ? .custom("Inter-Black", fixedSize: size)
-            : .system(size: size, weight: .heavy, design: .rounded)
+        Typo.ui(900, size)
     }
 
     /// 小さな「you」と数字:Instrument Serif の斜体
@@ -54,10 +52,7 @@ enum ShelfFont {
     }
 
     static func mono(_ size: CGFloat, bold: Bool = false) -> Font {
-        let name = bold ? "SpaceMono-Bold" : "SpaceMono-Regular"
-        return UIFont(name: name, size: size) != nil
-            ? .custom(name, fixedSize: size)
-            : .system(size: size, weight: bold ? .bold : .regular, design: .monospaced)
+        Typo.label(size, bold: bold)
     }
 }
 
@@ -677,7 +672,7 @@ struct ProfileShelfView: View {
                     showToast("#\(tag) の日を探す(仮)")
                 } label: {
                     Text("#\(tag)")
-                        .font(LF.inter(900, 15))
+                        .font(Typo.ui(900, 15))
                         .tracking(-0.3)
                         .foregroundStyle(slot.ink)
                         .padding(.horizontal, 10).padding(.vertical, 8)

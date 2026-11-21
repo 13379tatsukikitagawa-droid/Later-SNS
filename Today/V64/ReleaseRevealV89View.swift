@@ -42,7 +42,7 @@ struct ReleaseRevealV89View: View {
                 }
                 if full { fullScreen(size: proxy.size) }
                 if let toast {
-                    Text(toast).font(LF.inter(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 38).background(.white, in: Capsule())
+                    Text(toast).font(Typo.ui(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 38).background(.white, in: Capsule())
                         .frame(maxHeight: .infinity, alignment: .bottom).padding(.bottom, 130).transition(.opacity)
                 }
             }
@@ -67,7 +67,7 @@ struct ReleaseRevealV89View: View {
         return ZStack {
             VStack(spacing: 14) {
                 HStack(spacing: 8) {
-                    Text("YESTERDAY ・ \(Self.dateLabel)").font(LF.mono(11)).tracking(2).foregroundStyle(.white.opacity(0.7))
+                    Text("YESTERDAY ・ \(Self.dateLabel)").font(Typo.label(11)).tracking(2).foregroundStyle(.white.opacity(0.7))
                     HStack(spacing: 4) { ForEach(0..<max(1, count), id: \.self) { i in Circle().fill(i < ordinal ? lime : .white.opacity(0.25)).frame(width: 6, height: 6) } }
                 }.opacity(rise)
                 ZStack {
@@ -86,15 +86,15 @@ struct ReleaseRevealV89View: View {
                 .onTapGesture {
                     if t < Self.total - 0.5 { skipToEnd() } else { Haptics.play(.tick); openFull() }
                 }
-                Text("↗ タップで 大きく").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.5)).opacity(done ? 1 : 0)
+                Text("↗ タップで 大きく").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.5)).opacity(done ? 1 : 0)
             }
             VStack(spacing: 10) {
                 Spacer()
                 Button { publish(true) } label: {
-                    Text("友だちに 公開").font(LF.inter(800, 16)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(lime, in: Capsule())
+                    Text("友だちに 公開").font(Typo.ui(800, 16)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(lime, in: Capsule())
                 }.buttonStyle(HVPress(scale: 0.97))
                 Button { publish(false) } label: {
-                    Text("自分だけ").font(LF.inter(800, 16)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 56).background(.white.opacity(0.1), in: Capsule())
+                    Text("自分だけ").font(Typo.ui(800, 16)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 56).background(.white.opacity(0.1), in: Capsule())
                 }.buttonStyle(HVPress(scale: 0.97))
             }.padding(.horizontal, 24).padding(.bottom, 30)
             .opacity(ease((t - 3.2) / 0.35, 3)).offset(y: (1 - ease((t - 3.2) / 0.35, 3)) * 30)
@@ -166,12 +166,12 @@ struct ReleaseRevealV89View: View {
     private var stickers: some View {
         ZStack {
             if let tag, !tag.isEmpty {
-                Text("#\(tag)").font(LF.inter(900, 15)).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 32).background(lime, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Text("#\(tag)").font(Typo.ui(900, 15)).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 32).background(lime, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .rotationEffect(.degrees(6)).shadow(color: .black.opacity(0.35), radius: 4, x: 2, y: 3)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(16)
                     .transition(.scale(scale: 2.6).combined(with: .opacity))
             }
-            Text(time).font(LF.mono(15)).foregroundStyle(lime).shadow(color: lime.opacity(0.8), radius: 6)
+            Text(time).font(Typo.label(15)).foregroundStyle(lime).shadow(color: lime.opacity(0.8), radius: 6)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing).padding(16)
         }
     }
@@ -199,14 +199,14 @@ struct ReleaseRevealV89View: View {
                     Button { Haptics.play(.tick); closeFull() } label: { Image(systemName: "xmark").font(.system(size: 15, weight: .black)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.12), in: Circle()) }.buttonStyle(.plain)
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(time).font(LF.mono(15)).foregroundStyle(lime)
-                        Text([place, "きのう"].compactMap { $0 }.joined(separator: " ・ ")).font(LF.inter(600, 11)).foregroundStyle(.white.opacity(0.6))
+                        Text(time).font(Typo.label(15)).foregroundStyle(lime)
+                        Text([place, "きのう"].compactMap { $0 }.joined(separator: " ・ ")).font(Typo.ui(600, 11)).foregroundStyle(.white.opacity(0.6))
                     }
                 }.padding(.horizontal, 16).padding(.top, 54)
                 Spacer()
                 HStack(spacing: 10) {
-                    Button { closeFull(); publish(false) } label: { Text("自分だけ").font(LF.inter(800, 15)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 54).background(.white.opacity(0.12), in: Capsule()) }.buttonStyle(.plain)
-                    Button { closeFull(); publish(true) } label: { Text("友だちに 公開").font(LF.inter(800, 15)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 54).background(lime, in: Capsule()) }.buttonStyle(.plain)
+                    Button { closeFull(); publish(false) } label: { Text("自分だけ").font(Typo.ui(800, 15)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 54).background(.white.opacity(0.12), in: Capsule()) }.buttonStyle(.plain)
+                    Button { closeFull(); publish(true) } label: { Text("友だちに 公開").font(Typo.ui(800, 15)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 54).background(lime, in: Capsule()) }.buttonStyle(.plain)
                 }.padding(.horizontal, 20).padding(.bottom, 34)
             }
         }

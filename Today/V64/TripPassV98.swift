@@ -99,7 +99,7 @@ struct TripPassView: View {
     private var header: some View {
         HStack(spacing: 7) {
             Circle().fill(Color(hex: "C8F25A")).frame(width: 6, height: 6)
-            Text(newlyMade ? "YOUR TRIP IS READY" : "TRIP PASS").font(LF.mono(10.5)).tracking(2.5).foregroundStyle(Color(hex: "C8F25A"))
+            Text(newlyMade ? "YOUR TRIP IS READY" : "TRIP PASS").font(Typo.label(10.5)).tracking(2.5).foregroundStyle(Color(hex: "C8F25A"))
         }
     }
 
@@ -108,7 +108,7 @@ struct TripPassView: View {
         HStack(spacing: 8) {
             Circle().fill(lampDone ? Color(hex: "C8F25A") : Color(hex: "FF7A2F")).frame(width: 7, height: 7)
                 .shadow(color: (lampDone ? Color(hex: "C8F25A") : Color(hex: "FF7A2F")), radius: 4)
-            Text(lampDone ? "LATTAG" : "PRINTING").font(LF.mono(9)).tracking(2.2).foregroundStyle(Color(hex: "6E6E75"))
+            Text(lampDone ? "LATTAG" : "PRINTING").font(Typo.label(9)).tracking(2.2).foregroundStyle(Color(hex: "6E6E75"))
         }
         .frame(maxWidth: .infinity).frame(height: 26)
         .background(RoundedRectangle(cornerRadius: 13, style: .continuous).fill(Color(hex: "1A1A1D")))
@@ -166,16 +166,16 @@ struct TripPassView: View {
                                    .init(color: .black.opacity(0.2), location: 0.6), .init(color: .black.opacity(0.8), location: 1)], startPoint: .top, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 0) {
                 HStack { Text("LATTAG"); Spacer(); Text("TRIP PASS ・ \(passNo)") }
-                    .font(LF.mono(9)).tracking(1.8).foregroundStyle(.white.opacity(0.9))
-                Text(data.name).font(LF.inter(900, 32)).tracking(-1).lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(.white).padding(.top, 52)
-                if !data.sub.isEmpty, data.sub != data.name { Text(data.sub).font(LF.serif(18, italic: true)).foregroundStyle(.white.opacity(0.85)).lineLimit(1) }
+                    .font(Typo.label(9)).tracking(1.8).foregroundStyle(.white.opacity(0.9))
+                Text(data.name).font(Typo.ui(900, 32)).tracking(-1).lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(.white).padding(.top, 52)
+                if !data.sub.isEmpty, data.sub != data.name { Text(data.sub).font(Typo.title(18, italic: true)).foregroundStyle(.white.opacity(0.85)).lineLimit(1) }
                 Spacer(minLength: 0)
                 HStack(alignment: .bottom, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) { Text("FROM").font(LF.mono(8)).tracking(1.4).opacity(0.7); Text(data.from).font(LF.mono(15)) }
+                    VStack(alignment: .leading, spacing: 2) { Text("FROM").font(Typo.label(8)).tracking(1.4).opacity(0.7); Text(data.from).font(Typo.label(15)) }
                     Image(systemName: "arrow.right").font(.system(size: 13, weight: .regular)).opacity(0.7).padding(.bottom, 3)
-                    VStack(alignment: .leading, spacing: 2) { Text("TO").font(LF.mono(8)).tracking(1.4).opacity(0.7); Text(data.to).font(LF.mono(15)) }
+                    VStack(alignment: .leading, spacing: 2) { Text("TO").font(Typo.label(8)).tracking(1.4).opacity(0.7); Text(data.to).font(Typo.label(15)) }
                     Spacer(minLength: 0)
-                    VStack(alignment: .trailing, spacing: 2) { Text("DAYS").font(LF.mono(8)).tracking(1.4).opacity(0.7); Text("\(data.days)").font(LF.inter(900, 26)) }
+                    VStack(alignment: .trailing, spacing: 2) { Text("DAYS").font(Typo.label(8)).tracking(1.4).opacity(0.7); Text("\(data.days)").font(Typo.ui(900, 26)) }
                 }.foregroundStyle(.white)
                 HStack(spacing: 8) {
                     HStack(spacing: -6) {
@@ -184,7 +184,7 @@ struct TripPassView: View {
                                 .overlay(Circle().strokeBorder(Color(hex: "111111"), lineWidth: 2))
                         }
                     }
-                    Text("\(data.members.count) / 8 ・ 1日 23枚").font(LF.mono(10))
+                    Text("\(data.members.count) / 8 ・ 1日 23枚").font(Typo.label(10))
                 }.foregroundStyle(.white).padding(.top, 10)
             }.padding(.horizontal, 18).padding(.vertical, 16)
         }
@@ -202,10 +202,10 @@ struct TripPassView: View {
             .frame(width: 124, height: 124).padding(6)
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(hex: "FBFAF6")))
             VStack(alignment: .leading, spacing: 0) {
-                Text("KEY").font(LF.mono(9)).tracking(2.2).foregroundStyle(Color(hex: "8A857B"))
+                Text("KEY").font(Typo.label(9)).tracking(2.2).foregroundStyle(Color(hex: "8A857B"))
                 (Text(keyParts.0).foregroundColor(Color(hex: "0B0C0D")) + Text(keyParts.1).foregroundColor(Color(hex: "5E8A12")))
-                    .font(LF.inter(900, 26)).tracking(-0.8).lineLimit(2).minimumScaleFactor(0.6).padding(.top, 2)
-                Text("SCAN TO JOIN\nあした 9:00 に 現像").font(LF.mono(8.5)).tracking(1).lineSpacing(3).foregroundStyle(Color(hex: "8A857B")).padding(.top, 8)
+                    .font(Typo.ui(900, 26)).tracking(-0.8).lineLimit(2).minimumScaleFactor(0.6).padding(.top, 2)
+                Text("SCAN TO JOIN\nあした 9:00 に 現像").font(Typo.label(8.5)).tracking(1).lineSpacing(3).foregroundStyle(Color(hex: "8A857B")).padding(.top, 8)
                 Spacer(minLength: 0)
             }
             Spacer(minLength: 0)
@@ -224,8 +224,8 @@ struct TripPassView: View {
 
     private var stamp: some View {
         VStack(spacing: 0) {
-            Text("ISSUED").font(LF.mono(9)).tracking(1.8)
-            Text(issued).font(LF.inter(900, 13))
+            Text("ISSUED").font(Typo.label(9)).tracking(1.8)
+            Text(issued).font(Typo.ui(900, 13))
         }
         .foregroundStyle(Color(hex: "C8F25A"))
         .padding(.horizontal, 10).padding(.vertical, 5)
@@ -259,7 +259,7 @@ struct TripPassView: View {
         Button { Haptics.play(.tick); action() } label: {
             VStack(spacing: 5) {
                 Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(Color(hex: "C8F25A"))
-                Text(title).font(LF.inter(800, 11.5)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(title).font(Typo.ui(800, 11.5)).lineLimit(1).minimumScaleFactor(0.7)
             }
             .foregroundStyle(ok ? Color(hex: "C8F25A") : .white)
             .frame(maxWidth: .infinity).frame(height: 64)
@@ -273,7 +273,7 @@ struct TripPassView: View {
 
     private var startButton: some View {
         Button { Haptics.play(.click); onStart() } label: {
-            Text(newlyMade ? "Trip を はじめる" : "とじる").font(LF.inter(900, 16.5)).foregroundStyle(Color(hex: "111111"))
+            Text(newlyMade ? "Trip を はじめる" : "とじる").font(Typo.ui(900, 16.5)).foregroundStyle(Color(hex: "111111"))
                 .frame(maxWidth: .infinity).frame(height: 58).background(Capsule().fill(Color(hex: "C8F25A")))
         }
         .buttonStyle(HVPress(scale: 0.98)).padding(.top, 10)

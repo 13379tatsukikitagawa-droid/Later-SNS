@@ -115,14 +115,14 @@ private struct HomeTourInner: View {
                             }
                     }
                 }
-                Text(String(format: "%02d / %02d ・ TODAY", i + 1, HomeTour.steps.count)).font(LF.mono(11)).tracking(1.4).foregroundStyle(HV.lime).padding(.top, 14)
-                Text(s.title).font(LF.inter(800, 21)).foregroundStyle(.white).padding(.top, 6)
-                Text(s.body).font(LF.inter(500, 13.5)).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true).padding(.top, 6)
+                Text(String(format: "%02d / %02d ・ TODAY", i + 1, HomeTour.steps.count)).font(Typo.label(11)).tracking(1.4).foregroundStyle(HV.lime).padding(.top, 14)
+                Text(s.title).font(Typo.ui(800, 21)).foregroundStyle(.white).padding(.top, 6)
+                Text(s.body).font(Typo.ui(500, 13.5)).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true).padding(.top, 6)
                 HStack {
-                    Button { Haptics.play(.tick); finish(silent: true) } label: { Text("スキップ").font(LF.inter(700, 13)).foregroundStyle(.white.opacity(0.55)).frame(minWidth: 64, minHeight: 44, alignment: .leading) }.buttonStyle(.plain)
+                    Button { Haptics.play(.tick); finish(silent: true) } label: { Text("スキップ").font(Typo.ui(700, 13)).foregroundStyle(.white.opacity(0.55)).frame(minWidth: 64, minHeight: 44, alignment: .leading) }.buttonStyle(.plain)
                     Spacer()
                     Button { next() } label: {
-                        Text(last ? "はじめる" : "つぎへ ›").font(LF.inter(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 20).frame(height: 44).background(HV.lime, in: Capsule())
+                        Text(last ? "はじめる" : "つぎへ ›").font(Typo.ui(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 20).frame(height: 44).background(HV.lime, in: Capsule())
                     }.buttonStyle(.plain)
                 }.padding(.top, 8)
             }

@@ -22,7 +22,7 @@ struct TripSeatMap: View {
     var body: some View {
         let rows = (seats + 3) / 4
         ZStack(alignment: .top) {
-            Text("FRONT").font(LF.mono(8)).tracking(2.4).foregroundStyle(Color(hex: "4A4A50")).padding(.top, 10)
+            Text("FRONT").font(Typo.label(8)).tracking(2.4).foregroundStyle(Color(hex: "4A4A50")).padding(.top, 10)
             VStack(spacing: 8) {
                 ForEach(0..<rows, id: \.self) { r in
                     HStack(spacing: 8) {
@@ -52,14 +52,14 @@ struct TripSeatMap: View {
                         Image(uiImage: img).resizable().scaledToFill().frame(width: d, height: d).clipShape(Circle())
                     } else {
                         Circle().fill(Color(hex: "C8F25A")).frame(width: d, height: d)
-                            .overlay(Text(String(p.name.prefix(1))).font(LF.inter(800, d * 0.4)).foregroundStyle(Color(hex: "111111")))
+                            .overlay(Text(String(p.name.prefix(1))).font(Typo.ui(800, d * 0.4)).foregroundStyle(Color(hex: "111111")))
                     }
                 } else {
                     Circle().strokeBorder(Color(hex: "C8F25A").opacity(0.45), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(width: d, height: d)
                         .overlay(Image(systemName: "plus").font(.system(size: 13, weight: .regular)).foregroundStyle(Color(hex: "C8F25A")))
                 }
             }
-            Text(p?.name ?? code(i)).font(LF.mono(9.5)).tracking(0.8).lineLimit(1).frame(maxWidth: 60)
+            Text(p?.name ?? code(i)).font(Typo.label(9.5)).tracking(0.8).lineLimit(1).frame(maxWidth: 60)
                 .foregroundStyle(on ? Color(hex: "C8F25A") : Color(hex: "6E6E75"))
         }
         .padding(.top, 8).padding(.bottom, 6).frame(maxWidth: .infinity)
@@ -84,7 +84,7 @@ struct TripInvitePreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("送ると、こう 見える").font(LF.mono(9.5)).tracking(1.7).foregroundStyle(Color(hex: "6E6E75"))
+            Text("送ると、こう 見える").font(Typo.label(9.5)).tracking(1.7).foregroundStyle(Color(hex: "6E6E75"))
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 0) {
                     Group {
@@ -93,10 +93,10 @@ struct TripInvitePreview: View {
                     }
                     .frame(width: 92, height: 118).clipped()
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("TRIP PASS").font(LF.mono(8)).tracking(1.6).foregroundStyle(Color(hex: "8A857B"))
-                        Text(name).font(LF.inter(900, 19)).tracking(-0.4).lineLimit(2).minimumScaleFactor(0.7).foregroundStyle(Color(hex: "111111"))
+                        Text("TRIP PASS").font(Typo.label(8)).tracking(1.6).foregroundStyle(Color(hex: "8A857B"))
+                        Text(name).font(Typo.ui(900, 19)).tracking(-0.4).lineLimit(2).minimumScaleFactor(0.7).foregroundStyle(Color(hex: "111111"))
                         Spacer(minLength: 0)
-                        Text("\(date)\nKEY \(key.hasPrefix("#") ? key : "#" + key)").font(LF.mono(8.5)).lineSpacing(2).foregroundStyle(Color(hex: "5F5A52"))
+                        Text("\(date)\nKEY \(key.hasPrefix("#") ? key : "#" + key)").font(Typo.label(8.5)).lineSpacing(2).foregroundStyle(Color(hex: "5F5A52"))
                     }
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(hex: "F4F1EA"))
@@ -108,14 +108,14 @@ struct TripInvitePreview: View {
                     }
                 }.frame(height: 118)
                 Text(TripKeyLink.url(forKey: key).replacingOccurrences(of: "https://", with: ""))
-                    .font(LF.inter(600, 11)).foregroundStyle(Color(hex: "C9C9CF")).padding(.horizontal, 12).padding(.vertical, 8)
+                    .font(Typo.ui(600, 11)).foregroundStyle(Color(hex: "C9C9CF")).padding(.horizontal, 12).padding(.vertical, 8)
             }
             .frame(width: 250)
             .background(Color(hex: "2A2A2E"))
             .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6, topTrailingRadius: 20, style: .continuous))
             .shadow(color: .black.opacity(0.5), radius: 10, y: 10)
             .frame(maxWidth: .infinity, alignment: .trailing)
-            Text("\(me) から Trip の 招待 ✈︎").font(LF.inter(600, 10.5)).foregroundStyle(Color(hex: "6E6E75")).frame(maxWidth: .infinity, alignment: .trailing)
+            Text("\(me) から Trip の 招待 ✈︎").font(Typo.ui(600, 10.5)).foregroundStyle(Color(hex: "6E6E75")).frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.top, 4)
     }
@@ -130,8 +130,8 @@ struct TripSendButton: View {
             HStack(spacing: 12) {
                 Image(systemName: "paperplane").font(.system(size: 21, weight: .semibold))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("招待リンクを 送る").font(LF.inter(900, 16.5))
-                    Text(sub).font(LF.inter(700, 11)).opacity(0.6)
+                    Text("招待リンクを 送る").font(Typo.ui(900, 16.5))
+                    Text(sub).font(Typo.ui(700, 11)).opacity(0.6)
                 }
                 Spacer(minLength: 0)
             }
@@ -151,7 +151,7 @@ struct TripTwoButtons: View {
     var body: some View {
         HStack(spacing: 8) {
             Button { Haptics.play(.tick); onQR() } label: {
-                HStack(spacing: 8) { Image(systemName: "qrcode").font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(hex: "C8F25A")); Text("QR を 見せる").font(LF.inter(800, 13.5)) }
+                HStack(spacing: 8) { Image(systemName: "qrcode").font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(hex: "C8F25A")); Text("QR を 見せる").font(Typo.ui(800, 13.5)) }
                     .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 50)
                     .background(Capsule().fill(Color(hex: "1C1C1F"))).overlay(Capsule().strokeBorder(.white.opacity(0.07), lineWidth: 1))
             }.buttonStyle(HVPress(scale: 0.97))
@@ -161,7 +161,7 @@ struct TripTwoButtons: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color(hex: "C8F25A"))
-                    Text(key.isEmpty ? "—" : (key.hasPrefix("#") ? key : "#" + key)).font(LF.mono(13.5)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(key.isEmpty ? "—" : (key.hasPrefix("#") ? key : "#" + key)).font(Typo.label(13.5)).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 50)
                 .background(Capsule().fill(Color(hex: "1C1C1F"))).overlay(Capsule().strokeBorder(.white.opacity(0.07), lineWidth: 1))
@@ -184,15 +184,15 @@ struct TripBoardingView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("BOARDING ・ \(people.count) / 8").font(LF.mono(10)).tracking(2.2).foregroundStyle(Color(hex: "C8F25A"))
-                Text("なかまを のせよう").font(LF.inter(900, 28)).tracking(-0.8).foregroundStyle(.white).padding(.top, -6)
-                Text("入ると、ここで 話せる ・ 1日 23枚を みんなで").font(LF.inter(600, 12.5)).foregroundStyle(Color(hex: "8C8C93")).padding(.top, -6)
+                Text("BOARDING ・ \(people.count) / 8").font(Typo.label(10)).tracking(2.2).foregroundStyle(Color(hex: "C8F25A"))
+                Text("なかまを のせよう").font(Typo.ui(900, 28)).tracking(-0.8).foregroundStyle(.white).padding(.top, -6)
+                Text("入ると、ここで 話せる ・ 1日 23枚を みんなで").font(Typo.ui(600, 12.5)).foregroundStyle(Color(hex: "8C8C93")).padding(.top, -6)
                 TripSeatMap(people: people)
                 TripInvitePreview(name: name, date: date, key: key, cover: cover, me: me)
                 TripSendButton(action: onSend)
                 TripTwoButtons(key: key, onQR: onQR)
                 Text("アプリが ない 人も、リンクで パスが 見えて そのまま 入れる")
-                    .font(LF.inter(600, 11)).lineSpacing(3).multilineTextAlignment(.center).foregroundStyle(Color(hex: "5D5D63")).frame(maxWidth: .infinity)
+                    .font(Typo.ui(600, 11)).lineSpacing(3).multilineTextAlignment(.center).foregroundStyle(Color(hex: "5D5D63")).frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 40)
         }

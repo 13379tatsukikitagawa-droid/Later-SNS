@@ -10,7 +10,6 @@
 		00075D19B9CD6F18D39C4796 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769863F83DF8CA3E06CAE493 /* SampleData.swift */; };
 		01C86E7D093E315A9ECF5307 /* LGFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED44F2F13C3467FBD25D831F /* LGFont.swift */; };
 		01DECCAA22A03B7652DD3EEB /* Services/AppleFirebaseAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22FF412000A894263FFAD32 /* Services/AppleFirebaseAuth.swift */; };
-		021C097B9475439B95C55961 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
 		03AF61CBF9CCDD180139CF35 /* HoldGauge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0F7F40C595276C07B370F9 /* HoldGauge.swift */; };
 		0535108159820B2BDDA4B567 /* DailyExposure.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55E83A29FD094B16A771FDE /* DailyExposure.swift */; };
 		092332E0BBFB3FC5311F1A26 /* LattagWidgetsMid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */; };
@@ -35,7 +34,6 @@
 		1FDDD83248CBA2F90AC65FAD /* V64/SelfQRChekiV92View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC1E46ADF9AC08558CBDAF /* V64/SelfQRChekiV92View.swift */; };
 		22916C5A6F5D88E05D39D26F /* V64/HomeNextV95.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B8E2911EFFED828CF900DD /* V64/HomeNextV95.swift */; };
 		2353164534C48640CDB4FB82 /* ProfileChekiCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109414FC4E47E9391C73F5BB /* ProfileChekiCard.swift */; };
-		243298DF83CD4778A018B840 /* Fonts/SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */; };
 		25F834EB07CD5ED6F87873BD /* V64/DailyQuestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B88E59887E4FF3899F6B37 /* V64/DailyQuestion.swift */; };
 		26809E5E4FDE2F3C8AD3F554 /* ../Pop/PopTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80947753BA895EFEC606555B /* ../Pop/PopTabBar.swift */; };
 		2744BB79479D4A999C8709EC /* FriendQRScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C290258883324294968F5BFF /* FriendQRScanView.swift */; };
@@ -94,7 +92,6 @@
 		70C2DD422C8F389F0CC87EF0 /* V64/OnboardingV64View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F02DF031CD33AD4DDCE09 /* V64/OnboardingV64View.swift */; };
 		7114D6320BE8058533FCC70E /* FilmLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC67E891DCAB7E9E67145673 /* FilmLook.swift */; };
 		713A5095E2754D1FBADADEC1 /* PhotoNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C61470FC924F8D8D9D42A5 /* PhotoNotificationService.swift */; };
-		7156FC811FE54860A9D24D7C /* Fonts/SpaceMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5EB475C0B25346EBBDDE292C /* Fonts/SpaceMono-Regular.ttf */; };
 		71A7B7ACD65CEE59BD4CB060 /* FilmCameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0EC5490E33581BEBC31225E /* FilmCameraController.swift */; };
 		730BB8671D04CB31A53FCEB0 /* V64/TripSettingsV106.swift in Sources */ = {isa = PBXBuildFile; fileRef = D694CD77723E391F154D4CBC /* V64/TripSettingsV106.swift */; };
 		73AE4F5B71C4CE851B12BD98 /* V64/DirectMessageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99250B0EB5E496A94CD226D2 /* V64/DirectMessageService.swift */; };
@@ -176,8 +173,6 @@
 		A99E9F20DF14A6308F73DC5B /* OnboardingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF193B5747AE398EAD547C74 /* OnboardingModel.swift */; };
 		AA02B084116A54FB2CDB13B8 /* ProfileImmersiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024F0344468148CF8D1F6B92 /* ProfileImmersiveView.swift */; };
 		AF28ECC8E62CE129DE0FEF60 /* ExposureHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2CF92F275B089847890306 /* ExposureHaptics.swift */; };
-		AFE027450A8E4F31933870A9 /* Fonts/Inter-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F3BD87A37A434721B1834A92 /* Fonts/Inter-Bold.ttf */; };
-		B09E9A0777064B0F80631B53 /* Fonts/Inter-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 27B30D00E22A4904938D7ED6 /* Fonts/Inter-Black.ttf */; };
 		B1307E84F5C33C19142EAD65 /* V64/StyledQR.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B147E4D0B3D978B16F0E16 /* V64/StyledQR.swift */; };
 		B193B2886C45D722DD984C84 /* V64/HomeV64Lower.swift in Sources */ = {isa = PBXBuildFile; fileRef = 288E412DBA3D560B94FDA1C6 /* V64/HomeV64Lower.swift */; };
 		B1A100000000000000000001 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A100000000000000000002 /* Palette.swift */; };
@@ -285,7 +280,6 @@
 		E1D000000000000000000042 /* LaterWidgetAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D000000000000000000009 /* LaterWidgetAccessory.swift */; };
 		E1D000000000000000000043 /* LaterWidgetAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D000000000000000000009 /* LaterWidgetAccessory.swift */; };
 		E1D000000000000000000044 /* WidgetSetupFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D00000000000000000000A /* WidgetSetupFlow.swift */; };
-		E20C09C144BE4B9A8013E80F /* Fonts/Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0A0CDE87376944EE8E6DF443 /* Fonts/Inter-Medium.ttf */; };
 		E240043E7DA04AF923BE1074 /* Film/retro8_lut33.bin in Resources */ = {isa = PBXBuildFile; fileRef = 8895D6612FF31F14633F3C80 /* Film/retro8_lut33.bin */; };
 		E2769FC08918D737940BCAB8 /* MainNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E20E050E410BA1D32F171B6 /* MainNavigationView.swift */; };
 		E2A000000000000000000002 /* HomeLayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000000000000000000001 /* HomeLayerModel.swift */; };
@@ -334,7 +328,7 @@
 		EAC08A8B76AA4A101B83C188 /* UserDirectoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B4C22287B8F839F97B59D7 /* UserDirectoryService.swift */; };
 		EC34F9C8E6C645EB9B1DBBF4 /* FilmEmulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B75EAA5B134A1F806BC712 /* FilmEmulation.swift */; };
 		EF1ACD90ED1193CE169C4851 /* V64/DevelopV64View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5151B98D9817974A8A5B4D4B /* V64/DevelopV64View.swift */; };
-		F021F793DD7643F7BE34A452 /* Fonts/NotoSerifJP-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5988548E0712404AB28D5F6B /* Fonts/NotoSerifJP-Bold.ttf */; };
+		F021F793DD7643F7BE34A452 /* Fonts/LaterMincho-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5988548E0712404AB28D5F6B /* Fonts/LaterMincho-Black.otf */; };
 		F27CC6ECC52DCB98DAD70845 /* LGMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0159D1A97715D4F4D7AB1471 /* LGMotion.swift */; };
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
 		F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */; };
@@ -454,7 +448,7 @@
 		5769A32D7C7C43519C4B6160 /* FriendMascot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FriendMascot.swift; sourceTree = "<group>"; };
 		57F36AA1B5669102F3368268 /* DebugRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRouter.swift; sourceTree = "<group>"; };
 		57F9F503048AA20B929468DC /* V64/HomeV64Parts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV64Parts.swift; sourceTree = "<group>"; };
-		5988548E0712404AB28D5F6B /* Fonts/NotoSerifJP-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/NotoSerifJP-Bold.ttf"; sourceTree = "<group>"; };
+		5988548E0712404AB28D5F6B /* Fonts/LaterMincho-Black.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/LaterMincho-Black.otf"; sourceTree = "<group>"; };
 		59EEF3EED2BF94B5FE07FB96 /* V64/SettingsV87Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/SettingsV87Sheet.swift; sourceTree = "<group>"; };
 		5C13685A780690F0FA8C5EC9 /* V64/MEV86View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/MEV86View.swift; sourceTree = "<group>"; };
 		5D2C0176784786DBB57ACFA7 /* GlassShapes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassShapes.swift; sourceTree = "<group>"; };
@@ -947,7 +941,7 @@
 				56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */,
 				27B30D00E22A4904938D7ED6 /* Fonts/Inter-Black.ttf */,
 				1E0C4DD10F0C4B52A04FEBD2 /* Fonts/Caveat-SemiBold.ttf */,
-				5988548E0712404AB28D5F6B /* Fonts/NotoSerifJP-Bold.ttf */,
+				5988548E0712404AB28D5F6B /* Fonts/LaterMincho-Black.otf */,
 				5EB475C0B25346EBBDDE292C /* Fonts/SpaceMono-Regular.ttf */,
 				0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */,
 				22FBEAF337854AA894688A73 /* Fonts/KleeOne-SemiBold.ttf */,
@@ -1565,17 +1559,11 @@
 				E4A000000000000000000046 /* Localizable.xcstrings in Resources */,
 				E4A000000000000000000044 /* Fonts/InstrumentSerif-Italic.ttf in Resources */,
 				E4A000000000000000000042 /* Fonts/InstrumentSerif-Regular.ttf in Resources */,
-				E20C09C144BE4B9A8013E80F /* Fonts/Inter-Medium.ttf in Resources */,
 				93D5B8A511B360BF93E28B5E /* Film/cheki_v2_lut33.bin in Resources */,
 				E240043E7DA04AF923BE1074 /* Film/retro8_lut33.bin in Resources */,
 				172D51CFF6F539B60EC42509 /* Film/grain_512.png in Resources */,
-				AFE027450A8E4F31933870A9 /* Fonts/Inter-Bold.ttf in Resources */,
-				021C097B9475439B95C55961 /* Fonts/Inter-ExtraBold.ttf in Resources */,
-				B09E9A0777064B0F80631B53 /* Fonts/Inter-Black.ttf in Resources */,
 				C536D13E30EB4C2B853373E8 /* Fonts/Caveat-SemiBold.ttf in Resources */,
-				F021F793DD7643F7BE34A452 /* Fonts/NotoSerifJP-Bold.ttf in Resources */,
-				7156FC811FE54860A9D24D7C /* Fonts/SpaceMono-Regular.ttf in Resources */,
-				243298DF83CD4778A018B840 /* Fonts/SpaceMono-Bold.ttf in Resources */,
+				F021F793DD7643F7BE34A452 /* Fonts/LaterMincho-Black.otf in Resources */,
 				D99D01AB86DA42B2A633148F /* Fonts/KleeOne-SemiBold.ttf in Resources */,
 				E3A000000000000000000008 /* Fonts/YuseiMagic-Later.ttf in Resources */,
 			);

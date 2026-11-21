@@ -1130,9 +1130,9 @@ struct InvitePasteSheet: View {
                 }
                 route(2, "at", "友だちの @ID") {
                     HStack(spacing: 8) {
-                        Text("@").font(LF.mono(18, bold: true)).foregroundStyle(HV.lime)
+                        Text("@").font(Typo.label(18, bold: true)).foregroundStyle(HV.lime)
                         TextField("", text: $idText, prompt: Text(verbatim: "id").foregroundStyle(.white.opacity(0.3)))
-                            .font(LF.mono(18, bold: true)).foregroundStyle(.white).tint(HV.lime)
+                            .font(Typo.label(18, bold: true)).foregroundStyle(.white).tint(HV.lime)
                             .textInputAutocapitalization(.never).autocorrectionDisabled()
                             .onChange(of: idText) { _, v in lookup(v) }
                     }
@@ -1143,7 +1143,7 @@ struct InvitePasteSheet: View {
                                 .frame(width: 36, height: 36).background(Color(hex: "3A3A3F"), in: Circle())
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(hit.profile.name).font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
-                                Text("@" + hit.profile.username).font(LF.mono(11)).foregroundStyle(Color(hex: "BCBBC0"))
+                                Text("@" + hit.profile.username).font(Typo.label(11)).foregroundStyle(Color(hex: "BCBBC0"))
                             }
                             Spacer()
                             Button { sendRequest(hit) } label: {

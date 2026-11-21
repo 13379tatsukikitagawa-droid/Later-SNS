@@ -148,25 +148,25 @@ struct LightsPanel: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(primaryLabel)
-                    .font(LF.inter(600, 12))
+                    .font(Typo.ui(600, 12))
                     .tracking(0.24)
                     .foregroundStyle(Color(hex: "8C8C93"))
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(hourPart(minutes: primaryMinutes))
-                        .font(LF.inter(900, 44))
+                        .font(Typo.ui(900, 44))
                         .tracking(-2.2)
                         .contentTransition(.numericText(countsDown: true))
                         .foregroundStyle(.white)
                     Text(":")
-                        .font(LF.inter(800, 44))
+                        .font(Typo.ui(800, 44))
                         .foregroundStyle(.white.opacity(0.35))
                     Text(minutePart(minutes: primaryMinutes))
-                        .font(LF.inter(900, 44))
+                        .font(Typo.ui(900, 44))
                         .tracking(-2.2)
                         .contentTransition(.numericText(countsDown: true))
                         .foregroundStyle(.white)
                     Text(String(format: "%02d", seconds))
-                        .font(LF.inter(700, 16))
+                        .font(Typo.ui(700, 16))
                         .tracking(-0.32)
                         .contentTransition(.numericText(countsDown: true))
                         .foregroundStyle(LaterColor.filmLight)
@@ -181,10 +181,10 @@ struct LightsPanel: View {
 
             HStack(spacing: 6) {
                 Text(secondaryLabel)
-                    .font(LF.inter(600, 11.5))
+                    .font(Typo.ui(600, 11.5))
                     .foregroundStyle(Color(hex: "6C6C73"))
                 Text(timeText(minutes: secondaryMinutes))
-                    .font(LF.inter(700, 12))
+                    .font(Typo.ui(700, 12))
                     .contentTransition(.numericText(countsDown: true))
                     .foregroundStyle(Color(hex: "C9C9CF"))
             }
@@ -248,7 +248,7 @@ struct LightsPanel: View {
             HStack(spacing: 5) {
                 Circle().fill(LaterColor.filmLight).frame(width: 6, height: 6).opacity(blink)
                 Text("LIVE")
-                    .font(LF.mono(9.5, bold: true))
+                    .font(Typo.label(9.5, bold: true))
                     .tracking(1.9)
                     .foregroundStyle(LaterColor.liveGreen)
             }
@@ -256,7 +256,7 @@ struct LightsPanel: View {
             .frame(height: 22)
             .background(Capsule().fill(LaterColor.film.opacity(0.16)))
             Text(clockText(date))
-                .font(LF.mono(10, bold: true))
+                .font(Typo.label(10, bold: true))
                 .tracking(1.4)
                 .foregroundStyle(Color(hex: "5D5D63"))
             Spacer()
@@ -429,7 +429,7 @@ private struct DayBar: View {
                 Spacer()
                 Text("9:00 OPEN").foregroundStyle(LaterColor.liveGreen)
             }
-            .font(LF.mono(8.5, bold: true))
+            .font(Typo.label(8.5, bold: true))
             .tracking(1.02)
         }
         .accessibilityElement(children: .ignore)

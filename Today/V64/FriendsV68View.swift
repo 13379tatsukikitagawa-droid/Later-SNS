@@ -86,7 +86,7 @@ struct FriendsV68View: View {
         .environment(\.colorScheme, .dark)
         .overlay(alignment: .bottom) {
             if let toast {
-                Text(toast).font(LF.inter(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 18).padding(.vertical, 11).background(.white, in: Capsule()).padding(.bottom, 40)
+                Text(toast).font(Typo.ui(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 18).padding(.vertical, 11).background(.white, in: Capsule()).padding(.bottom, 40)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
@@ -160,7 +160,7 @@ struct FriendsV68View: View {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 44, height: 44)
                     .background(.white.opacity(0.14), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.22), lineWidth: 1))
             }.buttonStyle(HVPress(scale: 0.92)).offset(x: 18, y: 62).accessibilityLabel("もどる")
-            Text("Friends").font(LF.serif(40)).foregroundStyle(.white).frame(height: 40, alignment: .leading).fixedSize().offset(x: 74, y: 66)
+            Text("Friends").font(Typo.title(40)).foregroundStyle(.white).frame(height: 40, alignment: .leading).fixedSize().offset(x: 74, y: 66)
             Button { Haptics.play(.sel); showsMyQR = true } label: {
                 Image(systemName: "qrcode").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44)
                     .background(.white.opacity(0.14), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.22), lineWidth: 1))
@@ -179,12 +179,12 @@ struct FriendsV68View: View {
             }
             .padding(.leading, 20).padding(.trailing, took.isEmpty ? 0 : 10)
             if tookCount > 0 {
-                (Text("きょう ") + Text("\(tookCount)人").foregroundColor(HV.lime).fontWeight(.heavy) + Text("が 撮った")).font(LF.inter(600, 13.5)).foregroundStyle(.white)
+                (Text("きょう ") + Text("\(tookCount)人").foregroundColor(HV.lime).fontWeight(.heavy) + Text("が 撮った")).font(Typo.ui(600, 13.5)).foregroundStyle(.white)
             } else {
-                Text("きょうは まだ だれも 撮って いない").font(LF.inter(600, 13.5)).foregroundStyle(.white.opacity(0.7))
+                Text("きょうは まだ だれも 撮って いない").font(Typo.ui(600, 13.5)).foregroundStyle(.white.opacity(0.7))
             }
             Spacer(minLength: 8)
-            Text("9:00 OPEN").font(LF.mono(9.5)).tracking(1.1).foregroundStyle(.white.opacity(0.55)).padding(.trailing, 20)
+            Text("9:00 OPEN").font(Typo.label(9.5)).tracking(1.1).foregroundStyle(.white.opacity(0.55)).padding(.trailing, 20)
         }.frame(height: 26)
     }
 
@@ -194,7 +194,7 @@ struct FriendsV68View: View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .bold)).foregroundStyle(HV.lime)
             TextField("", text: $query, prompt: Text("名前 か @ID で さがす").foregroundColor(.white.opacity(0.45)))
-                .font(LF.inter(600, 16)).foregroundStyle(.white).tint(HV.lime).focused($searching).submitLabel(.search)
+                .font(Typo.ui(600, 16)).foregroundStyle(.white).tint(HV.lime).focused($searching).submitLabel(.search)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                 .onChange(of: query) { _, v in runSearch(v) }
             if !query.isEmpty { Button { Haptics.play(.tick); query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.white.opacity(0.45)).frame(width: 44, height: 44) }.buttonStyle(.plain) }
@@ -213,15 +213,15 @@ struct FriendsV68View: View {
         return HStack(spacing: 12) {
             avatarMe.frame(width: 48, height: 48)
             VStack(alignment: .leading, spacing: 2) {
-                Text("あなたの ID").font(LF.mono(9)).tracking(1.5).foregroundStyle(ink.opacity(0.5))
-                Text("@\(handle)").font(LF.mono(16.5)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.6)
+                Text("あなたの ID").font(Typo.label(9)).tracking(1.5).foregroundStyle(ink.opacity(0.5))
+                Text("@\(handle)").font(Typo.label(16.5)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.6)
                 Text(myName).font(ChekiFont.hand(16)).foregroundStyle(ink.opacity(0.75)).lineLimit(1)
             }
             Spacer(minLength: 4)
             Button { UIPasteboard.general.string = handle; Haptics.play(.success); copiedID = true; DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { copiedID = false } } label: { Image(systemName: copiedID ? "checkmark" : "doc.on.doc").font(.system(size: 14, weight: .semibold)).foregroundStyle(ink).frame(width: 44, height: 44) }.buttonStyle(.plain).accessibilityLabel("ID を コピー")
             Button { Haptics.play(.tick); showsHandle = true } label: { Image(systemName: "pencil").font(.system(size: 14, weight: .semibold)).foregroundStyle(ink).frame(width: 44, height: 44) }.buttonStyle(.plain).accessibilityLabel("ID を かえる")
             Button { Haptics.play(.click); showsMyQR = true } label: {
-                HStack(spacing: 5) { Image(systemName: "qrcode").font(.system(size: 13, weight: .bold)); Text("QR").font(LF.inter(800, 13)) }.foregroundStyle(HV.lime).padding(.horizontal, 12).frame(height: 44).background(ink, in: Capsule())
+                HStack(spacing: 5) { Image(systemName: "qrcode").font(.system(size: 13, weight: .bold)); Text("QR").font(Typo.ui(800, 13)) }.foregroundStyle(HV.lime).padding(.horizontal, 12).frame(height: 44).background(ink, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.95))
         }
         .padding(.horizontal, 14).padding(.vertical, 12).background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -232,7 +232,7 @@ struct FriendsV68View: View {
     private var avatarMe: some View {
         ZStack {
             Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing))
-            if let d = me?.profileImageData ?? myAvatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(myName.prefix(1))).font(LF.inter(900, 20)).foregroundStyle(.white) }
+            if let d = me?.profileImageData ?? myAvatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(myName.prefix(1))).font(Typo.ui(900, 20)).foregroundStyle(.white) }
         }.clipShape(Circle()).overlay(Circle().strokeBorder(.white, lineWidth: 2.5).padding(-1)).overlay(Circle().strokeBorder(HV.lime, lineWidth: 1.5).padding(-3))
     }
 
@@ -249,7 +249,7 @@ struct FriendsV68View: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Image(systemName: icon).font(.system(size: 22, weight: .semibold))
-                Text(title).font(LF.inter(800, 13)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(title).font(Typo.ui(800, 13)).lineLimit(1).minimumScaleFactor(0.7)
             }.foregroundStyle(lime ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 86)
                 .background(lime ? HV.lime : Color(hex: "151517"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }.buttonStyle(HVPress(scale: 0.96))
@@ -261,16 +261,16 @@ struct FriendsV68View: View {
             if searchingNow && hits.isEmpty { ProgressView().tint(HV.lime).frame(maxWidth: .infinity).padding(.top, 40) }
             else if hits.isEmpty {
                 VStack(spacing: 10) {
-                    Text("見つかりません").font(LF.serif(30)).foregroundStyle(.white)
-                    Text("名前 か @ID を たしかめて ください。\n名前で 見つかるのは「名前で 見つかる」が オンの 人 だけです。").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.55)).multilineTextAlignment(.center)
-                    Button { Haptics.play(.tick); shareItems = [FriendRules.shareItem(myName: myName, recordName: myRecordName)] } label: { Text("リンクを 送る").font(LF.inter(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 20).frame(height: 44).background(HV.lime, in: Capsule()) }.buttonStyle(.plain)
+                    Text("見つかりません").font(Typo.title(30)).foregroundStyle(.white)
+                    Text("名前 か @ID を たしかめて ください。\n名前で 見つかるのは「名前で 見つかる」が オンの 人 だけです。").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.55)).multilineTextAlignment(.center)
+                    Button { Haptics.play(.tick); shareItems = [FriendRules.shareItem(myName: myName, recordName: myRecordName)] } label: { Text("リンクを 送る").font(Typo.ui(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 20).frame(height: 44).background(HV.lime, in: Capsule()) }.buttonStyle(.plain)
                 }.frame(maxWidth: .infinity).padding(.top, 50).padding(.horizontal, 24)
             } else {
                 ForEach(Array(hits.enumerated()), id: \.element.id) { i, h in
                     hitRow(h, big: h.kind == .exact).padding(.horizontal, 16)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     if h.kind == .exact && i + 1 < hits.count && hits[i + 1].kind != .exact {
-                        Text("@\(HandleRules.normalize(query)) で はじまる ID").font(LF.mono(10)).tracking(1.5).foregroundStyle(.white.opacity(0.45)).padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 4)
+                        Text("@\(HandleRules.normalize(query)) で はじまる ID").font(Typo.label(10)).tracking(1.5).foregroundStyle(.white.opacity(0.45)).padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 4)
                     }
                 }
             }
@@ -285,15 +285,15 @@ struct FriendsV68View: View {
         return HStack(spacing: 14) {
             ZStack {
                 Circle().fill(Color(hex: "7FB0FF"))
-                if let d = p.avatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(p.name.prefix(1))).font(LF.inter(800, size * 0.4)).foregroundStyle(HV.ink) }
+                if let d = p.avatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(p.name.prefix(1))).font(Typo.ui(800, size * 0.4)).foregroundStyle(HV.ink) }
             }.frame(width: size, height: size).clipShape(Circle()).overlay { if big { Circle().strokeBorder(HV.lime, lineWidth: 2.5).padding(-4) } }
             VStack(alignment: .leading, spacing: 3) {
-                highlighted(p.name, query).font(LF.inter(700, big ? 19 : 16)).lineLimit(1)
-                highlighted("@" + p.username, "@" + HandleRules.normalize(query)).font(LF.mono(12.5)).lineLimit(1)
+                highlighted(p.name, query).font(Typo.ui(700, big ? 19 : 16)).lineLimit(1)
+                highlighted("@" + p.username, "@" + HandleRules.normalize(query)).font(Typo.label(12.5)).lineLimit(1)
             }
             Spacer(minLength: 6)
             Button { if isFriend { chat = list.first { $0.id == p.cloudKitUserRecordName } } else { sendRequest(p) } } label: {
-                Text(isFriend ? "チャット" : (sentAlready ? "申請中" : "+ 追加")).font(LF.inter(800, 14)).foregroundStyle(isFriend || sentAlready ? .white.opacity(sentAlready ? 0.5 : 1) : HV.ink)
+                Text(isFriend ? "チャット" : (sentAlready ? "申請中" : "+ 追加")).font(Typo.ui(800, 14)).foregroundStyle(isFriend || sentAlready ? .white.opacity(sentAlready ? 0.5 : 1) : HV.ink)
                     .padding(.horizontal, 14).frame(minWidth: 72, minHeight: 44).background(isFriend ? Color.white.opacity(0.12) : (sentAlready ? Color.white.opacity(0.08) : HV.lime), in: Capsule())
             }.buttonStyle(HVPress(scale: 0.95)).disabled(sentAlready || (p.cloudKitUserRecordName == nil && !isFriend))
         }
@@ -338,7 +338,7 @@ struct FriendsV68View: View {
     private var requestsBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Text("Requests").font(LF.serif(28)).foregroundStyle(.white)
+                Text("Requests").font(Typo.title(28)).foregroundStyle(.white)
                 Circle().fill(Color(hex: "FF3B30")).frame(width: 9, height: 9).offset(y: 3)
             }.frame(height: 28).padding(.leading, 20).padding(.top, 30)
             VStack(spacing: 0) {
@@ -357,13 +357,13 @@ struct FriendsV68View: View {
         return HStack(spacing: 14) {
             initialCircle(name, 52, seed: r.fromUserID)
             VStack(alignment: .leading, spacing: 3) {
-                Text(name).font(LF.inter(700, 17)).foregroundStyle(.white).lineLimit(1)
-                Text(r.fromUsername.isEmpty ? ago : "@\(r.fromUsername) ・ \(ago)").font(LF.inter(600, 12.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+                Text(name).font(Typo.ui(700, 17)).foregroundStyle(.white).lineLimit(1)
+                Text(r.fromUsername.isEmpty ? ago : "@\(r.fromUsername) ・ \(ago)").font(Typo.ui(600, 12.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
             }
             Spacer(minLength: 6)
             Button { Haptics.play(.click); withAnimation(.easeOut(duration: 0.3)) { hidden.insert(r.id) }
                 Task { _ = await FriendRequests.respond(to: r, accept: true, myName: myName); Haptics.play(.success); incoming = await FriendRequests.incoming() } } label: {
-                Text("承認").font(LF.inter(800, 14)).foregroundStyle(HV.ink).frame(width: 64, height: 40).background(HV.lime, in: Capsule())
+                Text("承認").font(Typo.ui(800, 14)).foregroundStyle(HV.ink).frame(width: 64, height: 40).background(HV.lime, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.95))
             Button { Haptics.play(.soft); withAnimation(.easeOut(duration: 0.24)) { hidden.insert(r.id) } } label: {
                 Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(.white.opacity(0.85)).frame(width: 40, height: 40).background(.white.opacity(0.10), in: Circle())
@@ -378,10 +378,10 @@ struct FriendsV68View: View {
     private var friendsBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Friends").font(LF.serif(28)).foregroundStyle(.white)
+                Text("Friends").font(Typo.title(28)).foregroundStyle(.white)
                 Spacer()
                 if tookCount > 0 {
-                    HStack(spacing: 5) { Circle().fill(Color(hex: "C8F25A")).frame(width: 5, height: 5); Text("\(tookCount) SHOT TODAY").font(LF.mono(9.5)).tracking(1.1).foregroundStyle(Color(hex: "C8F25A")) }
+                    HStack(spacing: 5) { Circle().fill(Color(hex: "C8F25A")).frame(width: 5, height: 5); Text("\(tookCount) SHOT TODAY").font(Typo.label(9.5)).tracking(1.1).foregroundStyle(Color(hex: "C8F25A")) }
                 }
             }.frame(height: 28).padding(.horizontal, 20).padding(.top, requests.isEmpty ? 30 : 27)
             VStack(spacing: 0) {
@@ -406,8 +406,8 @@ struct FriendsV68View: View {
                         avatar(f, 46)
                     }.frame(width: 56, height: 56).padding(.leading, 5)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(f.name).font(LF.inter(700, 17)).foregroundStyle(.white).lineLimit(1)
-                        Text(f.hasShot ? "今日 撮った" : "まだ 撮って いない").font(LF.inter(600, 12.5)).foregroundStyle(f.hasShot ? HV.lime : .white.opacity(0.55))
+                        Text(f.name).font(Typo.ui(700, 17)).foregroundStyle(.white).lineLimit(1)
+                        Text(f.hasShot ? "今日 撮った" : "まだ 撮って いない").font(Typo.ui(600, 12.5)).foregroundStyle(f.hasShot ? HV.lime : .white.opacity(0.55))
                     }
                     Spacer(minLength: 4)
                 }
@@ -438,10 +438,10 @@ struct FriendsV68View: View {
     private var footer: some View {
         Group {
             if empty {
-                Text("さいしょの 友だちを よぼう。\nつながると、あしたの 朝 9:00 に きのうを 見せあえます。").font(LF.inter(600, 13.5)).foregroundStyle(.white.opacity(0.6)).multilineTextAlignment(.center)
+                Text("さいしょの 友だちを よぼう。\nつながると、あしたの 朝 9:00 に きのうを 見せあえます。").font(Typo.ui(600, 13.5)).foregroundStyle(.white.opacity(0.6)).multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity).padding(.horizontal, 20).padding(.top, 30)
             }
-            Text("友だちの 数は どこにも 出ません ・ 名前で 見つかるのは「名前で 見つかる」が オンの 人だけ").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.4)).multilineTextAlignment(.center)
+            Text("友だちの 数は どこにも 出ません ・ 名前で 見つかるのは「名前で 見つかる」が オンの 人だけ").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.4)).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity).padding(.horizontal, 20).padding(.top, 28)
         }
     }
@@ -452,14 +452,14 @@ struct FriendsV68View: View {
         ZStack {
             Circle().fill(Color(hex: ["61DD7A", "7FB0FF", "EE5E9C", "C8F25A", "B28CFF", "5AC8FF", "FFD25A"][abs(f.seed.hashValue) % 7]))
             if let img = V64Images.image(key: "fa\(f.id)", data: f.avatarData ?? f.mosaicTiny, maxPixel: 160) { Image(uiImage: img).resizable().scaledToFill() }
-            else { Text(String(f.name.prefix(1))).font(LF.inter(800, size * 0.4)).foregroundStyle(HV.ink) }
+            else { Text(String(f.name.prefix(1))).font(Typo.ui(800, size * 0.4)).foregroundStyle(HV.ink) }
         }.frame(width: size, height: size).clipShape(Circle())
     }
 
     private func initialCircle(_ name: String, _ size: CGFloat, seed: String) -> some View {
         ZStack {
             Circle().fill(Color(hex: ["61DD7A", "7FB0FF", "EE5E9C", "C8F25A", "B28CFF", "5AC8FF", "FFD25A"][abs(seed.hashValue) % 7]))
-            Text(String(name.prefix(1))).font(LF.inter(800, size * 0.4)).foregroundStyle(HV.ink)
+            Text(String(name.prefix(1))).font(Typo.ui(800, size * 0.4)).foregroundStyle(HV.ink)
         }.frame(width: size, height: size)
     }
 
@@ -485,9 +485,9 @@ private struct MyQRSheet: View {
     let link: String
     var body: some View {
         VStack(spacing: 18) {
-            Text(name).font(LF.inter(900, 22)).foregroundStyle(.white)
+            Text(name).font(Typo.ui(900, 22)).foregroundStyle(.white)
             MiniQR(text: link, box: 260)
-            Text("会った 友だちに 読んで もらう").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6))
+            Text("会った 友だちに 読んで もらう").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(hex: "0A0A0B"))
@@ -565,17 +565,17 @@ struct FriendIDSearchSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Add friends").font(LF.inter(900, 28)).tracking(-1).foregroundStyle(Color(hex: "0B0C0D"))
+                Text("Add friends").font(Typo.ui(900, 28)).tracking(-1).foregroundStyle(Color(hex: "0B0C0D"))
                 Spacer()
-                if !username.isEmpty { Text("@\(username)").font(LF.mono(12)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.5)) }
+                if !username.isEmpty { Text("@\(username)").font(Typo.label(12)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.5)) }
             }.padding(.top, 26)
             HStack(spacing: 8) {
-                Text("@").font(LF.inter(900, 17)).foregroundStyle(Color(hex: "24A03C"))
-                TextField("", text: $text, prompt: Text("ID を そのまま 入力").foregroundColor(Color(hex: "0B0C0D").opacity(0.4))).font(LF.mono(16)).foregroundStyle(Color(hex: "0B0C0D"))
+                Text("@").font(Typo.ui(900, 17)).foregroundStyle(Color(hex: "24A03C"))
+                TextField("", text: $text, prompt: Text("ID を そのまま 入力").foregroundColor(Color(hex: "0B0C0D").opacity(0.4))).font(Typo.label(16)).foregroundStyle(Color(hex: "0B0C0D"))
                     .textInputAutocapitalization(.never).autocorrectionDisabled().focused($focused).submitLabel(.search).onSubmit { run() }
                 Button { run() } label: { Image(systemName: "magnifyingglass").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).frame(width: 42, height: 42).background(Color(hex: "0B0C0D"), in: Circle()) }.buttonStyle(.plain)
             }.padding(.leading, 16).padding(.trailing, 5).frame(height: 52).background(Color(hex: "F0EEE8"), in: Capsule()).overlay(Capsule().strokeBorder(Color(hex: "0B0C0D"), lineWidth: 2))
-            Text("知らない人には 見つからない ように、ID が ぴったり 合った ときだけ 出ます").font(LF.inter(500, 13)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.45)).lineSpacing(3)
+            Text("知らない人には 見つからない ように、ID が ぴったり 合った ときだけ 出ます").font(Typo.ui(500, 13)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.45)).lineSpacing(3)
             HStack(spacing: 8) {
                 addTile("qrcode", "QR", green: true) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { onQR() } }
                 addTile("link", "Link", green: false) { dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { onLink() } }
@@ -586,18 +586,18 @@ struct FriendIDSearchSheet: View {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle().fill(Color(hex: "7FB0FF"))
-                        if let d = p.avatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(p.name.prefix(1))).font(LF.inter(800, 18)).foregroundStyle(HV.ink) }
+                        if let d = p.avatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(p.name.prefix(1))).font(Typo.ui(800, 18)).foregroundStyle(HV.ink) }
                     }.frame(width: 46, height: 46).clipShape(Circle())
-                    VStack(alignment: .leading, spacing: 2) { Text(p.name).font(LF.inter(700, 16)).foregroundStyle(.white); Text("@\(p.username)").font(LF.inter(600, 12.5)).foregroundStyle(.white.opacity(0.55)) }
+                    VStack(alignment: .leading, spacing: 2) { Text(p.name).font(Typo.ui(700, 16)).foregroundStyle(.white); Text("@\(p.username)").font(Typo.ui(600, 12.5)).foregroundStyle(.white.opacity(0.55)) }
                     Spacer()
                     Button { send(p) } label: {
-                        Text(sent.contains(p.id) ? "送った" : "申請").font(LF.inter(800, 14)).foregroundStyle(HV.ink).frame(width: 64, height: 38).background(sent.contains(p.id) ? Color.white.opacity(0.4) : HV.lime, in: Capsule())
+                        Text(sent.contains(p.id) ? "送った" : "申請").font(Typo.ui(800, 14)).foregroundStyle(HV.ink).frame(width: 64, height: 38).background(sent.contains(p.id) ? Color.white.opacity(0.4) : HV.lime, in: Capsule())
                     }.disabled(sent.contains(p.id) || p.cloudKitUserRecordName == nil)
                 }
             }
-            if !searching && results.isEmpty && !text.isEmpty { Text("見つかりませんでした。ID を たしかめて ください。").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6)) }
+            if !searching && results.isEmpty && !text.isEmpty { Text("見つかりませんでした。ID を たしかめて ください。").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.6)) }
             Spacer()
-            Text("申請して、承認されたら つながる ・ 数は 出ません").font(LF.inter(500, 13)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.45)).frame(maxWidth: .infinity).padding(.bottom, 14)
+            Text("申請して、承認されたら つながる ・ 数は 出ません").font(Typo.ui(500, 13)).foregroundStyle(Color(hex: "0B0C0D").opacity(0.45)).frame(maxWidth: .infinity).padding(.bottom, 14)
         }
         .padding(.horizontal, 22).background(Color.white.ignoresSafeArea()).environment(\.colorScheme, .light)
         .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
@@ -606,7 +606,7 @@ struct FriendIDSearchSheet: View {
 
     private func addTile(_ icon: String, _ title: String, green: Bool, _ action: @escaping () -> Void) -> some View {
         Button { Haptics.play(.tick); action() } label: {
-            VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 22, weight: .semibold)); Text(title).font(LF.serif(20)) }
+            VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 22, weight: .semibold)); Text(title).font(Typo.title(20)) }
                 .foregroundStyle(green ? .white : Color(hex: "0B0C0D")).frame(maxWidth: .infinity).frame(height: 74)
                 .background(green ? Color(hex: "24A03C") : Color(hex: "F0EEE8"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }.buttonStyle(HVPress(scale: 0.96))

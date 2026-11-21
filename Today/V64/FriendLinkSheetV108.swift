@@ -18,16 +18,16 @@ struct FriendLinkSheetV108: View {
             switch state {
             case .loading: ProgressView().tint(.white).padding(.vertical, 40)
             case .missing:
-                Text("見つかりませんでした").font(LF.inter(800, 17)).foregroundStyle(.white).padding(.top, 20)
-                Text("リンクを もう一度 送って もらって ください").font(LF.inter(500, 13)).foregroundStyle(HV.gray)
+                Text("見つかりませんでした").font(Typo.ui(800, 17)).foregroundStyle(.white).padding(.top, 20)
+                Text("リンクを もう一度 送って もらって ください").font(Typo.ui(500, 13)).foregroundStyle(HV.gray)
             default:
                 let name = profile?.name ?? handle
-                Text(String(name.prefix(1))).font(LF.inter(800, 30)).foregroundStyle(HV.ink).frame(width: 84, height: 84).background(Color(hex: "61DD7A"), in: Circle()).padding(.top, 10)
-                Text(name).font(LF.inter(800, 20)).foregroundStyle(.white)
-                Text("@\(handle)").font(LF.inter(600, 14)).foregroundStyle(HV.gray)
+                Text(String(name.prefix(1))).font(Typo.ui(800, 30)).foregroundStyle(HV.ink).frame(width: 84, height: 84).background(Color(hex: "61DD7A"), in: Circle()).padding(.top, 10)
+                Text(name).font(Typo.ui(800, 20)).foregroundStyle(.white)
+                Text("@\(handle)").font(Typo.ui(600, 14)).foregroundStyle(HV.gray)
                 action
             }
-            Button("とじる") { dismiss() }.font(LF.inter(700, 14)).foregroundStyle(HV.gray).frame(height: 44)
+            Button("とじる") { dismiss() }.font(Typo.ui(700, 14)).foregroundStyle(HV.gray).frame(height: 44)
         }
         .padding(.horizontal, 24).padding(.bottom, 16).frame(maxWidth: .infinity)
         .background(Color(hex: "111113").ignoresSafeArea()).preferredColorScheme(.dark)
@@ -47,7 +47,7 @@ struct FriendLinkSheetV108: View {
     }
 
     private func pill(_ t: String, dim: Bool = false) -> some View {
-        Text(t).font(LF.inter(800, 16)).foregroundStyle(.white.opacity(0.7)).frame(maxWidth: .infinity).frame(height: 50)
+        Text(t).font(Typo.ui(800, 16)).foregroundStyle(.white.opacity(0.7)).frame(maxWidth: .infinity).frame(height: 50)
             .background(PopColor.raised, in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1)).padding(.top, 8)
     }
 

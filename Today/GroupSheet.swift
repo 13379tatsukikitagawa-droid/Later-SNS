@@ -52,7 +52,7 @@ struct GroupSheet: View {
                     .padding(.horizontal, 16).padding(.top, 14)
                     .modifier(SheetStagger(index: 2, appeared: appeared, reduceMotion: reduceMotion))
                     Text(note)
-                        .font(LF.inter(600, 11.5)).foregroundStyle(Color(hex: "6E6E75")).multilineTextAlignment(.center)
+                        .font(Typo.ui(600, 11.5)).foregroundStyle(Color(hex: "6E6E75")).multilineTextAlignment(.center)
                         .padding(.top, 14).padding(.horizontal, 24)
                         .modifier(SheetStagger(index: 3, appeared: appeared, reduceMotion: reduceMotion))
                 }
@@ -145,9 +145,9 @@ struct GroupSheet: View {
             .padding(2)
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color(hex: "C8F25A"), lineWidth: 1.5))
             VStack(alignment: .leading, spacing: 3) {
-                Text(group.name).font(LF.serif(28)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
+                Text(group.name).font(Typo.title(28)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
                 Text("DAY \(dayNumber) ・ \(summary.memberCount) / \(summary.memberLimit)人")
-                    .font(LF.mono(10)).tracking(1.2).foregroundStyle(Color(hex: "8C8C93"))
+                    .font(Typo.label(10)).tracking(1.2).foregroundStyle(Color(hex: "8C8C93"))
                     .contentTransition(.numericText(countsDown: true))
                     .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.5), value: summary.memberCount)
             }

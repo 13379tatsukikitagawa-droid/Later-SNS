@@ -95,9 +95,9 @@ struct HVNextCapsule: View {
                 Image(systemName: it.icon).font(.system(size: 15, weight: .bold)).foregroundStyle(it.alert ? .white : HV.ink)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text("NEXT ・ \(min(index, n - 1) + 1)/\(n)").font(LF.mono(9)).tracking(1.2).foregroundStyle(it.alert ? Color(hex: "FF6A60") : HV.lime)
-                Text(it.title).font(LF.inter(800, 14.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
-                Text(it.sub).font(LF.inter(600, 10.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+                Text("NEXT ・ \(min(index, n - 1) + 1)/\(n)").font(Typo.label(9)).tracking(1.2).foregroundStyle(it.alert ? Color(hex: "FF6A60") : HV.lime)
+                Text(it.title).font(Typo.ui(800, 14.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
+                Text(it.sub).font(Typo.ui(600, 10.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
             }
             Spacer(minLength: 4)
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(.white.opacity(0.6))

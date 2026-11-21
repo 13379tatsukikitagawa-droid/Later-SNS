@@ -54,7 +54,7 @@ struct HVTripFilm: View {
         let shot = trip.frames.filter { $0 != nil }.count
         VStack(alignment: .leading, spacing: 4) {
             if numbers {
-                HStack(spacing: 0) { ForEach([1, 5, 10, 15, 20], id: \.self) { n in Text(String(format: "%02d", n)).font(LF.mono(8.5)).foregroundStyle(Color(hex: "FF9F43")).frame(width: n == 1 ? 14.5 : 0, alignment: .leading).fixedSize().offset(x: CGFloat(n - 1) * 12.7 - (n == 1 ? 0 : 0)) } }.frame(height: 10)
+                HStack(spacing: 0) { ForEach([1, 5, 10, 15, 20], id: \.self) { n in Text(String(format: "%02d", n)).font(Typo.label(8.5)).foregroundStyle(Color(hex: "FF9F43")).frame(width: n == 1 ? 14.5 : 0, alignment: .leading).fixedSize().offset(x: CGFloat(n - 1) * 12.7 - (n == 1 ? 0 : 0)) } }.frame(height: 10)
             }
             HStack(spacing: 2.5) {
                 ForEach(0..<23, id: \.self) { i in
@@ -98,10 +98,10 @@ struct HVPageHeader: View {
                 HVIcon(kind: page.icon, size: 20, color: .black)
             }
             .frame(width: 40, height: 40).offset(x: 22, y: 22)
-            Text(String(format: "%02d / 03", number)).font(LF.mono(9)).tracking(1.62).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 72, y: 35.5)
+            Text(String(format: "%02d / 03", number)).font(Typo.label(9)).tracking(1.62).foregroundStyle(Color(hex: "6C6C73")).fixedSize().offset(x: 72, y: 35.5)
             if let k = IntroKind.allCases[safe: page.rawValue - 1], (1...3).contains(page.rawValue) { IntroHelpButton(kind: k).offset(x: 112, y: 20) }
             if let status {
-                Text(status).font(LF.mono(9.5)).tracking(1.14).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
+                Text(status).font(Typo.label(9.5)).tracking(1.14).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
                     .frame(width: 200, alignment: .trailing).offset(x: cardW - 22 - 200, y: 35)
             }
         }
@@ -110,7 +110,7 @@ struct HVPageHeader: View {
 
 struct HVPageTitle: View {
     let text: String
-    var body: some View { Text(text).font(LF.serif(44)).tracking(-0.88).foregroundStyle(.white).frame(height: 41.8, alignment: .leading).fixedSize() }
+    var body: some View { Text(text).font(Typo.title(44)).tracking(-0.88).foregroundStyle(.white).frame(height: 41.8, alignment: .leading).fixedSize() }
 }
 
 /// 下の ボタン(CTA):白い 丸ボタン + 右に 緑の 丸
@@ -125,7 +125,7 @@ struct HVCTA: View {
     var body: some View {
         Button(action: { Haptics.play(.click); action() }) {
             HStack {
-                Text(title).font(LF.inter(800, 17)).foregroundStyle(locked ? .white : HV.ink)
+                Text(title).font(Typo.ui(800, 17)).foregroundStyle(locked ? .white : HV.ink)
                 Spacer(minLength: 0)
                 ZStack {
                     Circle().fill(locked ? HV.lime : circle)
@@ -184,14 +184,14 @@ struct HVFriendsPage: View {
                     ZStack {
                         Circle().fill(Color(hex: "3A3A3C")).frame(width: 52, height: 52)
                         if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill().frame(width: 52, height: 52).clipShape(Circle()) }
-                        else { Text(String(input.avatarName.prefix(1))).font(LF.inter(800, 20)).foregroundStyle(.white) }
+                        else { Text(String(input.avatarName.prefix(1))).font(Typo.ui(800, 20)).foregroundStyle(.white) }
                     }
                     .overlay(Circle().strokeBorder(HV.lime, lineWidth: 2.5).padding(-3)).shadow(color: HV.lime.opacity(0.55), radius: 10)
                 }
                 .frame(width: cardW, height: 200)
             }
             .offset(y: 100)
-            Text("友だちと、毎朝 9:00 に きのうを 見せあう").font(LF.inter(600, 12.5)).foregroundStyle(.white.opacity(0.65)).lineLimit(1).minimumScaleFactor(0.7)
+            Text("友だちと、毎朝 9:00 に きのうを 見せあう").font(Typo.ui(600, 12.5)).foregroundStyle(.white.opacity(0.65)).lineLimit(1).minimumScaleFactor(0.7)
                 .frame(width: cardW - 36).offset(x: 18, y: 296)
             HStack(spacing: 8) {
                 tile("qrcode", "QR", lime: true) { actions.showQR() }
@@ -206,7 +206,7 @@ struct HVFriendsPage: View {
         Button { Haptics.play(.click); a() } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon).font(.system(size: 17, weight: .bold))
-                Text(t).font(LF.inter(800, 11.5))
+                Text(t).font(Typo.ui(800, 11.5))
             }
             .foregroundStyle(lime ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 50)
             .background(lime ? HV.lime : Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -225,7 +225,7 @@ struct HVFriendsPage: View {
                     Button { Haptics.play(.sel); actions.addFriends() } label: {
                         VStack(spacing: 6) {
                             ZStack { Circle().strokeBorder(HV.lime.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [5, 4])).frame(width: 64, height: 64); Image(systemName: "plus").font(.system(size: 20, weight: .bold)).foregroundStyle(HV.lime) }
-                            Text("よぶ").font(LF.inter(700, 10.5)).foregroundStyle(HV.lime)
+                            Text("よぶ").font(Typo.ui(700, 10.5)).foregroundStyle(HV.lime)
                         }
                     }.buttonStyle(HVPress(scale: 0.94))
                 }.padding(.horizontal, 20)
@@ -241,12 +241,12 @@ struct HVFriendsPage: View {
                     HStack(spacing: 8) {
                         HStack(spacing: -8) {
                             ForEach(Array(input.requestFaces.prefix(3).enumerated()), id: \.offset) { i, f in
-                                Text(f.initial).font(LF.inter(800, 10)).foregroundStyle(.white).frame(width: 24, height: 24).background(f.color, in: Circle()).overlay(Circle().strokeBorder(Color(hex: "1C1C1F"), lineWidth: 2)).zIndex(Double(3 - i))
+                                Text(f.initial).font(Typo.ui(800, 10)).foregroundStyle(.white).frame(width: 24, height: 24).background(f.color, in: Circle()).overlay(Circle().strokeBorder(Color(hex: "1C1C1F"), lineWidth: 2)).zIndex(Double(3 - i))
                             }
                         }
-                        Text("友だち申請 \(input.requestCount)件").font(LF.inter(800, 13)).foregroundStyle(HV.ink)
+                        Text("友だち申請 \(input.requestCount)件").font(Typo.ui(800, 13)).foregroundStyle(HV.ink)
                         Spacer()
-                        Text("確認 ›").font(LF.inter(800, 12)).foregroundStyle(HV.ink)
+                        Text("確認 ›").font(Typo.ui(800, 12)).foregroundStyle(HV.ink)
                     }
                     .padding(.horizontal, 12).frame(width: cardW - 36, height: 44).background(HV.lime, in: RoundedRectangle(cornerRadius: 20))
                 }.buttonStyle(HVPress(scale: 0.98)).offset(x: 18, y: 316)
@@ -256,8 +256,8 @@ struct HVFriendsPage: View {
 
     private func stat(_ big: String, _ small: String) -> some View {
         VStack(spacing: 3) {
-            Text(big).font(LF.inter(900, 20)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
-            Text(small).font(LF.inter(600, 10)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(big).font(Typo.ui(900, 20)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
+            Text(small).font(Typo.ui(600, 10)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.6)
         }.frame(maxWidth: .infinity).frame(height: 56).background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
@@ -273,10 +273,10 @@ struct HVFriendsPage: View {
                     ZStack {
                         Circle().fill(fr.color)
                         if let img = fr.image { Image(uiImage: img).resizable().scaledToFill().clipShape(Circle()) }
-                        else { Text(String(fr.name.prefix(1))).font(LF.inter(800, 18)).foregroundStyle(.white) }
+                        else { Text(String(fr.name.prefix(1))).font(Typo.ui(800, 18)).foregroundStyle(.white) }
                     }.frame(width: 54, height: 54).saturation(fr.shots > 0 ? 1 : 0.2)
                 }.frame(width: 68, height: 68)
-                Text(fr.name).font(LF.inter(700, 10.5)).foregroundStyle(Color(hex: "C9C9CF")).lineLimit(1).frame(width: 68)
+                Text(fr.name).font(Typo.ui(700, 10.5)).foregroundStyle(Color(hex: "C9C9CF")).lineLimit(1).frame(width: 68)
             }
         }.buttonStyle(HVPress(scale: 0.94))
     }
@@ -375,7 +375,7 @@ struct OdometerDigit: View {
         let h = size * 1.12
         VStack(spacing: 0) {
             ForEach(0..<10, id: \.self) { n in
-                Text("\(n)").font(LF.inter(900, size)).monospacedDigit().foregroundStyle(color).frame(height: h)
+                Text("\(n)").font(Typo.ui(900, size)).monospacedDigit().foregroundStyle(color).frame(height: h)
             }
         }
         .offset(y: -CGFloat(value) * h)
@@ -428,12 +428,12 @@ struct HVLivePanel: View {
             ZStack(alignment: .topLeading) {
                 HStack(spacing: 6) {
                     ZStack { Circle().fill(lime.opacity(dotPulse ? 0 : 0.5)).frame(width: dotPulse ? 14 : 7, height: dotPulse ? 14 : 7); Circle().fill(lime).frame(width: 7, height: 7) }.frame(width: 14, height: 14)
-                    Text("LIVE").font(LF.mono(11)).tracking(2.2).foregroundStyle(lime)
+                    Text("LIVE").font(Typo.label(11)).tracking(2.2).foregroundStyle(lime)
                 }
                 .padding(.horizontal, 10).frame(height: 22).background(lime.opacity(0.12), in: Capsule()).offset(x: 18, y: 19)
-                Text(clockText).font(LF.mono(12)).foregroundStyle(Color(hex: "5A5A5F")).offset(x: 104, y: 22)
+                Text(clockText).font(Typo.label(12)).foregroundStyle(Color(hex: "5A5A5F")).offset(x: 104, y: 22)
                 Button { Haptics.play(.soft); onClose() } label: { Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.7)).frame(width: 30, height: 30).background(Color(hex: "1C1C1E"), in: Circle()) }.buttonStyle(.plain).offset(x: 318, y: 15)
-                Text("消灯まで").font(LF.inter(600, 13)).foregroundStyle(Color(hex: "8E8E93")).offset(x: 18, y: 56)
+                Text("消灯まで").font(Typo.ui(600, 13)).foregroundStyle(Color(hex: "8E8E93")).offset(x: 18, y: 56)
                 // 大きな 時間(ころがる 数字)
                 HStack(alignment: .bottom, spacing: 0) {
                     HStack(spacing: 0) { OdometerDigit(value: digits[0], size: 62); OdometerDigit(value: digits[1], size: 62) }
@@ -445,8 +445,8 @@ struct HVLivePanel: View {
                 .overlay { GeometryReader { g in LinearGradient(colors: [.clear, lime.opacity(0.28), .clear], startPoint: .leading, endPoint: .trailing).frame(width: g.size.width * 0.5).offset(x: g.size.width * sweep).blendMode(.plusLighter).allowsHitTesting(false) }.clipped() }
                 .offset(x: 18, y: bigIn || reduceMotion ? 78 : 92).opacity(bigIn || reduceMotion ? 1 : 0)
                 HStack(spacing: 8) {
-                    Text("ひらくまで").font(LF.inter(600, 13)).foregroundStyle(Color(hex: "8E8E93"))
-                    Text("\(toOpen / 3600)h \(String(format: "%02d", (toOpen % 3600) / 60))m").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.9)).contentTransition(.numericText(countsDown: true))
+                    Text("ひらくまで").font(Typo.ui(600, 13)).foregroundStyle(Color(hex: "8E8E93"))
+                    Text("\(toOpen / 3600)h \(String(format: "%02d", (toOpen % 3600) / 60))m").font(Typo.ui(700, 14)).foregroundStyle(.white.opacity(0.9)).contentTransition(.numericText(countsDown: true))
                 }.offset(x: 18, y: 154)
                 // バー
                 ZStack(alignment: .leading) {
@@ -469,7 +469,7 @@ struct HVLivePanel: View {
                     Text("9:00").foregroundStyle(Color(hex: "5A5A5F")).offset(x: W * 9 / 33 - 12)
                     Text("24:00").foregroundStyle(Color(hex: "E0242C")).offset(x: W * 24 / 33 - 14)
                     Text("9:00 OPEN").foregroundStyle(lime).frame(width: W, alignment: .trailing)
-                }.font(LF.mono(10)).frame(width: W, alignment: .leading).offset(x: 18, y: 208)
+                }.font(Typo.label(10)).frame(width: W, alignment: .leading).offset(x: 18, y: 208)
                 ForEach(0..<3, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12), lineWidth: 1).frame(width: 40, height: 52)
                         .overlay(Image(systemName: i < input.shotsUsed ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(i < input.shotsUsed ? lime : Color(hex: "5A5A5F")))
@@ -478,7 +478,7 @@ struct HVLivePanel: View {
                 Button { Haptics.play(.click); onClose(); onShoot() } label: {
                     HStack(spacing: 12) {
                         HVCameraGlyph(width: 26, line: 2, color: HV.ink, showsFlash: false)
-                        VStack(alignment: .leading, spacing: 2) { Text("shoot").font(LF.inter(800, 19)).foregroundStyle(HV.ink); Text("\(input.remaining) LEFT").font(LF.mono(9)).tracking(1.6).foregroundStyle(Color(hex: "8E8E93")) }
+                        VStack(alignment: .leading, spacing: 2) { Text("shoot").font(Typo.ui(800, 19)).foregroundStyle(HV.ink); Text("\(input.remaining) LEFT").font(Typo.label(9)).tracking(1.6).foregroundStyle(Color(hex: "8E8E93")) }
                     }.frame(width: 186, height: 54).background(Color.white, in: Capsule())
                 }.buttonStyle(HVPress(scale: 0.97)).offset(x: 162, y: 242)
             }
@@ -576,7 +576,7 @@ struct IntroHelpButton: View {
             Haptics.play(.tick)
             NotificationCenter.default.post(name: IntroStore.requested, object: IntroRequest(kind: kind))
         } label: {
-            Text("?").font(LF.mono(11)).foregroundStyle(.white.opacity(0.7))
+            Text("?").font(Typo.label(11)).foregroundStyle(.white.opacity(0.7))
                 .frame(width: 20, height: 20).overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
                 .scaleEffect(pulse % 2 == 1 ? 1.5 : 1)
                 .frame(width: 44, height: 44).contentShape(Rectangle())

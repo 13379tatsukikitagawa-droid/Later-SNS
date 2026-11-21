@@ -24,18 +24,18 @@ struct DirectMessageView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 10) {
-                        Text(Self.day(messages.first?.createdAt ?? Date())).font(LF.mono(12)).tracking(1.5).foregroundStyle(ink.opacity(0.45)).padding(.top, 14)
+                        Text(Self.day(messages.first?.createdAt ?? Date())).font(Typo.label(12)).tracking(1.5).foregroundStyle(ink.opacity(0.45)).padding(.top, 14)
                         if yesterdayCount > 0 { yesterdayCard }
-                        Text("友だちに なりました ・ メッセージは 7日で きえます").font(LF.inter(700, 13)).foregroundStyle(ink.opacity(0.45)).padding(.horizontal, 28).frame(height: 30).background(ink.opacity(0.07), in: Capsule()).padding(.top, 14)
+                        Text("友だちに なりました ・ メッセージは 7日で きえます").font(Typo.ui(700, 13)).foregroundStyle(ink.opacity(0.45)).padding(.horizontal, 28).frame(height: 30).background(ink.opacity(0.07), in: Capsule()).padding(.top, 14)
                         ForEach(Array(messages.enumerated()), id: \.element.id) { i, m in bubble(m, first: i == 0 || messages[i - 1].senderID != m.senderID).id(m.id) }
                     }.padding(.horizontal, 16).padding(.bottom, 20)
                 }
                 .onChange(of: messages.count) { _, _ in if let last = messages.last { withAnimation { proxy.scrollTo(last.id, anchor: .bottom) } } }
             }
             HStack(spacing: 10) {
-                Text("#").font(LF.inter(900, 26)).foregroundStyle(green).frame(width: 52, height: 52).background(.white, in: Circle()).shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+                Text("#").font(Typo.ui(900, 26)).foregroundStyle(green).frame(width: 52, height: 52).background(.white, in: Circle()).shadow(color: .black.opacity(0.06), radius: 4, y: 2)
                 HStack {
-                    TextField("", text: $draft, prompt: Text("メッセージ").foregroundColor(ink.opacity(0.35))).font(LF.inter(500, 18)).foregroundStyle(ink).focused($focused).submitLabel(.send).onSubmit(send)
+                    TextField("", text: $draft, prompt: Text("メッセージ").foregroundColor(ink.opacity(0.35))).font(Typo.ui(500, 18)).foregroundStyle(ink).focused($focused).submitLabel(.send).onSubmit(send)
                     if DirectMessages.clean(draft) != nil { Button(action: send) { Image(systemName: "arrow.up").font(.system(size: 15, weight: .bold)).foregroundStyle(.white).frame(width: 36, height: 36).background(green, in: Circle()) }.buttonStyle(.plain) }
                 }.padding(.horizontal, 20).frame(height: 52).background(.white, in: Capsule()).shadow(color: .black.opacity(0.06), radius: 4, y: 2)
             }.padding(.horizontal, 14).padding(.vertical, 10)
@@ -52,7 +52,7 @@ struct DirectMessageView: View {
             ZStack {
                 VStack(spacing: 2) {
                     Text(friendName).font(LGFont.mincho(30)).foregroundStyle(ink)
-                    Text("ふたり ・ 7日で きえる").font(LF.inter(700, 14)).foregroundStyle(green)
+                    Text("ふたり ・ 7日で きえる").font(Typo.ui(700, 14)).foregroundStyle(green)
                 }
                 HStack {
                     circleButton("chevron.left") { dismiss() }
@@ -74,17 +74,17 @@ struct DirectMessageView: View {
     }
 
     private func avatar(_ img: UIImage?, _ name: String, _ s: CGFloat) -> some View {
-        ZStack { if let img { Image(uiImage: img).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: [Color(hex: "7FB0FF"), Color(hex: "B28CFF")], startPoint: .top, endPoint: .bottom)).overlay(Text(String(name.prefix(1))).font(LF.inter(900, s * 0.4)).foregroundStyle(.white)) } }.frame(width: s, height: s).clipShape(Circle())
+        ZStack { if let img { Image(uiImage: img).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: [Color(hex: "7FB0FF"), Color(hex: "B28CFF")], startPoint: .top, endPoint: .bottom)).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, s * 0.4)).foregroundStyle(.white)) } }.frame(width: s, height: s).clipShape(Circle())
     }
 
     private var yesterdayCard: some View {
         HStack {
             ZStack {
                 RoundedRectangle(cornerRadius: 8).fill(LinearGradient(colors: [ink.opacity(0.5), ink.opacity(0.2), ink.opacity(0.5)], startPoint: .leading, endPoint: .trailing)).blur(radius: 6).frame(width: 200, height: 52)
-                HStack(spacing: 6) { Image(systemName: "lock").font(.system(size: 13, weight: .bold)); Text("撮ると、ひらく").font(LF.inter(800, 17)) }.foregroundStyle(.white).padding(.horizontal, 20).frame(height: 38).background(ink, in: Capsule())
+                HStack(spacing: 6) { Image(systemName: "lock").font(.system(size: 13, weight: .bold)); Text("撮ると、ひらく").font(Typo.ui(800, 17)) }.foregroundStyle(.white).padding(.horizontal, 20).frame(height: 38).background(ink, in: Capsule())
             }
             Spacer()
-            VStack(alignment: .trailing, spacing: 2) { Text("yesterday").font(LF.serif(32, italic: true)).foregroundStyle(ink); Text("\(yesterdayCount) こま").font(LF.mono(12)).foregroundStyle(ink.opacity(0.45)) }
+            VStack(alignment: .trailing, spacing: 2) { Text("yesterday").font(Typo.title(32, italic: true)).foregroundStyle(ink); Text("\(yesterdayCount) こま").font(Typo.label(12)).foregroundStyle(ink.opacity(0.45)) }
         }.padding(.horizontal, 18).frame(height: 110).background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous)).shadow(color: .black.opacity(0.08), radius: 12, y: 6).padding(.top, 18)
     }
 
@@ -93,8 +93,8 @@ struct DirectMessageView: View {
         return HStack(alignment: .bottom, spacing: 8) {
             if mine { Spacer(minLength: 60) } else { if first { avatar(friendAvatar, friendName, 30) } else { Color.clear.frame(width: 30, height: 1) } }
             VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
-                if first && !mine { Text(friendName).font(LF.inter(700, 12)).foregroundStyle(ink.opacity(0.45)).padding(.leading, 6) }
-                Text(m.text).font(LF.inter(500, 18)).foregroundStyle(ink).padding(.horizontal, 18).padding(.vertical, 12).background(mine ? Color(hex: "D9F5C9") : Color(hex: "E8EEFF"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                if first && !mine { Text(friendName).font(Typo.ui(700, 12)).foregroundStyle(ink.opacity(0.45)).padding(.leading, 6) }
+                Text(m.text).font(Typo.ui(500, 18)).foregroundStyle(ink).padding(.horizontal, 18).padding(.vertical, 12).background(mine ? Color(hex: "D9F5C9") : Color(hex: "E8EEFF"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             }
             if !mine { Spacer(minLength: 60) }
         }

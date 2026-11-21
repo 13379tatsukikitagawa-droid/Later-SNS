@@ -382,7 +382,7 @@ struct HomeAvatarControl: View {
                         startPoint: .topLeading, endPoint: .bottomTrailing
                     )
                     Text(String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1)))
-                        .font(UIFont(name: "Inter-Black", size: 15) != nil ? .custom("Inter-Black", fixedSize: 15) : .system(size: 15, weight: .heavy, design: .rounded))
+                        .font(Typo.ui(900, 15))
                         .foregroundStyle(.white)
                 }
             }

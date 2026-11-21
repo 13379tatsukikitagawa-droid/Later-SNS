@@ -17,18 +17,18 @@ struct FeedEndV106: View {
     var body: some View {
         VStack(spacing: 0) {
             FilmCanArt(animated: !reduceMotion).frame(width: 260, height: 120)
-            Text("END OF TODAY'S ROLL").font(LF.mono(10)).tracking(2).foregroundStyle(HV.lime).padding(.top, 18)
-            Text(empty ? "友だちを ふやすと、ここに ならびます" : "きょうの フィルムは ここまで").font(LF.inter(900, 20)).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 8)
-            Text("あしたの 9:00 に、みんなの 1枚が ひらきます").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.55)).multilineTextAlignment(.center).padding(.top, 6)
-            Text(timerInterval: Date()...max(next9, Date().addingTimeInterval(1)), countsDown: true).font(LF.mono(20)).monospacedDigit().foregroundStyle(HV.lime).padding(.top, 12)
+            Text("END OF TODAY'S ROLL").font(Typo.label(10)).tracking(2).foregroundStyle(HV.lime).padding(.top, 18)
+            Text(empty ? "友だちを ふやすと、ここに ならびます" : "きょうの フィルムは ここまで").font(Typo.ui(900, 20)).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 8)
+            Text("あしたの 9:00 に、みんなの 1枚が ひらきます").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.55)).multilineTextAlignment(.center).padding(.top, 6)
+            Text(timerInterval: Date()...max(next9, Date().addingTimeInterval(1)), countsDown: true).font(Typo.label(20)).monospacedDigit().foregroundStyle(HV.lime).padding(.top, 12)
             HStack(spacing: 10) {
                 Button { Haptics.play(.click); onAdd() } label: {
-                    Text("友だちを ふやす").font(LF.inter(800, 14)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 48)
+                    Text("友だちを ふやす").font(Typo.ui(800, 14)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 48)
                         .background(.white.opacity(0.1), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.14), lineWidth: 1))
                 }.buttonStyle(HVPress(scale: 0.97))
                 if !shotToday {
                     Button { Haptics.play(.click); onShoot() } label: {
-                        Text("今日の 1枚を 撮る").font(LF.inter(900, 14)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 48).background(HV.lime, in: Capsule())
+                        Text("今日の 1枚を 撮る").font(Typo.ui(900, 14)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 48).background(HV.lime, in: Capsule())
                     }.buttonStyle(HVPress(scale: 0.97))
                 }
             }.padding(.horizontal, 20).padding(.top, 20)

@@ -247,8 +247,8 @@ struct GroupLeaveOverlay: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             LinearGradient(colors: [.clear, .black.opacity(0.7)], startPoint: .center, endPoint: .bottom).clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Text("TRIP PASS").font(LF.mono(8.5)).tracking(2).foregroundStyle(HV.lime)
-                Text(snapshot.name).font(LF.serif(28)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
+                Text("TRIP PASS").font(Typo.label(8.5)).tracking(2).foregroundStyle(HV.lime)
+                Text(snapshot.name).font(Typo.title(28)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
             }.padding(14)
         }.frame(width: 180, height: 150)
         return Group {

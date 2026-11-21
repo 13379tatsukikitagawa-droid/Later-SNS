@@ -252,7 +252,7 @@ struct NotifSettingsV111View: View {
                 Image(systemName: perm == .off ? "bell.slash.fill" : "bell.fill").font(.system(size: 24, weight: .bold)).foregroundStyle(Color(hex: "111113"))
                     .frame(width: 56, height: 56).background(perm == .on ? PopColor.lime : (perm == .unset ? PopColor.pink : PopColor.sky), in: Circle())
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("お知らせ").font(LF.mono(10)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                    Text("お知らせ").font(Typo.label(10)).tracking(2).foregroundStyle(.white.opacity(0.5))
                     Text(title).font(.system(size: 19, weight: .black)).foregroundStyle(.white)
                     Text(line).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
                 }

@@ -34,7 +34,7 @@ struct FriendsTabV110: View {
                 if input.locked && hasMine { lockBand().padding(.horizontal, 16).padding(.top, 14) }
                 if !noFriends || hasMine {
                     HStack(spacing: 10) {
-                        Text("きのうの 1枚").font(LF.inter(900, 22)).foregroundStyle(.white)
+                        Text("きのうの 1枚").font(Typo.ui(900, 22)).foregroundStyle(.white)
                         PopTag(text: "9:00 OPEN", color: PopColor.sun, tilt: -3)
                         Spacer(minLength: 0)
                     }.padding(.horizontal, 18).padding(.top, 22)
@@ -55,7 +55,7 @@ struct FriendsTabV110: View {
         .background(Color.black)
         .overlay(alignment: .top) {
             if let note {
-                Text(note).font(LF.inter(800, 13)).foregroundStyle(Color(hex: "111113")).padding(.horizontal, 14).frame(height: 36)
+                Text(note).font(Typo.ui(800, 13)).foregroundStyle(Color(hex: "111113")).padding(.horizontal, 14).frame(height: 36)
                     .background(PopColor.sun, in: Capsule()).overlay(Capsule().strokeBorder(.white, lineWidth: 2)).padding(.top, 126).transition(.scale.combined(with: .opacity))
             }
         }
@@ -75,19 +75,19 @@ struct FriendsTabV110: View {
         HStack(alignment: .center, spacing: 16) {
             todayCheki.frame(width: 118).padding(.leading, 6)
             VStack(alignment: .leading, spacing: 8) {
-                Text("TODAY'S ROLL").font(LF.mono(10)).tracking(2).foregroundStyle(PopColor.lime)
-                Text(input.shotsUsed == 0 ? "今日の 1枚を 撮ろう" : (left > 0 ? "あと \(left)枚 撮れる" : "今日の 3枚、撮りおわり")).font(LF.inter(900, 21)).foregroundStyle(.white)
+                Text("TODAY'S ROLL").font(Typo.label(10)).tracking(2).foregroundStyle(PopColor.lime)
+                Text(input.shotsUsed == 0 ? "今日の 1枚を 撮ろう" : (left > 0 ? "あと \(left)枚 撮れる" : "今日の 3枚、撮りおわり")).font(Typo.ui(900, 21)).foregroundStyle(.white)
                     .lineLimit(2).minimumScaleFactor(0.8).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 6) {
                     ForEach(0..<limit, id: \.self) { i in
                         Circle().fill(i < input.shotsUsed ? PopColor.lime : .clear).overlay(Circle().strokeBorder(i < input.shotsUsed ? PopColor.lime : .white.opacity(0.3), lineWidth: 1.5)).frame(width: 12, height: 12)
                     }
-                    Text("\(input.shotsUsed) / \(limit)").font(LF.mono(11)).foregroundStyle(.white.opacity(0.6)).padding(.leading, 4)
+                    Text("\(input.shotsUsed) / \(limit)").font(Typo.label(11)).foregroundStyle(.white.opacity(0.6)).padding(.leading, 4)
                 }
                 TimelineView(.periodic(from: .now, by: 60)) { ctx in
                     HStack(spacing: 4) {
                         Image(systemName: "lock.fill").font(.system(size: 10, weight: .bold))
-                        Text("9:00 に ひらく ・ あと \(Self.untilNine(ctx.date))").font(LF.inter(600, 12)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                        Text("9:00 に ひらく ・ あと \(Self.untilNine(ctx.date))").font(Typo.ui(600, 12)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
                     }.foregroundStyle(.white.opacity(0.62))
                 }
                 if left > 0 {
@@ -142,7 +142,7 @@ struct FriendsTabV110: View {
                     VStack(spacing: 6) {
                         Image(systemName: "magnifyingglass").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white)
                             .frame(width: 60, height: 60).background(PopColor.raised, in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.08), lineWidth: 1))
-                        Text("さがす").font(LF.inter(700, 11)).foregroundStyle(.white.opacity(0.7))
+                        Text("さがす").font(Typo.ui(700, 11)).foregroundStyle(.white.opacity(0.7))
                     }.frame(minWidth: 52)
                 }.buttonStyle(PopPressStyle()).accessibilityLabel("友だちを さがす")
                 ForEach(Array(input.posts.enumerated()), id: \.element.id) { i, p in
@@ -160,7 +160,7 @@ struct FriendsTabV110: View {
                                 }.frame(width: 60, height: 60)
                                 if p.published { PopSticker(shape: .hash, color: color, size: 14, tilt: 8).offset(x: 4, y: 4) }
                             }
-                            Text(p.name).font(LF.inter(p.published ? 700 : 600, 11)).foregroundStyle(.white.opacity(p.published ? 0.9 : 0.45)).lineLimit(1).frame(maxWidth: 60)
+                            Text(p.name).font(Typo.ui(p.published ? 700 : 600, 11)).foregroundStyle(.white.opacity(p.published ? 0.9 : 0.45)).lineLimit(1).frame(maxWidth: 60)
                         }.frame(minWidth: 52)
                     }.buttonStyle(PopPressStyle())
                 }
@@ -210,11 +210,11 @@ struct FriendsTabV110: View {
             HStack(spacing: 10) {
                 PopAvatar(image: post.avatar, name: post.name, size: 36)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(post.name).font(LF.inter(800, 15)).foregroundStyle(.white)
-                    Text(big?.time ?? "").font(LF.mono(10.5)).foregroundStyle(.white.opacity(0.5))
+                    Text(post.name).font(Typo.ui(800, 15)).foregroundStyle(.white)
+                    Text(big?.time ?? "").font(Typo.label(10.5)).foregroundStyle(.white.opacity(0.5))
                 }
                 Spacer(minLength: 0)
-                Text("···").font(LF.inter(900, 18)).foregroundStyle(.white).frame(width: 44, height: 44)
+                Text("···").font(Typo.ui(900, 18)).foregroundStyle(.white).frame(width: 44, height: 44)
             }.padding(.horizontal, 18)
             cheki(big?.image, hidden: hidden, key: "y110\(post.id)", caption: hidden ? "" : (post.caption ?? ""), index: index, wiggleID: post.id)
                 .onTapGesture {
@@ -234,8 +234,8 @@ struct FriendsTabV110: View {
             HStack(spacing: 10) {
                 PopAvatar(image: input.avatar, name: input.avatarName, size: 36)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("あなた").font(LF.inter(800, 15)).foregroundStyle(.white)
-                    Text(main?.time ?? "").font(LF.mono(10.5)).foregroundStyle(.white.opacity(0.5))
+                    Text("あなた").font(Typo.ui(800, 15)).foregroundStyle(.white)
+                    Text(main?.time ?? "").font(Typo.label(10.5)).foregroundStyle(.white.opacity(0.5))
                 }
                 Spacer(minLength: 0)
             }.padding(.horizontal, 18)
@@ -249,15 +249,15 @@ struct FriendsTabV110: View {
     private var pendingCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text("まだ の 人").font(LF.inter(900, 18)).foregroundStyle(.white)
-                Text("\(pending.count)人").font(LF.inter(700, 11)).foregroundStyle(.white.opacity(0.6)).padding(.horizontal, 8).frame(height: 20).background(.white.opacity(0.08), in: Capsule())
+                Text("まだ の 人").font(Typo.ui(900, 18)).foregroundStyle(.white)
+                Text("\(pending.count)人").font(Typo.ui(700, 11)).foregroundStyle(.white.opacity(0.6)).padding(.horizontal, 8).frame(height: 20).background(.white.opacity(0.08), in: Capsule())
             }
             ForEach(pending) { p in
                 HStack(spacing: 12) {
                     PopAvatar(image: p.avatar, name: p.name, size: 40)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(p.name).font(LF.inter(800, 15)).foregroundStyle(.white).lineLimit(1)
-                        Text("まだ 公開して いません").font(LF.inter(500, 11.5)).foregroundStyle(.white.opacity(0.5))
+                        Text(p.name).font(Typo.ui(800, 15)).foregroundStyle(.white).lineLimit(1)
+                        Text("まだ 公開して いません").font(Typo.ui(500, 11.5)).foregroundStyle(.white.opacity(0.5))
                     }
                     Spacer(minLength: 4)
                     if !p.friendID.isEmpty { PopButton(title: "チャット", kind: .sky, small: true) { actions.openChat(p.friendID, p.name) } }
@@ -277,7 +277,7 @@ struct PopAvatar: View {
     var body: some View {
         ZStack {
             if let image { Image(uiImage: image).resizable().scaledToFill() }
-            else { Circle().fill(LinearGradient(colors: [Color(hex: "3A3A3F"), Color(hex: "26262A")], startPoint: .top, endPoint: .bottom)).overlay(Text(String(name.prefix(1))).font(LF.inter(900, size * 0.4)).foregroundStyle(.white)) }
+            else { Circle().fill(LinearGradient(colors: [Color(hex: "3A3A3F"), Color(hex: "26262A")], startPoint: .top, endPoint: .bottom)).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, size * 0.4)).foregroundStyle(.white)) }
         }.frame(width: size, height: size).clipShape(Circle())
     }
 }
@@ -301,9 +301,9 @@ struct FeedEndV110: View {
                 .overlay(alignment: .topLeading) { PopSticker(shape: .spark, color: PopColor.sun, size: 22, tilt: -8).offset(x: -10, y: -14) }
                 .overlay(alignment: .trailing) { PopSticker(shape: .flower, color: PopColor.pink, size: 24, tilt: 10).offset(x: 12, y: -6) }
             }
-            Text("END OF ROLL").font(LF.mono(10)).tracking(2).foregroundStyle(PopColor.lime).padding(.top, 22)
-            Text("きのうの フィルムは ここまで").font(LF.inter(900, 20)).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 8)
-            Text("あした 9:00 に、また みんなの 1枚が ひらきます").font(LF.inter(600, 12.5)).foregroundStyle(.white.opacity(0.5)).multilineTextAlignment(.center).padding(.top, 6)
+            Text("END OF ROLL").font(Typo.label(10)).tracking(2).foregroundStyle(PopColor.lime).padding(.top, 22)
+            Text("きのうの フィルムは ここまで").font(Typo.ui(900, 20)).foregroundStyle(.white).multilineTextAlignment(.center).padding(.top, 8)
+            Text("あした 9:00 に、また みんなの 1枚が ひらきます").font(Typo.ui(600, 12.5)).foregroundStyle(.white.opacity(0.5)).multilineTextAlignment(.center).padding(.top, 6)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 38)
     }

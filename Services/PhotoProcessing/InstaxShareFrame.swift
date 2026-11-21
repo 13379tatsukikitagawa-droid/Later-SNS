@@ -24,7 +24,7 @@ enum InstaxShareFrame {
             ctx.cgContext.restoreGState()
             // 日付(枠の 下)
             let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "''yy MM dd"
-            let font = UIFont(name: "SpaceMono-Regular", size: 3.2 * k) ?? UIFont.monospacedSystemFont(ofSize: 3.2 * k, weight: .regular)
+            let font = UIFont.monospacedDigitSystemFont(ofSize: 3.2 * k, weight: .bold)
             let text = NSAttributedString(string: f.string(from: date), attributes: [.font: font, .foregroundColor: UIColor(red: 1, green: 0.48, blue: 0.18, alpha: 1), .kern: 0.6 * k])
             let ts = text.size()
             text.draw(at: CGPoint(x: size.width - 4 * k - ts.width, y: pic.maxY + (size.height - pic.maxY - ts.height) / 2))

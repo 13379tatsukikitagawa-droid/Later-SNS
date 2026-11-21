@@ -135,7 +135,7 @@ struct YesterdayOnceHero: View {
             LinearGradient(colors: [.clear, .clear, .black.opacity(0.9)], startPoint: .top, endPoint: .bottom)
             VStack(spacing: 16) {
                 Text(verbatim: "GROUPS · \(dateLabel)")
-                    .font(LF.mono(10, bold: true))
+                    .font(Typo.label(10, bold: true))
                     .tracking(2.6)
                     .foregroundStyle(.white.opacity(0.75))
                 if locked {
@@ -152,7 +152,7 @@ struct YesterdayOnceHero: View {
                     .buttonStyle(.plain)
                 }
                 Text(verbatim: groupName ?? "Yesterday, together.")
-                    .font(LF.serif(46))
+                    .font(Typo.title(46))
                     .foregroundStyle(.white)
                     .tracking(-0.6)
                     .multilineTextAlignment(.center)
@@ -240,11 +240,11 @@ struct YesterdayOnceHero: View {
     private func stat(value: Int, label: String, suffix: String = "") -> some View {
         VStack(spacing: 3) {
             Text(verbatim: "\(appeared ? value : 0)\(suffix)")
-                .font(LF.serif(31, italic: true))
+                .font(Typo.title(31, italic: true))
                 .foregroundStyle(.white)
                 .contentTransition(.numericText())
             Text(verbatim: label)
-                .font(LF.inter(500, 13))
+                .font(Typo.ui(500, 13))
                 .foregroundStyle(.white.opacity(0.62))
         }
         .frame(maxWidth: .infinity)
@@ -256,7 +256,7 @@ struct YesterdayOnceHero: View {
             Button(action: onCreate) {
                 HStack(spacing: 8) {
                     Image(systemName: "plus").font(.system(size: 18, weight: .bold))
-                    Text("Create").font(LF.inter(800, 16))
+                    Text("Create").font(Typo.ui(800, 16))
                 }
                 .foregroundStyle(Color(hex: "111111"))
                 .frame(maxWidth: .infinity)

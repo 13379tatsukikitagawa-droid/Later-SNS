@@ -320,7 +320,7 @@ enum WFont {
     }
 
     static func serif(_ size: CGFloat, italic: Bool = false) -> Font {
-        cascaded(italic ? "InstrumentSerif-Italic" : "InstrumentSerif-Regular", "NotoSerifJP-Bold", size)
+        cascaded(italic ? "InstrumentSerif-Italic" : "InstrumentSerif-Regular", "LaterMincho-Black", size)
     }
 
     static func hand(_ size: CGFloat) -> Font { cascaded("Caveat-SemiBold", "KleeOne-SemiBold", size) }
@@ -336,11 +336,13 @@ enum WFont {
     }
 }
 
-// MARK: - 大きな 日本語の 書体(8MB × 2)は 拡張に 入れず、アプリが App Group へ 1回 コピーし、拡張が 読みこむ
+// MARK: - 大きな 日本語の 書体(Later Mincho 3MB ・ Klee One)は 拡張に 入れず、アプリが App Group へ 1回 コピーし、拡張が 読みこむ
 
 
 enum WidgetSharedFonts {
-    static let files = ["NotoSerifJP-Bold.ttf", "KleeOne-SemiBold.ttf"]
+    static let files = ["LaterMincho-Black.otf", "KleeOne-SemiBold.ttf"]
+    /// v118 で 差しかえた 前の 書体(App Group に のこって いたら 消す)
+    static let oldFiles = ["NotoSerifJP-Bold.ttf"]
     static var dir: URL? { LattagShared.container?.appendingPathComponent("fonts", isDirectory: true) }
 
     /// アプリ 側:無ければ コピー
@@ -348,6 +350,7 @@ enum WidgetSharedFonts {
         guard let dir else { return }
         let fm = FileManager.default
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        for f in oldFiles { try? fm.removeItem(at: dir.appendingPathComponent(f)) }
         for f in files {
             let to = dir.appendingPathComponent(f)
             guard !fm.fileExists(atPath: to.path), let from = bundle.url(forResource: f, withExtension: nil) else { continue }

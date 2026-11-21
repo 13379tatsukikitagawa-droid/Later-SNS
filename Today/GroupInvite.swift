@@ -536,7 +536,7 @@ struct InviteQROverlay: View {
                 Text(verbatim: "LATER · TRIP PASS")
                     .font(Darkroom.mono(8.5)).tracking(0.18 * 8.5).foregroundStyle(.white.opacity(0.6))
                 Text(verbatim: group.name)
-                    .font(LF.serif(40)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
+                    .font(Typo.title(40)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
                 Text(verbatim: "\(memberCount) aboard · 23 / day")
                     .font(Darkroom.mono(9.5)).foregroundStyle(LaterColor.liveGreen)
             }
@@ -557,7 +557,7 @@ struct InviteQROverlay: View {
                 VStack(spacing: 4) {
                     Text(verbatim: "KEY").font(Darkroom.mono(8.5)).tracking(0.2 * 8.5).foregroundStyle(Color(hex: "6C6C73"))
                     if let passphrase {
-                        Text(verbatim: "#\(passphrase)").font(LF.inter(900, 17)).foregroundStyle(Color(hex: "111111"))
+                        Text(verbatim: "#\(passphrase)").font(Typo.ui(900, 17)).foregroundStyle(Color(hex: "111111"))
                     } else {
                         ProgressView().tint(Color(hex: "111111"))
                     }

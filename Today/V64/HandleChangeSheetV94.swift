@@ -21,20 +21,20 @@ struct HandleChangeHost: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("ID").font(LF.serif(34, italic: true)).foregroundStyle(.white)
+                Text("ID").font(Typo.title(34, italic: true)).foregroundStyle(.white)
                 Spacer()
                 if !forced || state == .unknown { Button { Haptics.play(.tick); onDone(nil) } label: { Image(systemName: forced ? "clock" : "xmark").font(.system(size: 15, weight: .black)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.1), in: Circle()) }.buttonStyle(.plain) }
             }.padding(.top, 22)
-            Text("いま @\(me?.username ?? "")").font(LF.mono(13)).foregroundStyle(.white.opacity(0.5)).padding(.top, 2)
+            Text("いま @\(me?.username ?? "")").font(Typo.label(13)).foregroundStyle(.white.opacity(0.5)).padding(.top, 2)
             HandleField(text: $text, ownerKey: me?.id.uuidString ?? "", suggestions: HandleRules.suggestions(fromName: me?.name ?? ""), autofocus: daysLeft == 0) { state = $0 }.padding(.top, 18)
             VStack(alignment: .leading, spacing: 8) {
                 rule("英小文字 ・ 数字 ・ _ ・ . が つかえます(\(HandleRules.minLength)〜\(HandleRules.maxLength)文字)")
                 rule("かえられるのは \(HandleRules.changeIntervalDays)日に 1回")
                 rule("前の ID は \(HandleRules.changeIntervalDays)日間 だれも とれません")
             }.padding(.top, 16)
-            if let errorText { Text(errorText).font(LF.inter(700, 13)).foregroundStyle(Color(hex: "FF453A")).padding(.top, 10) }
+            if let errorText { Text(errorText).font(Typo.ui(700, 13)).foregroundStyle(Color(hex: "FF453A")).padding(.top, 10) }
             Button { save() } label: {
-                Text(daysLeft > 0 ? "あと \(daysLeft)日で かえられます" : (saving ? "保存して います…" : "保存")).font(LF.inter(800, 17)).foregroundStyle(canSave ? HV.ink : .white.opacity(0.3))
+                Text(daysLeft > 0 ? "あと \(daysLeft)日で かえられます" : (saving ? "保存して います…" : "保存")).font(Typo.ui(800, 17)).foregroundStyle(canSave ? HV.ink : .white.opacity(0.3))
                     .frame(maxWidth: .infinity).frame(height: 56).background(canSave ? lime : Color.white.opacity(0.08), in: Capsule())
             }.buttonStyle(HVPress(scale: 0.97)).disabled(!canSave).padding(.top, 16).padding(.bottom, 16)
         }
@@ -48,7 +48,7 @@ struct HandleChangeHost: View {
     }
 
     private func rule(_ t: String) -> some View {
-        HStack(alignment: .top, spacing: 8) { Circle().fill(lime).frame(width: 5, height: 5).padding(.top, 6); Text(t).font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.6)) }
+        HStack(alignment: .top, spacing: 8) { Circle().fill(lime).frame(width: 5, height: 5).padding(.top, 6); Text(t).font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.6)) }
     }
 
     private func save() {

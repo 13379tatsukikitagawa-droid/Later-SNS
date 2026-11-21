@@ -7,7 +7,7 @@ struct PopPreview: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                Text("POP PARTS").font(LF.mono(11)).tracking(2).foregroundStyle(PopColor.lime)
+                Text("POP PARTS").font(Typo.label(11)).tracking(2).foregroundStyle(PopColor.lime)
                 HStack(spacing: 14) {
                     PopSticker(shape: .heart, color: PopColor.pink, tilt: -10)
                     PopSticker(shape: .star, color: PopColor.sun, tilt: 8)
@@ -35,10 +35,10 @@ struct PopPreview: View {
                     }
                 }
                 HStack(spacing: 24) {
-                    ForEach(Array(PopColor.tripCycle.enumerated()), id: \.offset) { i, c in Circle().fill(c).frame(width: 34, height: 34).overlay(Text("\(i + 1)").font(LF.mono(11)).foregroundStyle(Color(hex: "111113"))) }
+                    ForEach(Array(PopColor.tripCycle.enumerated()), id: \.offset) { i, c in Circle().fill(c).frame(width: 34, height: 34).overlay(Text("\(i + 1)").font(Typo.label(11)).foregroundStyle(Color(hex: "111113"))) }
                     Button { n += 1; Haptics.play(.heart) } label: { PopSticker(shape: .heart, color: PopColor.pink, size: 30, tilt: 0).frame(width: 60, height: 60).overlay { PopFlyingSticker(shape: .heart, color: PopColor.pink, trigger: n) } }.buttonStyle(PopPressStyle())
                 }
-                Text("ステッカーを 押すと 飛ぶ ・ ボタンは 押すと ぷにっ").font(LF.inter(500, 12)).foregroundStyle(.gray)
+                Text("ステッカーを 押すと 飛ぶ ・ ボタンは 押すと ぷにっ").font(Typo.ui(500, 12)).foregroundStyle(.gray)
             }.padding(20)
         }
         .background(PopColor.ground.ignoresSafeArea()).preferredColorScheme(.dark)

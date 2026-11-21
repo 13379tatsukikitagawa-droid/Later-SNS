@@ -173,9 +173,9 @@ struct OpeningV72View: View {
     // 文字の 幅を はかる(見えない)
     private var measure: some View {
         ZStack {
-            Text("Lattag").font(LF.inter(900, OP72.letterFont)).tracking(-0.06 * OP72.letterFont).fixedSize()
+            Text("Lattag").font(Typo.ui(900, OP72.letterFont)).tracking(-0.06 * OP72.letterFont).fixedSize()
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { letterW = $0 }
-            Text("9:00").font(LF.inter(900, OP72.nineFont)).tracking(-0.02 * OP72.nineFont).fixedSize()
+            Text("9:00").font(Typo.ui(900, OP72.nineFont)).tracking(-0.02 * OP72.nineFont).fixedSize()
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { nineW = $0 }
         }.opacity(0).allowsHitTesting(false)
     }
@@ -329,13 +329,13 @@ struct OpeningV72View: View {
                     HStack(spacing: 0) {
                         ForEach(0..<letters.count, id: \.self) { i in
                             let u = OPBez(0.3, 1.1, 0.4, 1).at(clamp((t - (OP72.textStart + OP72.textStep * Double(i))) / OP72.textDur))
-                            Text(String(letters[i])).font(LF.inter(900, OP72.letterFont)).tracking(-0.06 * OP72.letterFont).foregroundStyle(.white).fixedSize()
+                            Text(String(letters[i])).font(Typo.ui(900, OP72.letterFont)).tracking(-0.06 * OP72.letterFont).foregroundStyle(.white).fixedSize()
                                 .offset(x: opKeys(u, [(0, -30), (0.6, 3), (1, 0)], OPBez(0.3, 0, 0.3, 1)))
                                 .rotationEffect(.degrees(opKeys(u, [(0, -6), (0.6, 1), (1, 0)], OPBez(0.3, 0, 0.3, 1))))
                                 .opacity(opKeys(u, [(0, 0), (0.4, 1), (1, 1)], OPBez(0.3, 0, 0.3, 1)))
                         }
                     }.frame(height: OP72.iconEnd)
-                    Text("9:00").font(LF.inter(900, OP72.nineFont)).tracking(-0.02 * OP72.nineFont).monospacedDigit()
+                    Text("9:00").font(Typo.ui(900, OP72.nineFont)).tracking(-0.02 * OP72.nineFont).monospacedDigit()
                         .foregroundStyle(Color(hex: "C8F25A")).fixedSize()
                         .scaleEffect(nineScale, anchor: .bottomLeading).rotationEffect(.degrees(nineRot), anchor: .bottomLeading).opacity(min(1, max(0, nu * 2)))
                         .offset(x: letterW + 5, y: 19)

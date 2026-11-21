@@ -37,27 +37,27 @@ struct TripTicket: View {
                 Color(hex: "2A2326")
                 if let cover { Image(uiImage: cover).resizable().scaledToFill().id(coverKey).transition(.scale(scale: 1.15).combined(with: .opacity)) }
                 LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .center, endPoint: .bottom)
-                Text("LATTAG").font(LF.inter(900, 11)).foregroundStyle(.white).padding(.leading, 12).padding(.bottom, 10)
+                Text("LATTAG").font(Typo.ui(900, 11)).foregroundStyle(.white).padding(.leading, 12).padding(.bottom, 10)
             }.frame(width: 98).clipped().animation(.easeOut(duration: 0.3), value: coverKey)
             // 切りとり線
             Rectangle().fill(.clear).frame(width: 2).overlay { GeometryReader { g in Path { p in p.move(to: CGPoint(x: 1, y: 0)); p.addLine(to: CGPoint(x: 1, y: g.size.height)) }.stroke(ink.opacity(0.22), style: StrokeStyle(lineWidth: 2, dash: [4, 4])) } }
             VStack(alignment: .leading, spacing: 0) {
-                HStack { Text("TRIP PASS").font(LF.mono(8.5)).tracking(1.5); Spacer(); Text("No.\(number)").font(LF.mono(8.5)).tracking(1) }.foregroundStyle(ink.opacity(0.5))
+                HStack { Text("TRIP PASS").font(Typo.label(8.5)).tracking(1.5); Spacer(); Text("No.\(number)").font(Typo.label(8.5)).tracking(1) }.foregroundStyle(ink.opacity(0.5))
                 FlipName(text: draft.name.isEmpty ? "どこへ?" : draft.name, dim: draft.name.isEmpty)
                     .padding(.top, 5)
                     .background(GeometryReader { g in Color.clear.onAppear { onNameFrame(g.frame(in: .global)) }.onChange(of: g.frame(in: .global)) { _, f in onNameFrame(f) } })
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("FROM").font(LF.mono(7.5)).foregroundStyle(ink.opacity(0.45)); Text(Self.df.string(from: draft.start).uppercased()).font(LF.mono(10.5)).fontWeight(.bold)
-                    Text("TO").font(LF.mono(7.5)).foregroundStyle(ink.opacity(0.45)); Text(Self.df.string(from: draft.end).uppercased()).font(LF.mono(10.5)).fontWeight(.bold)
+                    Text("FROM").font(Typo.label(7.5)).foregroundStyle(ink.opacity(0.45)); Text(Self.df.string(from: draft.start).uppercased()).font(Typo.label(10.5)).fontWeight(.bold)
+                    Text("TO").font(Typo.label(7.5)).foregroundStyle(ink.opacity(0.45)); Text(Self.df.string(from: draft.end).uppercased()).font(Typo.label(10.5)).fontWeight(.bold)
                     Spacer(minLength: 4)
-                    Text("DAYS").font(LF.mono(7.5)).foregroundStyle(ink.opacity(0.45)); Text("\(draft.days)").font(LF.inter(900, 22)).contentTransition(.numericText())
+                    Text("DAYS").font(Typo.label(7.5)).foregroundStyle(ink.opacity(0.45)); Text("\(draft.days)").font(Typo.ui(900, 22)).contentTransition(.numericText())
                 }.foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 6)
                 Spacer(minLength: 4)
                 HStack(spacing: 8) {
                     HStack(spacing: -7) {
                         ForEach(Array(members.prefix(4).enumerated()), id: \.offset) { _, m in memberDot(m.1, m.0, 22).overlay(Circle().strokeBorder(Color(hex: "F4EFE6"), lineWidth: 2)).transition(.scale(scale: 0).combined(with: .opacity)) }
                     }
-                    Text("\(members.count)人 ・ 1日 23枚").font(LF.mono(9.5)).foregroundStyle(ink.opacity(0.55)).lineLimit(1)
+                    Text("\(members.count)人 ・ 1日 23枚").font(Typo.label(9.5)).foregroundStyle(ink.opacity(0.55)).lineLimit(1)
                 }
             }.padding(.leading, 14).padding(.trailing, 10).padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading)
             VStack(spacing: 0) { ForEach(0..<14, id: \.self) { i in Rectangle().fill(i % 2 == 0 ? Color(hex: "C8F25A") : Color(hex: "24A03C")).frame(width: 8, height: 148.0 / 14) } }
@@ -75,7 +75,7 @@ struct TripTicket: View {
     func memberDot(_ img: UIImage?, _ name: String, _ size: CGFloat) -> some View {
         ZStack {
             if let img { Image(uiImage: img).resizable().scaledToFill() }
-            else { Circle().fill(LinearGradient(colors: [Color(hex: "7FB0FF"), Color(hex: "61DD7A")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(LF.inter(900, size * 0.42)).foregroundStyle(.white)) }
+            else { Circle().fill(LinearGradient(colors: [Color(hex: "7FB0FF"), Color(hex: "61DD7A")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, size * 0.42)).foregroundStyle(.white)) }
         }.frame(width: size, height: size).clipShape(Circle())
     }
 }
@@ -181,7 +181,7 @@ struct TripNewV83View: View {
                     .scaleEffect(sink ? 0.95 : 1).offset(y: lift ? -120 : (sink ? 6 : 0)).opacity(lift ? 0 : 1)
                 Text(titles[step]).font(.system(size: 30, weight: .black)).tracking(-1.2).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.top, 18).id("t\(step)")
-                if step == 3 { Text("Trip の 表紙に なる 1枚。あとで 変えられる").font(LF.inter(500, 13)).foregroundStyle(.white.opacity(0.55)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.top, 4) }
+                if step == 3 { Text("Trip の 表紙に なる 1枚。あとで 変えられる").font(Typo.ui(500, 13)).foregroundStyle(.white.opacity(0.55)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).padding(.top, 4) }
                 ZStack {
                     Group {
                         switch step {
@@ -201,13 +201,13 @@ struct TripNewV83View: View {
             }
             // チップの 写し(パスの 名前へ とぶ)
             if let fly {
-                Text(fly.text).font(LF.inter(800, 15)).foregroundStyle(.white).padding(.horizontal, 16).frame(height: 44).background(Color(hex: "17181B"), in: Capsule())
+                Text(fly.text).font(Typo.ui(800, 15)).foregroundStyle(.white).padding(.horizontal, 16).frame(height: 44).background(Color(hex: "17181B"), in: Capsule())
                     .overlay(Capsule().strokeBorder(HV.lime, lineWidth: 1.5))
                     .scaleEffect(flyGo ? 0.3 : 1).rotationEffect(.degrees(flyGo ? -12 : 0)).opacity(flyGo ? 0 : 1)
                     .position(x: flyGo ? nameFrame.minX + 40 : fly.from.midX, y: flyGo ? nameFrame.midY : fly.from.midY)
                     .allowsHitTesting(false).id(fly.id)
             }
-            if let errorText { Text(errorText).font(LF.inter(700, 13)).foregroundStyle(.white).padding(.horizontal, 16).padding(.vertical, 10).background(Color(hex: "FF3B30"), in: Capsule()).padding(.top, 120) }
+            if let errorText { Text(errorText).font(Typo.ui(700, 13)).foregroundStyle(.white).padding(.horizontal, 16).padding(.vertical, 10).background(Color(hex: "FF3B30"), in: Capsule()).padding(.top, 120) }
         }
         .coordinateSpace(name: "tripSpace")
     }
@@ -231,7 +231,7 @@ struct TripNewV83View: View {
             HStack(spacing: 5) { ForEach(0..<4, id: \.self) { i in
                 Capsule().fill(i < step ? HV.lime.opacity(0.5) : (i == step ? HV.lime : Color.white.opacity(0.12))).frame(height: 4).shadow(color: i == step ? HV.lime.opacity(0.7) : .clear, radius: 4)
             } }.animation(.easeOut(duration: 0.3), value: step)
-            (Text("\(step + 1) ").font(LF.inter(900, 15)) + Text("/ 4").font(LF.mono(10))).foregroundStyle(.white.opacity(0.7)).frame(width: 44, alignment: .trailing)
+            (Text("\(step + 1) ").font(Typo.ui(900, 15)) + Text("/ 4").font(Typo.label(10))).foregroundStyle(.white.opacity(0.7)).frame(width: 44, alignment: .trailing)
         }.padding(.horizontal, 16)
     }
 
@@ -240,7 +240,7 @@ struct TripNewV83View: View {
         return Button {
             if last { create() } else { Haptics.play(.click); go(step + 1) }
         } label: {
-            Text(creating ? "つくっています…" : (last ? "Trip を つくる" : "つぎへ")).font(LF.inter(800, 17)).foregroundStyle(canNext ? Color(hex: "0B0C0D") : .white.opacity(0.3)).frame(maxWidth: .infinity).frame(height: 58)
+            Text(creating ? "つくっています…" : (last ? "Trip を つくる" : "つぎへ")).font(Typo.ui(800, 17)).foregroundStyle(canNext ? Color(hex: "0B0C0D") : .white.opacity(0.3)).frame(maxWidth: .infinity).frame(height: 58)
                 .background(canNext ? (last ? HV.lime : Color.white) : Color.white.opacity(0.08), in: Capsule()).shadow(color: last && canNext ? HV.lime.opacity(0.45) : .clear, radius: 14)
         }.buttonStyle(HVPress(scale: 0.98)).disabled(!canNext || creating)
     }
@@ -273,13 +273,13 @@ struct TripNewV83View: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "mappin.and.ellipse").font(.system(size: 18, weight: .bold)).foregroundStyle(HV.lime)
-                TextField("", text: $draft.name, prompt: Text("行き先 ・ イベント").foregroundColor(.white.opacity(0.25))).font(LF.inter(900, 20)).foregroundStyle(.white).focused($focus)
+                TextField("", text: $draft.name, prompt: Text("行き先 ・ イベント").foregroundColor(.white.opacity(0.25))).font(Typo.ui(900, 20)).foregroundStyle(.white).focused($focus)
                     .submitLabel(.next).onSubmit { if canNext { go(1) } }
                 if !draft.name.isEmpty { Button { Haptics.play(.tick); draft.name = ""; pickedChip = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.white.opacity(0.4)).frame(width: 44, height: 44) }.buttonStyle(.plain) }
             }.padding(.leading, 16).frame(height: 60).background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(draft.name.isEmpty ? .clear : HV.lime, lineWidth: 1.5))
                 .padding(.horizontal, 16).padding(.top, 14)
-            Text("行き先 でも、イベント名 でも OK。あとで 変えられます。").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.45)).padding(.horizontal, 20).padding(.top, 12)
+            Text("行き先 でも、イベント名 でも OK。あとで 変えられます。").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.45)).padding(.horizontal, 20).padding(.top, 12)
             FlowingChips(items: TripSuggestions.places, icon: "mappin", tint: HV.lime, period: 46, leftward: true, reduce: reduceMotion, selected: draft.name, paused: $pausedRow[0]) { t, f in suggest(t, from: f, kind: 0) }.padding(.top, 22)
             FlowingChips(items: TripSuggestions.events, icon: "star.fill", tint: Color(hex: "EE5E9C"), period: 54, leftward: false, reduce: reduceMotion, selected: draft.name, paused: $pausedRow[1]) { t, f in suggest(t, from: f, kind: 1) }.padding(.top, 10)
         }.padding(.top, 4)
@@ -297,13 +297,13 @@ struct TripNewV83View: View {
             HStack(spacing: 0) {
                 ForEach([("日帰り", 1), ("1泊2日", 2), ("2泊3日", 3), ("3泊4日", 4)], id: \.1) { t in
                     Button { Haptics.play(.sel); setDays(t.1) } label: {
-                        Text(t.0).font(LF.inter(800, 14)).foregroundStyle(draft.days == t.1 ? Color(hex: "0B0C0D") : .white.opacity(0.8)).frame(maxWidth: .infinity).frame(height: 44)
+                        Text(t.0).font(Typo.ui(800, 14)).foregroundStyle(draft.days == t.1 ? Color(hex: "0B0C0D") : .white.opacity(0.8)).frame(maxWidth: .infinity).frame(height: 44)
                             .background { if draft.days == t.1 { Capsule().fill(HV.lime).matchedGeometryEffect(id: "seg", in: segNS) } }
                     }.buttonStyle(.plain)
                 }
             }.padding(3).background(Color(hex: "121315"), in: Capsule()).animation(.timingCurve(0.3, 1.1, 0.4, 1, duration: 0.34), value: draft.days)
             VStack(spacing: 0) {
-                HStack(spacing: 0) { ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { Text($0).font(LF.inter(700, 13)).foregroundStyle(.white.opacity(0.45)).frame(maxWidth: .infinity) } }.frame(height: 22).padding(.top, 14)
+                HStack(spacing: 0) { ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { Text($0).font(Typo.ui(700, 13)).foregroundStyle(.white.opacity(0.45)).frame(maxWidth: .infinity) } }.frame(height: 22).padding(.top, 14)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                     ForEach(0..<lead, id: \.self) { _ in Color.clear.frame(height: 46) }
                     ForEach(days, id: \.self) { d in
@@ -313,8 +313,8 @@ struct TripNewV83View: View {
                                 if inR { Rectangle().fill(HV.lime.opacity(0.16)).frame(height: 40).padding(.leading, d == s ? 20 : 0).padding(.trailing, d == e ? 20 : 0) }
                                 if edge { Circle().fill(HV.lime).frame(width: 40, height: 40) }
                                 VStack(spacing: 1) {
-                                    if cal.component(.day, from: d) == 1 { Text("\(cal.component(.month, from: d))月").font(LF.mono(8)).foregroundStyle(edge ? Color(hex: "0B0C0D") : HV.lime) }
-                                    Text("\(cal.component(.day, from: d))").font(LF.inter(700, 18)).foregroundStyle(edge ? Color(hex: "0B0C0D") : .white)
+                                    if cal.component(.day, from: d) == 1 { Text("\(cal.component(.month, from: d))月").font(Typo.label(8)).foregroundStyle(edge ? Color(hex: "0B0C0D") : HV.lime) }
+                                    Text("\(cal.component(.day, from: d))").font(Typo.ui(700, 18)).foregroundStyle(edge ? Color(hex: "0B0C0D") : .white)
                                     if d == today { Circle().fill(edge ? Color(hex: "0B0C0D") : HV.lime).frame(width: 4, height: 4) }
                                 }
                             }.frame(height: 46)
@@ -322,7 +322,7 @@ struct TripNewV83View: View {
                     }
                 }.padding(.top, 6).padding(.bottom, 10)
             }.padding(.horizontal, 6).background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 22, style: .continuous)).padding(.top, 14)
-            Text(pickingStart ? "はじまり → おわり の 順に タップ" : "おわりの 日を タップ").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.45)).padding(.top, 12).padding(.bottom, 20)
+            Text(pickingStart ? "はじまり → おわり の 順に タップ" : "おわりの 日を タップ").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.45)).padding(.top, 12).padding(.bottom, 20)
         }.padding(.horizontal, 16).padding(.top, 14)
     }
 
@@ -335,21 +335,21 @@ struct TripNewV83View: View {
                     Button { Haptics.play(on ? .soft : .pop); withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) { if on { draft.invited.remove(f.id) } else { draft.invited.insert(f.id) } } } label: {
                         VStack(spacing: 8) {
                             ZStack(alignment: .bottomTrailing) {
-                                ZStack { if let d = f.avatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: f.colors.count > 1 ? f.colors : [Color(hex: "7FB0FF"), Color(hex: "61DD7A")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(f.initial).font(LF.inter(900, 24)).foregroundStyle(.white)) } }
+                                ZStack { if let d = f.avatarData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: f.colors.count > 1 ? f.colors : [Color(hex: "7FB0FF"), Color(hex: "61DD7A")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(f.initial).font(Typo.ui(900, 24)).foregroundStyle(.white)) } }
                                     .frame(width: 60, height: 60).clipShape(Circle()).overlay(Circle().strokeBorder(HV.lime, lineWidth: on ? 3 : 0).padding(-3))
                                 if on { Image(systemName: "checkmark").font(.system(size: 11, weight: .black)).foregroundStyle(Color(hex: "0B0C0D")).frame(width: 22, height: 22).background(HV.lime, in: Circle()).transition(.scale(scale: 0)).offset(x: 4, y: 4) }
                             }.frame(width: 66, height: 66)
-                            Text(f.name).font(LF.inter(800, 12.5)).foregroundStyle(.white).lineLimit(1)
+                            Text(f.name).font(Typo.ui(800, 12.5)).foregroundStyle(.white).lineLimit(1)
                         }.frame(maxWidth: .infinity)
                     }.buttonStyle(.plain)
                 }
                 VStack(spacing: 8) {
                     Image(systemName: "link").font(.system(size: 20, weight: .bold)).foregroundStyle(HV.lime).frame(width: 60, height: 60)
                         .overlay(Circle().strokeBorder(HV.lime.opacity(0.7), style: StrokeStyle(lineWidth: 1.6, dash: [4, 4]))).frame(width: 66, height: 66)
-                    Text("リンク").font(LF.inter(800, 12.5)).foregroundStyle(.white)
+                    Text("リンク").font(Typo.ui(800, 12.5)).foregroundStyle(.white)
                 }.frame(maxWidth: .infinity)
             }
-            (Text("\(members.count)人").foregroundColor(.white).bold() + Text(" ・ 1日 23枚を みんなで 撮る").foregroundColor(.white.opacity(0.45))).font(LF.inter(600, 15)).padding(.top, 24).padding(.bottom, 20)
+            (Text("\(members.count)人").foregroundColor(.white).bold() + Text(" ・ 1日 23枚を みんなで 撮る").foregroundColor(.white.opacity(0.45))).font(Typo.ui(600, 15)).padding(.top, 24).padding(.bottom, 20)
         }.padding(.horizontal, 16).padding(.top, 18)
     }
 
@@ -360,18 +360,18 @@ struct TripNewV83View: View {
                 PhotosPicker(selection: $pickItem, matching: .images, photoLibrary: .shared()) {
                     VStack(spacing: 10) {
                         Image(systemName: "photo.on.rectangle.angled").font(.system(size: 30, weight: .semibold)).foregroundStyle(HV.lime)
-                        Text("ライブラリから えらぶ").font(LF.inter(800, 14)).foregroundStyle(.white)
+                        Text("ライブラリから えらぶ").font(Typo.ui(800, 14)).foregroundStyle(.white)
                     }
                     .frame(maxWidth: .infinity).frame(height: 157)
                     .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(HV.lime.opacity(0.8), style: StrokeStyle(lineWidth: 2, dash: [6, 5])))
                 }.buttonStyle(.plain)
                 VStack(spacing: 6) {
                     coverPreview.frame(width: 118, height: 157)
-                    Text("ドラッグで 位置").font(LF.inter(600, 11)).foregroundStyle(.white.opacity(0.5))
+                    Text("ドラッグで 位置").font(Typo.ui(600, 11)).foregroundStyle(.white.opacity(0.5))
                 }
             }.padding(.horizontal, 16).padding(.top, 8)
             if !recent.isEmpty {
-                Text("最近の 写真").font(LF.inter(800, 13)).foregroundStyle(.white.opacity(0.7)).padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 8)
+                Text("最近の 写真").font(Typo.ui(800, 13)).foregroundStyle(.white.opacity(0.7)).padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 8)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                     ForEach(Array(recent.enumerated()), id: \.offset) { i, img in
                         let on = recentSel == i
@@ -451,9 +451,9 @@ struct TripNewV83View: View {
     private func summaryRow(_ icon: String, _ v: String, _ to: Int) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon).font(.system(size: 16, weight: .semibold)).foregroundStyle(HV.lime).frame(width: 24)
-            Text(v).font(LF.inter(800, 17)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+            Text(v).font(Typo.ui(800, 17)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
             Spacer()
-            Button { Haptics.play(.sel); go(to) } label: { Text("変える").font(LF.inter(800, 15)).foregroundStyle(HV.lime).frame(minWidth: 44, minHeight: 44) }.buttonStyle(.plain)
+            Button { Haptics.play(.sel); go(to) } label: { Text("変える").font(Typo.ui(800, 15)).foregroundStyle(HV.lime).frame(minWidth: 44, minHeight: 44) }.buttonStyle(.plain)
         }.padding(.horizontal, 16).frame(minHeight: 54)
     }
 
@@ -623,7 +623,7 @@ struct FlowingChips: View {
         let on = selected == t
         return HStack(spacing: 6) {
             Image(systemName: icon).font(.system(size: 11, weight: .bold)).foregroundStyle(on ? Color(hex: "0B0C0D") : tint)
-            Text(t).font(LF.inter(800, 15)).foregroundStyle(on ? Color(hex: "0B0C0D") : .white).lineLimit(1).fixedSize()
+            Text(t).font(Typo.ui(800, 15)).foregroundStyle(on ? Color(hex: "0B0C0D") : .white).lineLimit(1).fixedSize()
         }.padding(.horizontal, 16).frame(height: 44).background(on ? HV.lime : Color(hex: "17181B"), in: Capsule())
     }
 

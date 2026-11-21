@@ -53,7 +53,7 @@ struct ProfileV82View: View {
                     Color.clear.frame(height: 104)
                     ProfileChekiArea(name: data.name, avatar: data.avatar, tags: data.tags, onPhoto: onPhoto).rise(shown, 0)
                     VStack(spacing: 10) {
-                        HStack(spacing: 10) { Text("SINCE").font(LF.mono(12)).tracking(3).foregroundStyle(.white.opacity(0.55)); Text(data.since).font(LF.serif(22, italic: true)).foregroundStyle(HV.lime) }
+                        HStack(spacing: 10) { Text("SINCE").font(Typo.label(12)).tracking(3).foregroundStyle(.white.opacity(0.55)); Text(data.since).font(Typo.title(22, italic: true)).foregroundStyle(HV.lime) }
                     }.frame(maxWidth: .infinity).padding(.top, 8).rise(shown, 1)
                     stats.padding(.horizontal, 16).padding(.top, 22).rise(shown, 2)
                     buttons.padding(.horizontal, 16).padding(.top, 10).rise(shown, 3)
@@ -100,10 +100,10 @@ struct ProfileV82View: View {
                 if compactBar {
                     HStack(spacing: 8) {
                         ZStack { if let a = data.avatar { Image(uiImage: a).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)) } }.frame(width: 28, height: 28).clipShape(Circle())
-                        Text(data.name).font(LF.inter(800, 16)).foregroundStyle(.white)
+                        Text(data.name).font(Typo.ui(800, 16)).foregroundStyle(.white)
                     }.transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
-                    Button { Haptics.play(.tick); onCopyID() } label: { Text("@\(data.username)").font(LF.mono(11)).tracking(1.5).foregroundStyle(.white.opacity(0.6)) }.buttonStyle(.plain).transition(.move(edge: .top).combined(with: .opacity))
+                    Button { Haptics.play(.tick); onCopyID() } label: { Text("@\(data.username)").font(Typo.label(11)).tracking(1.5).foregroundStyle(.white.opacity(0.6)) }.buttonStyle(.plain).transition(.move(edge: .top).combined(with: .opacity))
                 }
             }.padding(.top, 62).animation(.easeOut(duration: 0.35), value: compactBar)
         }.frame(height: 104, alignment: .top)
@@ -122,9 +122,9 @@ struct ProfileV82View: View {
     }
     private func stat(_ n: Int, _ l: String, _ c: Color, _ i: Int) -> some View {
         VStack(spacing: 4) {
-            Text("\(shown ? n : 0)").font(LF.inter(900, 28)).foregroundStyle(c).contentTransition(.numericText()).monospacedDigit()
+            Text("\(shown ? n : 0)").font(Typo.ui(900, 28)).foregroundStyle(c).contentTransition(.numericText()).monospacedDigit()
                 .animation(.easeOut(duration: 0.62).delay(0.09 * Double(i)), value: shown)
-            Text(l).font(LF.mono(9)).tracking(1.6).foregroundStyle(.white.opacity(0.5))
+            Text(l).font(Typo.label(9)).tracking(1.6).foregroundStyle(.white.opacity(0.5))
         }.frame(maxWidth: .infinity)
     }
 
@@ -135,7 +135,7 @@ struct ProfileV82View: View {
     }
     private func tile(_ icon: String, _ t: String, green: Bool, _ a: @escaping () -> Void) -> some View {
         Button { Haptics.play(.tick); a() } label: {
-            VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 21, weight: .semibold)); Text(t).font(LF.inter(800, 12.5)) }.foregroundStyle(green ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 76)
+            VStack(spacing: 8) { Image(systemName: icon).font(.system(size: 21, weight: .semibold)); Text(t).font(Typo.ui(800, 12.5)) }.foregroundStyle(green ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 76)
                 .background(green ? HV.lime : Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }.buttonStyle(HVPress(scale: 0.96))
     }
@@ -148,13 +148,13 @@ struct ProfileV82View: View {
                 if let p = data.recapPhotos.first, let p { Image(uiImage: p).resizable().scaledToFill() }
                 LinearGradient(colors: [.black.opacity(0.5), .clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
                 HStack(spacing: 8) {
-                    Text("ME").font(LF.inter(900, 11)).foregroundStyle(HV.ink).padding(.horizontal, 10).frame(height: 24).background(HV.lime, in: Capsule())
-                    Text("RECAP ・ \(data.recapRange)").font(LF.mono(10)).tracking(1.5).foregroundStyle(.white)
+                    Text("ME").font(Typo.ui(900, 11)).foregroundStyle(HV.ink).padding(.horizontal, 10).frame(height: 24).background(HV.lime, in: Capsule())
+                    Text("RECAP ・ \(data.recapRange)").font(Typo.label(10)).tracking(1.5).foregroundStyle(.white)
                 }.padding(16)
                 VStack(alignment: .leading, spacing: -4) {
                     Spacer()
-                    Text("Your").font(LF.serif(40)).foregroundStyle(.white)
-                    Text("week.").font(LF.serif(40, italic: true)).foregroundStyle(HV.lime)
+                    Text("Your").font(Typo.title(40)).foregroundStyle(.white)
+                    Text("week.").font(Typo.title(40, italic: true)).foregroundStyle(HV.lime)
                     HStack(spacing: 4) { ForEach(0..<7, id: \.self) { i in Capsule().fill(data.weekHas[i] ? HV.lime : .white.opacity(0.25)).frame(height: 4) } }.padding(.top, 10).padding(.trailing, 70)
                 }.padding(16)
                 Image(systemName: "play.fill").font(.system(size: 18)).foregroundStyle(.white).frame(width: 52, height: 52).background(.ultraThinMaterial, in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1.2)).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing).padding(16)
@@ -164,7 +164,7 @@ struct ProfileV82View: View {
 
     private var yearCard: some View {
         Button { Haptics.play(.tick); onShelf() } label: {
-            HStack { Text("1 YEAR ・ KEPT").font(LF.mono(12)).tracking(2).foregroundStyle(Color(hex: "FF9F43")); Spacer(); Text("\(data.kept) ★").font(LF.inter(800, 15)).foregroundStyle(.white.opacity(0.7)); Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.4)) }
+            HStack { Text("1 YEAR ・ KEPT").font(Typo.label(12)).tracking(2).foregroundStyle(Color(hex: "FF9F43")); Spacer(); Text("\(data.kept) ★").font(Typo.ui(800, 15)).foregroundStyle(.white.opacity(0.7)); Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.4)) }
                 .padding(.horizontal, 22).frame(height: 70).background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         }.buttonStyle(HVPress(scale: 0.985))
     }
@@ -191,7 +191,7 @@ struct ProfileV82Host: View {
 
     var body: some View {
         ProfileV82View(data: data, onBack: onBack, onSettings: { showsSettings = true }, onEdit: { editing = true }, onShare: share, onScan: { showsScan = true }, onQR: { showsQR = true }, onPhoto: { showsIcon = true }, onShelf: { editing = true }, onMe: onMe, onCopyID: { UIPasteboard.general.string = me?.username; Haptics.play(.success); toast = "ID を コピーしました"; DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { toast = nil } })
-            .overlay(alignment: .bottom) { if let toast { Text(toast).font(LF.inter(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 36).background(.white, in: Capsule()).padding(.bottom, 60) } }
+            .overlay(alignment: .bottom) { if let toast { Text(toast).font(Typo.ui(700, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 36).background(.white, in: Capsule()).padding(.bottom, 60) } }
             .sheet(isPresented: $showsSettings) {
                 SettingsV87Sheet(name: me?.name ?? "", username: me?.username ?? "", avatar: me?.profileImageData.flatMap { UIImage(data: $0) }, blockedCount: blocked.count, groupCount: me?.groups.count ?? 0, onEdit: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { editing = true } }, onPhoto: { showsSettings = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showsIcon = true } }, onClose: { showsSettings = false }, onLoggedOut: { showsSettings = false })
                     .presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Color(hex: "0F1011"))
@@ -279,7 +279,7 @@ struct ProfileChekiArea: View {
             Color.clear.aspectRatio(1, contentMode: .fit)
                 .overlay {
                     if let a = avatar { Image(uiImage: a).resizable().scaledToFill() }
-                    else { LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing).overlay(Text(String(name.prefix(1))).font(LF.inter(900, 120)).foregroundStyle(.white.opacity(0.9))) }
+                    else { LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, 120)).foregroundStyle(.white.opacity(0.9))) }
                 }
                 .clipped()
                 .overlay(alignment: .topTrailing) {

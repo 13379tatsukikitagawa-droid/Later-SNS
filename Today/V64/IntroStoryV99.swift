@@ -212,10 +212,10 @@ struct IntroStoryView: View {
     private func topRow(_ i: Int, shownName: Bool) -> some View {
         HStack(spacing: 10) {
             ZStack { Circle().fill(Color(hex: "C8F25A")); HVIcon(kind: kind.icon, size: 16, color: .black) }.frame(width: 28, height: 28)
-            Text(kind.name).font(LF.serif(25, italic: true)).foregroundStyle(.white).opacity(shownName ? 1 : 0)
+            Text(kind.name).font(Typo.title(25, italic: true)).foregroundStyle(.white).opacity(shownName ? 1 : 0)
             Spacer()
             Button { close(false) } label: {
-                Text(i == 3 ? "とじる" : "スキップ ⇥").font(LF.inter(800, 12.5)).foregroundStyle(.white)
+                Text(i == 3 ? "とじる" : "スキップ ⇥").font(Typo.ui(800, 12.5)).foregroundStyle(.white)
                     .padding(.horizontal, 14).frame(height: 32).background(Capsule().fill(.white.opacity(0.1)))
                     .frame(minWidth: 44, minHeight: 44)
             }.buttonStyle(.plain).accessibilityLabel(i == 3 ? "とじる" : "スキップ")
@@ -226,8 +226,8 @@ struct IntroStoryView: View {
     private func lineBlock(_ sc: IntroKind.Scene, t: Double) -> some View {
         let p = reduceMotion ? 1 : IntroMath.ease(t, 0.15, 0.45)
         return VStack(spacing: 10) {
-            Text(sc.label).font(LF.mono(10)).tracking(3).foregroundStyle(Color(hex: "C8F25A"))
-            Text(sc.line).font(LF.inter(900, 27)).lineSpacing(27 * 0.28 - 4).multilineTextAlignment(.center).foregroundStyle(.white)
+            Text(sc.label).font(Typo.label(10)).tracking(3).foregroundStyle(Color(hex: "C8F25A"))
+            Text(sc.line).font(Typo.ui(900, 27)).lineSpacing(27 * 0.28 - 4).multilineTextAlignment(.center).foregroundStyle(.white)
                 .lineLimit(2).minimumScaleFactor(0.7).frame(width: 340)
         }
         .frame(width: 390).offset(y: 580 + CGFloat(1 - p) * 16).opacity(p)
@@ -240,11 +240,11 @@ struct IntroStoryView: View {
             } else {
                 VStack(spacing: 6) {
                     Button { close(true) } label: {
-                        Text(actionTitle).font(LF.inter(900, 16.5)).foregroundStyle(Color(hex: "111111"))
+                        Text(actionTitle).font(Typo.ui(900, 16.5)).foregroundStyle(Color(hex: "111111"))
                             .frame(maxWidth: .infinity).frame(height: 58).background(Capsule().fill(Color(hex: "C8F25A")))
                     }.buttonStyle(HVPress(scale: 0.97))
                     Button { Haptics.play(.sel); jump(to: 0); accum = 0.0; runStart = paused ? nil : Date() } label: {
-                        Text("↺ もう一度").font(LF.inter(700, 12.5)).foregroundStyle(.white.opacity(0.6)).frame(minHeight: 44)
+                        Text("↺ もう一度").font(Typo.ui(700, 12.5)).foregroundStyle(.white.opacity(0.6)).frame(minHeight: 44)
                     }.buttonStyle(.plain).opacity(t > 1.2 || reduceMotion ? 1 : 0)
                 }.frame(width: 350).offset(x: 20, y: 700)
             }
@@ -274,7 +274,7 @@ struct IntroStoryView: View {
         let fly = IntroMath.clamp((p - 0.55) / 0.45)
         let ef = 1 - pow(1 - fly, 3)
         let sc = 96.0 + (25.0 - 96.0) * ef
-        return Text(kind.name).font(LF.serif(96, italic: true)).foregroundStyle(Color(hex: "C8F25A"))
+        return Text(kind.name).font(Typo.title(96, italic: true)).foregroundStyle(Color(hex: "C8F25A"))
             .scaleEffect(sc / 96).fixedSize()
             .opacity(IntroMath.clamp(p / 0.25))
             .position(x: 195 + (20 + 38 + 40 - 195) * ef, y: 400 + (84 - 400) * ef)

@@ -129,16 +129,13 @@ nonisolated enum TapeStyle {
 
 enum CaptureFont {
     nonisolated private static func available(_ name: String) -> Bool { UIFont(name: name, size: 12) != nil }
-    private static let monoBoldName: String? = ["SpaceMono-Bold"].first(where: available)
-    private static let monoName: String? = ["SpaceMono-Regular"].first(where: available)
     private static let serifItalicName: String? = ["InstrumentSerif-Italic"].first(where: available)
     private static let handName: String? = ["ZenKurenaido-Regular", "Kurenaido-Regular", "Kurenaido"].first(where: available)
     private static let headingName: String? = ["HiraginoSans-W8", "HiraginoSans-W7"].first(where: available)
 
-    /// 数字・日付・のこり(Space Mono)
+    /// 数字・日付・のこり(v118:SF Pro の 太字)
     static func mono(_ size: CGFloat, bold: Bool = true) -> Font {
-        if let name = bold ? monoBoldName : monoName { return .custom(name, size: size) }
-        return .system(size: size, weight: bold ? .bold : .regular, design: .monospaced)
+        Typo.label(size, bold: bold)
     }
 
     /// 「today's mood」だけ(Instrument Serif 斜体)

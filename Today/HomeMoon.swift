@@ -237,7 +237,7 @@ struct HomeMoon: View {
             let title = titleText
             VStack(spacing: 6) {
                 Text(title)
-                    .font(LF.inter(900, 25))
+                    .font(Typo.ui(900, 25))
                     .tracking(-0.5)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -246,7 +246,7 @@ struct HomeMoon: View {
                     .padding(.top, 28 - 11)
                 if let subtitle = subtitleText(progress: p), !dynamicTypeSize.isAccessibilitySize {
                     MoonSubtitle(text: subtitle)
-                        .font(LF.mono(10.5, bold: true))
+                        .font(Typo.label(10.5, bold: true))
                         .tracking(1.47)
                         .lineLimit(1)
                         .padding(.top, 2)

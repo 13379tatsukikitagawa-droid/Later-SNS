@@ -60,9 +60,9 @@ struct WidgetHowToV104: View {
 
     private func header(_ sc: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("\(sc + 1) / \(WidgetHowTo.scenes.count)").font(LF.mono(12, bold: true)).tracking(1.5).foregroundStyle(lime).padding(.top, 16)
-            Text(WidgetHowTo.scenes[sc].0).font(LF.inter(800, 21)).foregroundStyle(.white).padding(.top, 6).lineLimit(1).minimumScaleFactor(0.8)
-            Text(WidgetHowTo.scenes[sc].1).font(LF.inter(500, 13)).foregroundStyle(.white.opacity(0.6)).padding(.top, 4).lineLimit(2)
+            Text("\(sc + 1) / \(WidgetHowTo.scenes.count)").font(Typo.label(12, bold: true)).tracking(1.5).foregroundStyle(lime).padding(.top, 16)
+            Text(WidgetHowTo.scenes[sc].0).font(Typo.ui(800, 21)).foregroundStyle(.white).padding(.top, 6).lineLimit(1).minimumScaleFactor(0.8)
+            Text(WidgetHowTo.scenes[sc].1).font(Typo.ui(500, 13)).foregroundStyle(.white.opacity(0.6)).padding(.top, 4).lineLimit(2)
             HStack(spacing: 5) { ForEach(0..<5, id: \.self) { i in Capsule().fill(i <= sc ? lime : Color.white.opacity(0.18)).frame(height: 3) } }.padding(.top, 12)
         }
         .padding(.horizontal, 24)
@@ -74,11 +74,11 @@ struct WidgetHowToV104: View {
     private func footer(_ sc: Int) -> some View {
         VStack(spacing: 4) {
             if reduce && sc < WidgetHowTo.scenes.count - 1 {
-                Button { Haptics.play(.tick); manual += 1 } label: { Text("つぎへ").font(LF.inter(800, 17)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.97))
+                Button { Haptics.play(.tick); manual += 1 } label: { Text("つぎへ").font(Typo.ui(800, 17)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.97))
             } else {
-                Button { Haptics.play(.click); onBack() } label: { Text("Lattag に もどる").font(LF.inter(800, 17)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.97))
+                Button { Haptics.play(.click); onBack() } label: { Text("Lattag に もどる").font(Typo.ui(800, 17)).foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.97))
             }
-            Button { Haptics.play(.tick); restart() } label: { Text("もういちど").font(LF.inter(600, 14)).foregroundStyle(.white.opacity(0.6)).frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.plain)
+            Button { Haptics.play(.tick); restart() } label: { Text("もういちど").font(Typo.ui(600, 14)).foregroundStyle(.white.opacity(0.6)).frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.plain)
         }
         .padding(.horizontal, 24).padding(.bottom, 10)
     }
@@ -121,7 +121,7 @@ struct WidgetHowToV104: View {
                     let hidden = landed && r < 2 && c < 2
                     ZStack {
                         RoundedRectangle(cornerRadius: icon * 0.23, style: .continuous).fill(isLattag ? lime : Color.white.opacity(0.14))
-                        if isLattag { Text("#").font(LF.inter(900, icon * 0.55)).foregroundStyle(HV.ink) }
+                        if isLattag { Text("#").font(Typo.ui(900, icon * 0.55)).foregroundStyle(HV.ink) }
                     }
                     .frame(width: icon, height: icon)
                     .rotationEffect(.degrees(shownJig ? sin(t * 28 + Double(i)) * 2.2 : 0))
@@ -181,14 +181,14 @@ struct WidgetHowToV104: View {
             Capsule().fill(.white.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 8)
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
-                Text(typed.isEmpty ? "ウィジェットを 検索" : typed).font(LF.inter(600, 13)).foregroundStyle(typed.isEmpty ? .white.opacity(0.4) : .white)
+                Text(typed.isEmpty ? "ウィジェットを 検索" : typed).font(Typo.ui(600, 13)).foregroundStyle(typed.isEmpty ? .white.opacity(0.4) : .white)
                 Spacer()
             }.padding(.horizontal, 10).frame(height: 32).background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous)).padding(.horizontal, 14).padding(.top, 12)
             if typed.count >= 6 || sc == 4 {
                 choice.widget(sample).frame(width: 158, height: 158).scaleEffect(side / 158).frame(width: side, height: side).background(choice.bg)
                     .clipShape(RoundedRectangle(cornerRadius: side * 0.16, style: .continuous)).padding(.top, 14)
-                Text("Lattag ・ \(choice.title)").font(LF.inter(700, 11)).foregroundStyle(.white.opacity(0.7)).padding(.top, 6)
-                Text("ウィジェットを 追加").font(LF.inter(800, 13)).foregroundStyle(HV.ink).padding(.horizontal, 18).frame(height: 36).background(lime, in: Capsule())
+                Text("Lattag ・ \(choice.title)").font(Typo.ui(700, 11)).foregroundStyle(.white.opacity(0.7)).padding(.top, 6)
+                Text("ウィジェットを 追加").font(Typo.ui(800, 13)).foregroundStyle(HV.ink).padding(.horizontal, 18).frame(height: 36).background(lime, in: Capsule())
                     .scaleEffect(pressing ? 0.92 : 1).padding(.top, 10)
             } else { Spacer() }
             Spacer(minLength: 0)

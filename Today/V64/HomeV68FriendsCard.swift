@@ -40,15 +40,15 @@ struct HVFriendsCard: View {
     private var header: some View {
         Button { Haptics.play(.sel); actions.openFriends() } label: {
             HStack(spacing: 10) {
-                Text("Friends").font(LF.serif(30)).foregroundStyle(.white).fixedSize()
+                Text("Friends").font(Typo.title(30)).foregroundStyle(.white).fixedSize()
                 if tookCount > 0 {
                     HStack(spacing: 6) {
                         Circle().fill(Color(hex: "3BD35A")).frame(width: 6, height: 6)
-                        Text("\(tookCount)人 撮った").font(LF.inter(700, 11)).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
+                        Text("\(tookCount)人 撮った").font(Typo.ui(700, 11)).foregroundStyle(Color(hex: "7EE08F")).fixedSize()
                     }
                     .padding(.horizontal, 12).frame(height: 26).background(Color(red: 59 / 255, green: 211 / 255, blue: 90 / 255).opacity(0.12), in: Capsule())
                 } else if input.friends.isEmpty {
-                    Text("つながると 毎朝 9:00 に 見せあえる").font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text("つながると 毎朝 9:00 に 見せあえる").font(Typo.ui(600, 11.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
@@ -80,7 +80,7 @@ struct HVFriendsCard: View {
         ZStack {
             Circle().fill(color)
             if let image { Image(uiImage: image).resizable().scaledToFill() }
-            else { Text(String(name.prefix(1))).font(LF.inter(800, size * 0.4)).foregroundStyle(HV.ink) }
+            else { Text(String(name.prefix(1))).font(Typo.ui(800, size * 0.4)).foregroundStyle(HV.ink) }
         }.frame(width: size, height: size).clipShape(Circle())
     }
 
@@ -97,7 +97,7 @@ struct HVFriendsCard: View {
                         .overlay(Circle().strokeBorder(Color(hex: "111214"), lineWidth: 3))
                         .offset(x: 23, y: 23)
                 }.frame(width: 68, height: 68)
-                Text("ふやす").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.88)).lineLimit(1).frame(width: 68)
+                Text("ふやす").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.88)).lineLimit(1).frame(width: 68)
             }
         }
         .buttonStyle(HVPress(scale: 0.94)).modifier(pop(0)).accessibilityLabel("友だちを ふやす")
@@ -116,11 +116,11 @@ struct HVFriendsCard: View {
                     }
                     photo(f.image, name: f.name, color: f.color, size: 58)
                     if took, let t = f.time {
-                        Text(t).font(LF.mono(8.5)).foregroundStyle(HV.lime).padding(.horizontal, 7).frame(height: 17)
+                        Text(t).font(Typo.label(8.5)).foregroundStyle(HV.lime).padding(.horizontal, 7).frame(height: 17)
                             .background(Color(hex: "111214"), in: Capsule()).offset(y: 29)
                     }
                 }.frame(width: 68, height: 68)
-                Text(f.name).font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.88)).lineLimit(1).truncationMode(.tail).frame(width: 68)
+                Text(f.name).font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.88)).lineLimit(1).truncationMode(.tail).frame(width: 68)
             }
         }
         .buttonStyle(HVPress(scale: 0.94)).modifier(pop(index))
@@ -143,11 +143,11 @@ struct HVFriendsCard: View {
                     }
                     .padding(.leading, 12).padding(.trailing, 14)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(requests.count > 1 ? "\(first.name) ほか\(requests.count - 1)人" : first.name).font(LF.inter(700, 14.5)).foregroundStyle(.white).lineLimit(1)
-                        Text("友だちに なりたい").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.55))
+                        Text(requests.count > 1 ? "\(first.name) ほか\(requests.count - 1)人" : first.name).font(Typo.ui(700, 14.5)).foregroundStyle(.white).lineLimit(1)
+                        Text("友だちに なりたい").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.55))
                     }
                     Spacer(minLength: 8)
-                    Text("確認").font(LF.inter(800, 13)).foregroundStyle(HV.ink).frame(width: 54, height: 36).background(.white, in: Capsule()).padding(.trailing, 10)
+                    Text("確認").font(Typo.ui(800, 13)).foregroundStyle(HV.ink).frame(width: 54, height: 36).background(.white, in: Capsule()).padding(.trailing, 10)
                 }
                 .frame(height: 60)
                 .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -174,8 +174,8 @@ struct HVFriendsCard: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Image(systemName: "square.and.arrow.up").font(.system(size: 22, weight: .bold)).foregroundStyle(HV.ink)
                         Spacer(minLength: 0)
-                        Text("リンクを 送る").font(LF.inter(800, 18)).foregroundStyle(HV.ink).lineLimit(1).minimumScaleFactor(0.7)
-                        Text("LINE ・ AirDrop など").font(LF.inter(600, 11.5)).foregroundStyle(HV.ink.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 2)
+                        Text("リンクを 送る").font(Typo.ui(800, 18)).foregroundStyle(HV.ink).lineLimit(1).minimumScaleFactor(0.7)
+                        Text("LINE ・ AirDrop など").font(Typo.ui(600, 11.5)).foregroundStyle(HV.ink.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 2)
                     }
                     .padding(16).frame(maxWidth: .infinity, minHeight: 138, maxHeight: 138, alignment: .leading)
                     .background(HV.lime, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -185,7 +185,7 @@ struct HVFriendsCard: View {
                         HStack(spacing: 10) {
                             Group { if let m = QRMatrix.make(myLinkText) { StyledQRView(matrix: m, side: 44) } else { Image(systemName: "qrcode").font(.system(size: 26)) } }
                                 .frame(width: 44, height: 44).clipShape(RoundedRectangle(cornerRadius: 6))
-                            Text("QR を 見せる").font(LF.inter(800, 13.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                            Text("QR を 見せる").font(Typo.ui(800, 13.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
@@ -194,7 +194,7 @@ struct HVFriendsCard: View {
                     Button { Haptics.play(.click); actions.scanQR() } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "viewfinder").font(.system(size: 22, weight: .semibold)).foregroundStyle(HV.lime).frame(width: 44)
-                            Text("QR を 読む").font(LF.inter(800, 13.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                            Text("QR を 読む").font(Typo.ui(800, 13.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
@@ -205,7 +205,7 @@ struct HVFriendsCard: View {
             Button { Haptics.play(.click); actions.searchByID() } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .bold)).foregroundStyle(.white.opacity(0.6))
-                    Text("名前 か @ID で さがす").font(LF.inter(600, 15)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                    Text("名前 か @ID で さがす").font(Typo.ui(600, 15)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 52, maxHeight: 52)

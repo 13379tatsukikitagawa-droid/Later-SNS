@@ -348,7 +348,7 @@ struct HomeGlassOrb: View {
                 }
                 // 下の「TODAY ↓」
                 Text(verbatim: "TODAY ↓")
-                    .font(LF.mono(9.5, bold: true)).tracking(2.85)
+                    .font(Typo.label(9.5, bold: true)).tracking(2.85)
                     .foregroundStyle(Color(hex: "8A8A84"))
                     .opacity(reveal)
                     .frame(maxHeight: .infinity, alignment: .bottom)
@@ -390,10 +390,10 @@ struct HomeGlassOrb: View {
         .overlay(alignment: .top) {
             VStack(spacing: 2) {
                 Text(verbatim: "Lattag")
-                    .font(LF.inter(900, 20)).italic().tracking(-0.4)
+                    .font(Typo.ui(900, 20)).italic().tracking(-0.4)
                     .foregroundStyle(.white)
                 Text(verbatim: "FILM FOR TOMORROW")
-                    .font(LF.mono(7.5, bold: true)).tracking(1.5)
+                    .font(Typo.label(7.5, bold: true)).tracking(1.5)
                     .foregroundStyle(.white.opacity(0.8))
             }
             .padding(.top, 20)
@@ -578,7 +578,7 @@ struct HomeGlassOrb: View {
     /// レンズ 右上の 黒い 札(のこりこま の 数字)
     private var filmBadge: some View {
         Text(verbatim: "\(input.remaining)")
-            .font(LF.mono(16, bold: true))
+            .font(Typo.label(16, bold: true))
             .foregroundStyle(.white)
             .frame(width: 24, height: 19)
             .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color(hex: "0A0A0B")))
@@ -631,7 +631,7 @@ struct HomeGlassOrb: View {
     private func centerText(plan: HomeOrbRules.Plan, photoMode: Bool) -> some View {
         let c = plan.center
         let title = plan.done ? String(localized: "home.orb.tomorrow") : c.title
-        let font: Font = plan.done ? LF.inter(900, 22) : LF.serif(photoMode ? 32 : 46)
+        let font: Font = plan.done ? Typo.ui(900, 22) : Typo.title(photoMode ? 32 : 46)
         return VStack(spacing: 4) {
             if !photoMode {
                 Image(systemName: c.symbol)
@@ -646,7 +646,7 @@ struct HomeGlassOrb: View {
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: photoMode ? 5 : 2, y: 2)
             Text(verbatim: HomeOrbRules.sub(c, input: input, name: centerName, done: plan.done))
-                .font(LF.mono(10.5, bold: true))
+                .font(Typo.label(10.5, bold: true))
                 .tracking(0.24 * 10.5)
                 .foregroundStyle(photoMode ? LaterColor.filmPale : .white)
                 .lineLimit(1)
@@ -724,7 +724,7 @@ struct HomeGlassOrb: View {
                 .frame(width: hitSize, height: hitSize)
                 .contentShape(Circle())
                 Text(verbatim: action.label)
-                    .font(LF.mono(7.5 * scale, bold: true)).tracking(0.16 * 7.5 * scale)
+                    .font(Typo.label(7.5 * scale, bold: true)).tracking(0.16 * 7.5 * scale)
                     .foregroundStyle(locked ? Color(hex: "8E8E93") : .white)
                     .lineLimit(1)
                     .fixedSize()
@@ -803,7 +803,7 @@ struct HomeGlassOrb: View {
             HStack(spacing: 6) {
                 Image(systemName: symbol).font(.system(size: 13, weight: .semibold))
                 if selected {
-                    Text(verbatim: label).font(LF.mono(8.5, bold: true)).tracking(0.14 * 8.5)
+                    Text(verbatim: label).font(Typo.label(8.5, bold: true)).tracking(0.14 * 8.5)
                 }
             }
             .foregroundStyle(selected ? Color(hex: "111111") : Color(hex: "8E8E93"))
@@ -825,12 +825,12 @@ struct HomeGlassOrb: View {
             VStack(alignment: .leading, spacing: 14) {
                 if let trip {
                     Text(verbatim: trip.name)
-                        .font(LF.serif(32)).foregroundStyle(.white)
+                        .font(Typo.title(32)).foregroundStyle(.white)
                     Text(verbatim: trip.invitingText ?? "みんなで、ひらく。")
                         .font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.6))
                 } else {
                     (Text("Take a trip,\n") + Text("together.").italic().foregroundStyle(LaterColor.lime))
-                        .font(LF.serif(32))
+                        .font(Typo.title(32))
                         .foregroundStyle(.white)
                         .lineSpacing(2)
                     Text(verbatim: "旅行・合宿・イベント。1日 23枚を、みんなで。")
@@ -856,7 +856,7 @@ struct HomeGlassOrb: View {
         return secondaryPageShell(action, index: index, statusText: locked ? "LOCKED" : nil, width: w) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(verbatim: title(for: action))
-                    .font(LF.serif(32)).foregroundStyle(.white)
+                    .font(Typo.title(32)).foregroundStyle(.white)
                 Text(verbatim: subtitle(for: action, locked: locked))
                     .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.white.opacity(0.6))
             }
@@ -908,13 +908,13 @@ struct HomeGlassOrb: View {
                         .overlay(Circle().strokeBorder(.black, lineWidth: 2.2))
                         .accessibilityHidden(true)
                     Text(verbatim: "0\(index) / 04")
-                        .font(LF.mono(9, bold: true)).tracking(0.18 * 9)
+                        .font(Typo.label(9, bold: true)).tracking(0.18 * 9)
                         .foregroundStyle(Color(hex: "6C6C73"))
                         .accessibilityHidden(true)
                     Spacer()
                     if let statusText {
                         Text(verbatim: statusText)
-                            .font(LF.mono(9.5, bold: true)).tracking(0.12 * 9.5)
+                            .font(Typo.label(9.5, bold: true)).tracking(0.12 * 9.5)
                             .foregroundStyle(statusText == "LOCKED" ? Color(hex: "8E8E93") : LaterColor.liveGreen)
                     }
                 }
@@ -941,7 +941,7 @@ struct HomeGlassOrb: View {
             action()
         } label: {
             HStack {
-                Text(verbatim: title).font(LF.inter(800, 17))
+                Text(verbatim: title).font(Typo.ui(800, 17))
                 Spacer()
                 Circle().fill(LaterColor.filmLight).frame(width: 42, height: 42)
                     .overlay(Image(systemName: systemImage).font(.system(size: 16, weight: .bold)).foregroundStyle(.black))

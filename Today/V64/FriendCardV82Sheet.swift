@@ -35,9 +35,9 @@ struct FriendCardV82Sheet: View {
             HStack(alignment: .center, spacing: 14) {
                 cheki
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(name).font(LF.serif(34)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
-                    if let username { Text("@\(username)").font(LF.mono(12)).foregroundStyle(.white.opacity(0.55)).lineLimit(1).padding(.top, 2) }
-                    if let since { Text("since \(since)").font(LF.mono(11, bold: false)).foregroundStyle(.white.opacity(0.4)).padding(.top, 2) }
+                    Text(name).font(Typo.title(34)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    if let username { Text("@\(username)").font(Typo.label(12)).foregroundStyle(.white.opacity(0.55)).lineLimit(1).padding(.top, 2) }
+                    if let since { Text("since \(since)").font(Typo.label(11, bold: false)).foregroundStyle(.white.opacity(0.4)).padding(.top, 2) }
                     if let tag { sticker("#\(tag)", Color(hex: "EE5E9C"), -7, delay: 0.42).padding(.top, 10) }
                     if let city { sticker(city, Color(hex: "3A6EA5"), 4, delay: 0.53).padding(.top, 6) }
                     if mutualCount > 0 { mutual.padding(.top, 10) }
@@ -67,16 +67,16 @@ struct FriendCardV82Sheet: View {
 
     private var topRow: some View {
         HStack(spacing: 10) {
-            Text("FRIEND").font(LF.mono(10)).tracking(2).foregroundStyle(.white.opacity(0.45))
+            Text("FRIEND").font(Typo.label(10)).tracking(2).foregroundStyle(.white.opacity(0.45))
             HStack(spacing: 6) {
                 if shot {
                     TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { ctx in
                         let q = reduceMotion ? 1 : 0.35 + 0.65 * (0.5 + 0.5 * sin(ctx.date.timeIntervalSinceReferenceDate / 1.6 * 2 * .pi))
                         Circle().fill(HV.lime).frame(width: 6, height: 6).opacity(q)
                     }
-                    Text("今日 \(times.count)枚").font(LF.inter(800, 11.5)).foregroundStyle(HV.lime)
+                    Text("今日 \(times.count)枚").font(Typo.ui(800, 11.5)).foregroundStyle(HV.lime)
                 } else {
-                    Text("まだ 撮って いない").font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.55))
+                    Text("まだ 撮って いない").font(Typo.ui(700, 11.5)).foregroundStyle(.white.opacity(0.55))
                 }
             }
             .padding(.horizontal, 10).frame(height: 26)
@@ -94,8 +94,8 @@ struct FriendCardV82Sheet: View {
         VStack(spacing: 0) {
             ZStack(alignment: .bottomTrailing) {
                 if let a = avatar { Image(uiImage: a).resizable().scaledToFill() }
-                else { LinearGradient(colors: [Color(hex: "7FB0FF"), Color(hex: "B28CFF")], startPoint: .top, endPoint: .bottom).overlay(Text(String(name.prefix(1))).font(LF.inter(900, 52)).foregroundStyle(.white.opacity(0.9))) }
-                Text("'\(DateFormatter.chekiStamp.string(from: Date()))").font(LF.mono(8)).foregroundStyle(Color(hex: "FF9F43")).padding(5)
+                else { LinearGradient(colors: [Color(hex: "7FB0FF"), Color(hex: "B28CFF")], startPoint: .top, endPoint: .bottom).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, 52)).foregroundStyle(.white.opacity(0.9))) }
+                Text("'\(DateFormatter.chekiStamp.string(from: Date()))").font(Typo.label(8)).foregroundStyle(Color(hex: "FF9F43")).padding(5)
             }.frame(width: 122, height: 122).clipped().padding(.top, 8)
             Text(name).font(LF.hand(20)).foregroundStyle(Color(hex: "0B0C0D")).lineLimit(1).minimumScaleFactor(0.6).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 10).padding(.top, 2)
             Spacer(minLength: 0)
@@ -117,7 +117,7 @@ struct FriendCardV82Sheet: View {
     private var mutual: some View {
         HStack(spacing: 6) {
             ZStack { Circle().fill(Color(hex: "3A3A3F")); Circle().fill(Color(hex: "EE5E9C")).padding(3) }.frame(width: 20, height: 20)
-            Text("共通の 友だち \(mutualCount)人").font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.6))
+            Text("共通の 友だち \(mutualCount)人").font(Typo.ui(600, 11.5)).foregroundStyle(.white.opacity(0.6))
         }
     }
 
@@ -126,9 +126,9 @@ struct FriendCardV82Sheet: View {
     private var today: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("TODAY").font(LF.mono(10)).tracking(2).foregroundStyle(.white.opacity(0.4))
+                Text("TODAY").font(Typo.label(10)).tracking(2).foregroundStyle(.white.opacity(0.4))
                 Spacer()
-                Text("\(times.count) / 3").font(LF.mono(11)).foregroundStyle(HV.lime)
+                Text("\(times.count) / 3").font(Typo.label(11)).foregroundStyle(HV.lime)
             }
             HStack(spacing: 8) {
                 ForEach(0..<3, id: \.self) { i in
@@ -136,21 +136,21 @@ struct FriendCardV82Sheet: View {
                         ZStack(alignment: .bottomLeading) {
                             if times.indices.contains(i) {
                                 if let m = mosaics[safe: i] ?? nil { Image(uiImage: m).resizable().scaledToFill().blur(radius: 10) } else { Color(hex: "2A2A2E") }
-                                if !times[i].isEmpty { Text(times[i]).font(LF.mono(10)).foregroundStyle(Color(hex: "FF9F43")).padding(6) }
+                                if !times[i].isEmpty { Text(times[i]).font(Typo.label(10)).foregroundStyle(Color(hex: "FF9F43")).padding(6) }
                                 Image(systemName: "lock.fill").font(.system(size: 10)).foregroundStyle(.white).frame(width: 22, height: 22).background(.black.opacity(0.5), in: Circle()).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing).padding(5)
                             } else { RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(.white.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4])) }
                         }
                     }.clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
             }
-            Text("今日 1枚 撮ると、あした 見られる").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.5))
+            Text("今日 1枚 撮ると、あした 見られる").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.5))
         }
         .padding(14).background(Color(hex: "19191C"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
     private func action(_ icon: String, _ t: String, _ bg: Color, _ fg: Color, flex: Bool, _ a: @escaping () -> Void) -> some View {
         Button { Haptics.play(.tick); a() } label: {
-            VStack(spacing: 6) { Image(systemName: icon).font(.system(size: 17, weight: .semibold)); Text(t).font(LF.inter(800, 13)) }
+            VStack(spacing: 6) { Image(systemName: icon).font(.system(size: 17, weight: .semibold)); Text(t).font(Typo.ui(800, 13)) }
                 .foregroundStyle(fg).frame(maxWidth: flex ? .infinity : 78).frame(height: 62)
                 .background(bg, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }.buttonStyle(PopPressStyle())
@@ -166,7 +166,7 @@ private struct StickerPop: View {
     let text: String; let color: Color; let angle: Double; let delay: Double; let appeared: Bool; let reduceMotion: Bool
     @State private var popped = false
     var body: some View {
-        Text(text).font(LF.inter(900, 13)).foregroundStyle(.white).lineLimit(1).padding(.horizontal, 12).frame(height: 30)
+        Text(text).font(Typo.ui(900, 13)).foregroundStyle(.white).lineLimit(1).padding(.horizontal, 12).frame(height: 30)
             .background(color, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .shadow(color: .black.opacity(0.35), radius: 3, x: 1, y: 2)
             .rotationEffect(.degrees(angle))

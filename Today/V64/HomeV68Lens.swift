@@ -87,7 +87,7 @@ private struct HV68LensBody: View {
                 cc.translateBy(x: c.x, y: c.y)
                 cc.rotate(by: .radians(a))
                 cc.translateBy(x: 0, y: -121)
-                cc.draw(Text(String(ch)).font(LF.mono(9.5)).foregroundStyle(isLime ? Color(hex: "C8F25A") : Color.white.opacity(0.62)), at: .zero, anchor: .center)
+                cc.draw(Text(String(ch)).font(Typo.label(9.5)).foregroundStyle(isLime ? Color(hex: "C8F25A") : Color.white.opacity(0.62)), at: .zero, anchor: .center)
             }
             // 113 前の ガラス(いちばん 奥まで 黒い)
             let gc = CGPoint(x: c.x - 113 + 226 * 0.44, y: c.y - 113 + 226 * 0.38)

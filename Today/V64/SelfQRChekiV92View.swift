@@ -55,9 +55,9 @@ struct SelfQRChekiV92View: View {
                     }.onEnded { _ in withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { tilt = .zero } })
                     .onTapGesture { Haptics.play(flipped ? .sel : .pop); withAnimation(.easeInOut(duration: 0.55)) { flipped.toggle() } }
                     .accessibilityAddTraits(.isButton).accessibilityLabel("チェキ。タップで うらがえす")
-                Text(flipped ? "もう1回 タップで QR" : "タップで うらがえす").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.45)).padding(.top, 14)
+                Text(flipped ? "もう1回 タップで QR" : "タップで うらがえす").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.45)).padding(.top, 14)
                 ZStack {
-                    if let toast { Label(toast, systemImage: "checkmark").font(LF.inter(700, 13)).foregroundStyle(.white).padding(.horizontal, 16).frame(height: 34).background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1)).transition(.opacity) }
+                    if let toast { Label(toast, systemImage: "checkmark").font(Typo.ui(700, 13)).foregroundStyle(.white).padding(.horizontal, 16).frame(height: 34).background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1)).transition(.opacity) }
                 }.frame(height: 40)
                 Spacer(minLength: 0)
                 actions.padding(.horizontal, 10).padding(.bottom, 40)
@@ -119,10 +119,10 @@ struct SelfQRChekiV92View: View {
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(name).font(ChekiFont.hand(30)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.5).rotationEffect(.degrees(-2))
-                        Text("@\(username)").font(LF.mono(11)).tracking(0.9).foregroundStyle(ink.opacity(0.55)).lineLimit(1)
+                        Text("@\(username)").font(Typo.label(11)).tracking(0.9).foregroundStyle(ink.opacity(0.55)).lineLimit(1)
                     }
                     Spacer(minLength: 8)
-                    Text(Self.dateStamp).font(LF.mono(12)).foregroundStyle(Color(hex: "1F8F37"))
+                    Text(Self.dateStamp).font(Typo.label(12)).foregroundStyle(Color(hex: "1F8F37"))
                 }.padding(.horizontal, 20).frame(maxHeight: .infinity)
             }
             .overlay(alignment: .top) {
@@ -136,14 +136,14 @@ struct SelfQRChekiV92View: View {
         paperBase {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomLeading) {
-                    if let photo { Image(uiImage: photo).resizable().scaledToFill() } else { LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing).overlay(Text(String(name.prefix(1))).font(LF.inter(900, 110)).foregroundStyle(.white.opacity(0.9))) }
+                    if let photo { Image(uiImage: photo).resizable().scaledToFill() } else { LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, 110)).foregroundStyle(.white.opacity(0.9))) }
                     HStack(spacing: 6) { ForEach(Array(tags.prefix(3).enumerated()), id: \.offset) { i, t in
-                        Text("#\(t)").font(LF.inter(900, 13)).foregroundStyle(i == 1 ? .white : ink).padding(.horizontal, 10).frame(height: 28).background([HV.lime, Color(hex: "EE5E9C"), Color(hex: "9ED8FF")][i % 3], in: RoundedRectangle(cornerRadius: 10, style: .continuous)).rotationEffect(.degrees([-5, 4, -3][i % 3]))
+                        Text("#\(t)").font(Typo.ui(900, 13)).foregroundStyle(i == 1 ? .white : ink).padding(.horizontal, 10).frame(height: 28).background([HV.lime, Color(hex: "EE5E9C"), Color(hex: "9ED8FF")][i % 3], in: RoundedRectangle(cornerRadius: 10, style: .continuous)).rotationEffect(.degrees([-5, 4, -3][i % 3]))
                     } }.padding(10)
                 }.frame(width: 274, height: 300).clipped().padding(.top, 20)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(name).font(ChekiFont.hand(30)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.5).rotationEffect(.degrees(-2))
-                    Text("LATTAG ・ SINCE \(since)").font(LF.mono(10.5)).tracking(1.5).foregroundStyle(ink.opacity(0.55))
+                    Text("LATTAG ・ SINCE \(since)").font(Typo.label(10.5)).tracking(1.5).foregroundStyle(ink.opacity(0.55))
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20).frame(maxHeight: .infinity)
             }
         }
@@ -165,7 +165,7 @@ struct SelfQRChekiV92View: View {
         Button { Haptics.play(.tick); a() } label: {
             VStack(spacing: 8) {
                 Image(systemName: icon).font(.system(size: 20, weight: .semibold)).foregroundStyle(.white).frame(width: 58, height: 58).background(tint ?? Color.white.opacity(0.1), in: Circle())
-                Text(t).font(LF.inter(700, 12)).foregroundStyle(.white.opacity(0.85)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(t).font(Typo.ui(700, 12)).foregroundStyle(.white.opacity(0.85)).lineLimit(1).minimumScaleFactor(0.7)
             }.frame(maxWidth: .infinity)
         }.buttonStyle(HVPress(scale: 0.94))
             .offset(y: rowsShown || reduceMotion ? 0 : 30).opacity(rowsShown || reduceMotion ? 1 : 0)

@@ -191,9 +191,9 @@ struct MusicSheet: View {
             bg.ignoresSafeArea()
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("今日の 1曲").font(LF.inter(900, 22)).foregroundStyle(.white)
+                    Text("今日の 1曲").font(Typo.ui(900, 22)).foregroundStyle(.white)
                     Spacer()
-                    Text("MUSIC").font(LF.mono(10)).tracking(1.5).foregroundStyle(grey)
+                    Text("MUSIC").font(Typo.label(10)).tracking(1.5).foregroundStyle(grey)
                 }.padding(.top, 26).padding(.horizontal, 20)
                 content
             }
@@ -226,8 +226,8 @@ struct MusicSheet: View {
                         .rotationEffect(.degrees([-12, 0, 12][i])).offset(x: CGFloat(i - 1) * 62, y: i == 1 ? -8 : 0)
                 }
             }.frame(height: 130)
-            Text("今日の 写真に、1曲").font(LF.inter(900, 24)).foregroundStyle(.white)
-            Text("友だちが 写真を ひらくと、この曲が 流れます").font(LF.inter(600, 14)).foregroundStyle(grey).multilineTextAlignment(.center)
+            Text("今日の 写真に、1曲").font(Typo.ui(900, 24)).foregroundStyle(.white)
+            Text("友だちが 写真を ひらくと、この曲が 流れます").font(Typo.ui(600, 14)).foregroundStyle(grey).multilineTextAlignment(.center)
             Button {
                 Task {
                     let r = await AppleMusicCatalog.requestAccess()
@@ -235,7 +235,7 @@ struct MusicSheet: View {
                     withAnimation { access = r }
                     if r == .ready { await loadAll() }
                 }
-            } label: { Text("Apple Music と つなぐ").font(LF.inter(800, 16)).foregroundStyle(Color(hex: "0B0C0D")).frame(maxWidth: .infinity).frame(height: 56).background(.white, in: Capsule()) }
+            } label: { Text("Apple Music と つなぐ").font(Typo.ui(800, 16)).foregroundStyle(Color(hex: "0B0C0D")).frame(maxWidth: .infinity).frame(height: 56).background(.white, in: Capsule()) }
                 .buttonStyle(HVPress(scale: 0.97)).padding(.horizontal, 20)
             Spacer()
         }.frame(maxWidth: .infinity)
@@ -243,7 +243,7 @@ struct MusicSheet: View {
 
     private func fallback(_ text: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(text).font(LF.inter(600, 13)).foregroundStyle(grey).lineSpacing(4)
+            Text(text).font(Typo.ui(600, 13)).foregroundStyle(grey).lineSpacing(4)
             linkField
             if let linkPick { row(linkPick, previewURL: linkPick.previewURL.flatMap(URL.init(string:))) }
         }.padding(20)
@@ -258,7 +258,7 @@ struct MusicSheet: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     if !term.isEmpty {
                         if searching && results.isEmpty { ProgressView().frame(maxWidth: .infinity).padding(.top, 30) }
-                        else if results.isEmpty && libraryHits.isEmpty { Text("見つかりませんでした").font(LF.inter(600, 13)).foregroundStyle(grey).padding(20) }
+                        else if results.isEmpty && libraryHits.isEmpty { Text("見つかりませんでした").font(Typo.ui(600, 13)).foregroundStyle(grey).padding(20) }
                         list(results)
                         if !libraryHits.isEmpty { head("ライブラリ"); list(libraryHits) }
                     } else if tab == 0 {
@@ -276,13 +276,13 @@ struct MusicSheet: View {
         }
     }
 
-    private var empty: some View { Text("まだ ありません").font(LF.inter(600, 13)).foregroundStyle(grey).padding(20) }
-    private func head(_ t: String) -> some View { Text(t).font(LF.inter(800, 15)).foregroundStyle(.white).padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 8) }
+    private var empty: some View { Text("まだ ありません").font(Typo.ui(600, 13)).foregroundStyle(grey).padding(20) }
+    private func head(_ t: String) -> some View { Text(t).font(Typo.ui(800, 15)).foregroundStyle(.white).padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 8) }
 
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .bold)).foregroundStyle(grey)
-            TextField("曲名・アーティスト", text: $term).font(LF.inter(700, 15)).foregroundStyle(.white).submitLabel(.search).autocorrectionDisabled()
+            TextField("曲名・アーティスト", text: $term).font(Typo.ui(700, 15)).foregroundStyle(.white).submitLabel(.search).autocorrectionDisabled()
                 .onChange(of: term) { _, v in scheduleSearch(v) }.onSubmit { scheduleSearch(term, now: true) }
             if searching { ProgressView().scaleEffect(0.8) }
         }.padding(.horizontal, 16).frame(height: 46).background(.white.opacity(0.08), in: Capsule())
@@ -292,7 +292,7 @@ struct MusicSheet: View {
         HStack(spacing: 0) {
             ForEach(Array(tabs.enumerated()), id: \.offset) { i, t in
                 Button { Haptics.play(.sel); withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { tab = i } } label: {
-                    Text(t).font(LF.inter(800, 14)).foregroundStyle(tab == i ? Color(hex: "0B0C0D") : .white.opacity(0.7)).frame(maxWidth: .infinity).frame(height: 40)
+                    Text(t).font(Typo.ui(800, 14)).foregroundStyle(tab == i ? Color(hex: "0B0C0D") : .white.opacity(0.7)).frame(maxWidth: .infinity).frame(height: 40)
                         .background { if tab == i { Capsule().fill(.white).matchedGeometryEffect(id: "tab", in: tabNS) } }
                 }.buttonStyle(.plain)
             }
@@ -306,8 +306,8 @@ struct MusicSheet: View {
                     Button { choosePlay(f.pick, f.previewURL) } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             art(f.pick, 132, 18, f.id)
-                            Text(f.pick.title).font(LF.inter(800, 13)).foregroundStyle(.white).lineLimit(1)
-                            Text(f.pick.artist).font(LF.inter(600, 11.5)).foregroundStyle(grey).lineLimit(1)
+                            Text(f.pick.title).font(Typo.ui(800, 13)).foregroundStyle(.white).lineLimit(1)
+                            Text(f.pick.artist).font(Typo.ui(600, 11.5)).foregroundStyle(grey).lineLimit(1)
                         }.frame(width: 132)
                     }.buttonStyle(.plain)
                 }
@@ -337,8 +337,8 @@ struct MusicSheet: View {
             HStack(spacing: 12) {
                 art(p, 52, 12, key(p))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(p.title).font(LF.inter(800, 15)).foregroundStyle(on ? HV.lime : .white)
-                    Text(p.artist).font(LF.inter(600, 12.5)).foregroundStyle(grey)
+                    Text(p.title).font(Typo.ui(800, 15)).foregroundStyle(on ? HV.lime : .white)
+                    Text(p.artist).font(Typo.ui(600, 12.5)).foregroundStyle(grey)
                 }.lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: playing ? "pause.fill" : "play.fill").font(.system(size: 14, weight: .bold))
                     .foregroundStyle(playing ? Color(hex: "0B0C0D") : .white).frame(width: 44, height: 44)
@@ -351,7 +351,7 @@ struct MusicSheet: View {
     private var linkField: some View {
         HStack(spacing: 8) {
             Image(systemName: "link").foregroundStyle(grey)
-            TextField("music.apple.com の リンクを はる", text: $linkText).font(LF.inter(600, 14)).foregroundStyle(.white).textInputAutocapitalization(.never).autocorrectionDisabled()
+            TextField("music.apple.com の リンクを はる", text: $linkText).font(Typo.ui(600, 14)).foregroundStyle(.white).textInputAutocapitalization(.never).autocorrectionDisabled()
                 .onChange(of: linkText) { _, v in readLink(v) }
             if linkLoading { ProgressView().scaleEffect(0.8) }
         }.padding(.horizontal, 16).frame(height: 46).background(.white.opacity(0.08), in: Capsule())
@@ -363,15 +363,15 @@ struct MusicSheet: View {
             if let sel = selected {
                 HStack(spacing: 10) {
                     art(sel, 40, 9, key(sel))
-                    VStack(alignment: .leading, spacing: 2) { Text(sel.title).font(LF.inter(800, 14)).foregroundStyle(.white); Text("プレビュー").font(LF.mono(9)).tracking(1.5).foregroundStyle(grey) }.lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) { Text(sel.title).font(Typo.ui(800, 14)).foregroundStyle(.white); Text("プレビュー").font(Typo.label(9)).tracking(1.5).foregroundStyle(grey) }.lineLimit(1)
                     Spacer()
                 }.padding(.horizontal, 6)
             }
             Button(action: choose) {
-                Text(selected == nil ? "曲を えらんでください" : "この曲にする").font(LF.inter(800, 16)).foregroundStyle(selected == nil ? grey : Color(hex: "0B0C0D"))
+                Text(selected == nil ? "曲を えらんでください" : "この曲にする").font(Typo.ui(800, 16)).foregroundStyle(selected == nil ? grey : Color(hex: "0B0C0D"))
                     .frame(maxWidth: .infinity).frame(height: 56).background(selected == nil ? Color.white.opacity(0.08) : HV.lime, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.97)).disabled(selected == nil)
-            if current != nil { Button(action: remove) { Text("音楽を はずす").font(LF.inter(700, 13)).foregroundStyle(grey).frame(maxWidth: .infinity).frame(height: 36) }.buttonStyle(.plain) }
+            if current != nil { Button(action: remove) { Text("音楽を はずす").font(Typo.ui(700, 13)).foregroundStyle(grey).frame(maxWidth: .infinity).frame(height: 36) }.buttonStyle(.plain) }
         }.padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 10)
             .background(LinearGradient(colors: [bg.opacity(0), bg, bg], startPoint: .top, endPoint: .bottom))
     }

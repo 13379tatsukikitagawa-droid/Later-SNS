@@ -47,7 +47,7 @@ struct SettingsV87Sheet: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("設定").font(LF.inter(900, 26)).foregroundStyle(ink)
+                    Text("設定").font(Typo.ui(900, 26)).foregroundStyle(ink)
                     Spacer()
                     Button { Haptics.play(.tick); onClose() } label: { Image(systemName: "xmark").font(.system(size: 15, weight: .black)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.1), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.12), lineWidth: 1)) }.buttonStyle(.plain)
                 }.padding(.top, 14)
@@ -72,7 +72,7 @@ struct SettingsV87Sheet: View {
                 header("表示")
                 group {
                     HStack {
-                        Text("言語").font(LF.inter(800, 17)).foregroundStyle(ink)
+                        Text("言語").font(Typo.ui(800, 17)).foregroundStyle(ink)
                         Spacer()
                         HStack(spacing: 0) {
                             seg("日本語", on: !AppLanguage.isEnglish); seg("English", on: AppLanguage.isEnglish)
@@ -80,7 +80,7 @@ struct SettingsV87Sheet: View {
                     }.padding(.horizontal, 16).frame(height: 64)
                     divider
                     HStack {
-                        Text("バイブ").font(LF.inter(800, 17)).foregroundStyle(ink)
+                        Text("バイブ").font(Typo.ui(800, 17)).foregroundStyle(ink)
                         Spacer()
                         HStack(spacing: 0) {
                             ForEach(AppHapticsSetting.Level.allCases) { l in
@@ -89,7 +89,7 @@ struct SettingsV87Sheet: View {
                                     // 選んだ 時に 見本を 1回(ひかえめ は きざみを 鳴らさない = pop)
                                     if l != .off { Haptics.play(l == .strong ? .click : .pop) }
                                 } label: {
-                                    Text(l.title).font(LF.inter(800, 13)).foregroundStyle(hapticLevel == l ? Color(hex: "0B0C0D") : .white.opacity(0.7))
+                                    Text(l.title).font(Typo.ui(800, 13)).foregroundStyle(hapticLevel == l ? Color(hex: "0B0C0D") : .white.opacity(0.7))
                                         .padding(.horizontal, 12).frame(height: 36).background(hapticLevel == l ? Color.white : .clear, in: Capsule())
                                 }.buttonStyle(.plain)
                             }
@@ -114,10 +114,10 @@ struct SettingsV87Sheet: View {
                     if !SupportContact.mail.isEmpty { divider; linkRow("問い合わせ") { if let u = URL(string: "mailto:\(SupportContact.mail)") { UIApplication.shared.open(u) } } }
                 }
                 group {
-                    Button { Haptics.play(.warn); confirmLogout = true } label: { Text("ログアウト").font(LF.inter(800, 17)).foregroundStyle(Color(hex: "FF453A")).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).frame(height: 56) }.buttonStyle(.plain)
+                    Button { Haptics.play(.warn); confirmLogout = true } label: { Text("ログアウト").font(Typo.ui(800, 17)).foregroundStyle(Color(hex: "FF453A")).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).frame(height: 56) }.buttonStyle(.plain)
                 }.padding(.top, 22)
-                Button { Haptics.play(.tick); showsDelete = true } label: { Text("アカウントを 消す").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.4)).frame(maxWidth: .infinity).frame(height: 44) }.buttonStyle(.plain).padding(.top, 8)
-                Text("Lattag \(Self.version)").font(LF.mono(10)).foregroundStyle(.white.opacity(0.3)).frame(maxWidth: .infinity).padding(.top, 6).padding(.bottom, 50)
+                Button { Haptics.play(.tick); showsDelete = true } label: { Text("アカウントを 消す").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.4)).frame(maxWidth: .infinity).frame(height: 44) }.buttonStyle(.plain).padding(.top, 8)
+                Text("Lattag \(Self.version)").font(Typo.label(10)).foregroundStyle(.white.opacity(0.3)).frame(maxWidth: .infinity).padding(.top, 6).padding(.bottom, 50)
             }.padding(.horizontal, 16)
         }
         .scrollHaptics()
@@ -142,15 +142,15 @@ struct SettingsV87Sheet: View {
 
     private var account: some View {
         HStack(spacing: 14) {
-            ZStack { if let a = avatar { Image(uiImage: a).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(LF.inter(900, 22)).foregroundStyle(.white)) } }
+            ZStack { if let a = avatar { Image(uiImage: a).resizable().scaledToFill() } else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, 22)).foregroundStyle(.white)) } }
                 .frame(width: 54, height: 54).clipShape(Circle()).overlay(Circle().strokeBorder(HV.lime, lineWidth: 2).padding(-3))
-            VStack(alignment: .leading, spacing: 3) { Text(name).font(LF.inter(900, 21)).foregroundStyle(.white).lineLimit(1); Text("@\(username)").font(LF.mono(12)).foregroundStyle(.white.opacity(0.45)) }
+            VStack(alignment: .leading, spacing: 3) { Text(name).font(Typo.ui(900, 21)).foregroundStyle(.white).lineLimit(1); Text("@\(username)").font(Typo.label(12)).foregroundStyle(.white.opacity(0.45)) }
             Spacer(minLength: 0)
-            Button { Haptics.play(.tick); onEdit() } label: { Text("編集").font(LF.inter(800, 14)).foregroundStyle(.white).padding(.horizontal, 18).frame(height: 36).background(.white.opacity(0.1), in: Capsule()) }.buttonStyle(.plain)
+            Button { Haptics.play(.tick); onEdit() } label: { Text("編集").font(Typo.ui(800, 14)).foregroundStyle(.white).padding(.horizontal, 18).frame(height: 36).background(.white.opacity(0.1), in: Capsule()) }.buttonStyle(.plain)
         }.padding(16).background(box, in: RoundedRectangle(cornerRadius: 22, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06), lineWidth: 1))
     }
 
-    private func header(_ t: String) -> some View { Text(t).font(LF.inter(700, 12.5)).foregroundStyle(.white.opacity(0.45)).padding(.leading, 12).padding(.top, 26).padding(.bottom, 8).hapticSection(t) }
+    private func header(_ t: String) -> some View { Text(t).font(Typo.ui(700, 12.5)).foregroundStyle(.white.opacity(0.45)).padding(.leading, 12).padding(.top, 26).padding(.bottom, 8).hapticSection(t) }
     private func group<C: View>(@ViewBuilder _ c: () -> C) -> some View {
         VStack(spacing: 0, content: c).background(box, in: RoundedRectangle(cornerRadius: 22, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06), lineWidth: 1))
     }
@@ -158,19 +158,19 @@ struct SettingsV87Sheet: View {
 
     private func toggleRow(_ t: String, _ sub: String, _ on: Binding<Bool>, _ change: @escaping (Bool) -> Void) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 3) { Text(t).font(LF.inter(800, 17)).foregroundStyle(.white); Text(sub).font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.45)) }
+            VStack(alignment: .leading, spacing: 3) { Text(t).font(Typo.ui(800, 17)).foregroundStyle(.white); Text(sub).font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.45)) }
             Spacer()
             Toggle("", isOn: Binding(get: { on.wrappedValue }, set: { on.wrappedValue = $0; change($0) })).labelsHidden().toggleStyle(V87Toggle())
         }.padding(.horizontal, 16).frame(minHeight: 64).padding(.vertical, 4)
     }
     private func linkRow(_ t: String, value: String? = nil, _ a: @escaping () -> Void) -> some View {
         Button { Haptics.play(.tick); a() } label: {
-            HStack { Text(t).font(LF.inter(800, 17)).foregroundStyle(.white); Spacer(); if let value { Text(value).font(LF.inter(700, 15)).foregroundStyle(.white.opacity(0.45)) }; Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.4)) }.padding(.horizontal, 16).frame(height: 56)
+            HStack { Text(t).font(Typo.ui(800, 17)).foregroundStyle(.white); Spacer(); if let value { Text(value).font(Typo.ui(700, 15)).foregroundStyle(.white.opacity(0.45)) }; Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.4)) }.padding(.horizontal, 16).frame(height: 56)
         }.buttonStyle(.plain)
     }
     private func seg(_ t: String, on: Bool) -> some View {
         Button { Haptics.play(.sel); if !on { AppLanguage.openSystemSettings() } } label: {
-            Text(t).font(LF.inter(800, 14)).foregroundStyle(on ? Color(hex: "0B0C0D") : .white.opacity(0.7)).padding(.horizontal, 18).frame(height: 36).background(on ? Color.white : .clear, in: Capsule())
+            Text(t).font(Typo.ui(800, 14)).foregroundStyle(on ? Color(hex: "0B0C0D") : .white.opacity(0.7)).padding(.horizontal, 18).frame(height: 36).background(on ? Color.white : .clear, in: Capsule())
         }.buttonStyle(.plain)
     }
 

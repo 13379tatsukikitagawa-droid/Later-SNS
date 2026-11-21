@@ -159,18 +159,12 @@ struct SevenSegmentText: View {
 enum CaptureFonts {
     /// Space Mono Bold。入っていなければ、等幅の太字。
     static func monoBold(_ size: CGFloat) -> Font {
-        if UIFont(name: "SpaceMono-Bold", size: size) != nil {
-            return .custom("SpaceMono-Bold", size: size)
-        }
-        return .system(size: size, weight: .bold, design: .monospaced)
+        Typo.label(size)
     }
 
     /// Inter Black。入っていなければ、システムの Heavy。
     static func interBlack(_ size: CGFloat) -> Font {
-        if UIFont(name: "Inter-Black", size: size) != nil {
-            return .custom("Inter-Black", size: size)
-        }
-        return .system(size: size, weight: .heavy)
+        Typo.ui(900, size)
     }
 }
 

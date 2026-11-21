@@ -175,10 +175,10 @@ struct YesterdayV64View: View {
             .accessibilityLabel("通知")
             // タブの 名前
             VStack(spacing: 1) {
-                Text(tab == 0 ? "Friends" : "Trip").font(LF.inter(900, compact ? 17 : 24)).tracking(compact ? -0.7 : -0.96).foregroundStyle(.white).frame(height: compact ? 22 : 30)
+                Text(tab == 0 ? "Friends" : "Trip").font(Typo.ui(900, compact ? 17 : 24)).tracking(compact ? -0.7 : -0.96).foregroundStyle(.white).frame(height: compact ? 22 : 30)
                 if !compact {
                     Text(tab == 0 ? friendsSubtitle : tripSubtitle)
-                        .font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.5)).frame(height: 16)
+                        .font(Typo.ui(600, 11.5)).foregroundStyle(.white.opacity(0.5)).frame(height: 16)
                 }
             }.frame(width: 250).offset(x: (w - 250) / 2, y: compact ? 58 : 52)
             // 右上 = 自分の アイコン(1回 → プロフィール ・ 2回 → 今日)
@@ -205,7 +205,7 @@ struct YesterdayV64View: View {
             Circle().fill(Color.black).frame(width: 56, height: 56)
             Group {
                 if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
-                else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(input.avatarName.prefix(1))).font(LF.inter(900, 20)).foregroundStyle(.white)) }
+                else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(input.avatarName.prefix(1))).font(Typo.ui(900, 20)).foregroundStyle(.white)) }
             }.frame(width: 52, height: 52).clipShape(Circle())
             Circle().strokeBorder(HV.lime, lineWidth: compact ? 1 : 1.5).frame(width: 56, height: 56)
         }.frame(width: 56, height: 56)
@@ -244,10 +244,10 @@ struct YesterdayV64View: View {
                 }
             }.frame(height: 230).padding(.top, 8)
             .loopWhileVisible(.easeInOut(duration: 3.6).repeatForever(autoreverses: true), value: $floatUp)   // v111
-            Text("最初の 1枚を 撮ろう").font(LF.inter(900, 24)).foregroundStyle(.white).padding(.top, 18)
-            Text("あした 9:00 に、ここで ひらきます").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.5)).padding(.top, 6)
+            Text("最初の 1枚を 撮ろう").font(Typo.ui(900, 24)).foregroundStyle(.white).padding(.top, 18)
+            Text("あした 9:00 に、ここで ひらきます").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.5)).padding(.top, 6)
             Button { Haptics.play(.click); actions.shoot() } label: {
-                HStack(spacing: 10) { Image(systemName: "camera").font(.system(size: 19, weight: .semibold)); Text("撮る").font(LF.inter(900, 17)) }.foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(HV.lime, in: Capsule())
+                HStack(spacing: 10) { Image(systemName: "camera").font(.system(size: 19, weight: .semibold)); Text("撮る").font(Typo.ui(900, 17)) }.foregroundStyle(HV.ink).frame(maxWidth: .infinity).frame(height: 56).background(HV.lime, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.98)).padding(.horizontal, 16).padding(.top, 20)
         }.frame(maxWidth: .infinity)
     }
@@ -257,9 +257,9 @@ struct YesterdayV64View: View {
         VStack(alignment: .leading, spacing: 0) {
             storyRowV95.padding(.bottom, 18)
             HStack(alignment: .firstTextBaseline) {
-                Text("友だちを よぶ").font(LF.inter(900, 19)).foregroundStyle(.white)
+                Text("友だちを よぶ").font(Typo.ui(900, 19)).foregroundStyle(.white)
                 Spacer()
-                Text("0 FRIENDS").font(LF.mono(10.5)).tracking(1.5).foregroundStyle(.white.opacity(0.4))
+                Text("0 FRIENDS").font(Typo.label(10.5)).tracking(1.5).foregroundStyle(.white.opacity(0.4))
             }.padding(.horizontal, 16)
             HStack(spacing: 8) {
                 inviteTile("qrcode", "QR を 見せる", green: true) { actions.addFriends() }
@@ -268,12 +268,12 @@ struct YesterdayV64View: View {
             }.padding(.horizontal, 16).padding(.top, 12)
             // 友だちを よぶ:名前 か @ID で さがす(押すと Friends の さがす 画面)
             Button { Haptics.play(.click); actions.openFriends() } label: {
-                HStack(spacing: 10) { Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .bold)).foregroundStyle(HV.lime); Text("名前 か @ID で さがす").font(LF.inter(600, 15)).foregroundStyle(.white.opacity(0.5)); Spacer() }
+                HStack(spacing: 10) { Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .bold)).foregroundStyle(HV.lime); Text("名前 か @ID で さがす").font(Typo.ui(600, 15)).foregroundStyle(.white.opacity(0.5)); Spacer() }
                     .padding(.horizontal, 18).frame(height: 52).background(Color(hex: "1C1C1F"), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 1))
             }.buttonStyle(HVPress(scale: 0.98)).padding(.horizontal, 16).padding(.top, 10)
             VStack(alignment: .leading, spacing: 4) {
-                Text("FRIENDS 見本").font(LF.mono(10.5)).tracking(2).foregroundStyle(HV.lime)
-                Text("友だちが できると、毎朝 9:00 に ここに ならぶ").font(LF.inter(600, 13)).foregroundStyle(.white.opacity(0.55))
+                Text("FRIENDS 見本").font(Typo.label(10.5)).tracking(2).foregroundStyle(HV.lime)
+                Text("友だちが できると、毎朝 9:00 に ここに ならぶ").font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.55))
             }.padding(.horizontal, 16).padding(.top, 26)
             SamplePostV94().padding(.top, 12)
             VStack(spacing: 14) { ghostPost }.padding(.top, 14).mask(LinearGradient(colors: [.black.opacity(0.5), .clear], startPoint: .top, endPoint: .bottom))
@@ -289,12 +289,12 @@ struct YesterdayV64View: View {
                             Circle().strokeBorder(HV.lime, lineWidth: 2.5).frame(width: 68, height: 68).shadow(color: HV.lime.opacity(0.45), radius: 6)
                             Group {
                                 if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
-                                else { Text(String(input.avatarName.prefix(1))).font(LF.inter(800, 22)).foregroundStyle(.white) }
+                                else { Text(String(input.avatarName.prefix(1))).font(Typo.ui(800, 22)).foregroundStyle(.white) }
                             }.frame(width: 58, height: 58).background(Color(hex: "3A3A3C")).clipShape(Circle()).frame(width: 68, height: 68)
                             Image(systemName: "camera.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(HV.ink)
                                 .frame(width: 24, height: 24).background(HV.lime, in: Circle()).overlay(Circle().strokeBorder(.black, lineWidth: 2.5))
                         }
-                        Text("あなた").font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.85))
+                        Text("あなた").font(Typo.ui(700, 11.5)).foregroundStyle(.white.opacity(0.85))
                     }
                 }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("あなた ・ 撮る")
                 ForEach(0..<3, id: \.self) { _ in
@@ -304,7 +304,7 @@ struct YesterdayV64View: View {
                                 Circle().strokeBorder(.white.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [3, 4])).frame(width: 68, height: 68)
                                 Image(systemName: "person.fill").font(.system(size: 22)).foregroundStyle(.white.opacity(0.18))
                             }
-                            Text("おすすめ").font(LF.inter(600, 11.5)).foregroundStyle(.white.opacity(0.4))
+                            Text("おすすめ").font(Typo.ui(600, 11.5)).foregroundStyle(.white.opacity(0.4))
                         }
                     }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("おすすめの 人 ・ さがす")
                 }
@@ -314,7 +314,7 @@ struct YesterdayV64View: View {
                             Circle().strokeBorder(HV.lime.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [5, 4])).frame(width: 68, height: 68)
                             Image(systemName: "plus").font(.system(size: 22, weight: .bold)).foregroundStyle(HV.lime)
                         }
-                        Text("よぼう").font(LF.inter(700, 11.5)).foregroundStyle(HV.lime)
+                        Text("よぼう").font(Typo.ui(700, 11.5)).foregroundStyle(HV.lime)
                     }
                 }.buttonStyle(HVPress(scale: 0.94)).accessibilityLabel("友だちを よぶ")
             }.padding(.horizontal, 16)
@@ -322,7 +322,7 @@ struct YesterdayV64View: View {
     }
     private func inviteTile(_ icon: String, _ t: String, green: Bool, _ a: @escaping () -> Void) -> some View {
         Button { Haptics.play(.click); a() } label: {
-            VStack(spacing: 10) { Image(systemName: icon).font(.system(size: 24, weight: .semibold)); Text(t).font(LF.inter(800, 13)) }
+            VStack(spacing: 10) { Image(systemName: icon).font(.system(size: 24, weight: .semibold)); Text(t).font(Typo.ui(800, 13)) }
                 .foregroundStyle(green ? HV.ink : .white).frame(maxWidth: .infinity).frame(height: 96)
                 .background(green ? HV.lime : Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(green ? 0 : 0.14), lineWidth: 1))
@@ -348,8 +348,8 @@ struct YesterdayV64View: View {
                     ZStack(alignment: .topLeading) {
                         photoFill(main?.image, tone: "2A2326").frame(width: 120, height: 160).clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .shadow(color: .black.opacity(0.6), radius: 10, y: 8)
-                        if let t = main?.time { Text(t).font(LF.mono(9.5)).fontWeight(.bold).foregroundStyle(.white).padding(.horizontal, 8).frame(height: 20).background(.black.opacity(0.45), in: Capsule()).offset(x: 71, y: 6) }
-                        if let tag = main?.tag { Text("#\(tag)").font(LF.inter(800, 11)).foregroundStyle(HV.ink).padding(.horizontal, 8).frame(height: 22).background(HV.lime, in: Capsule()).offset(x: 6, y: 132) }
+                        if let t = main?.time { Text(t).font(Typo.label(9.5)).fontWeight(.bold).foregroundStyle(.white).padding(.horizontal, 8).frame(height: 20).background(.black.opacity(0.45), in: Capsule()).offset(x: 71, y: 6) }
+                        if let tag = main?.tag { Text("#\(tag)").font(Typo.ui(800, 11)).foregroundStyle(HV.ink).padding(.horizontal, 8).frame(height: 22).background(HV.lime, in: Capsule()).offset(x: 6, y: 132) }
                     }.frame(width: 120, height: 160)
                 }.buttonStyle(HVPress(scale: 0.97)).offset(x: (w - 120) / 2, y: 0)
                 if input.mine.count > 1 {
@@ -360,15 +360,15 @@ struct YesterdayV64View: View {
                                 photoFill(p.image, tone: "2A2326").frame(width: 50, height: 62).clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                                     .opacity(0.55).rotationEffect(.degrees(i == 0 ? -6 : 6)).offset(x: i == 0 ? -15 : 15, y: -36 + (i == 0 ? 0 : 4))
                             }
-                            VStack(spacing: 2) { Text("+\(max(0, input.mine.count - 1))").font(LF.inter(800, 22)).foregroundStyle(.white); Text("more").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.75)) }.offset(y: 27)
+                            VStack(spacing: 2) { Text("+\(max(0, input.mine.count - 1))").font(Typo.ui(800, 22)).foregroundStyle(.white); Text("more").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.75)) }.offset(y: 27)
                         }.frame(width: 100, height: 136)
                     }.buttonStyle(HVPress(scale: 0.97)).offset(x: (w - 120) / 2 + 120 + 14, y: 12)
                 }
             }.frame(width: w, height: 160, alignment: .topLeading)
-            Text(input.mineCaption ?? "キャプションを 追加…").font(LF.inter(600, 16)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 24).padding(.top, 16)
+            Text(input.mineCaption ?? "キャプションを 追加…").font(Typo.ui(600, 16)).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 24).padding(.top, 16)
             HStack(spacing: 14) {
                 circleButton { Image(systemName: "paperplane").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white) } action: { Haptics.play(.tick); actions.addFriends() }
-                circleButton { Text("#").font(LF.inter(900, 22)).foregroundStyle(HV.lime) } action: { Haptics.play(.pop) }
+                circleButton { Text("#").font(Typo.ui(900, 22)).foregroundStyle(HV.lime) } action: { Haptics.play(.pop) }
                 circleButton { Image(systemName: "star").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white) } action: { Haptics.play(.pop) }
             }.frame(maxWidth: .infinity).padding(.top, 12)
         }
@@ -381,11 +381,11 @@ struct YesterdayV64View: View {
     private var lockBand: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("今日 1枚 撮ると、きのうが ひらく").font(LF.inter(800, 14)).foregroundStyle(.white)
-                Text("友だちの 写真は ぼかしと ひとこと だけ").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.55))
+                Text("今日 1枚 撮ると、きのうが ひらく").font(Typo.ui(800, 14)).foregroundStyle(.white)
+                Text("友だちの 写真は ぼかしと ひとこと だけ").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.55))
             }
             Spacer(minLength: 0)
-            Button { Haptics.play(.click); actions.shoot() } label: { Text("撮る").font(LF.inter(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 18).frame(height: 36).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.95))
+            Button { Haptics.play(.click); actions.shoot() } label: { Text("撮る").font(Typo.ui(800, 14)).foregroundStyle(HV.ink).padding(.horizontal, 18).frame(height: 36).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.95))
         }
         .padding(.horizontal, 16).padding(.vertical, 14).background(Color(hex: "121314"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
@@ -395,7 +395,7 @@ struct YesterdayV64View: View {
     private var lockedLabel: some View {
         VStack(spacing: 10) {
             Image(systemName: "lock.fill").font(.system(size: 26, weight: .semibold)).foregroundStyle(.white)
-            Text("あした 9:00 に ひらく").font(LF.inter(800, 15)).foregroundStyle(.white)
+            Text("あした 9:00 に ひらく").font(Typo.ui(800, 15)).foregroundStyle(.white)
         }.shadow(color: .black.opacity(0.4), radius: 6)
     }
 
@@ -408,11 +408,11 @@ struct YesterdayV64View: View {
             HStack(spacing: 10) {
                 avatarCircle(post.avatar, name: post.name, size: 36)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(post.name).font(LF.inter(700, 15)).foregroundStyle(.white)
-                    Text(post.published ? [post.place, post.when].filter { !$0.isEmpty }.joined(separator: " ・ ") : "まだ 公開して いません").font(LF.inter(500, 12.5)).foregroundStyle(.white.opacity(0.5))
+                    Text(post.name).font(Typo.ui(700, 15)).foregroundStyle(.white)
+                    Text(post.published ? [post.place, post.when].filter { !$0.isEmpty }.joined(separator: " ・ ") : "まだ 公開して いません").font(Typo.ui(500, 12.5)).foregroundStyle(.white.opacity(0.5))
                 }
                 Spacer(minLength: 0)
-                Text("···").font(LF.inter(900, 18)).foregroundStyle(.white).frame(width: 36, height: 36)
+                Text("···").font(Typo.ui(900, 18)).foregroundStyle(.white).frame(width: 36, height: 36)
             }.padding(.horizontal, 16).padding(.top, 2)
             // 写真
             ZStack(alignment: .topLeading) {
@@ -451,7 +451,7 @@ struct YesterdayV64View: View {
                         }
                     }.padding(12)
                     if let t = big?.time {
-                        Text(t).font(LF.mono(11)).fontWeight(.bold).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 26).background(.black.opacity(0.45), in: Capsule())
+                        Text(t).font(Typo.label(11)).fontWeight(.bold).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 26).background(.black.opacity(0.45), in: Capsule())
                             .frame(width: w - 16, alignment: .trailing).padding(.top, 12).padding(.trailing, 12)
                     }
                     if !input.locked {
@@ -477,8 +477,8 @@ struct YesterdayV64View: View {
                     }.padding(.horizontal, 16)
                 }.padding(.top, 14)
             }
-            if let cap = post.caption, !cap.isEmpty { Text(cap).font(LF.inter(500, 14.5)).foregroundStyle(.white).padding(.horizontal, 16).padding(.top, 12) }
-            if post.published && !input.locked { Text("コメントを 追加…").font(LF.inter(500, 14.5)).foregroundStyle(.white.opacity(0.45)).padding(.horizontal, 16).padding(.top, 8) }
+            if let cap = post.caption, !cap.isEmpty { Text(cap).font(Typo.ui(500, 14.5)).foregroundStyle(.white).padding(.horizontal, 16).padding(.top, 12) }
+            if post.published && !input.locked { Text("コメントを 追加…").font(Typo.ui(500, 14.5)).foregroundStyle(.white.opacity(0.45)).padding(.horizontal, 16).padding(.top, 8) }
             Color.clear.frame(height: 22)
         }
     }
@@ -486,8 +486,8 @@ struct YesterdayV64View: View {
     private func tagPill(_ tag: String, on: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Text("#").font(LF.inter(900, 14)).foregroundStyle(on ? HV.lime : .white).frame(width: 24, height: 24).background(on ? Color.black : Color.white.opacity(0.14), in: Circle())
-                Text(tag).font(LF.inter(800, 13.5)).foregroundStyle(on ? HV.ink : .white.opacity(0.78))
+                Text("#").font(Typo.ui(900, 14)).foregroundStyle(on ? HV.lime : .white).frame(width: 24, height: 24).background(on ? Color.black : Color.white.opacity(0.14), in: Circle())
+                Text(tag).font(Typo.ui(800, 13.5)).foregroundStyle(on ? HV.ink : .white.opacity(0.78))
             }
             .padding(.leading, 4).padding(.trailing, 14).frame(height: 32)
             .background(on ? HV.lime : Color.white.opacity(0.08), in: Capsule())
@@ -498,7 +498,7 @@ struct YesterdayV64View: View {
     func avatarCircle(_ img: UIImage?, name: String, size: CGFloat) -> some View {
         ZStack {
             if let img { Image(uiImage: img).resizable().scaledToFill() }
-            else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(LF.inter(900, size * 0.4)).foregroundStyle(.white)) }
+            else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(name.prefix(1))).font(Typo.ui(900, size * 0.4)).foregroundStyle(.white)) }
         }.frame(width: size, height: size).clipShape(Circle())
     }
 
@@ -513,7 +513,7 @@ struct YesterdayV64View: View {
             Color.black.opacity(0.55).ignoresSafeArea().onTapGesture { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.25)) { notices = false } }
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("通知").font(LF.inter(900, 24)).foregroundStyle(.white)
+                    Text("通知").font(Typo.ui(900, 24)).foregroundStyle(.white)
                     Spacer()
                     Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.25)) { notices = false } } label: {
                         Image(systemName: "xmark").font(.system(size: 14, weight: .black)).foregroundStyle(.white).frame(width: 40, height: 40).background(.white.opacity(0.12), in: Circle())
@@ -537,18 +537,18 @@ struct YesterdayV64View: View {
         HStack(spacing: 14) {
             switch n.kind {
             case .person: avatarCircle(n.avatar, name: n.name, size: 42)
-            case .lattag: Text("#").font(LF.inter(900, 22)).foregroundStyle(HV.ink).frame(width: 42, height: 42).background(HV.lime, in: Circle())
+            case .lattag: Text("#").font(Typo.ui(900, 22)).foregroundStyle(HV.ink).frame(width: 42, height: 42).background(HV.lime, in: Circle())
             }
             VStack(alignment: .leading, spacing: 4) {
-                (Text(n.name).font(LF.inter(800, 15)).foregroundColor(.white) + Text(" " + n.text).font(LF.inter(600, 15)).foregroundColor(.white.opacity(0.88))).lineLimit(1).minimumScaleFactor(0.85)
+                (Text(n.name).font(Typo.ui(800, 15)).foregroundColor(.white) + Text(" " + n.text).font(Typo.ui(600, 15)).foregroundColor(.white.opacity(0.88))).lineLimit(1).minimumScaleFactor(0.85)
                 HStack(spacing: 5) {
                     if n.isNew { Circle().fill(HV.lime).frame(width: 5, height: 5) }
-                    Text(n.time).font(LF.inter(600, 12.5)).foregroundStyle(.white.opacity(0.5))
+                    Text(n.time).font(Typo.ui(600, 12.5)).foregroundStyle(.white.opacity(0.5))
                 }
             }
             Spacer(minLength: 0)
             if let id = n.approveID {
-                Button { Haptics.play(.success); actions.approve(id) } label: { Text("承認").font(LF.inter(800, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 32).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.94))
+                Button { Haptics.play(.success); actions.approve(id) } label: { Text("承認").font(Typo.ui(800, 13)).foregroundStyle(HV.ink).padding(.horizontal, 16).frame(height: 32).background(HV.lime, in: Capsule()) }.buttonStyle(HVPress(scale: 0.94))
             }
         }
     }
@@ -566,8 +566,8 @@ struct YesterdayV64View: View {
             Image(systemName: "ellipsis").font(.system(size: 17, weight: .black)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.12), in: Circle())
                 .frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 12).padding(.top, 56)
             VStack(spacing: 4) {
-                Text("あなたの きのう").font(LF.inter(900, 22)).foregroundStyle(.white)
-                Text("\(min(photos.count, mineIndex + 1)) / \(photos.count) ・ \(p?.time ?? "")").font(LF.mono(11)).foregroundStyle(.white.opacity(0.5))
+                Text("あなたの きのう").font(Typo.ui(900, 22)).foregroundStyle(.white)
+                Text("\(min(photos.count, mineIndex + 1)) / \(photos.count) ・ \(p?.time ?? "")").font(Typo.label(11)).foregroundStyle(.white.opacity(0.5))
             }.padding(.top, 58)
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .top) {
@@ -583,11 +583,11 @@ struct YesterdayV64View: View {
                 HStack(spacing: 8) {
                     ForEach(Array(photos.enumerated()), id: \.element.id) { i, ph in if let tag = ph.tag { tagPill(tag, on: i == mineIndex) { Haptics.play(.pop); mineIndex = i } } }
                 }.padding(.horizontal, 16).padding(.top, 12)
-                Text(input.mineCaption ?? "キャプションを 追加…").font(LF.inter(600, 16)).foregroundStyle(.white).padding(.horizontal, 16).padding(.top, 16)
+                Text(input.mineCaption ?? "キャプションを 追加…").font(Typo.ui(600, 16)).foregroundStyle(.white).padding(.horizontal, 16).padding(.top, 16)
                 HStack(spacing: 8) {
-                    Text("リアクション").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.5))
+                    Text("リアクション").font(Typo.ui(700, 14)).foregroundStyle(.white.opacity(0.5))
                     HStack(spacing: -12) { ForEach(Array((input.posts.first?.reactors ?? []).prefix(3).enumerated()), id: \.offset) { _, r in avatarCircle(r, name: "", size: 32).overlay(Circle().strokeBorder(.black, lineWidth: 2)) } }
-                    Text("\(min(3, input.posts.first?.reactors.count ?? 0))").font(LF.inter(800, 16)).foregroundStyle(.white)
+                    Text("\(min(3, input.posts.first?.reactors.count ?? 0))").font(Typo.ui(800, 16)).foregroundStyle(.white)
                 }.padding(.horizontal, 16).padding(.top, 14)
             }.padding(.top, 115)
         }
@@ -600,8 +600,8 @@ struct YesterdayV64View: View {
         ZStack(alignment: .topLeading) {
             Color(hex: "0A0A0B")
             VStack(spacing: 2) {
-                Text(c.name).font(LF.serif(26)).foregroundStyle(.white)
-                Text(c.time.map { "yesterday · \($0)" } ?? "today's one · picked by the world").font(LF.inter(500, 12.5)).foregroundStyle(Color(hex: "8E8E93"))
+                Text(c.name).font(Typo.title(26)).foregroundStyle(.white)
+                Text(c.time.map { "yesterday · \($0)" } ?? "today's one · picked by the world").font(Typo.ui(500, 12.5)).foregroundStyle(Color(hex: "8E8E93"))
             }.frame(width: 246).offset(x: 72, y: 55)
             Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.25)) { viewing = nil } } label: {
                 Image(systemName: "arrow.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white).frame(width: 48, height: 48).background(Color(hex: "161618"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -609,12 +609,12 @@ struct YesterdayV64View: View {
             ZStack { Color(hex: "2A2326"); if let img = c.photo { Image(uiImage: img).resizable().scaledToFill() } }
                 .frame(width: 362, height: 560).clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous)).offset(x: 14, y: 118)
             if let tag = c.tag {
-                Text(tag.hasPrefix("#") ? tag : "#\(tag)").font(LF.inter(900, 15)).foregroundStyle(HV.ink).frame(width: 81, height: 36)
+                Text(tag.hasPrefix("#") ? tag : "#\(tag)").font(Typo.ui(900, 15)).foregroundStyle(HV.ink).frame(width: 81, height: 36)
                     .background(Color(hex: "9ED8FF"), in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(-6)).offset(x: 29, y: 628)
             }
             if let m = c.music { FriendMusicChip(pick: m).offset(x: 14, y: 690) }
             Button { Haptics.play(.pop); actions.openPhoto(c.id) } label: {
-                Text("reply").font(LF.inter(800, 15)).foregroundStyle(HV.ink).frame(width: 106, height: 56).background(.white, in: Capsule())
+                Text("reply").font(Typo.ui(800, 15)).foregroundStyle(HV.ink).frame(width: 106, height: 56).background(.white, in: Capsule())
             }.buttonStyle(HVPress(scale: 0.96)).offset(x: 142, y: 732)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(Color(hex: "0A0A0B")).ignoresSafeArea()
@@ -649,8 +649,8 @@ struct FriendMusicChip: View {
             HStack(spacing: 8) {
                 MusicDisc(artworkURL: pick.artworkURL, seed: pick.title, spinning: playback.isPlaying(key)).frame(width: 30, height: 30)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(pick.title).font(LF.inter(800, 12)).foregroundStyle(.white).lineLimit(1)
-                    Text(pick.artist).font(LF.inter(600, 10.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                    Text(pick.title).font(Typo.ui(800, 12)).foregroundStyle(.white).lineLimit(1)
+                    Text(pick.artist).font(Typo.ui(600, 10.5)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
                 }
                 MusicEqualizer(animating: playback.isPlaying(key), lime: true)
             }.padding(.leading, 6).padding(.trailing, 12).frame(height: 44).background(.white.opacity(0.1), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
@@ -682,10 +682,10 @@ struct SamplePostV94: View {
         ZStack(alignment: .topTrailing) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 10) {
-                    Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).frame(width: 40, height: 40).overlay(Text("あ").font(LF.inter(900, 17)).foregroundStyle(.white))
-                    VStack(alignment: .leading, spacing: 2) { Text("あや").font(LF.inter(800, 16)).foregroundStyle(.white); Text("@aya_0612 ・ きのう 3こま").font(LF.mono(10)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7) }
+                    Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).frame(width: 40, height: 40).overlay(Text("あ").font(Typo.ui(900, 17)).foregroundStyle(.white))
+                    VStack(alignment: .leading, spacing: 2) { Text("あや").font(Typo.ui(800, 16)).foregroundStyle(.white); Text("@aya_0612 ・ きのう 3こま").font(Typo.label(10)).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7) }
                     Spacer()
-                    Text("9:00 OPEN").font(LF.mono(9.5)).tracking(1).foregroundStyle(HV.lime).lineLimit(1).fixedSize().padding(.trailing, 70).padding(.top, 2)
+                    Text("9:00 OPEN").font(Typo.label(9.5)).tracking(1).foregroundStyle(HV.lime).lineLimit(1).fixedSize().padding(.trailing, 70).padding(.top, 2)
                 }.padding(.horizontal, 16).padding(.top, 16)
                 ZStack {
                     ForEach(0..<3, id: \.self) { i in
@@ -695,21 +695,21 @@ struct SamplePostV94: View {
                             .rotationEffect(.degrees([-8.0, 2, 9][i])).offset(x: [-86, 0, 86][i] as CGFloat, y: shown || reduceMotion ? 0 : 40).opacity(shown || reduceMotion ? 1 : 0)
                             .animation(.timingCurve(0.2, 0.8, 0.3, 1, duration: 0.62).delay(0.09 * Double(i)), value: shown)
                     }
-                    Text("#放課後").font(LF.inter(900, 12)).foregroundStyle(HV.ink).padding(.horizontal, 9).frame(height: 26).background(HV.lime, in: RoundedRectangle(cornerRadius: 9)).rotationEffect(.degrees(-6)).offset(x: -96, y: -64)
-                    Text("#カフェ").font(LF.inter(900, 12)).foregroundStyle(.white).padding(.horizontal, 9).frame(height: 26).background(Color(hex: "EE5E9C"), in: RoundedRectangle(cornerRadius: 9)).rotationEffect(.degrees(5)).offset(x: 98, y: 62)
+                    Text("#放課後").font(Typo.ui(900, 12)).foregroundStyle(HV.ink).padding(.horizontal, 9).frame(height: 26).background(HV.lime, in: RoundedRectangle(cornerRadius: 9)).rotationEffect(.degrees(-6)).offset(x: -96, y: -64)
+                    Text("#カフェ").font(Typo.ui(900, 12)).foregroundStyle(.white).padding(.horizontal, 9).frame(height: 26).background(Color(hex: "EE5E9C"), in: RoundedRectangle(cornerRadius: 9)).rotationEffect(.degrees(5)).offset(x: 98, y: 62)
                 }.frame(maxWidth: .infinity).frame(height: 210).padding(.top, 10)
                 HStack(spacing: 8) {
-                    Label("鎌倉市", systemImage: "mappin").font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.7))
-                    Label("夕焼けの 歌", systemImage: "music.note").font(LF.inter(700, 11.5)).foregroundStyle(.white.opacity(0.7))
+                    Label("鎌倉市", systemImage: "mappin").font(Typo.ui(700, 11.5)).foregroundStyle(.white.opacity(0.7))
+                    Label("夕焼けの 歌", systemImage: "music.note").font(Typo.ui(700, 11.5)).foregroundStyle(.white.opacity(0.7))
                     Spacer()
                 }.padding(.horizontal, 16).padding(.top, 4)
                 HStack(spacing: 14) {
                     Image(systemName: "heart").font(.system(size: 19, weight: .semibold)); Image(systemName: "bubble.left").font(.system(size: 19, weight: .semibold))
                     Spacer()
-                    Text("あや ・ ほか 2人が 見た").font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.5))
+                    Text("あや ・ ほか 2人が 見た").font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.5))
                 }.foregroundStyle(.white).padding(.horizontal, 16).padding(.vertical, 14)
             }
-            Text("SAMPLE").font(LF.mono(10)).fontWeight(.bold).tracking(1.6).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 24).background(HV.lime, in: Capsule()).padding(14)
+            Text("SAMPLE").font(Typo.label(10)).fontWeight(.bold).tracking(1.6).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 24).background(HV.lime, in: Capsule()).padding(14)
         }
         .background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 30, style: .continuous))
         .padding(.horizontal, 8)

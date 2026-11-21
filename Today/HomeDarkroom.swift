@@ -26,13 +26,13 @@ enum Darkroom {
     /// 見出し:英字は Instrument Serif、日本語が 入れば ヒラギノ明朝 W6
     static func title(_ text: String, size: CGFloat) -> Font {
         let japanese = text.unicodeScalars.contains { (0x3040...0x30FF).contains($0.value) || (0x4E00...0x9FFF).contains($0.value) }
-        return japanese ? .custom("HiraMinProN-W6", size: size * 0.82) : .custom("InstrumentSerif-Regular", size: size)
+        return japanese ? Typo.mincho(size * 0.82) : .custom("InstrumentSerif-Regular", size: size)
     }
 
     /// 数字・名前:Instrument Serif イタリック(日本語は 明朝)
     static func italic(_ text: String, size: CGFloat) -> Font {
         let japanese = text.unicodeScalars.contains { (0x3040...0x30FF).contains($0.value) || (0x4E00...0x9FFF).contains($0.value) }
-        return japanese ? .custom("HiraMinProN-W6", size: size * 0.8) : .custom("InstrumentSerif-Italic", size: size)
+        return japanese ? Typo.mincho(size * 0.8) : .custom("InstrumentSerif-Italic", size: size)
     }
 
     /// ラベル(大文字・字間 広め)
@@ -730,7 +730,7 @@ struct DarkroomSection: View {
                                 .blur(radius: locked ? 9 : 0)
                             LinearGradient(stops: [.init(color: .black.opacity(0.35), location: 0), .init(color: .clear, location: 0.38), .init(color: .black.opacity(0.65), location: 1)], startPoint: .top, endPoint: .bottom)
                             Text(verbatim: String(format: "%02d", i + 1)).font(.custom("InstrumentSerif-Italic", size: 30)).padding(.leading, 12).padding(.top, 10)
-                            Text(verbatim: "#\(word.tag)").font(.custom("HiraMinProN-W6", size: 17)).lineLimit(2)
+                            Text(verbatim: "#\(word.tag)").font(Typo.mincho(17)).lineLimit(2)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                                 .padding(.leading, 12).padding(.trailing, 10).padding(.bottom, 13)
                         }
@@ -936,13 +936,13 @@ struct ActiveGroupCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Spacer(minLength: 0)
                     Text(verbatim: group.name)
-                        .font(LF.serif(36)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
+                        .font(Typo.title(36)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
                         .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
                     Label { Text(verbatim: status) } icon: { Image(systemName: "clock") }
                         .font(Darkroom.mono(9)).foregroundStyle(.white.opacity(0.8))
                     HStack(spacing: 8) {
                         activeFilmStrip
-                        Text(verbatim: "\(frames)/23").font(LF.serif(22)).foregroundStyle(.white)
+                        Text(verbatim: "\(frames)/23").font(Typo.title(22)).foregroundStyle(.white)
                     }
                     .padding(.top, 2)
                     HStack {
@@ -1009,7 +1009,7 @@ struct ActiveNewGroupCard: View {
                     .overlay(Image(systemName: "plus").font(.system(size: 20, weight: .bold)).foregroundStyle(Color(hex: "111111")))
                     .frame(width: 48, height: 48)
                 VStack(spacing: 3) {
-                    Text(verbatim: "New trip").font(LF.serif(24)).foregroundStyle(.white)
+                    Text(verbatim: "New trip").font(Typo.title(24)).foregroundStyle(.white)
                     Text(verbatim: "旅行 ・ 合宿 ・ イベント").font(.system(size: 10, weight: .medium)).foregroundStyle(.white.opacity(0.5))
                 }
                 Spacer(minLength: 0)

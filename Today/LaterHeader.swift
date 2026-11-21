@@ -55,9 +55,7 @@ struct LaterHeaderSchedule: TimelineSchedule {
 
 private enum HeaderFont {
     static func logo() -> Font {
-        UIFont(name: "Inter-Black", size: 31) != nil
-            ? .custom("Inter-Black", fixedSize: 31)
-            : .system(size: 31, weight: .heavy, design: .rounded)
+        Typo.ui(900, 31)
     }
 
     static func label() -> Font {
@@ -67,15 +65,11 @@ private enum HeaderFont {
     }
 
     static func mono(_ size: CGFloat) -> Font {
-        UIFont(name: "SpaceMono-Bold", size: size) != nil
-            ? .custom("SpaceMono-Bold", fixedSize: size)
-            : .system(size: size, weight: .bold, design: .monospaced)
+        Typo.label(size)
     }
 
     static func initial() -> Font {
-        UIFont(name: "Inter-Black", size: 15) != nil
-            ? .custom("Inter-Black", fixedSize: 15)
-            : .system(size: 15, weight: .heavy, design: .rounded)
+        Typo.ui(900, 15)
     }
 }
 
@@ -217,12 +211,12 @@ struct LaterHeader: View {
         let content = HStack(spacing: 8) {
             progressRing(progress: progress, dotColor: dotColor)
             Text(label)
-                .font(LF.inter(600, 11.5))
+                .font(Typo.ui(600, 11.5))
                 .tracking(0.23)
                 .foregroundStyle(palette.isNight ? palette.sub : LaterColor.Day.sub)
                 .lineLimit(1)
             Text(timeText)
-                .font(LF.inter(700, 13.5))
+                .font(Typo.ui(700, 13.5))
                 .tracking(-0.135)
                 .monospacedDigit()
                 .contentTransition(.numericText(countsDown: true))
@@ -239,7 +233,7 @@ struct LaterHeader: View {
                 }
             }
             Text("\(remaining)")
-                .font(LF.inter(700, 12.5))
+                .font(Typo.ui(700, 12.5))
                 .tracking(0.25)
                 .foregroundStyle(textColor)
             Image(systemName: "chevron.down")

@@ -83,15 +83,15 @@ struct BoardingGateV111: View {
     private var pass: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("TRIP PASS").font(LF.mono(10.5)).tracking(2.3).foregroundStyle(Color(hex: "7A776C"))
+                Text("TRIP PASS").font(Typo.label(10.5)).tracking(2.3).foregroundStyle(Color(hex: "7A776C"))
                 Text(tripName).font(LGFont.mincho(32)).foregroundStyle(PopColor.ground).lineLimit(1).minimumScaleFactor(0.6)
-                Text("\(dateText) ・ KEY").font(LF.mono(11.5)).foregroundStyle(Color(hex: "5A574E")).lineLimit(1)
+                Text("\(dateText) ・ KEY").font(Typo.label(11.5)).foregroundStyle(Color(hex: "5A574E")).lineLimit(1)
                 HStack(spacing: 14) {
                     avatar(44).opacity(flightStage == 0 ? 1 : 0)
                         .overlay { Circle().strokeBorder(c, lineWidth: 3).frame(width: 50, height: 50).opacity(flightStage == 0 ? 1 : 0) }
                         .onGeometryChange(for: CGPoint.self) { let f = $0.frame(in: .named("pass")); return CGPoint(x: f.midX, y: f.midY) } action: { meLocal = $0 }
-                    VStack(alignment: .leading, spacing: 0) { Text("PASSENGER").font(LF.mono(9.5)).foregroundStyle(Color(hex: "8C8778")); Text(myName).font(.system(size: 17, weight: .black)).foregroundStyle(PopColor.ground).lineLimit(1) }
-                    VStack(alignment: .leading, spacing: 0) { Text("SEAT").font(LF.mono(9.5)).foregroundStyle(Color(hex: "8C8778")); Text(seatName).font(.system(size: 17, weight: .black)).foregroundStyle(PopColor.ground) }
+                    VStack(alignment: .leading, spacing: 0) { Text("PASSENGER").font(Typo.label(9.5)).foregroundStyle(Color(hex: "8C8778")); Text(myName).font(.system(size: 17, weight: .black)).foregroundStyle(PopColor.ground).lineLimit(1) }
+                    VStack(alignment: .leading, spacing: 0) { Text("SEAT").font(Typo.label(9.5)).foregroundStyle(Color(hex: "8C8778")); Text(seatName).font(.system(size: 17, weight: .black)).foregroundStyle(PopColor.ground) }
                 }.padding(.top, 12).padding(.top, 0)
                     .overlay(alignment: .top) { Rectangle().stroke(Color(hex: "D8D4C8"), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])).frame(height: 1.5) }
             }
@@ -99,7 +99,7 @@ struct BoardingGateV111: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(PopColor.paper, in: UnevenRoundedRectangle(topLeadingRadius: 22, bottomLeadingRadius: 22, bottomTrailingRadius: 0, topTrailingRadius: 0, style: .continuous))
             VStack(spacing: 4) {
-                Text("GATE").font(LF.mono(9.5)).tracking(1.5)
+                Text("GATE").font(Typo.label(9.5)).tracking(1.5)
                 Text("9:00").font(.system(size: 22, weight: .black))
                 HStack(spacing: 1.5) { ForEach(0..<9, id: \.self) { i in Rectangle().frame(width: i % 3 == 0 ? 2 : 1, height: 30) } }.padding(.top, 4)
             }
@@ -125,7 +125,7 @@ struct BoardingGateV111: View {
 
     private var seats: some View {
         VStack(spacing: 10) {
-            Text("FRONT").font(LF.mono(10)).tracking(3).foregroundStyle(.white.opacity(0.5))
+            Text("FRONT").font(Typo.label(10)).tracking(3).foregroundStyle(.white.opacity(0.5))
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(0..<seatCount, id: \.self) { i in seat(i) }
             }
@@ -147,9 +147,9 @@ struct BoardingGateV111: View {
                     Text(myName).font(.system(size: 11, weight: .heavy)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
                 } else if taken {
                     Circle().fill(PopColor.tripCycle[i % 4]).frame(width: 34, height: 34)
-                    Text(Self.label(i)).font(LF.mono(11)).foregroundStyle(Color(hex: "55555C"))
+                    Text(Self.label(i)).font(Typo.label(11)).foregroundStyle(Color(hex: "55555C"))
                 } else {
-                    Text(Self.label(i)).font(LF.mono(11)).foregroundStyle(Color(hex: "55555C"))
+                    Text(Self.label(i)).font(Typo.label(11)).foregroundStyle(Color(hex: "55555C"))
                 }
             }.padding(.horizontal, 2)
         }
@@ -163,7 +163,7 @@ struct BoardingGateV111: View {
 
     private var stampView: some View {
         VStack(spacing: 4) {
-            Text("\(dateText) ・ \(seatName)").font(LF.mono(11)).tracking(2.2)
+            Text("\(dateText) ・ \(seatName)").font(Typo.label(11)).tracking(2.2)
             Text("WELCOME\nABOARD").font(.system(size: 34, weight: .black)).tracking(1.4).multilineTextAlignment(.center).lineSpacing(0)
         }
         .foregroundStyle(PopColor.lime).padding(.horizontal, 22).padding(.top, 14).padding(.bottom, 12)

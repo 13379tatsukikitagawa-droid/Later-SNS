@@ -60,7 +60,7 @@ struct TripSettingsV106Sheet: View {
                 }.scrollDismissesKeyboard(.interactively)
             }
             if let toast {
-                Text(toast).font(LF.inter(700, 13)).foregroundStyle(.white).padding(.horizontal, 16).padding(.vertical, 10)
+                Text(toast).font(Typo.ui(700, 13)).foregroundStyle(.white).padding(.horizontal, 16).padding(.vertical, 10)
                     .background(.black.opacity(0.85), in: Capsule()).padding(.top, 70).transition(.opacity)
             }
         }
@@ -85,12 +85,12 @@ struct TripSettingsV106Sheet: View {
 
     private var topBar: some View {
         HStack {
-            Button { Haptics.play(.tick); onClose() } label: { Text("とじる").font(LF.inter(700, 15)).foregroundStyle(.white.opacity(0.8)).frame(minWidth: 64, minHeight: 44, alignment: .leading) }
+            Button { Haptics.play(.tick); onClose() } label: { Text("とじる").font(Typo.ui(700, 15)).foregroundStyle(.white.opacity(0.8)).frame(minWidth: 64, minHeight: 44, alignment: .leading) }
             Spacer()
-            Text("Trip の 設定").font(LF.inter(900, 17)).foregroundStyle(.white)
+            Text("Trip の 設定").font(Typo.ui(900, 17)).foregroundStyle(.white)
             Spacer()
             Button { save() } label: {
-                Text("保存").font(LF.inter(900, 14)).foregroundStyle(changed ? HV.ink : .white.opacity(0.3)).padding(.horizontal, 16).frame(height: 36, alignment: .center)
+                Text("保存").font(Typo.ui(900, 14)).foregroundStyle(changed ? HV.ink : .white.opacity(0.3)).padding(.horizontal, 16).frame(height: 36, alignment: .center)
                     .background(changed ? HV.lime : Color.white.opacity(0.08), in: Capsule()).frame(minWidth: 64, minHeight: 44, alignment: .trailing)
             }.disabled(!changed || saving)
         }.padding(.horizontal, 16).padding(.top, 14)
@@ -104,9 +104,9 @@ struct TripSettingsV106Sheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             LinearGradient(colors: [.clear, .black.opacity(0.7)], startPoint: .center, endPoint: .bottom).clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             VStack(alignment: .leading, spacing: 4) {
-                Text("TRIP PASS").font(LF.mono(10)).tracking(2.4).foregroundStyle(HV.lime)
-                Text(name.isEmpty ? " " : name).font(LF.serif(40)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
-                Text("\(group.members.count)人").font(LF.mono(11)).foregroundStyle(.white.opacity(0.7))
+                Text("TRIP PASS").font(Typo.label(10)).tracking(2.4).foregroundStyle(HV.lime)
+                Text(name.isEmpty ? " " : name).font(Typo.title(40)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
+                Text("\(group.members.count)人").font(Typo.label(11)).foregroundStyle(.white.opacity(0.7))
             }.padding(18)
         }
         .frame(width: 250, height: 330)
@@ -123,7 +123,7 @@ struct TripSettingsV106Sheet: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { withAnimation(.timingCurve(0.3, 1.3, 0.5, 1, duration: 0.2)) { pulse = false } }
     }
 
-    private func label(_ t: String) -> some View { Text(t).font(LF.mono(10.5)).tracking(2).foregroundStyle(.white.opacity(0.45)) }
+    private func label(_ t: String) -> some View { Text(t).font(Typo.label(10.5)).tracking(2).foregroundStyle(.white.opacity(0.45)) }
 
     private var coverRow: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -131,7 +131,7 @@ struct TripSettingsV106Sheet: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     PhotosPicker(selection: $picker, matching: .images) {
-                        VStack(spacing: 6) { Image(systemName: "photo.on.rectangle").font(.system(size: 22, weight: .semibold)); Text("写真を えらぶ").font(LF.inter(700, 11)) }
+                        VStack(spacing: 6) { Image(systemName: "photo.on.rectangle").font(.system(size: 22, weight: .semibold)); Text("写真を えらぶ").font(Typo.ui(700, 11)) }
                             .foregroundStyle(.white).frame(width: 84, height: 112).background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                     ForEach(tripPhotos, id: \.id) { p in
@@ -161,8 +161,8 @@ struct TripSettingsV106Sheet: View {
         VStack(alignment: .leading, spacing: 10) {
             label("NAME")
             HStack {
-                TextField("", text: $name, prompt: Text("Trip の なまえ").foregroundColor(.white.opacity(0.3))).font(LF.inter(800, 18)).foregroundStyle(.white).focused($focused)
-                Text("\(name.count) / \(GroupNameRules.maxLength)").font(LF.mono(11)).foregroundStyle(.white.opacity(0.4))
+                TextField("", text: $name, prompt: Text("Trip の なまえ").foregroundColor(.white.opacity(0.3))).font(Typo.ui(800, 18)).foregroundStyle(.white).focused($focused)
+                Text("\(name.count) / \(GroupNameRules.maxLength)").font(Typo.label(11)).foregroundStyle(.white.opacity(0.4))
             }.padding(.horizontal, 16).frame(height: 54).background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
@@ -174,19 +174,19 @@ struct TripSettingsV106Sheet: View {
             VStack(spacing: 0) {
                 if hasDates {
                     HStack {
-                        Text("はじまり").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.7))
+                        Text("はじまり").font(Typo.ui(700, 14)).foregroundStyle(.white.opacity(0.7))
                         Spacer()
                         DatePicker("", selection: $start, displayedComponents: .date).labelsHidden().tint(HV.lime)
                     }.padding(.horizontal, 16).frame(height: 52)
                     Divider().overlay(.white.opacity(0.08))
                     HStack {
-                        Text("おわり").font(LF.inter(700, 14)).foregroundStyle(.white.opacity(0.7))
+                        Text("おわり").font(Typo.ui(700, 14)).foregroundStyle(.white.opacity(0.7))
                         Spacer()
                         DatePicker("", selection: $end, in: start..., displayedComponents: .date).labelsHidden().tint(HV.lime)
                     }.padding(.horizontal, 16).frame(height: 52)
                 } else {
                     Button { Haptics.play(.pop); withAnimation(.easeOut(duration: 0.2)) { hasDates = true } } label: {
-                        HStack { Image(systemName: "calendar.badge.plus").font(.system(size: 16, weight: .semibold)); Text("日にちを 入れる").font(LF.inter(800, 15)); Spacer() }
+                        HStack { Image(systemName: "calendar.badge.plus").font(.system(size: 16, weight: .semibold)); Text("日にちを 入れる").font(Typo.ui(800, 15)); Spacer() }
                             .foregroundStyle(HV.lime).padding(.horizontal, 16).frame(height: 54)
                     }.buttonStyle(.plain)
                 }
@@ -221,16 +221,16 @@ struct TripSettingsV106Sheet: View {
                         VStack(spacing: 6) {
                             ZStack {
                                 Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                if let d = m.profileImageData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(m.name.prefix(1))).font(LF.inter(900, 16)).foregroundStyle(.white) }
+                                if let d = m.profileImageData, let i = UIImage(data: d) { Image(uiImage: i).resizable().scaledToFill() } else { Text(String(m.name.prefix(1))).font(Typo.ui(900, 16)).foregroundStyle(.white) }
                             }.frame(width: 40, height: 40).clipShape(Circle())
-                            Text(m.name).font(LF.inter(600, 11)).foregroundStyle(.white.opacity(0.8)).lineLimit(1).frame(width: 56)
+                            Text(m.name).font(Typo.ui(600, 11)).foregroundStyle(.white.opacity(0.8)).lineLimit(1).frame(width: 56)
                         }
                     }
                     Button { Haptics.play(.click); onInvite() } label: {
                         VStack(spacing: 6) {
                             Image(systemName: "plus").font(.system(size: 16, weight: .bold)).foregroundStyle(HV.lime).frame(width: 40, height: 40)
                                 .overlay(Circle().strokeBorder(HV.lime.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])))
-                            Text("よぶ").font(LF.inter(700, 11)).foregroundStyle(HV.lime)
+                            Text("よぶ").font(Typo.ui(700, 11)).foregroundStyle(HV.lime)
                         }.frame(minWidth: 44, minHeight: 44)
                     }.buttonStyle(.plain)
                 }
@@ -241,7 +241,7 @@ struct TripSettingsV106Sheet: View {
     private var noticeRow: some View {
         VStack(alignment: .leading, spacing: 10) {
             label("NOTICE")
-            Toggle(isOn: $chatOn) { Text("Trip の チャット").font(LF.inter(700, 15)).foregroundStyle(.white) }
+            Toggle(isOn: $chatOn) { Text("Trip の チャット").font(Typo.ui(700, 15)).foregroundStyle(.white) }
                 .tint(HV.lime).padding(.horizontal, 16).frame(minHeight: 54).background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .onChange(of: chatOn) { _, on in GroupChatStore.shared.setMuted(group.id, !on); Haptics.play(.sel) }
         }
@@ -254,7 +254,7 @@ struct TripSettingsV106Sheet: View {
         }.padding(.top, 6)
     }
     private func redLabel(_ t: String, _ sub: String) -> some View {
-        HStack { Text(t).font(LF.inter(800, 15)); Spacer(); Text(sub).font(LF.inter(600, 12)).opacity(0.7) }
+        HStack { Text(t).font(Typo.ui(800, 15)); Spacer(); Text(sub).font(Typo.ui(600, 12)).opacity(0.7) }
             .foregroundStyle(Color(hex: "FF453A")).padding(.horizontal, 16).frame(height: 54)
             .background(Color(hex: "FF453A").opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }

@@ -81,8 +81,8 @@ struct DevelopV64View: View {
             }.buttonStyle(.plain).accessibilityLabel("もどる")
             Spacer()
             VStack(spacing: 2) {
-                Text("Developing").font(LF.serif(24)).foregroundStyle(.white)
-                Text("\(page + 1) / \(count)").font(LF.mono(10)).tracking(2).foregroundStyle(Color(hex: "6E6E75"))
+                Text("Developing").font(Typo.title(24)).foregroundStyle(.white)
+                Text("\(page + 1) / \(count)").font(Typo.label(10)).tracking(2).foregroundStyle(Color(hex: "6E6E75"))
             }
             Spacer()
             Color.clear.frame(width: 44, height: 44)
@@ -117,11 +117,11 @@ struct DevelopV64View: View {
                 DevelopWindow(d: i == page ? d : 0, blurred: blurred[safe: i] ?? nil, playing: i == page && playing, reduce: reduceMotion, flash: i == page && flash)
                     .frame(width: 274, height: 360).clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous)).padding(.top, 12)
                 HStack {
-                    Text(times[safe: i] ?? "--:--").font(LF.mono(11)).fontWeight(.bold).foregroundStyle(Color(hex: "E0481A")).shadow(color: Color(hex: "E0481A").opacity(0.5), radius: 3)
+                    Text(times[safe: i] ?? "--:--").font(Typo.label(11)).fontWeight(.bold).foregroundStyle(Color(hex: "E0481A")).shadow(color: Color(hex: "E0481A").opacity(0.5), radius: 3)
                     Spacer()
                     HStack(spacing: 4) { Image(systemName: "lock.fill").font(.system(size: 10)); Text("9:00").font(.custom("Caveat-Bold", size: 19)) }.foregroundStyle(Color(hex: "3A362F"))
                     Spacer()
-                    Text("PHOTO").font(LF.mono(9)).tracking(1.8).foregroundStyle(Color(hex: "8A857B"))
+                    Text("PHOTO").font(Typo.label(9)).tracking(1.8).foregroundStyle(Color(hex: "8A857B"))
                 }.padding(.horizontal, 16).frame(maxHeight: .infinity)
             }
         }
@@ -277,21 +277,21 @@ struct DevelopFooter: View, Animatable {
         let pct = Int((d * 100).rounded())
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .lastTextBaseline) {
-                (Text("\(pct)").font(LF.serif(46, italic: true)) + Text("%").font(LF.serif(22, italic: true)).foregroundColor(Color(hex: "6E6E75"))).foregroundStyle(.white).monospacedDigit()
+                (Text("\(pct)").font(Typo.title(46, italic: true)) + Text("%").font(Typo.title(22, italic: true)).foregroundColor(Color(hex: "6E6E75"))).foregroundStyle(.white).monospacedDigit()
                 Spacer(minLength: 8)
                 HStack(spacing: 6) {
                     Circle().fill(lime).frame(width: 5, height: 5)
-                    Text(playing ? "DEVELOPING" : (done ? "NOW" : (d > 0.001 ? "REPLAY" : "TAP TO DEVELOP"))).font(LF.mono(9.5)).tracking(1.7).foregroundStyle(lime).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(playing ? "DEVELOPING" : (done ? "NOW" : (d > 0.001 ? "REPLAY" : "TAP TO DEVELOP"))).font(Typo.label(9.5)).tracking(1.7).foregroundStyle(lime).lineLimit(1).minimumScaleFactor(0.7)
                 }.padding(.horizontal, 10).frame(height: 26).background(lime.opacity(0.10), in: Capsule())
             }
             bar.padding(.top, 8)
             HStack {
-                Text("\(time) SHOT").font(LF.mono(9)).tracking(1.6).foregroundStyle(Color(hex: "5D5D63"))
+                Text("\(time) SHOT").font(Typo.label(9)).tracking(1.6).foregroundStyle(Color(hex: "5D5D63"))
                 Spacer()
-                Text("9:00 OPENS").font(LF.mono(9)).tracking(1.6).foregroundStyle(lime)
+                Text("9:00 OPENS").font(Typo.label(9)).tracking(1.6).foregroundStyle(lime)
             }.padding(.top, 4)
             button.padding(.top, 16)
-            Text("OPENS IN \(remain / 3600)H \((remain % 3600) / 60)M").font(LF.mono(9.5)).tracking(1.4).foregroundStyle(Color(hex: "5D5D63")).frame(maxWidth: .infinity).padding(.top, 12)
+            Text("OPENS IN \(remain / 3600)H \((remain % 3600) / 60)M").font(Typo.label(9.5)).tracking(1.4).foregroundStyle(Color(hex: "5D5D63")).frame(maxWidth: .infinity).padding(.top, 12)
         }
     }
 
@@ -320,9 +320,9 @@ struct DevelopFooter: View, Animatable {
                 HStack(spacing: 8) {
                     if !done { Image(systemName: shot ? "play.fill" : "camera.fill").font(.system(size: 14)) }
                     VStack(spacing: 1) {
-                        Text(!shot ? "撮る" : (playing ? "現像中" : (done ? "もう一度 見る" : "現像する"))).font(LF.inter(800, 19))
-                        if shot && !playing && !done { Text("\(Int(k * 100))% まで").font(LF.mono(9.5)).opacity(0.55) }
-                        if playing { Text("\(Int((d * 100).rounded()))%").font(LF.mono(9.5)).monospacedDigit().opacity(0.7) }
+                        Text(!shot ? "撮る" : (playing ? "現像中" : (done ? "もう一度 見る" : "現像する"))).font(Typo.ui(800, 19))
+                        if shot && !playing && !done { Text("\(Int(k * 100))% まで").font(Typo.label(9.5)).opacity(0.55) }
+                        if playing { Text("\(Int((d * 100).rounded()))%").font(Typo.label(9.5)).monospacedDigit().opacity(0.7) }
                     }
                 }.foregroundStyle(playing ? lime : (done ? .white : HV.ink)).blendMode(.normal)
             }

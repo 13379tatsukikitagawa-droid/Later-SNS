@@ -94,11 +94,11 @@ struct MEV86View: View {
                 Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).frame(width: 44, height: 44)
                     .background(.white.opacity(0.1), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.12), lineWidth: 1))
             }.buttonStyle(HVPress(scale: 0.92)).accessibilityLabel("もどる")
-            Text("ME").font(LF.inter(900, 40)).tracking(-2).foregroundStyle(.white).padding(.leading, 12)
+            Text("ME").font(Typo.ui(900, 40)).tracking(-2).foregroundStyle(.white).padding(.leading, 12)
             Spacer()
             VStack(alignment: .trailing, spacing: 0) {
-                Text("\(data.shotCount) SHOTS").font(LF.mono(11)).tracking(2.2).foregroundStyle(.white.opacity(0.45))
-                Text(String(data.year)).font(LF.inter(900, 24)).foregroundStyle(.white)
+                Text("\(data.shotCount) SHOTS").font(Typo.label(11)).tracking(2.2).foregroundStyle(.white.opacity(0.45))
+                Text(String(data.year)).font(Typo.ui(900, 24)).foregroundStyle(.white)
             }
         }.padding(.horizontal, 16).padding(.top, 54).padding(.bottom, 16)
     }
@@ -113,14 +113,14 @@ struct MEV86View: View {
                 LinearGradient(stops: [.init(color: .black.opacity(0.55), location: 0), .init(color: .clear, location: 0.3), .init(color: .clear, location: 0.55), .init(color: .black.opacity(0.82), location: 1)], startPoint: .top, endPoint: .bottom)
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
-                        if r.state == .ready { Text("NEW").font(LF.inter(900, 12)).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 28).background(HV.lime, in: Capsule()) }
-                        else { Text("▶ 見た").font(LF.inter(800, 11)).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 28).background(.white.opacity(0.2), in: Capsule()) }
-                        Text("RECAP ・ \(Self.range(r))").font(LF.mono(10)).tracking(1.6).foregroundStyle(.white)
+                        if r.state == .ready { Text("NEW").font(Typo.ui(900, 12)).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 28).background(HV.lime, in: Capsule()) }
+                        else { Text("▶ 見た").font(Typo.ui(800, 11)).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 28).background(.white.opacity(0.2), in: Capsule()) }
+                        Text("RECAP ・ \(Self.range(r))").font(Typo.label(10)).tracking(1.6).foregroundStyle(.white)
                     }
                     HStack(spacing: 4) { ForEach(0..<7, id: \.self) { i in Capsule().fill(.white.opacity(Self.hasDay(r, i, data) ? 0.9 : 0.28)).frame(height: 3) } }
                     Spacer()
-                    Text("Your").font(LF.serif(46)).foregroundStyle(.white).frame(height: 44, alignment: .leading)
-                    Text("week.").font(LF.serif(46, italic: true)).foregroundStyle(HV.lime).frame(height: 46, alignment: .leading)
+                    Text("Your").font(Typo.title(46)).foregroundStyle(.white).frame(height: 44, alignment: .leading)
+                    Text("week.").font(Typo.title(46, italic: true)).foregroundStyle(HV.lime).frame(height: 46, alignment: .leading)
                     HStack(spacing: 8) {
                         chip("\(r.shots) SHOTS"); chip("\(r.days) DAYS"); if let t = r.topTag { chip("#\(t)") }
                     }
@@ -132,7 +132,7 @@ struct MEV86View: View {
     }
 
     private func chip(_ t: String) -> some View {
-        Text(t).font(LF.mono(11)).tracking(0.8).fontWeight(.bold).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 32).background(.black.opacity(0.42), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1))
+        Text(t).font(Typo.label(11)).tracking(0.8).fontWeight(.bold).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 32).background(.black.opacity(0.42), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1))
     }
 
     static func range(_ r: RecapManifest) -> String {
@@ -155,11 +155,11 @@ struct MEV86View: View {
             ZStack {
                 Circle().stroke(.white.opacity(0.12), lineWidth: 4)
                 Circle().trim(from: 0, to: CGFloat(b.dayNumber) / 7).stroke(HV.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round)).rotationEffect(.degrees(-90))
-                VStack(spacing: -2) { Text("\(b.dayNumber)").font(LF.inter(900, 17)).foregroundStyle(.white); Text("/7").font(LF.mono(9)).foregroundStyle(.white.opacity(0.5)) }
+                VStack(spacing: -2) { Text("\(b.dayNumber)").font(Typo.ui(900, 17)).foregroundStyle(.white); Text("/7").font(Typo.label(9)).foregroundStyle(.white.opacity(0.5)) }
             }.frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 4) {
-                Text("次の Recap を つくって います").font(LF.inter(800, 13)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
-                Text("あと \(b.daysLeft)日 ・ \(b.dueText)").font(LF.mono(10.5)).lineLimit(1).minimumScaleFactor(0.8).foregroundStyle(.white.opacity(0.45))
+                Text("次の Recap を つくって います").font(Typo.ui(800, 13)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
+                Text("あと \(b.daysLeft)日 ・ \(b.dueText)").font(Typo.label(10.5)).lineLimit(1).minimumScaleFactor(0.8).foregroundStyle(.white.opacity(0.45))
             }
             Spacer(minLength: 0)
             HStack(spacing: 4) {
@@ -184,9 +184,9 @@ struct MEV86View: View {
     private var recaps: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Recaps").font(LF.serif(30)).foregroundStyle(.white)
+                Text("Recaps").font(Typo.title(30)).foregroundStyle(.white)
                 Spacer()
-                Text("\(data.recaps.count) RECAPS").font(LF.mono(11)).tracking(2).foregroundStyle(.white.opacity(0.4))
+                Text("\(data.recaps.count) RECAPS").font(Typo.label(11)).tracking(2).foregroundStyle(.white.opacity(0.4))
             }.padding(.horizontal, 16)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -208,14 +208,14 @@ struct MEV86View: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Spacer()
                     if r.kind == .month {
-                        Text("MONTH").font(LF.mono(9)).tracking(1.8).foregroundStyle(.white.opacity(0.7))
+                        Text("MONTH").font(Typo.label(9)).tracking(1.8).foregroundStyle(.white.opacity(0.7))
                         let f = DateFormatter(); let _ = f.locale = Locale(identifier: "en_US"); let _ = f.dateFormat = "MMM"
-                        Text(f.string(from: r.start).uppercased()).font(LF.serif(40)).foregroundStyle(.white)
-                        Text(String(Calendar.current.component(.year, from: r.start))).font(LF.mono(10)).foregroundStyle(.white.opacity(0.7))
+                        Text(f.string(from: r.start).uppercased()).font(Typo.title(40)).foregroundStyle(.white)
+                        Text(String(Calendar.current.component(.year, from: r.start))).font(Typo.label(10)).foregroundStyle(.white.opacity(0.7))
                     } else {
-                        Text("WEEK").font(LF.mono(9)).tracking(1.8).foregroundStyle(.white.opacity(0.7))
-                        Text(Self.range(r)).font(LF.inter(800, 14)).foregroundStyle(.white)
-                        Text("\(r.shots) shots").font(LF.mono(10)).foregroundStyle(.white.opacity(0.7))
+                        Text("WEEK").font(Typo.label(9)).tracking(1.8).foregroundStyle(.white.opacity(0.7))
+                        Text(Self.range(r)).font(Typo.ui(800, 14)).foregroundStyle(.white)
+                        Text("\(r.shots) shots").font(Typo.label(10)).foregroundStyle(.white.opacity(0.7))
                     }
                 }.padding(12)
             }
@@ -233,10 +233,10 @@ struct MEV86View: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Circle().fill(HV.lime).frame(width: 7, height: 7)
-                Text("60 DAYS").font(LF.mono(11)).tracking(2).foregroundStyle(.white.opacity(0.6))
+                Text("60 DAYS").font(Typo.label(11)).tracking(2).foregroundStyle(.white.opacity(0.6))
                 Spacer()
                 let sf = DateFormatter(); let _ = sf.dateFormat = "M/d"
-                Text(sf.string(from: selDay)).font(LF.inter(900, 22)).foregroundStyle(.white)
+                Text(sf.string(from: selDay)).font(Typo.ui(900, 22)).foregroundStyle(.white)
             }.padding(.horizontal, 22).padding(.top, 16)
             GeometryReader { g in
                 let bw = g.size.width / 60
@@ -255,7 +255,7 @@ struct MEV86View: View {
                     if i != scrubDay { scrubDay = i; Haptics.play(.tick) }
                 })
             }.frame(height: 100).padding(.horizontal, 14).padding(.top, 8)
-            HStack { Text("60 DAYS AGO"); Spacer(); Text("30"); Spacer(); Text("YESTERDAY") }.font(LF.mono(10)).tracking(1.6).foregroundStyle(.white.opacity(0.35)).padding(.horizontal, 22).padding(.top, 8).padding(.bottom, 14)
+            HStack { Text("60 DAYS AGO"); Spacer(); Text("30"); Spacer(); Text("YESTERDAY") }.font(Typo.label(10)).tracking(1.6).foregroundStyle(.white.opacity(0.35)).padding(.horizontal, 22).padding(.top, 8).padding(.bottom, 14)
         }
         .background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 24, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.06), lineWidth: 1))
         .padding(.horizontal, 16).padding(.top, 34)
@@ -274,13 +274,13 @@ struct MEV86View: View {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US"); f.dateFormat = "yyyy ・ MMM"
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Album").font(LF.serif(40)).foregroundStyle(.white)
+                Text("Album").font(Typo.title(40)).foregroundStyle(.white)
                 Spacer()
                 monthButton("chevron.left", -1)
-                Text(f.string(from: first).uppercased()).font(LF.mono(12)).tracking(2).foregroundStyle(.white.opacity(0.7)).frame(width: 110)
+                Text(f.string(from: first).uppercased()).font(Typo.label(12)).tracking(2).foregroundStyle(.white.opacity(0.7)).frame(width: 110)
                 monthButton("chevron.right", 1)
             }.padding(.horizontal, 16).padding(.top, 34)
-            HStack(spacing: 4) { ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { Text($0).font(LF.inter(600, 12)).foregroundStyle(.white.opacity(0.4)).frame(maxWidth: .infinity) } }.padding(.horizontal, 16).padding(.top, 20)
+            HStack(spacing: 4) { ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { Text($0).font(Typo.ui(600, 12)).foregroundStyle(.white.opacity(0.4)).frame(maxWidth: .infinity) } }.padding(.horizontal, 16).padding(.top, 20)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
                 ForEach(0..<lead, id: \.self) { _ in Color.clear.aspectRatio(3 / 4, contentMode: .fit) }
                 ForEach(1...count, id: \.self) { n in
@@ -301,8 +301,8 @@ struct MEV86View: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: "141517"))
                 if future { RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(.white.opacity(0.07), lineWidth: 1) }
                 if let im = last?.image { Image(uiImage: im).resizable().scaledToFill().clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous)) }
-                Text("\(n)").font(LF.inter(800, 11)).foregroundStyle(.white.opacity(list.isEmpty ? 0.3 : 1)).padding(5)
-                if list.count > 1 { Text("\(list.count)").font(LF.inter(800, 10)).foregroundStyle(.white).frame(width: 18, height: 18).background(.black.opacity(0.6), in: Circle()).frame(maxWidth: .infinity, alignment: .topTrailing).padding(4) }
+                Text("\(n)").font(Typo.ui(800, 11)).foregroundStyle(.white.opacity(list.isEmpty ? 0.3 : 1)).padding(5)
+                if list.count > 1 { Text("\(list.count)").font(Typo.ui(800, 10)).foregroundStyle(.white).frame(width: 18, height: 18).background(.black.opacity(0.6), in: Circle()).frame(maxWidth: .infinity, alignment: .topTrailing).padding(4) }
                 if list.contains(where: \.kept) { Image(systemName: "star.fill").font(.system(size: 9)).foregroundStyle(HV.lime).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing).padding(5) }
             }.aspectRatio(3 / 4, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }.buttonStyle(.plain)
@@ -326,7 +326,7 @@ struct MEV86View: View {
         }.frame(height: 72).background(Color(hex: "121315"), in: RoundedRectangle(cornerRadius: 24, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.06), lineWidth: 1))
     }
     private func stat(_ n: String, _ l: String, _ c: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) { Text(n).font(LF.inter(900, 34)).foregroundStyle(c); Text(l).font(LF.mono(10)).tracking(2).foregroundStyle(.white.opacity(0.45)) }.padding(.horizontal, 20).frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: 4) { Text(n).font(Typo.ui(900, 34)).foregroundStyle(c); Text(l).font(Typo.label(10)).tracking(2).foregroundStyle(.white.opacity(0.45)) }.padding(.horizontal, 20).frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -342,9 +342,9 @@ private struct DaySection: ViewModifier {
         return VStack(alignment: .leading, spacing: 0) {
             content
             HStack(alignment: .firstTextBaseline) {
-                Text(f.string(from: day)).font(LF.serif(40)).foregroundStyle(.white)
+                Text(f.string(from: day)).font(Typo.title(40)).foregroundStyle(.white)
                 Spacer()
-                Text("\(g.string(from: day).uppercased()) ・ \(list.count) SHOTS").font(LF.mono(11)).tracking(1.6).foregroundStyle(HV.lime)
+                Text("\(g.string(from: day).uppercased()) ・ \(list.count) SHOTS").font(Typo.label(11)).tracking(1.6).foregroundStyle(HV.lime)
             }.padding(.horizontal, 16).padding(.top, 30)
             HStack(spacing: 8) {
                 ForEach(0..<3, id: \.self) { i in
@@ -423,8 +423,8 @@ struct MEDayFull: View {
                 Button { Haptics.play(.tick); onClose() } label: { Image(systemName: "xmark").font(.system(size: 16, weight: .black)).foregroundStyle(.white).frame(width: 44, height: 44).background(.white.opacity(0.12), in: Circle()) }.buttonStyle(.plain)
                 Spacer()
                 VStack(spacing: 3) {
-                    Text(f.string(from: day)).font(LF.inter(900, 22)).foregroundStyle(.white)
-                    Text("\(g.string(from: day).uppercased()) ・ \(shots.count) SHOTS").font(LF.mono(11)).tracking(1.5).foregroundStyle(.white.opacity(0.5))
+                    Text(f.string(from: day)).font(Typo.ui(900, 22)).foregroundStyle(.white)
+                    Text("\(g.string(from: day).uppercased()) ・ \(shots.count) SHOTS").font(Typo.label(11)).tracking(1.5).foregroundStyle(.white.opacity(0.5))
                 }
                 Spacer()
                 Button { if let cur { Haptics.play(.pop); if kept.contains(cur.id) { kept.remove(cur.id) } else { kept.insert(cur.id) }; onKeep(cur.id) } } label: {
@@ -441,9 +441,9 @@ struct MEDayFull: View {
             VStack(spacing: 12) {
                 Spacer()
                 HStack(spacing: 8) {
-                    if let cur { Text(t.string(from: cur.date)).font(LF.mono(12)).foregroundStyle(HV.lime).padding(.horizontal, 12).frame(height: 30).background(.white.opacity(0.1), in: Capsule()) }
-                    if let tag = cur?.tag { Text("#\(tag)").font(LF.inter(800, 13)).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 30).background(.white.opacity(0.1), in: Capsule()) }
-                    if let cur, kept.contains(cur.id) || cur.kept { Text("★ KEPT").font(LF.mono(11)).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 30).background(HV.lime, in: Capsule()) }
+                    if let cur { Text(t.string(from: cur.date)).font(Typo.label(12)).foregroundStyle(HV.lime).padding(.horizontal, 12).frame(height: 30).background(.white.opacity(0.1), in: Capsule()) }
+                    if let tag = cur?.tag { Text("#\(tag)").font(Typo.ui(800, 13)).foregroundStyle(.white).padding(.horizontal, 12).frame(height: 30).background(.white.opacity(0.1), in: Capsule()) }
+                    if let cur, kept.contains(cur.id) || cur.kept { Text("★ KEPT").font(Typo.label(11)).foregroundStyle(HV.ink).padding(.horizontal, 12).frame(height: 30).background(HV.lime, in: Capsule()) }
                 }
                 HStack(spacing: 6) { ForEach(shots.indices, id: \.self) { i in Circle().fill(.white.opacity(i == page ? 0.95 : 0.3)).frame(width: 6, height: 6) } }
             }.padding(.bottom, 60)
