@@ -126,6 +126,7 @@ struct HomeV64Preview: View {
             // v82 の 見本は 12:39:22(消灯まで 11:20:38)。夜は -debugNight 1(7:33:50)
             input.debugClock = d.bool(forKey: "debugNight") ? Calendar.current.date(bySettingHour: 7, minute: 33, second: 50, of: Date()) : Calendar.current.date(bySettingHour: 12, minute: 39, second: 22, of: Date())
             input.avatar = SampleData.photo("f")
+            input.avatarName = "たつき"
         }
         input.avatarBadge = d.object(forKey: "debugBadge") == nil ? true : d.bool(forKey: "debugBadge")
         input.faces = SampleData.faces(count: d.integer(forKey: "debugFaces"))
@@ -161,7 +162,8 @@ struct HomeV64Preview: View {
         input.debugSection = d.string(forKey: "debugSection")
         var low = HomeV64LowerData()
         let P = SampleData.photo
-        low.today = .init(thumbs: [P("c"), P("a"), P("e")], times: ["16:05"])
+        low.today = { let c = Calendar.current; let ds = [(9, 12), (13, 40), (20, 43)].compactMap { c.date(bySettingHour: $0.0, minute: $0.1, second: 0, of: Date()) }
+            return .init(thumbs: [P("c"), P("a"), P("e")], times: ["09:12", "13:40", "20:43"], dates: ds) }()
         low.hero = .init(photo: P("d"), tag: "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: "NOV 15", moments: 6, people: 4, daysLeft: 6)
         low.tiles = [.init(photo: P("d"), name: "あや", time: "17:05"), .init(photo: P("b"), name: "you", time: "16:05", own: true), .init(photo: P("d"), name: "れな", time: "12:40"), .init(photo: P("e"), name: "そら", time: "09:12")]
         low.albums = (1...6).map { k in .init(label: "Nov \(16 - k)", left: "\(7 - k)D LEFT · \(["SUN", "SAT", "FRI", "THU", "WED", "TUE"][k - 1])", tiles: [[P("c"), P("d"), P("e")], [P("e"), P("f"), nil], [P("a"), P("b"), P("c")], [P("d"), P("e"), P("f")], [P("a"), P("c"), P("e")], [P("b"), P("d"), P("f")]][k - 1], more: [8, 5, 12, 3, 9, 6][k - 1]) }

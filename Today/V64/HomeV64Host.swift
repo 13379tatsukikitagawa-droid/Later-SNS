@@ -191,7 +191,7 @@ struct HomeV64Host: View {
             let n = (Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: g.creationDate), to: Calendar.current.startOfDay(for: now)).day ?? 0) + 1
             return (id: g.id as UUID?, name: g.name, sub: "DAY \(n) ・ \(g.members.count)人", cover: g.iconImageData.flatMap { UIImage(data: $0) }, day: "DAY \(n)", unread: 0)
         }
-        low.today = .init(thumbs: [], times: src.todayShots.map { df.string(from: $0.takenAt) })
+        low.today = .init(thumbs: [], times: src.todayShots.map { df.string(from: $0.takenAt) }, dates: src.todayShots.map(\.takenAt))
         if let first = L.yesterday.first {
             low.hero = .init(photo: image(first.imageData) ?? image(first.mosaicTiny), tag: first.tag.map { "#\($0)" } ?? "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: Self.dateLabel(first.captureDate, now: now), moments: L.yesterday.count, people: Set(L.yesterday.map(\.authorName)).count, daysLeft: 6)
             low.tiles = L.yesterday.map { c in
