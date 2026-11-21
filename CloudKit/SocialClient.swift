@@ -22,7 +22,7 @@ enum SocialClient {
 
     enum Failure: Error { case noToken, http(Int), decode }
 
-    private static func call(_ method: String, _ path: String, body: [String: Any]? = nil) async throws -> Data {
+    static func call(_ method: String, _ path: String, body: [String: Any]? = nil) async throws -> Data {
         guard let token = await AppleFirebaseAuth.idToken() else { throw Failure.noToken }
         var req = URLRequest(url: baseURL.appendingPathComponent(path))
         req.httpMethod = method

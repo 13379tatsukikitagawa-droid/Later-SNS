@@ -32,6 +32,8 @@ enum DebugRouter {
         case "dm": showRaw(DirectMessageView(friendID: "x", friendName: "れな", yesterdayCount: 4, injected: [.init(id: "1", senderID: "れな", text: "きのうの 写真 みた?", createdAt: Date()), .init(id: "2", senderID: "れな", text: "わたしの 帰り道", createdAt: Date())]))
         case "profile": showRaw(ProfileV82View(data: ProfileV82Data(name: "ゆい", username: "yui_0612", avatar: UserDefaults.standard.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型"], since: "Oct 2026", streak: 11, shots: 48, kept: 9, recapPhotos: [SampleData.photo("d")], recapRange: "NOV 9–15", weekHas: [true, true, true, true, true, true, true]), debugScrollY: UserDefaults.standard.object(forKey: "debugScrollY") == nil ? nil : CGFloat(UserDefaults.standard.double(forKey: "debugScrollY"))))
         case "boarding": showRaw(BoardingGateV111(tripName: "修学旅行", colorIndex: 1, seatIndex: 1, memberLimit: 8, occupied: 1, myName: "たつき", myAvatar: SampleData.photo("f"), onDone: {}))
+        case "notifask": showRaw(NotifAskSheetV111(why: .friend, onOK: {}, onLater: {}).frame(maxHeight: 500).frame(maxHeight: .infinity, alignment: .bottom).background(Color.black))
+        case "notifsettings": showRaw(NotifSettingsV111View(onClose: {}))
         case "profileedit": showRaw(ProfileEditV88View(name: "ゆい", tags: ["カフェ", "音楽", "夜型"], avatar: SampleData.photo("f"), onPhoto: {}, onSave: { _, _ in }, onClose: {}))
         case "music": showRaw(MusicSheet(current: nil, onDone: { _ in }))
         case "reveal": showRaw(ReleaseRevealV89View(image: SampleData.photo("d"), ordinal: 1, count: 2, tag: "放課後", time: "17:42", place: "鎌倉市", playsReveal: true, onFinish: { _ in }))

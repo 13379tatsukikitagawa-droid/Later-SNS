@@ -149,7 +149,7 @@ struct TripNewV83View: View {
     var body: some View {
         ZStack {
             Color(hex: "0B0C0D").ignoresSafeArea()
-            if let pass { TripPassView(data: pass, newlyMade: true, onStart: { onCreated(pass.name); onClose() }, onClose: onClose).transition(.opacity) }
+            if let pass { TripPassView(data: pass, newlyMade: true, onStart: { onCreated(pass.name); NotifAskCenter.post(.trip); onClose() }, onClose: onClose).transition(.opacity) }
             else { wizard.transition(.opacity) }
         }
         .ignoresSafeArea()

@@ -28,23 +28,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         // 拾うために必要。UNUserNotificationCenterのdelegateは1つしか持てないため、確実に起動時に
         // 生きているAppDelegate自身に持たせる。
         UNUserNotificationCenter.current().delegate = self
-        // 新規ユーザーには、初回設定の「通知」の場面(DailyOpenNotification)で許可を求める。
-        // 起動直後には出さず、初回設定を終えた既存ユーザーだけ、これまで通りここで求める。
-        #if DEBUG
-        let skipNotificationPrompt = UserDefaults.standard.bool(forKey: "debugNoNotifPrompt")   // シミュレータで ダイアログが 画面を ふさがない ように
-        #else
-        let skipNotificationPrompt = false
-        #endif
-        if UserDefaults.standard.bool(forKey: "isSetupCompleted"), !skipNotificationPrompt {
-            // async 版(返事は呼び出し元へ戻る)。失敗してもアプリは止めない。
-            Task { @MainActor in
-                do {
-                    _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-                } catch {
-                    print("[Notification] requestAuthorization failed: \(error)")
-                }
-            }
-        }
+        // v111 §8-1:許可は 起動のたびには 聞かない。はじめて 友だち申請を 送った / 受けた 時、
+        // はじめて Trip を 作った / 入った 時に、先に Lattag の シート(NotifAskSheetV111)を 出してから 聞く。
+        // (上の registerForRemoteNotifications は 許可を 聞かないので 毎回 呼んで よい)
 
         // 期限切れ写真の片付け(第7章)。アプリを開かなくても、iOSのバックグラウンド更新の
         // タイミングで定期的に実行されるようにする(BGTaskSchedulerの要件上、起動完了前に登録する)。

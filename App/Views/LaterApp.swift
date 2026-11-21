@@ -200,7 +200,7 @@ struct RootView: View {
                     // 初回設定の最後(ようこそ)の間は、Home を裏で用意しておく。
                     // 最後に玉の位置から円がひらいて、本物の Home が見える(同じ位置なので作りなおされない)。
                     if isSetupCompleted || onboardingCompleted || OnboardingRuntime.shared.finishing {
-                        MainNavigationView()
+                        MainNavigationView().notifAskHost()
                     }
                     if !isSetupCompleted && (opening == nil || openingRevealed) {
                         // 新規ユーザーの初回設定 v2(開幕・はじめる・ニックネーム・Laterの一日・

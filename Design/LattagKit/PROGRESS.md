@@ -356,3 +356,13 @@
 - ✓ Worker `server/social-worker`(`later-social.later-social.workers.dev`・ D1 `later-social`)deploy 済み。申請 1日 50件 ・ CloudKit の 友だち 1回 移行(両方が 申し出た 組 だけ)。
 - ✓ P47 A:Apple → Firebase(nonce)・ 「Apple で つなぎなおす」(出して から 24時間 は 出さない)・ Google / メールの リンクの コードを 消した。
 - △ (2) つなぎかえ:`SocialClient` + `SocialFlag.useWorker`(**既定 オフ**・ DEBUG 状態メニューで 切りかえ)。実機確認の あと 有効に する。有効に したら「v108 つなぎ」(`FriendRequestBridgeV108`)を 消す。APNs の キー(.p8)は あなたの 作業。
+
+## v111 P55(B・C4・D・E)
+- ✓ B 1 プロフィール:チェキの 下の 大きな 名前を 消し、チェキを 大きく(余白 18 ・ 最大 340 ・ 写真 1:1 ・ 下 74 ・ 名前 46 ・ -2.5° ・ ライムの テープ 96×26 ・ タグは 白い ふちの ステッカー ・「写真」ボタン)。上の 小さな 名前(:104)は のこす。
+- ✓ B 2 共有の アイコン:`LattagShareItem` + `AppIconShare`(Assets)。`ShareLinkItemSource` ・ `GroupInviteItemSource` ・ `ProfileShareItem` ・ 素の String の 道は 消した。
+- ✓ B 3 リンクの 文:最後の 行を 消した(友だち ・ Trip)。
+- ✓ C 4 Trip 0件:`TripEmptyV111`(案内板 + パタパタ ・ うすい パス ・ 見出し ・ ボタン 2つ)。
+- ✓ D 搭乗ゲート:`BoardingGateV111`(約 3.0秒 ・ スキップ ・ Reduce Motion)。参加が 終わった 時点で 出す。ひらく 先は 今の Trip 画面(P57 で TripRoomView へ)。チャットの「乗りました」は P57。
+- ✓ E お知らせ:AppDelegate の 起動ごとの 許可を やめた / `NotifAskSheetV111`(はじめて 友だち申請 ・ Trip の とき ・ あとで = 7日)/ 設定 › お知らせ(`NotifSettingsV111View`:3状態 ・ テスト通知 ・ スイッチ 6つ ・ Worker に 保存)/ 9:00 ・ ラストコールは ローカル通知。
+- △ F 相互フォロー:アプリ側は 済み(リモート設定 ・ 部屋の 登録 ・ チャット通知)。Worker の 移行 ・ deploy ・ .p8 ・ 2台の 確認は たつきさん。確認後に v108 の つなぎを 消す。
+- △ 10 ぬける:[Leave] ログを 待って います。

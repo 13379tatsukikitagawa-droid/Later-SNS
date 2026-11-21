@@ -241,6 +241,7 @@ struct JoinFlowView: View {
                     onDone: {
                         NotificationCenter.default.post(name: .groupJoined, object: group.id)
                         NotificationCenter.default.post(name: .homeToastRequested, object: "\(group.name) に入りました")
+                        NotifAskCenter.post(.trip)   // v111 §8-1
                         onFinish()
                     }
                 )

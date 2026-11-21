@@ -68,6 +68,7 @@ struct HomeV64Host: View {
     private func refreshRequests() async {
         await FriendRequests.syncAccepted(myName: src.avatarName)
         incoming = await FriendRequests.incoming()
+        if !incoming.isEmpty { NotifAskCenter.post(.friend) }   // v111 §8-1:はじめて 申請を 受けた 時
         tripInviteCount = await FriendCloud.inbox().filter { $0.status == .pending }.count
     }
 

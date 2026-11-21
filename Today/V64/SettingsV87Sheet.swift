@@ -21,7 +21,6 @@ struct SettingsV87Sheet: View {
     var onLoggedOut: () -> Void = {}
 
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("notify.friends") private var friendsOn = true
     @AppStorage("notify.recap") private var recapOn = true
     @AppStorage("notify.liveNight") private var liveNightOn = true
     @AppStorage("notify.liveMorning") private var liveMorningOn = true
@@ -31,7 +30,7 @@ struct SettingsV87Sheet: View {
     @AppStorage("firebaseEmail") private var firebaseEmail = ""
     @AppStorage("currentProfileID") private var currentProfileID = ""
     @AppStorage("isSetupCompleted") private var isSetupCompleted = false
-    @State private var dailyOn = false
+    @State private var showsNotif = false
     @AppStorage("privacy.discoverableByName") private var discoverable = true
     @Query private var profiles: [UserProfile]
     @State private var showsBlocked = false
@@ -41,7 +40,6 @@ struct SettingsV87Sheet: View {
     @State private var legal: LegalLink?
     @State private var confirmLogout = false
     @State private var showsDelete = false
-    @State private var deniedAlert = false
 
     private let box = Color(hex: "17181B"), ink = Color.white
 
@@ -56,9 +54,7 @@ struct SettingsV87Sheet: View {
                 account.padding(.top, 14)
                 header("お知らせ")
                 group {
-                    toggleRow("9:00 に ひらく", "きのうの 写真が ひらいた 時", $dailyOn) { setDaily($0) }
-                    divider
-                    toggleRow("友だち", "申請 ・ リアクション ・ コメント", $friendsOn) { _ in Haptics.play(.click) }
+                    linkRow("お知らせの 設定") { showsNotif = true }
                     divider
                     toggleRow("Recap", "月曜 9:00 に できた 時", $recapOn) { v in Haptics.play(.click); RecapNotifier.setEnabled(v) }
                     divider
@@ -126,7 +122,7 @@ struct SettingsV87Sheet: View {
         }
         .scrollHaptics()
         .background(Color(hex: "0F1011").ignoresSafeArea()).environment(\.colorScheme, .dark)
-        .task { dailyOn = await DailyOpenNotification.isScheduled() }
+        .sheet(isPresented: $showsNotif) { NotifSettingsV111View(onClose: { showsNotif = false }) }
         .sheet(isPresented: $showsBlocked) { SettingsBlockedList() }
         .sheet(isPresented: $showsHandle) { HandleChangeHost { _ in showsHandle = false } }
         .sheet(isPresented: $showsHowTo) { UsageGuideV105Sheet { showsHowTo = false } }
@@ -136,10 +132,6 @@ struct SettingsV87Sheet: View {
             Button("ログアウト", role: .destructive) { signOutState(); onLoggedOut() }
             Button("やめる", role: .cancel) {}
         } message: { Text("また サインインすれば、同じ アカウントに もどれます") }
-        .alert("通知が オフです", isPresented: $deniedAlert) {
-            Button("iPhone の 設定を ひらく") { AppLanguage.openSystemSettings() }
-            Button("やめる", role: .cancel) {}
-        } message: { Text("このアプリの 通知を iPhone の 設定で オンに して ください") }
     }
 
     private static var version: String {
@@ -180,16 +172,6 @@ struct SettingsV87Sheet: View {
         Button { Haptics.play(.sel); if !on { AppLanguage.openSystemSettings() } } label: {
             Text(t).font(LF.inter(800, 14)).foregroundStyle(on ? Color(hex: "0B0C0D") : .white.opacity(0.7)).padding(.horizontal, 18).frame(height: 36).background(on ? Color.white : .clear, in: Capsule())
         }.buttonStyle(.plain)
-    }
-
-    private func setDaily(_ on: Bool) {
-        Haptics.play(.click)
-        Task {
-            if on {
-                let r = await DailyOpenNotification.requestAuthorization(timeout: 10)
-                if r == .granted { await DailyOpenNotification.schedule() } else { dailyOn = false; deniedAlert = true }
-            } else { DailyOpenNotification.cancel() }
-        }
     }
 
     private func signOutState() {

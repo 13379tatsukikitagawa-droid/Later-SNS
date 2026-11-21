@@ -54,6 +54,7 @@ enum FriendRequests {
         if SocialFlag.useWorker {   // v108 (2):Worker(切りかえの スイッチ オン の とき だけ)
             guard let r = await SocialClient.send(toRecordName: other) else { return false }
             if r.status == "mutual" || r.status == "already" { _ = await FriendCloud.connect(to: other, myName: myName, myCount: 0, theirCount: 0) }
+            NotifAskCenter.post(.friend)   // v111 §8-1
             return true
         }
         guard let database, let me, me != other else { return false }
@@ -70,6 +71,7 @@ enum FriendRequests {
         catch { print("[FriendRequests] send failed: \(error)"); return false }
         // v108 つなぎ:相手が すでに こちらに 申請 して いたら、承認 なしで すぐ 相互
         await acceptCrossed(myName: myName)
+        NotifAskCenter.post(.friend)   // v111 §8-1
         return true
     }
 
