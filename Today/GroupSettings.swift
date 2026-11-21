@@ -493,7 +493,7 @@ struct GroupSettingsView: View {
             } onClose: { isShowingCamera = false }
         }
         .sheet(isPresented: Binding(get: { shareText != nil }, set: { if !$0 { shareText = nil } })) {
-            ShareSheet(activityItems: [shareText ?? ""]) { _ in shareText = nil }
+            ShareSheet(activityItems: [LattagShareItem.trip(text: shareText ?? "", groupName: group.name)]) { _ in shareText = nil }
         }
         .alert("変更を保存せずに、もどりますか?", isPresented: $confirmingBack) {
             Button("もどる", role: .destructive, action: onBack)

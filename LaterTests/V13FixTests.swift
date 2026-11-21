@@ -168,24 +168,15 @@ struct V13FixTests {
 
     // MARK: 4. 招待の共有
 
-    @Test func 共有する本文の形() {
-        let url = URL(string: "later://join?shareUrl=x")!
-        #expect(GroupInviteItemSource.text(groupName: "帰り道の4人", passphrase: "hikari-2741", url: url)
-                == "「帰り道の4人」に招待されました。\n合言葉:hikari-2741\nlater://join?shareUrl=x")
-        #expect(GroupInviteItemSource.text(groupName: "ゼミ", passphrase: nil, url: url)
-                == "「ゼミ」に招待されました。\nlater://join?shareUrl=x")
-        #expect(GroupInviteItemSource.title(groupName: "ゼミ") == "「ゼミ」に招待されました。")
-    }
-
-    @Test func 共有シートの左上は_Laterのアイコン() {
-        let image = UIImage(named: "LaterShareIcon")
+    @Test func 共有シートの左上は_Lattagのアイコン() {
+        let image = UIImage(named: "AppIconShare")
         #expect(image != nil)
         #expect(image.map { $0.size.width * $0.scale } == 1024)
-        let source = GroupInviteItemSource(groupName: "ゼミ", passphrase: "hikari-2741", url: URL(string: "later://join?shareUrl=x")!)
+        let source = LattagShareItem.trip(text: "『ゼミ』に 招待されました\nhttps://example.com/t/x", groupName: "ゼミ")
         let metadata = source.activityViewControllerLinkMetadata(UIActivityViewController(activityItems: [], applicationActivities: nil))
-        #expect(metadata?.title == "「ゼミ」に招待されました。")
+        #expect(metadata?.title == "『ゼミ』の Trip に 招待")
         #expect(metadata?.iconProvider != nil)
-        #expect(metadata?.originalURL?.absoluteString == "later://join?shareUrl=x")
+        #expect(metadata?.originalURL?.absoluteString == "https://example.com/t/x")
     }
 
     // MARK: 7. 触覚の間引き

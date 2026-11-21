@@ -78,7 +78,7 @@ struct GroupCreatedShareView: View {
             dismiss()
         }) {
             ShareSheet(activityItems: [
-                ShareLinkItemSource(text: shareMessage, title: "「\(groupName)」に招待されました。")
+                LattagShareItem.trip(text: shareMessage, groupName: groupName)
             ]) { _ in
                 // 共有完了・キャンセルのいずれでも、そのまま留まらせず閉じる。
                 showingShareSheet = false
@@ -121,7 +121,7 @@ struct GroupCreatedShareView: View {
                 // あったため、リンクを含むプレーンテキストとして共有する。SwiftUI標準の
                 // ShareLinkだとカスタムのLPLinkMetadata(アプリアイコン)・共有完了時の
                 // コールバックの両方が取れないため、UIActivityViewControllerを
-                // 直接使うShareSheet+ShareLinkItemSourceに変更している。
+                // 直接使うShareSheet+LattagShareItemに変更している。
                 Button {
                     HapticsManager.cardChange()
                     showingShareSheet = true

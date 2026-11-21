@@ -511,7 +511,7 @@ struct FriendScreenV48: View {
             }
             connectTile(icon: "link", title: "Link", primary: false) {
                 guard !isFull else { refuseFull(); return }
-                shareItems = [FriendRules.shareText(myName: myName, recordName: myRecordName)]
+                shareItems = [FriendRules.shareItem(myName: myName, recordName: myRecordName)]
             }
         }
         .padding(.horizontal, 14)

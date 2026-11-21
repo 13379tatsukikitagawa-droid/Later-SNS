@@ -293,7 +293,7 @@ struct InviteCard: View {
         )
         .task(id: group.id) { await loadPassphrase() }
         .sheet(isPresented: Binding(get: { shareText != nil }, set: { if !$0 { shareText = nil } })) {
-            ShareSheet(activityItems: [shareText ?? ""]) { _ in shareText = nil }
+            ShareSheet(activityItems: [LattagShareItem.trip(text: shareText ?? "", groupName: group.name)]) { _ in shareText = nil }
         }
     }
 
@@ -518,7 +518,7 @@ struct InviteQROverlay: View {
             }
         }
         .sheet(isPresented: Binding(get: { shareText != nil }, set: { if !$0 { shareText = nil } })) {
-            ShareSheet(activityItems: [shareText ?? ""]) { _ in shareText = nil }
+            ShareSheet(activityItems: [LattagShareItem.trip(text: shareText ?? "", groupName: group.name)]) { _ in shareText = nil }
         }
         .task(id: group.id) {
             passphrase = try? await GroupInviteService.passphrase(for: group, context: modelContext)

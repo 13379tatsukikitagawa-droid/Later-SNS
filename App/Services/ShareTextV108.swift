@@ -5,17 +5,15 @@ import SwiftData
 enum ShareTextV108 {
     static func friend(name: String, handle: String) -> String? {
         guard !handle.isEmpty, let url = AppLinks.friendURL(handle: handle) else { return nil }
-        return "\(name)(@\(handle))から Lattag の 友だち申請です\n\n↓ タップで ひらく(アプリが ひらきます)\n\(url.absoluteString)\n\nアプリが ない 時は、ひらいた ページから 入れられます"
+        return "\(name) (@\(handle)) から Lattag の 友だち申請です\n\n↓ タップで ひらく(アプリが ひらきます)\n\(url.absoluteString)"
     }
 
     /// `dates` / `members` は わからない 時は 省く。KEY は「#maple24」でも「maple24」でも よい
     static func trip(host: String, name: String, dates: String?, members: Int?, key: String) -> String {
         let k = key.hasPrefix("#") ? String(key.dropFirst()) : key
         let url = AppLinks.tripURL(token: k)?.absoluteString ?? ""
-        var detail = "『\(name)』"
-        if let dates, !dates.isEmpty { detail += dates }
-        if let members, members > 0 { detail += " ・ \(members)人 参加中" }
-        return "\(host) から Trip の 招待です\n\(detail)\n\n↓ タップで 参加(アプリが ひらきます)\n\(url)\n\nKEY:#\(k)(アプリの「KEY で 入る」でも OK ・ 24時間)"
+        _ = (dates, members)
+        return "『\(name)』に 招待されました(\(host) から)\n\n↓ タップで ひらく(アプリが ひらきます)\n\(url)\nKEY:#\(k)"
     }
 
     /// "NOV 17" → "11/17"
@@ -38,6 +36,11 @@ extension FriendRules {
         let h = ShareTextV108.me.handle
         if !h.isEmpty, let u = AppLinks.friendURL(handle: h) { return u }
         return link(recordName: recordName)
+    }
+    /// 共有シートに 渡す 物(友だち ・ v111 §2)
+    @MainActor static func shareItem(myName: String, recordName: String) -> LattagShareItem {
+        let me = ShareTextV108.me
+        return .friend(text: shareText(myName: myName, recordName: recordName), name: myName.isEmpty ? me.name : myName)
     }
     /// 送る 文(友だち)。ID が 無い 時だけ 名前 + リンクの 古い 文
     @MainActor static func shareText(myName: String, recordName: String) -> String {

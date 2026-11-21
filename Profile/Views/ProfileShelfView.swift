@@ -757,7 +757,7 @@ struct ProfileShelfView: View {
                 actionButton("square.and.arrow.up", "Share") {
                     haptics.play(.light)
                     if let recordName = myRecordName {
-                        shareItems = [FriendRules.shareText(myName: displayName, recordName: recordName)]
+                        shareItems = [FriendRules.shareItem(myName: displayName, recordName: recordName)]
                     }
                 }
                 actionButton("qrcode.viewfinder", "Scan") {

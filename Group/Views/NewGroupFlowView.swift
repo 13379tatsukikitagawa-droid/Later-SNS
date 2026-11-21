@@ -350,7 +350,7 @@ struct NewGroupFlowView: View {
         .sheet(isPresented: $showingShare) {
             // 今までと 同じ:アイコンつきの 招待文(全文)を 渡す
             ShareSheet(activityItems: [
-                ShareLinkItemSource(text: shareMessage, title: "「\(shownName)」に招待されました。")
+                LattagShareItem.trip(text: shareMessage, groupName: shownName)
             ]) { _ in showingShare = false }
             .presentationDetents([.medium, .large])
         }

@@ -25,9 +25,8 @@ struct HomeV64Host: View {
     private var myShare: [Any] {
         let me = UserProfile.current(from: profiles)
         let h = HandleRules.normalize(me?.username ?? "")
-        guard !h.isEmpty, let url = AppLinks.friendURL(handle: h) else { return [myLink] }
-        let text = "\(me?.name ?? "")(@\(h))から Lattag の 友だち申請です\n\n↓ タップで ひらく(アプリが ひらきます)\n\(url.absoluteString)\n\nアプリが ない 時は、ひらいた ページから 入れられます"
-        return [text]
+        guard !h.isEmpty, let text = ShareTextV108.friend(name: me?.name ?? "", handle: h) else { return [LattagShareItem(text: myLink.absoluteString, title: "Lattag の 友だち申請", url: myLink)] }
+        return [LattagShareItem.friend(text: text, name: me?.name ?? "")]
     }
     private var myLink: URL {
         let me = UserProfile.current(from: profiles)

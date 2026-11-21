@@ -245,7 +245,7 @@ struct TripPassView: View {
             passButton("square.and.arrow.up", "送る", 0) {
                 let dates = [ShareTextV108.shortDate(data.from), ShareTextV108.shortDate(data.to)].compactMap { $0 }
                 let range = dates.count == 2 ? "\(dates[0])〜\(dates[1])" : nil
-                shareItems = data.key.isEmpty ? ["\(data.name) に きて ね\n\(data.link)"] : [ShareTextV108.trip(host: ShareTextV108.me.name, name: data.name, dates: range, members: data.names.count, key: data.key)]
+                shareItems = data.key.isEmpty ? [LattagShareItem.trip(text: "\(data.name) に きて ね\n\(data.link)", groupName: data.name)] : [LattagShareItem.trip(text: ShareTextV108.trip(host: ShareTextV108.me.name, name: data.name, dates: range, members: data.names.count, key: data.key), groupName: data.name)]
             }
             passButton(saved ? "checkmark" : "arrow.down.to.line", saved ? "保存しました" : "写真に 保存", 1, ok: saved) { Task { await savePass() } }
             passButton("doc.on.doc", copied ? "コピー ずみ" : "KEY を コピー", 2, ok: copied) {

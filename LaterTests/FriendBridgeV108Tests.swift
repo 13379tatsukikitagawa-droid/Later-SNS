@@ -39,16 +39,17 @@ struct AppLinksV108Tests {
 struct ShareTextV108Tests {
     @Test func friendText() {
         let t = ShareTextV108.friend(name: "ゆい", handle: "yui_0612")!
-        #expect(t.hasPrefix("ゆい(@yui_0612)から Lattag の 友だち申請です"))
+        #expect(t.hasPrefix("ゆい (@yui_0612) から Lattag の 友だち申請です"))
+        #expect(!t.contains("アプリが ない 時"))
         #expect(t.contains("https://later-app-f2606.firebaseapp.com/u/yui_0612?openExternalBrowser=1"))
         #expect(!t.contains("later://"))
         #expect(ShareTextV108.friend(name: "ゆい", handle: "") == nil)
     }
     @Test func tripText() {
         let t = ShareTextV108.trip(host: "たつき", name: "大阪", dates: "11/21〜11/23", members: 3, key: "#maple24")
-        #expect(t.hasPrefix("たつき から Trip の 招待です\n『大阪』11/21〜11/23 ・ 3人 参加中"))
+        #expect(t.hasPrefix("『大阪』に 招待されました(たつき から)\n\n↓ タップで ひらく(アプリが ひらきます)"))
         #expect(t.contains("https://later-app-f2606.firebaseapp.com/t/maple24?openExternalBrowser=1"))
-        #expect(t.hasSuffix("KEY:#maple24(アプリの「KEY で 入る」でも OK ・ 24時間)"))
+        #expect(t.hasSuffix("KEY:#maple24"))
         #expect(ShareTextV108.shortDate("NOV 21") == "11/21")
     }
 }
