@@ -309,12 +309,6 @@ struct TripHubView: View {
     // MARK: 5-6 まだ 0件
 
     private var emptyState: some View {
-        VStack(spacing: 14) {
-            Spacer(minLength: 70)
-            PopSticker(shape: .hash, color: PopColor.lime, size: 70, tilt: -8)
-            Text("まだ Trip が ありません").font(LF.inter(900, 22)).foregroundStyle(.white).padding(.top, 10)
-            Text("旅の あいだ、みんなで 1日 23枚").font(LF.inter(500, 13)).foregroundStyle(.white.opacity(0.55))
-            buttons.padding(.horizontal, 16).padding(.top, 12)
-        }.frame(maxWidth: .infinity)
+        TripEmptyV111(onNew: onNew, onJoinKey: onJoinKey)
     }
 }

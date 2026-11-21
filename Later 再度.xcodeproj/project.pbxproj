@@ -234,6 +234,7 @@
 		C8EBD74B3B074C0C76F46352 /* HomeGroupStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = E29977779CDF1E8FEE3D6B37 /* HomeGroupStrip.swift */; };
 		CB59C20B23F89C01E9E9F2A9 /* V64/TripHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC3012A6FB5BD1E2E2C92483 /* V64/TripHubView.swift */; };
 		CC340D3F1D14091F6B641687 /* V64/HomeV68Layers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4530102B2BCEFCF4B1CC5136 /* V64/HomeV68Layers.swift */; };
+		C7B21D81CE35ABE49C31C697 /* V64/TripEmptyV111.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A426AB9FC127C4B94E29028 /* V64/TripEmptyV111.swift */; };
 		CCCF3A16FCEA4219B25ECE96 /* V64/HomeV64View.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF177B0315D64C9373CC26C6 /* V64/HomeV64View.swift */; };
 		CE1D9C63DC55C6DDB817A8F0 /* LGColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9D5130364708000DD034B2 /* LGColor.swift */; };
 		D1A1B2C3D4E5F60718293A01 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1B2C3D4E5F60718293A01 /* CaptureScreen.swift */; };
@@ -614,6 +615,7 @@
 		C8BD81E4CD7276BCE0B93E88 /* ShareTextV108.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareTextV108.swift; sourceTree = "<group>"; };
 		CA5AB9DB36D920AC00893439 /* V64/HomeViewSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeViewSwitch.swift; sourceTree = "<group>"; };
 		CF0F7F40C595276C07B370F9 /* HoldGauge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HoldGauge.swift; sourceTree = "<group>"; };
+		9A426AB9FC127C4B94E29028 /* V64/TripEmptyV111.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripEmptyV111.swift; sourceTree = "<group>"; };
 		CF177B0315D64C9373CC26C6 /* V64/HomeV64View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/HomeV64View.swift; sourceTree = "<group>"; };
 		D07995F891AC45B1A3D56AB1 /* PerformanceSignpost.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceSignpost.swift; sourceTree = "<group>"; };
 		D0A1000000000000000000A2 /* LaterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LaterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1120,6 +1122,7 @@
 				288E412DBA3D560B94FDA1C6 /* V64/HomeV64Lower.swift */,
 				6C1FB1B6590D58C45B24FB54 /* V64/HomeV64Pages.swift */,
 				CF177B0315D64C9373CC26C6 /* V64/HomeV64View.swift */,
+				9A426AB9FC127C4B94E29028 /* V64/TripEmptyV111.swift */,
 				57F9F503048AA20B929468DC /* V64/HomeV64Parts.swift */,
 				E29977779CDF1E8FEE3D6B37 /* HomeGroupStrip.swift */,
 				C02AE58D430B45F33B2EDE33 /* ChekiDevelopImage.swift */,
@@ -1760,6 +1763,7 @@
 				B193B2886C45D722DD984C84 /* V64/HomeV64Lower.swift in Sources */,
 				38FDBCCB36B164DC915B8480 /* V64/HomeV64Pages.swift in Sources */,
 				CCCF3A16FCEA4219B25ECE96 /* V64/HomeV64View.swift in Sources */,
+				C7B21D81CE35ABE49C31C697 /* V64/TripEmptyV111.swift in Sources */,
 				B9215E512ED464628620F989 /* V64/HomeV64Parts.swift in Sources */,
 				C8EBD74B3B074C0C76F46352 /* HomeGroupStrip.swift in Sources */,
 				653E9BADB868EA687286C9FB /* HomeDevelopCard.swift in Sources */,
