@@ -1,0 +1,53 @@
+/* ===== v113(モック v114 ・ PROMPT v127):Home の 3つの ボタン「ニュース」3案(ユーモア)  名前:u9dv-(np|tv|wx) ===== */
+#hpi.u9dk .u9nw{display:none}
+#home.u9nb:is(.u9dv-np,.u9dv-tv,.u9dv-wx) #hpi.u9dk button>i,#home.u9nb:is(.u9dv-np,.u9dv-tv,.u9dv-wx) #hpi.u9dk button>span:not(.u9nw),#home.u9nb:is(.u9dv-np,.u9dv-tv,.u9dv-wx) #hpi.u9dk button>:is(.u9ds,.u9dw,.u9de,.u9dr){display:none!important}
+#home.u9nb:is(.u9dv-np,.u9dv-tv,.u9dv-wx) #hpi.u9dk .u9nw{display:flex}
+/* --- 案18 新聞の 切りぬき --- */
+#phone #home.u9nb.u9dv-np #hpi.u9dk{gap:9px!important;padding:0!important}
+#home.u9nb.u9dv-np #hpi.u9dk button{position:relative;width:110px!important;height:124px!important;margin-bottom:6px;transition:translate .16s cubic-bezier(.3,1.4,.5,1)!important}
+#home.u9nb.u9dv-np #hpi.u9dk button[data-i="1"]{rotate:-3deg}#home.u9nb.u9dv-np #hpi.u9dk button[data-i="2"]{rotate:1.5deg;translate:0 4px}#home.u9nb.u9dv-np #hpi.u9dk button[data-i="3"]{rotate:-1.5deg}
+#home.u9nb.u9dv-np #hpi.u9dk button:active{scale:.95}
+.u9dv-np .u9nw{position:absolute;inset:0;flex-direction:column;align-items:stretch;padding:9px 9px 13px;box-sizing:border-box;text-align:left;color:#1A1814;
+  background:repeating-linear-gradient(0deg,rgba(26,24,20,.035) 0 1px,transparent 1px 3px),#EEEBE2;
+  clip-path:polygon(0 2%,8% 0,20% 1.5%,33% 0,47% 1.2%,61% 0,76% 1.6%,89% 0,100% 1.4%,100% 97%,93% 100%,84% 97.5%,72% 100%,60% 97.8%,48% 100%,36% 97.6%,24% 100%,12% 97.8%,0 100%);
+  filter:drop-shadow(0 12px 14px rgba(0,0,0,.6))}
+.u9dv-np .u9nw .ms{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:3px;border-bottom:3px double #1A1814;font:400 11px/1 var(--u9tt);letter-spacing:.01em}
+.u9dv-np .u9nw .ms small{font:800 7.5px/1 var(--u9ui);color:#6B675D;letter-spacing:.04em}
+.u9dv-np .u9nw .hl{margin:6px 0 0;font-family:var(--u9tt)!important;font-weight:400!important;font-size:14.5px;line-height:1.22;letter-spacing:-.02em;color:#111;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.u9dv-np .u9nw .hl mark{color:inherit;font-style:normal;background:var(--bc);padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.u9dv-np .u9nw .ft{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font:800 10px/1 var(--u9ui);color:#6B675D;border-top:1px solid rgba(26,24,20,.25);padding-top:5px}
+.u9dv-np .u9nw .ft b{color:#1A1814}
+.u9dv-np #hpi.u9dk button::before{content:'';position:absolute;z-index:3;top:-7px;left:50%;width:42px;height:14px;margin-left:-21px;rotate:-6deg;background:color-mix(in srgb,var(--bc) 88%,transparent);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+/* --- 案19 テレビの 速報(テロップ) --- */
+#phone #home.u9nb.u9dv-tv #hpi.u9dk{flex-direction:column!important;gap:5px!important;width:346px!important;bottom:-30px!important;align-items:stretch!important;padding:0!important}
+#home.u9nb.u9dv-tv #hpi.u9dk::before{content:'速報';position:absolute;left:0;top:-30px;height:22px;padding:0 9px;background:#FF4D6D;color:#fff;font:800 12px/22px var(--u9ui);letter-spacing:.1em;z-index:2}
+#home.u9nb.u9dv-tv #hpi.u9dk::after{content:'LATTAG NEWS  ・  LIVE';position:absolute;left:48px;top:-30px;height:22px;padding:0 10px;background:#FAFAF7;color:#111113;font:800 11px/22px var(--u9ui);letter-spacing:.12em;white-space:pre}
+#home.u9nb.u9dv-tv #hpi.u9dk button{width:100%!important;height:38px!important;flex-direction:row!important;gap:0!important;background:#111113!important;border-radius:0!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)!important;overflow:hidden;transition:background .12s!important}
+#home.u9nb.u9dv-tv #hpi.u9dk button:active{background:#1F1F23!important}
+.u9dv-tv .u9nw{width:100%;height:100%;align-items:stretch}
+.u9dv-tv .u9nw .tg{flex:none;width:70px;display:grid;place-items:center;background:var(--bc);color:#111113;font:800 12.5px/1 var(--u9ui);letter-spacing:.02em}
+.u9dv-tv .u9nw .hl{flex:1;min-width:0;display:flex;align-items:center;padding:0 10px;font:800 13px/1 var(--u9ui);color:#FAFAF7;white-space:nowrap;overflow:hidden}
+.u9dv-tv .u9nw .hl p{display:inline-block;margin:0;white-space:nowrap}
+.u9dv-tv .u9nw .ar{flex:none;width:30px;display:grid;place-items:center;color:#8C8C93;font:800 15px/1 var(--u9ui)}
+.u9dv-tv #hpi.u9dk button.u9mq .hl p{animation:u9mq 9s linear infinite}
+@keyframes u9mq{0%,18%{translate:0}100%{translate:calc(-100% - 20px)}}
+/* --- 案20 天気予報 --- */
+#phone #home.u9nb.u9dv-wx #hpi.u9dk{gap:0!important;padding:28px 6px 8px!important;border-radius:26px!important;background:#111113!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),0 18px 30px -14px rgba(0,0,0,.9)!important;bottom:-16px!important}
+#home.u9nb.u9dv-wx #hpi.u9dk::before{content:'Lattag 天気予報';position:absolute;left:16px;top:10px;font:400 14px/1 var(--u9tt);color:#FAFAF7;letter-spacing:0}
+#home.u9nb.u9dv-wx #hpi.u9dk::after{content:attr(data-wx);position:absolute;right:16px;top:11px;font:800 10.5px/1 var(--u9ui);color:#8C8C93;letter-spacing:.04em}
+#home.u9nb.u9dv-wx #hpi.u9dk button{width:108px!important;height:104px!important;border-radius:18px!important;transition:background .12s!important}
+#home.u9nb.u9dv-wx #hpi.u9dk button+button{box-shadow:-1px 0 0 rgba(255,255,255,.08)!important;border-radius:0 18px 18px 0!important}
+#home.u9nb.u9dv-wx #hpi.u9dk button:active{background:rgba(255,255,255,.06)!important}
+.u9dv-wx .u9nw{flex-direction:column;align-items:center;gap:3px;width:100%}
+.u9dv-wx .u9nw .pl{font:800 11.5px/1 var(--u9ui);color:var(--bc);letter-spacing:.04em}
+.u9dv-wx .u9nw svg{width:34px;height:34px;margin:3px 0 1px;overflow:visible}
+.u9dv-wx .u9nw .w{font-family:var(--u9tt)!important;font-weight:400!important;font-size:19px;line-height:1.05;color:#FAFAF7;letter-spacing:-.01em}
+.u9dv-wx .u9nw .s{font:700 10.5px/1.2 var(--u9ui);color:#8C8C93;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.u9dv-tv #hpi.u9dk button.u9mq .hl p{animation:none}}
+.u9dv-np .u9nw .hl mark{white-space:nowrap}
+#phone #home.u9nb.u9dv-tv #hpi.u9dk button{border-radius:0!important}
+/* 決定(v128):オーラ。スクロール 中の 小さな 列も 同じ 作り */
+#home.u9dv-au .u9md button:not(.up){border-radius:17px;background:radial-gradient(circle at 28% 22%,color-mix(in srgb,var(--bc),#fff 68%) 0,transparent 56%),radial-gradient(circle at 80% 88%,color-mix(in srgb,var(--bc),#111 22%) 0,transparent 60%),var(--bc);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 8px 20px -6px color-mix(in srgb,var(--bc) 62%,transparent);margin-bottom:0;transition:scale .25s cubic-bezier(.34,1.56,.64,1)}
+#home.u9dv-au .u9md button:not(.up):active{translate:none;scale:.9;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+#home.u9dv-au .u9md button:not(.up) svg{stroke-width:1.9}
+#home.u9dv-au .u9md{padding:7px 10px}

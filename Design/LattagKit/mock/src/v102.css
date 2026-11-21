@@ -1,0 +1,63 @@
+/* ===== v102(モック v103 ・ PROMPT v116):地球を やめる ・ 下の 撮る場所の 4案  名前:u9z ===== */
+#home #hmoon.u9z{left:0!important;width:390px!important;height:130px!important;top:auto!important;bottom:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;overflow:visible!important}
+#home #hmoon.u9z>canvas,#home #hmoon.u9z>.r2,#home #hmoon.u9z>.mat{display:none!important}
+#home #hmoon.u9z::after,#home #hmoon.u9z::before{display:none!important}
+#home #hmoon.u9z .u9dm{left:0;margin-left:0;width:390px;height:130px}
+#home #hmoon.u9z .u9dm>:not(.grab):not(.u9zz){display:none!important}
+#home #hmoon.u9z .grab{position:relative;z-index:5}
+.u9zz{position:absolute;inset:0}
+.u9zz .mn{width:30px;height:30px;filter:drop-shadow(0 0 10px rgba(200,242,90,.7))}
+.u9zz i,.u9zz u,.u9zz b{display:block;text-decoration:none}
+/* 小さな チェキ(共通) */
+.u9ck{width:40px;height:50px;border-radius:4px;background:#FAFAF7;padding:3px 3px 11px;box-shadow:0 5px 12px rgba(0,0,0,.45)}
+.u9ck u{width:100%;height:100%;border-radius:2px;background:radial-gradient(circle at 32% 26%,#F3FFD2,#C8F25A 52%,#93C232)}
+/* --- 1 カメラの 口(おすすめ)--- */
+.u9zs .ck{position:absolute;left:0;right:0;top:0;height:77px;overflow:hidden;z-index:3}
+.u9zs .ck .u9ck{position:absolute;bottom:-8px;left:50%;margin-left:-23px;width:46px;height:58px;padding:3px 3px 12px;rotate:var(--r);translate:var(--x) 0;transition:translate .5s cubic-bezier(.34,1.4,.64,1)}
+.u9zs .ck .u9ck:nth-child(1){--x:-58px;--r:-8deg}.u9zs .ck .u9ck:nth-child(2){--x:0px;--r:0deg;z-index:2}.u9zs .ck .u9ck:nth-child(3){--x:58px;--r:8deg}
+.u9zs .ck .u9ck.in{translate:var(--x) 70px}
+.u9zs .ck .u9ck.go{animation:u9zgo .7s cubic-bezier(.34,1.4,.64,1)}
+@keyframes u9zgo{0%{translate:var(--x) 0}35%{translate:var(--x) -10px}100%{translate:var(--x) 70px}}
+.u9zz.idle .u9zs .ck .u9ck:nth-child(2){animation:u9zpk 2.4s ease-in-out infinite}
+@keyframes u9zpk{50%{translate:0 -5px}}
+.u9zs .bd{position:absolute;left:12px;right:12px;top:60px;height:90px;border-radius:28px;z-index:2;background:linear-gradient(180deg,#26262A,#141416 70%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.16),inset 0 0 0 1px rgba(255,255,255,.06),0 -12px 30px rgba(0,0,0,.55)}
+.u9zs .sl{position:absolute;left:50%;top:12px;width:184px;height:10px;margin-left:-92px;border-radius:5px;background:#030304;box-shadow:inset 0 2px 3px rgba(0,0,0,.9),0 1px 0 rgba(255,255,255,.1)}
+.u9zs .st{position:absolute;left:0;right:0;top:30px;height:7px;background:var(--u9c,#C8F25A);opacity:.95}
+.u9zs .ln{position:absolute;right:28px;top:-4px;width:0;height:0;border-radius:50%;background:radial-gradient(circle at 38% 34%,#5d6b3a 0,#16180f 45%,#050505 70%);box-shadow:0 0 0 2px #2c2c31}
+.u9zs .bt{position:absolute;left:30px;top:9px;width:12px;height:12px;border-radius:50%;background:#C8F25A;box-shadow:0 0 8px rgba(200,242,90,.7)}
+.u9zs .mn{position:absolute;left:50%;top:30px;margin-left:-15px;z-index:4}
+#home #hmoon:active .u9zs .bd{scale:.985}
+/* --- 2 フィルムの 帯 --- */
+.u9zf{position:absolute;left:-24px;right:-24px;top:28px;height:72px;rotate:-3deg;background:#0D0D0F;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 12px 30px rgba(0,0,0,.6),0 -1px 0 rgba(200,242,90,.25)}
+.u9zf::before,.u9zf::after{content:'';position:absolute;left:0;right:0;height:7px;background:repeating-linear-gradient(90deg,rgba(244,241,234,.75) 0 9px,transparent 9px 18px);border-radius:2px}
+.u9zf::before{top:6px}.u9zf::after{bottom:6px}
+.u9zf .fr{position:absolute;left:50%;top:19px;display:flex;gap:9px;translate:-50% 0}
+.u9zf .fr i{width:76px;height:34px;border-radius:3px;background:radial-gradient(circle at 30% 30%,#F3FFD2,#C8F25A 50%,#8FBF2A);box-shadow:0 0 14px rgba(200,242,90,.45);display:grid;place-items:center}
+.u9zf .fr i.used{background:#1C1C1F;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09)}
+.u9zf .fr i.go{animation:u9zfl .6s ease-out}
+@keyframes u9zfl{0%{filter:brightness(2.2)}}
+.u9zf .fr i .mn{width:22px;height:22px}
+#home #hmoon:active .u9zf{scale:.98}
+/* --- 3 大きな シャッター --- */
+.u9zb{position:absolute;left:50%;top:24px;width:96px;height:96px;margin-left:-48px}
+.u9zb::before{content:'';position:absolute;inset:-40px -90px -30px;background:radial-gradient(closest-side,rgba(200,242,90,.22),transparent);z-index:-1}
+.u9zb svg.rg{position:absolute;inset:0;width:96px;height:96px}
+.u9zb b{position:absolute;inset:12px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#EFFFC2,#C8F25A 60%,#A6D33E);box-shadow:0 0 22px rgba(200,242,90,.5),inset 0 -3px 0 rgba(0,0,0,.12);display:grid!important;place-items:center;transition:scale .25s cubic-bezier(.34,1.56,.64,1)}
+.u9zb b svg{width:30px;height:30px}
+.u9zb.lock b{background:#1C1C1F;box-shadow:inset 0 0 0 1.5px rgba(200,242,90,.5)}
+#home #hmoon:active .u9zb b{scale:.9}
+/* --- 4 ステッカー --- */
+.u9zk{position:absolute;left:50%;top:38px;width:232px;height:72px;margin-left:-116px;rotate:-3deg;border-radius:24px;background:#C8F25A;box-shadow:0 0 0 5px #FAFAF7,0 12px 26px rgba(0,0,0,.55);display:flex!important;align-items:center;justify-content:center;gap:14px}
+.u9zk .tp{position:absolute;top:-13px;left:50%;width:66px;height:20px;margin-left:-33px;rotate:5deg;background:rgba(255,156,200,.88);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.u9zk .u9ck{width:34px;height:43px;padding:3px 3px 9px;box-shadow:0 3px 6px rgba(0,0,0,.25);transition:opacity .3s,scale .3s}
+.u9zk .u9ck u{background:radial-gradient(circle at 32% 26%,#4a4f3d,#1a1c15 70%)}
+.u9zk .u9ck:nth-child(2){rotate:-6deg}.u9zk .u9ck:nth-child(4){rotate:6deg}
+.u9zk .u9ck.used{background:none;box-shadow:inset 0 0 0 2px rgba(17,17,19,.35);border-radius:5px}
+.u9zk .u9ck.used u{visibility:hidden}
+.u9zk .u9ck.go{animation:u9zst .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes u9zst{0%{scale:1.25;opacity:1}}
+.u9zk .sr{position:absolute;right:-12px;top:-14px;width:30px;height:30px;rotate:14deg}
+.u9zk .mn{position:absolute;left:50%;top:50%;margin:-15px 0 0 -15px;filter:none}
+.u9zk .mn path{fill:#111113}
+#home #hmoon:active .u9zk{scale:.96}
+@media (prefers-reduced-motion:reduce){.u9zz *{animation:none!important;transition:none!important}}

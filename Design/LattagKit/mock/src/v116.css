@@ -1,0 +1,66 @@
+/* ===== v116(モック v117 ・ PROMPT v131 案):Home の 3つの ボタンを やめる ・ # を 大きく ・ 3案  名前:u9h ===== */
+#home.u9h #hpi.u9dk{opacity:0!important;pointer-events:none!important}
+/* 共通:# の レンズを 大きく ・ NEXT を 下へ */
+#home.u9h #orb #lens{transform:translateY(18px) scale(1.14)!important;transition:transform .5s cubic-bezier(.3,1.2,.5,1)}
+#home.u9h #orb #lens:active{transform:translateY(18px) scale(1.09)!important}
+#home.u9h #j9nx{top:454px!important}
+#home.u9h #orb .u9lh{position:absolute;left:50%;top:418px;translate:-50% 0;z-index:4;font:800 11.5px/1 var(--u9ui);letter-spacing:.06em;color:#111113;background:#C8F25A;padding:6px 11px;border-radius:12px;box-shadow:0 0 0 3px #0A0A0B;white-space:nowrap;pointer-events:none}
+/* ---------- 案1 ことばの タブ ---------- */
+.u9hb{position:absolute;left:16px;right:16px;bottom:-26px;z-index:12;display:none}
+#home.u9h-tab .u9hb.tab{display:flex}
+.u9hb.tab{height:56px;padding:5px;border-radius:28px;background:#141416;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);gap:2px}
+.u9hb.tab button{position:relative;flex:1;border-radius:23px;display:flex;align-items:center;justify-content:center;gap:7px;font:800 14px/1 var(--u9ui);color:#A9A9B0;transition:background .25s,color .25s}
+.u9hb.tab button i{width:8px;height:8px;border-radius:50%;background:var(--bc);box-shadow:0 0 8px color-mix(in srgb,var(--bc) 70%,transparent)}
+.u9hb.tab button.on{background:#FAFAF7;color:#111113}
+.u9hb.tab button.on i{box-shadow:none}
+.u9hb.tab button em{min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#FF4D6D;color:#fff;font:800 10.5px/18px var(--u9ui);font-style:normal}
+.u9hb button:active{scale:.95}
+/* ---------- 案2 中身の 列(ストーリー の ように) ---------- */
+#home.u9h-row .u9hb.row{display:grid}
+.u9hb.row{grid-template-columns:repeat(3,1fr);gap:10px;bottom:-40px}
+.u9hb.row button{position:relative;height:112px;border-radius:22px;overflow:hidden;background:#141416;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:0 11px 10px;text-align:left;transition:scale .25s cubic-bezier(.34,1.56,.64,1)}
+.u9hb.row button .bg{position:absolute;inset:0;background:var(--ph) center/cover}
+.u9hb.row button .bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,11,.1) 20%,rgba(10,10,11,.88))}
+.u9hb.row button .bg.lk{filter:blur(7px) saturate(.6) brightness(.8);inset:-10px}
+.u9hb.row button>*:not(.bg){position:relative}
+.u9hb.row button b{font:800 14.5px/1.1 var(--u9ui);color:#FAFAF7;display:flex;align-items:center;gap:6px}
+.u9hb.row button b::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--bc);box-shadow:0 0 8px var(--bc)}
+.u9hb.row button small{margin-top:3px;font:700 11px/1.2 var(--u9ui);color:#C9C9CF;white-space:nowrap}
+.u9hb.row button .top{position:absolute;left:10px;right:10px;top:10px;display:flex;align-items:center}
+.u9hb.row button .avs{display:flex}.u9hb.row button .avs>*{margin-left:-8px;box-shadow:0 0 0 2px #141416;border-radius:50%}.u9hb.row button .avs>*:first-child{margin-left:0}
+.u9hb.row button em{margin-left:auto;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;background:#FF4D6D;color:#fff;font:800 11px/20px var(--u9ui);font-style:normal}
+.u9hb.row button .tag{margin-left:auto;height:20px;padding:0 7px;border-radius:10px;background:rgba(17,17,19,.72);color:var(--bc);font:800 10.5px/20px var(--u9ui)}
+.u9hb.row button .lock{position:absolute;left:50%;top:38%;translate:-50% -50%;width:30px;height:30px;border-radius:15px;background:rgba(17,17,19,.7);display:grid;place-items:center}
+.u9hb.row button .lock svg{width:15px;height:15px;fill:none;stroke:#FAFAF7;stroke-width:2.2;stroke-linecap:round}
+.u9hb.row button.on{box-shadow:inset 0 0 0 2px var(--bc)}
+.u9hb.row button:active{scale:.95}
+#home.u9h-row #j9nx{top:410px!important}
+#home.u9h-row #orb #lens{transform:translateY(-6px) scale(1.06)!important}
+#home.u9h-row #orb .u9lh{top:380px}
+/* ---------- 案3 柵の ステッカー(Lattag だけの 形) ---------- */
+#home.u9h-stk .u9hb.stk{display:flex}
+.u9hb.stk{bottom:-30px;left:12px;right:12px;justify-content:space-between;align-items:flex-end}
+.u9hb.stk button{position:relative;height:64px;min-width:104px;padding:0 16px;border-radius:20px;background:#FAFAF7;color:#111113;display:flex;align-items:center;gap:8px;box-shadow:0 14px 26px -12px rgba(0,0,0,.9);font:800 15px/1 var(--u9ui);transition:rotate .3s cubic-bezier(.34,1.56,.64,1),scale .3s cubic-bezier(.34,1.56,.64,1)}
+.u9hb.stk button::before{content:'';position:absolute;top:-9px;left:50%;width:46px;height:16px;margin-left:-23px;rotate:-5deg;background:color-mix(in srgb,var(--bc) 90%,transparent)}
+.u9hb.stk button:nth-child(1){rotate:-5deg}.u9hb.stk button:nth-child(2){rotate:2deg;translate:0 -10px}.u9hb.stk button:nth-child(3){rotate:4deg}
+.u9hb.stk button:active{rotate:0deg;scale:.94}
+.u9hb.stk button i{width:30px;height:30px;border-radius:10px;background:var(--bc);display:grid;place-items:center}
+.u9hb.stk button i svg{width:18px;height:18px;fill:none;stroke:#111113;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.u9hb.stk button em{position:absolute;right:-7px;top:-8px;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:11px;background:#FF4D6D;color:#fff;font:800 11.5px/22px var(--u9ui);font-style:normal;box-shadow:0 0 0 2.5px #0A0A0B}
+.u9hb.stk button.on{background:#C8F25A}
+@media (prefers-reduced-motion:reduce){#home.u9h #orb #lens{transition:none}}
+
+/* スクロール 中の 小さな 列は 案に あわせる(タブ ・ ステッカー = 色の 点 だけ) */
+#home.u9h .u9md button:not(.up){background:#1C1C1F!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)!important;border-radius:23px!important}
+#home.u9h .u9md button:not(.up) svg{stroke:var(--bc)!important}
+/* v117b:案2 を 決定 ・ 写真の 上に 英語の 大きな 字(セリフ) */
+.u9hb.row button{height:120px!important;padding:0 11px 11px!important;border-radius:24px!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)!important}
+.u9hb.row button .bg::after{background:linear-gradient(180deg,rgba(10,10,11,0) 25%,rgba(10,10,11,.15) 45%,rgba(10,10,11,.82) 100%)!important}
+.u9hb.row button .bg.tint::before{content:'';position:absolute;inset:0;z-index:1;background:color-mix(in srgb,var(--bc) 30%,transparent);mix-blend-mode:soft-light}
+#phone .u9hb.row button b{display:block!important;font-family:var(--u9tt)!important;font-weight:400!important;font-size:var(--fs,28px)!important;line-height:.95!important;letter-spacing:-.02em!important;color:#FAFAF7!important;white-space:nowrap;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+.u9hb.row button b::before{display:none!important}
+.u9hb.row button small{margin-top:5px!important;display:flex;align-items:center;gap:5px;font:800 10.5px/1.1 var(--u9ui)!important;letter-spacing:.02em;color:#E9E9EC!important}
+.u9hb.row button small::before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:var(--bc);box-shadow:0 0 6px var(--bc)}
+.u9hb.row button.on{box-shadow:inset 0 0 0 2px var(--bc)!important}
+#home.u9mini .u9hb{opacity:0;pointer-events:none}
+.u9hb{transition:opacity .2s}

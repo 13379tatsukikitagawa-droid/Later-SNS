@@ -1,0 +1,33 @@
+/* ===== v112(モック v113 ・ PROMPT v126):Home の 3つの ボタン「おしゃれ」4案  名前:u9dv-(gl|pp|ml|au) ===== */
+/* --- 案14 ガラス --- */
+#home.u9nb.u9dv-gl #hpi.u9dk button i{width:76px!important;height:76px!important;border-radius:26px!important;rotate:none!important;background:radial-gradient(circle at 50% 118%,color-mix(in srgb,var(--bc) 62%,transparent) 0,transparent 62%),linear-gradient(160deg,rgba(255,255,255,.17),rgba(255,255,255,.04))!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.24),inset 0 1.5px 0 rgba(255,255,255,.35),0 18px 26px -14px rgba(0,0,0,.9)!important;transition:scale .25s cubic-bezier(.34,1.56,.64,1)!important}
+#home.u9nb.u9dv-gl #hpi.u9dk button i svg{stroke:#FAFAF7!important;stroke-width:2!important;width:30px!important;height:30px!important}
+#home.u9nb.u9dv-gl #hpi.u9dk button:active i{translate:none!important;scale:.93}
+#home.u9nb.u9dv-gl #hpi.u9dk button span{color:#D9D9DE!important;font-weight:700!important;letter-spacing:.06em!important;font-size:12.5px!important}
+#home.u9nb.u9dv-gl #hpi.u9dk button em{box-shadow:0 0 0 3px #0A0A0B!important}
+/* --- 案15 紙(エディトリアル) --- */
+#home.u9nb.u9dv-pp #hpi.u9dk{gap:10px!important}
+#home.u9nb.u9dv-pp #hpi.u9dk button{position:relative;width:106px!important;height:92px!important;margin-bottom:22px}
+#home.u9nb.u9dv-pp #hpi.u9dk button i{position:absolute!important;inset:0;width:auto!important;height:auto!important;border-radius:16px!important;background:#F7F5EF!important;box-shadow:0 14px 24px -12px rgba(0,0,0,.9)!important;translate:none!important;transition:rotate .3s cubic-bezier(.34,1.56,.64,1),scale .3s cubic-bezier(.34,1.56,.64,1)!important}
+#home.u9nb.u9dv-pp #hpi.u9dk button[data-i="1"] i{rotate:-2.4deg!important}#home.u9nb.u9dv-pp #hpi.u9dk button[data-i="2"] i{rotate:1.2deg!important}#home.u9nb.u9dv-pp #hpi.u9dk button[data-i="3"] i{rotate:-1.4deg!important}
+#home.u9nb.u9dv-pp #hpi.u9dk button:active i{rotate:0deg!important;scale:.95}
+#home.u9nb.u9dv-pp #hpi.u9dk button i::after{content:'';position:absolute;left:13px;top:14px;width:10px;height:10px;border-radius:50%;background:var(--bc);box-shadow:0 0 0 1px rgba(17,17,19,.12)}
+#home.u9nb.u9dv-pp #hpi.u9dk button i svg{position:absolute!important;right:11px;top:10px;width:19px!important;height:19px!important;stroke-width:2!important;opacity:.8}
+#phone #home.u9nb.u9dv-pp #hpi.u9dk button .u9dw{display:block!important;position:absolute;left:13px;bottom:27px;z-index:2;font-family:var(--u9tt)!important;font-weight:400!important;font-size:23px!important;line-height:1;letter-spacing:-.015em;color:#111113;pointer-events:none}
+#home.u9nb.u9dv-pp #hpi.u9dk button span{position:absolute;left:13px;bottom:11px;z-index:2;color:#8A877E!important;font-size:11px!important;font-weight:700!important;letter-spacing:.04em!important;pointer-events:none}
+#home.u9nb.u9dv-pp #hpi.u9dk button em{right:-8px!important;top:-9px!important;left:auto!important;box-shadow:0 0 0 3px #0A0A0B!important}
+/* --- 案16 モノクロ + 色の 線 --- */
+#home.u9nb.u9dv-ml #hpi.u9dk button i{width:76px!important;height:76px!important;border-radius:26px!important;rotate:none!important;background:linear-gradient(var(--bc),var(--bc)) no-repeat 50% calc(100% - 13px)/20px 3.5px,#121214!important;box-shadow:inset 0 0 0 1.5px rgba(250,250,247,.85),0 18px 26px -14px rgba(0,0,0,.9)!important;transition:scale .25s cubic-bezier(.34,1.56,.64,1),background .12s!important}
+#home.u9nb.u9dv-ml #hpi.u9dk button i svg{stroke:#FAFAF7!important;stroke-width:1.9!important;width:28px!important;height:28px!important;margin-top:-6px}
+#home.u9nb.u9dv-ml #hpi.u9dk button:active i{translate:none!important;scale:.93;background:var(--bc)!important}
+#home.u9nb.u9dv-ml #hpi.u9dk button:active i svg{stroke:#111113!important}
+#home.u9nb.u9dv-ml #hpi.u9dk button span{color:#FAFAF7!important;font-weight:700!important;letter-spacing:.06em!important;font-size:12.5px!important}
+#home.u9nb.u9dv-ml #hpi.u9dk button em{box-shadow:0 0 0 3px #0A0A0B!important}
+/* --- 案17 オーラ(やわらかい 色の ぼかし) --- */
+#home.u9nb.u9dv-au #hpi.u9dk button i{width:76px!important;height:76px!important;border-radius:28px!important;rotate:none!important;background:radial-gradient(circle at 28% 22%,color-mix(in srgb,var(--bc),#fff 68%) 0,transparent 56%),radial-gradient(circle at 80% 88%,color-mix(in srgb,var(--bc),#111 22%) 0,transparent 60%),var(--bc)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 14px 34px -6px color-mix(in srgb,var(--bc) 62%,transparent)!important;transition:scale .25s cubic-bezier(.34,1.56,.64,1)!important}
+#home.u9nb.u9dv-au #hpi.u9dk button i svg{stroke-width:1.9!important;width:29px!important;height:29px!important}
+#home.u9nb.u9dv-au #hpi.u9dk button:active i{translate:none!important;scale:.93}
+#home.u9nb.u9dv-au #hpi.u9dk button span{color:#E9E9EC!important;font-weight:700!important;letter-spacing:.06em!important;font-size:12.5px!important}
+#home.u9nb.u9dv-au #hpi.u9dk button em{box-shadow:0 0 0 3px #0A0A0B!important}
+#home.u9nb.u9dv-pp #hpi.u9dk button[data-i="2"] span{font-size:0!important}
+#home.u9nb.u9dv-pp #hpi.u9dk button[data-i="2"] span::after{content:'旅行';font-size:11px;letter-spacing:.04em}

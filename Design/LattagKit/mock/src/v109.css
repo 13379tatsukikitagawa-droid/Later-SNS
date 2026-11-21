@@ -1,0 +1,32 @@
+/* ===== v109(モック v110 ・ PROMPT v123):Home の 丸 3つ の 見た目 4案(+ 今)  名前:u9dv ===== */
+/* --- 案1 ピル(字が 中に 入る) --- */
+#home.u9nb.u9dv-pill #hpi.u9dk{gap:12px!important}
+#home.u9nb.u9dv-pill #hpi.u9dk button{position:relative;flex-direction:row!important;width:104px!important;height:58px!important;gap:7px!important;border-radius:29px!important;background:var(--bc)!important;box-shadow:0 0 0 3px #FAFAF7,0 6px 0 3px color-mix(in srgb,var(--bc),#111 34%),0 20px 24px -12px rgba(0,0,0,.75),inset 0 2px 0 rgba(255,255,255,.5)!important;transition:translate .16s cubic-bezier(.3,1.4,.5,1),box-shadow .16s!important;margin-bottom:40px}
+#home.u9nb.u9dv-pill #hpi.u9dk button:active{translate:0 4px;box-shadow:0 0 0 3px #FAFAF7,0 2px 0 3px color-mix(in srgb,var(--bc),#111 34%),inset 0 2px 0 rgba(255,255,255,.5)!important}
+#home.u9nb.u9dv-pill #hpi.u9dk button i{position:static!important;width:24px!important;height:24px!important;background:none!important;box-shadow:none!important;translate:none!important;rotate:none!important;transform:none!important}
+#home.u9nb.u9dv-pill #hpi.u9dk button i svg{width:22px!important;height:22px!important;stroke-width:2.4!important}
+#home.u9nb.u9dv-pill #hpi.u9dk button span{color:#111113!important;font-size:14.5px!important;letter-spacing:0!important}
+#home.u9nb.u9dv-pill #hpi.u9dk button em{right:-6px;top:-10px}
+/* --- 案2 チェキ(小さな チェキ 3枚) --- */
+#home.u9nb.u9dv-cheki #hpi.u9dk{gap:14px!important}
+#home.u9nb.u9dv-cheki #hpi.u9dk button{position:relative;width:86px!important;height:104px!important;margin-bottom:12px}
+#home.u9nb.u9dv-cheki #hpi.u9dk button i{position:absolute!important;inset:0;width:auto!important;height:auto!important;border-radius:7px!important;background:linear-gradient(var(--bc),var(--bc)) no-repeat 7px 7px/calc(100% - 14px) 66px,#FAFAF7!important;box-shadow:0 14px 24px -10px rgba(0,0,0,.85)!important;display:block!important;transition:rotate .3s cubic-bezier(.34,1.56,.64,1),scale .3s cubic-bezier(.34,1.56,.64,1)!important;translate:0!important}
+#home.u9nb.u9dv-cheki #hpi.u9dk button[data-i="1"] i{rotate:-5deg!important}#home.u9nb.u9dv-cheki #hpi.u9dk button[data-i="2"] i{rotate:2deg!important}#home.u9nb.u9dv-cheki #hpi.u9dk button[data-i="3"] i{rotate:5deg!important}
+#home.u9nb.u9dv-cheki #hpi.u9dk button:active i{rotate:0deg!important;scale:.94}
+#home.u9nb.u9dv-cheki #hpi.u9dk button i svg{position:absolute!important;left:50%;top:24px;margin-left:-16px;width:32px!important;height:32px!important}
+#home.u9nb.u9dv-cheki #hpi.u9dk button span{position:absolute;left:0;right:0;bottom:9px;text-align:center;color:#111113!important;font-size:12.5px!important;letter-spacing:0!important;z-index:2;pointer-events:none;transition:rotate .3s}
+#home.u9nb.u9dv-cheki #hpi.u9dk button[data-i="1"] span{rotate:-5deg;translate:-3px 0}#home.u9nb.u9dv-cheki #hpi.u9dk button[data-i="2"] span{rotate:2deg}#home.u9nb.u9dv-cheki #hpi.u9dk button[data-i="3"] span{rotate:5deg;translate:3px 0}
+#home.u9nb.u9dv-cheki #hpi.u9dk button em{right:-9px;top:-9px;box-shadow:0 0 0 3px #0A0A0B!important}
+/* --- 案3 リング(黒い 丸 + 色の 輪と 絵) --- */
+#home.u9nb.u9dv-ring #hpi.u9dk button i{background:#151517!important;box-shadow:0 0 0 3px var(--bc),0 0 26px -2px color-mix(in srgb,var(--bc) 65%,transparent),inset 0 0 18px color-mix(in srgb,var(--bc) 18%,transparent)!important;transition:scale .25s cubic-bezier(.34,1.56,.64,1),background .15s!important}
+#home.u9nb.u9dv-ring #hpi.u9dk button i svg{stroke:var(--bc)!important;stroke-width:2.3!important}
+#home.u9nb.u9dv-ring #hpi.u9dk button:active i{translate:0!important;scale:.92;background:var(--bc)!important}
+#home.u9nb.u9dv-ring #hpi.u9dk button:active i svg{stroke:#111113!important}
+#home.u9nb.u9dv-ring #hpi.u9dk button em{box-shadow:0 0 0 3px #0A0A0B!important}
+#home.u9nb.u9dv-ring #hpi.u9dk button{gap:13px!important;height:108px!important}
+/* --- 案4 タイル(角丸の 四角) --- */
+#home.u9nb.u9dv-tile #hpi.u9dk button i{width:76px!important;height:76px!important;border-radius:26px!important}
+#home.u9nb.u9dv-tile #hpi.u9dk button i svg{width:33px!important;height:33px!important}
+#home.u9nb.u9dv-tile #hpi.u9dk button[data-i="1"] i{rotate:-3deg!important}#home.u9nb.u9dv-tile #hpi.u9dk button[data-i="3"] i{rotate:3deg!important}
+/* 決定(v123):タイル。小さな 列も 同じ 形に */
+#home.u9dv-tile .u9md button:not(.up){border-radius:16px}

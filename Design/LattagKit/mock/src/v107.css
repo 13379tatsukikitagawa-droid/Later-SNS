@@ -1,0 +1,67 @@
+/* ===== v107(モック v108 ・ PROMPT v121):ポップ + おしゃれ。丸 = キーキャップ ・ Today = チェキの 3枠 ・ Friends = マイカード ・ Trip を 大きく  名前:u9k ===== */
+/* 1) Home の 丸:つやを やめて「押せる ステッカー」(色の 段 + ミルクの ふち)。うごきは 押した 時 だけ */
+#home.u9nb #hpi.u9dk button i{width:72px!important;height:72px!important;rotate:0deg!important;animation:none!important;background:var(--bc)!important;box-shadow:0 0 0 3.5px #FAFAF7,0 7px 0 3.5px color-mix(in srgb,var(--bc),#111 34%),0 22px 26px -12px rgba(0,0,0,.75),inset 0 2px 0 rgba(255,255,255,.5)!important;transition:translate .16s cubic-bezier(.3,1.4,.5,1),box-shadow .16s!important}
+#home.u9nb #hpi.u9dk button i::before{display:none!important}
+#home.u9nb #hpi.u9dk button:active{transform:none!important}
+#home.u9nb #hpi.u9dk button:active i{translate:0 5px;box-shadow:0 0 0 3.5px #FAFAF7,0 2px 0 3.5px color-mix(in srgb,var(--bc),#111 34%),0 10px 14px -8px rgba(0,0,0,.75),inset 0 2px 0 rgba(255,255,255,.5)!important}
+#home.u9nb #hpi.u9dk button i svg{width:30px!important;height:30px!important;stroke-width:2.2!important}
+#home.u9nb #hpi.u9dk button{height:116px!important;gap:16px!important}
+#home.u9nb #hpi.u9dk button span{font-size:13.5px!important;font-weight:800!important;color:#E9E9EC;letter-spacing:.03em!important}
+#home.u9nb #hpi.u9dk button em{box-shadow:0 0 0 3px #FAFAF7!important;right:-8px;top:-8px}
+.u9md button{background:var(--bc);box-shadow:0 0 0 2.5px #FAFAF7,0 4px 0 2.5px color-mix(in srgb,var(--bc),#111 34%),inset 0 1.5px 0 rgba(255,255,255,.5);margin-bottom:4px;transition:translate .16s cubic-bezier(.3,1.4,.5,1),box-shadow .16s}
+.u9md button:active{scale:1;translate:0 3px;box-shadow:0 0 0 2.5px #FAFAF7,0 1px 0 2.5px color-mix(in srgb,var(--bc),#111 34%),inset 0 1.5px 0 rgba(255,255,255,.5)}
+.u9md .up{background:#2A2A2F;box-shadow:none;margin-bottom:0}
+.u9md .up:active{translate:0;scale:.9;box-shadow:none}
+.u9md{padding:8px 10px 6px 12px}
+/* 2) Today:チェキの 3枠 */
+#home #tdv{padding:22px 20px 20px}
+#phone .tdv .tdh b{font-size:38px!important}
+#phone .tdv .tdh span{font-size:36px!important}
+#phone .tdv .tdh span s{font-size:21px!important}
+#phone .tdv .tdl{font-size:13px!important;margin-top:9px}
+.tdv .tdf{gap:14px;margin-top:20px;padding:0 2px;align-items:stretch}
+.tdv .tf{aspect-ratio:auto;height:126px;border-radius:7px;overflow:visible;background:none}
+.tdv .tf.dv{background:#FAFAF7;box-shadow:0 12px 22px -10px rgba(0,0,0,.9);overflow:hidden}
+.tdv .tf.dv:nth-child(1){rotate:-2.2deg}.tdv .tf.dv:nth-child(2){rotate:1.6deg}.tdv .tf.dv:nth-child(3){rotate:-1.2deg}
+.tdv .tf.dv img{inset:6px 6px 24px;width:calc(100% - 12px);height:calc(100% - 30px);border-radius:3px}
+.tdv .tf.dv::before{inset:6px 6px 24px;border-radius:3px}
+.tdv .tf.dv::after{inset:6px 6px 24px}
+.tdv .tf .tt{left:8px;bottom:6px;font-size:10px!important;font-weight:800!important;color:#111113;letter-spacing:.02em!important}
+.tdv .tf .tp{right:8px;bottom:5px;top:auto;font-family:var(--u9ui)!important;font-style:normal!important;font-size:10px!important;font-weight:800!important;color:#8C8C93}
+.tdv .tf.nx{border-radius:20px;background:#C8F25A;color:#111113;gap:6px;box-shadow:0 6px 0 #97C235,0 18px 22px -12px rgba(200,242,90,.5),inset 0 2px 0 rgba(255,255,255,.55);height:120px;transition:translate .16s cubic-bezier(.3,1.4,.5,1),box-shadow .16s}
+.tdv .tf.nx::before{display:none}
+.tdv .tf.nx svg{width:30px;height:30px;stroke:#111113;stroke-width:2.6}
+#phone .tdv .tf.nx span{font-size:15px!important;font-weight:800!important;letter-spacing:.02em!important;color:#111113!important}
+.tdv .tf.nx:active{translate:0 4px;box-shadow:0 2px 0 #97C235,inset 0 2px 0 rgba(255,255,255,.55)}
+.tdv .tf.no{box-shadow:none;border:1.5px dashed rgba(255,255,255,.16);border-radius:7px;display:grid;place-items:center}
+.tdv .tf.no::after{font-family:var(--u9tt);font-size:30px;color:rgba(255,255,255,.16);line-height:1}
+.tdv .tdf>.tf.no:nth-child(2)::after{content:'2'}.tdv .tdf>.tf.no:nth-child(3)::after{content:'3'}.tdv .tdf>.tf.no:nth-child(1)::after{content:'1'}
+.tdv .tdp{height:6px;border-radius:3px;margin-top:24px;background:rgba(255,255,255,.1)}
+.tdv .tdp i{border-radius:3px;min-width:6px}
+#phone #home .tdv .tdp i::after{right:-7px;top:-4px;width:14px;height:14px;box-shadow:0 0 0 3px #121014,0 0 12px rgba(200,242,90,.6)!important}
+#phone .tdv .tdq{font-size:12.5px!important;margin-top:12px}
+/* 3) Friends:マイカード(QR の チェキ + 名前 + リンクの ボタン) */
+.u9wm{position:relative;margin-top:14px;border-radius:28px;background:linear-gradient(135deg,#202024,#17171A);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);padding:16px 16px 16px 14px;display:grid;grid-template-columns:128px 1fr;column-gap:16px;align-items:stretch}
+.u9wm .u9wq{grid-row:1/4;margin:2px 0;rotate:-2.5deg;padding:8px 8px 0;align-self:center}
+.u9wm .u9wq b{font-size:11.5px;padding:8px 0 9px;color:#6E6E75}
+.u9wm .me{display:flex;align-items:center;gap:10px;min-width:0;padding-top:4px}
+.u9wm .me .av{flex:none;width:40px;height:40px;border-radius:50%;background:#2A2A2F center/cover;box-shadow:0 0 0 2px #FAFAF7}
+.u9wm .me div{min-width:0;display:flex;flex-direction:column;gap:2px}
+.u9wm .me b{font:800 16px/1.15 var(--u9ui);color:#FAFAF7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u9wm .me small{font:700 12px/1.2 var(--u9ui);color:#8C8C93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u9wm .u9wl{align-self:end;min-height:0;height:52px;border-radius:26px;padding:0 16px;flex-direction:row;align-items:center;justify-content:center;gap:9px;box-shadow:0 5px 0 #97C235,inset 0 2px 0 rgba(255,255,255,.55);margin-top:14px;transition:translate .16s cubic-bezier(.3,1.4,.5,1),box-shadow .16s}
+.u9wm .u9wl:active{scale:1;translate:0 4px;box-shadow:0 1px 0 #97C235,inset 0 2px 0 rgba(255,255,255,.55)}
+.u9wm .u9wl .ic{position:static;width:auto;height:auto;background:none;border-radius:0}
+.u9wm .u9wl .ic svg{width:19px;height:19px;stroke:#111113;stroke-width:2.4}
+#phone .u9w .u9wm .u9wl b.t{font-size:15.5px!important}
+.u9wm .u9wn{font:700 11.5px/1 var(--u9ui);color:#6E6E75;text-align:center;margin-top:12px;white-space:nowrap}
+.u9wr{margin-top:12px}
+/* 4) Trip を 大きく */
+#aact>.acd.nw:only-child{flex:1 1 0;min-width:0;width:100%;height:150px;border-radius:26px;grid-template-columns:116px minmax(0,1fr) 54px;column-gap:8px;padding:0 14px 0 4px;background:linear-gradient(120deg,rgba(124,203,255,.16),rgba(124,203,255,0) 58%),#1A1A1D}
+#aact>.acd.nw:only-child .st3{scale:.9}
+#aact>.acd.nw:only-child b,#aact>.acd.nw:only-child small{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#aact>.acd.nw:only-child b{font-size:33px!important;display:block!important}
+#aact>.acd.nw:only-child small{font-size:13px;margin-top:8px}
+#aact>.acd.nw:only-child::after{width:52px;height:52px;border-radius:26px;font-size:30px;justify-self:end;box-shadow:0 5px 0 #4E9CD1,inset 0 2px 0 rgba(255,255,255,.5)}
+.u9wx b{font-size:38px!important}.u9wh b{font-size:38px!important}
+@media (prefers-reduced-motion:reduce){.tdv .tf.nx,.u9wm .u9wl,#home.u9nb #hpi.u9dk button i{transition:none!important}}

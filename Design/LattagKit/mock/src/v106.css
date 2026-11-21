@@ -1,0 +1,26 @@
+/* ===== v106(モック v107 ・ PROMPT v120):Home の 丸 3つを みがく ・ スクロールで 小さく なって ついて くる  名前:u9m ===== */
+/* 1) 大きい 丸:ぷっくり ・ つや ・ 色の 光 */
+#home.u9nb #hpi.u9dk{gap:6px!important}
+#home.u9nb #hpi.u9dk button{width:104px!important;height:112px!important;gap:10px!important}
+#home.u9nb #hpi.u9dk button i{width:74px!important;height:74px!important;background:radial-gradient(circle at 30% 24%,color-mix(in srgb,var(--bc),#fff 46%) 0,var(--bc) 58%,color-mix(in srgb,var(--bc),#111 10%) 100%)!important;box-shadow:0 0 0 4px #FAFAF7,0 16px 28px -8px color-mix(in srgb,var(--bc) 70%,transparent),inset 0 -5px 0 rgba(17,17,19,.13)!important}
+#home.u9nb #hpi.u9dk button i::before{content:'';position:absolute;left:13px;top:9px;width:26px;height:13px;border-radius:50%;background:rgba(255,255,255,.55);rotate:-24deg;filter:blur(1.5px);pointer-events:none}
+#home.u9nb #hpi.u9dk button i svg{width:31px!important;height:31px!important;stroke-width:2.3!important;position:relative}
+#home.u9nb #hpi.u9dk button span{font-size:14px!important;font-weight:800!important;color:#FAFAF7;letter-spacing:.01em!important}
+#home.u9nb #hpi.u9dk button em{right:-7px;top:-7px;min-width:24px;height:24px;line-height:24px;border-radius:12px;font-size:12.5px;box-shadow:0 0 0 3px #0A0A0B;z-index:2}
+#home.u9nb #hpi.u9dk button:active{transform:scale(.9)}
+#home.u9nb:not(.u9mini) #hpi.u9dk button i{animation:u9mb 3.6s ease-in-out infinite}
+#home.u9nb #hpi.u9dk button[data-i="2"] i{animation-delay:.5s}#home.u9nb #hpi.u9dk button[data-i="3"] i{animation-delay:1s}
+@keyframes u9mb{50%{translate:0 -4px}}
+#home.u9nb #hpi.u9dk{transition:opacity .25s,scale .35s cubic-bezier(.3,1.2,.5,1)}
+#home.u9nb.u9mini #hpi.u9dk{opacity:0;scale:.86;pointer-events:none}
+/* 2) 小さい 列(スクロール 中 ・ いつも 下に いる) */
+.u9md{position:absolute;left:50%;bottom:26px;z-index:40;display:flex;align-items:center;gap:12px;padding:7px 10px;border-radius:32px;background:rgba(22,22,24,.94);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 16px 34px -10px rgba(0,0,0,.9);translate:-50% 40px;scale:.7;opacity:0;pointer-events:none;transition:translate .5s cubic-bezier(.3,1.35,.5,1),scale .5s cubic-bezier(.3,1.35,.5,1),opacity .22s}
+#home.u9mini .u9md{translate:-50% 0;scale:1;opacity:1;pointer-events:auto}
+.u9md button{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 24%,color-mix(in srgb,var(--bc),#fff 46%) 0,var(--bc) 58%,color-mix(in srgb,var(--bc),#111 10%) 100%);box-shadow:0 0 0 2.5px #FAFAF7,inset 0 -3px 0 rgba(17,17,19,.13);transition:scale .3s cubic-bezier(.34,1.56,.64,1)}
+.u9md button:active{scale:.88}
+.u9md button svg{width:21px;height:21px;fill:none;stroke:#111113;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.u9md button em{position:absolute;right:-5px;top:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#FF4D6D;color:#fff;font:800 10.5px/18px var(--u9ui);font-style:normal;text-align:center;box-shadow:0 0 0 2px #161618}
+.u9md .up{width:38px;height:38px;background:#2A2A2F;box-shadow:none;margin-left:2px}
+.u9md .up svg{stroke:#FAFAF7;width:18px;height:18px}
+#home.u9nb #arc{padding-bottom:110px}
+@media (prefers-reduced-motion:reduce){#home.u9nb #hpi.u9dk button i{animation:none!important}.u9md{transition:opacity .2s}}

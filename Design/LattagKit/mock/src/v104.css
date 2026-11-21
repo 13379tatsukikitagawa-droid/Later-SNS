@@ -1,0 +1,66 @@
+/* ===== v104(モック v105 ・ PROMPT v118):撮る 近道を なくす ・ 丸を 下へ 大きく ・ 見出しを 明朝 + セリフ に ・ Friends と Trip の ブラッシュアップ  名前:u9w ===== */
+#phone{--u9tt:'Instrument Serif','U9 Serif JP','Hiragino Mincho ProN',serif}
+#phone :is(.g9tt b,.g9now-card .nm b,.g9nx .dt b,.g9emp b,.h9since em,.h9st b,.h9gp b,.h9emp h2,.h9hero h1,.h9today .ct b,.h9today .ct em,.h9pass .main>b,.h9pass .stub b,.h9stamp b,.h9sh h3,.u9wh b,.u9wx b,.u9wl b.t){font-family:var(--u9tt)!important;font-weight:400!important;letter-spacing:-.015em!important}
+/* 1) 撮る 近道を なくす ・ 丸を 下へ 大きく */
+#home.u9nb #hpi>.lgr,#home.u9nb #hpi>.lgh,#home.u9nb #hmoon,#home.u9nb .u9pill,#home.u9nb .u9sbf,#home.u9nb .u9sbe,#home .u9sbt,#home.u9nb .u9sbd{display:none!important}
+#home.u9nb #hpi.u9dk{bottom:-34px!important;background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;gap:10px!important;padding:0!important}
+#home.u9nb #hpi.u9dk button{width:96px!important;height:104px!important;gap:9px!important}
+#home.u9nb #hpi.u9dk button i{width:68px!important;height:68px!important;box-shadow:0 0 0 3.5px #FAFAF7,0 12px 24px rgba(0,0,0,.55),inset 0 -3px 0 rgba(17,17,19,.14)!important;transition:rotate .4s cubic-bezier(.34,1.56,.64,1)}
+#home.u9nb #hpi.u9dk button i svg{width:30px!important;height:30px!important;stroke-width:2.1!important}
+#home.u9nb #hpi.u9dk button[data-i="1"] i{rotate:-6deg}#home.u9nb #hpi.u9dk button[data-i="2"] i{rotate:4deg}#home.u9nb #hpi.u9dk button[data-i="3"] i{rotate:-3deg}
+#home.u9nb #hpi.u9dk button:active i{rotate:0deg}
+#home.u9nb #hpi.u9dk button span{font-size:13.5px!important;color:#F4F1EA}
+#home.u9nb #hpi.u9dk button em{right:-6px;top:-6px;min-width:22px;height:22px;line-height:22px;border-radius:11px;font-size:12px;box-shadow:0 0 0 2.5px #0A0A0B}
+/* 2) Friends の かたまり */
+.afc.j9af.u9w{padding:18px 14px 14px;border-radius:34px;background:#111113;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.u9wh{display:flex;align-items:center;gap:12px;padding:0 4px 0 6px;cursor:pointer}
+.u9wh>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.u9wh b{font-size:40px!important;line-height:.95;color:#FAFAF7}
+.u9wh b i{font-style:italic;color:#C8F25A}
+.u9wh small{font:700 12px/1.3 var(--u9ui);color:#8C8C93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u9wh .lv{display:inline-flex;align-items:center;gap:6px;color:#C8F25A}
+.u9wh .lv i{width:7px;height:7px;border-radius:50%;background:#C8F25A;box-shadow:0 0 8px #C8F25A}
+.u9wh .go{flex:none;width:44px;height:44px;border-radius:22px;background:#FAFAF7;display:grid;place-items:center}
+.u9wh .go svg{width:17px;height:17px;fill:none;stroke:#111113;stroke-width:2.8;stroke-linecap:round}
+.u9w .j9rq{margin-top:14px;background:rgba(255,156,200,.12)!important;box-shadow:inset 0 0 0 1.5px rgba(255,156,200,.55)!important}
+.u9w .j9rq em{color:#FF9CC8!important}
+.u9wg>*{min-width:0}.u9wg{display:grid;grid-template-columns:1.12fr 1fr;gap:12px;margin-top:16px;padding:0 2px}
+.u9wl{position:relative;min-height:168px;border-radius:26px;background:#C8F25A;color:#111113;text-align:left;padding:16px 16px 14px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;rotate:-1.6deg;box-shadow:0 10px 24px -8px rgba(200,242,90,.45);transition:scale .3s cubic-bezier(.34,1.56,.64,1)}
+.u9wl .tp{position:absolute;top:-9px;left:26px;width:54px;height:18px;rotate:-6deg;background:rgba(255,156,200,.92)}
+.u9wl .ic{position:absolute;left:16px;top:18px;width:46px;height:46px;border-radius:16px;background:#111113;display:grid;place-items:center}
+.u9wl .ic svg{width:22px;height:22px;fill:none;stroke:#C8F25A;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.u9wl .sr{position:absolute;right:12px;top:14px;width:34px;height:34px;rotate:12deg}
+.u9wl b.t{font-size:25px!important;line-height:1;color:#111113;white-space:nowrap}
+.u9wl small{font:800 11.5px var(--u9ui);color:rgba(17,17,19,.62);white-space:nowrap}
+.u9wq{position:relative;border-radius:8px;background:#FAFAF7;padding:9px 9px 0;display:flex;flex-direction:column;align-items:center;rotate:2.4deg;box-shadow:0 12px 26px -8px rgba(0,0,0,.7);transition:scale .3s cubic-bezier(.34,1.56,.64,1)}
+.u9wq .qr{width:100%;aspect-ratio:1;border-radius:3px;background:#fff;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.u9wq .qr{position:relative}.u9wq .qr svg{position:absolute;left:8%;top:8%;width:84%!important;height:84%!important}
+.u9wq b{font:800 13px/1 var(--u9ui);color:#111113;padding:10px 0 11px;white-space:nowrap}
+.u9wl:active,.u9wq:active,.u9wr button:active{scale:.94}
+.u9wr{display:flex;gap:10px;margin-top:14px}
+.u9wr button{height:54px;border-radius:27px;background:#1A1A1D;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;padding:0 16px 0 8px;color:#F4F1EA;transition:scale .3s cubic-bezier(.34,1.56,.64,1)}
+.u9wr .sc{flex:none}
+.u9wr .id{flex:1;min-width:0}
+.u9wr i{flex:none;width:38px;height:38px;border-radius:19px;background:rgba(200,242,90,.14);display:grid;place-items:center}
+.u9wr i svg{width:19px;height:19px;fill:none;stroke:#C8F25A;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.u9wr b{font:800 13.5px var(--u9ui);white-space:nowrap}
+.u9wr span{font:700 13px var(--u9ui);color:#8C8C93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 3) Trip の かたまり */
+.axh.u9wx{display:flex;align-items:flex-end;justify-content:space-between;margin:34px 20px 14px;padding-top:18px;font:inherit;letter-spacing:0;color:#F4F1EA;text-transform:none}
+.u9wx b{font-size:40px!important;line-height:.95;color:#FAFAF7}
+.u9wx b i{font-style:italic;color:#7CCBFF}
+.u9wx small{font:700 12px var(--u9ui);color:#8C8C93;padding-bottom:4px}
+#aact>.acd.nw:only-child{flex:1;width:auto;height:136px;border-radius:28px;display:grid;grid-template-columns:128px 1fr 52px;grid-template-rows:1fr auto auto 1fr;column-gap:6px;align-items:center;justify-items:start;padding:0 16px 0 8px;background:#111113;box-shadow:inset 0 0 0 1.5px rgba(124,203,255,.45),0 12px 26px -10px rgba(0,0,0,.7)}
+#aact>.acd.nw:only-child .st3{grid-row:1/5;grid-column:1;justify-self:center;scale:.82}
+#aact>.acd.nw:only-child b{position:static;grid-row:2;grid-column:2;font-size:32px!important;line-height:1;text-shadow:none;-webkit-line-clamp:1}
+#aact>.acd.nw:only-child small{grid-row:3;grid-column:2;margin-top:6px;font:700 12px var(--u9ui);color:#8C8C93;white-space:nowrap}
+#aact>.acd.nw:only-child .st3 .pl{display:none}
+#aact>.acd.nw:only-child::after{content:'+';grid-row:1/5;grid-column:3;width:48px;height:48px;border-radius:24px;background:#7CCBFF;color:#111113;display:grid;place-items:center;font:500 30px/1 var(--u9ui);box-shadow:0 0 0 3px #FAFAF7}
+@media (prefers-reduced-motion:reduce){.u9wl,.u9wq,.u9wr button{transition:none}}
+/* v104:元の 見出しの 場所(--ttl / --disp を 使って いた 所)= 明朝 + セリフ に もどす */
+#phone :is(#dvx .dxc.no b,#dvx .dxc.nx b,#dvx .ftl em,#mew .m73 .zdh b,#mew .m79 .r9hh>b,#mew .m79 .rch .r9bt>b,#mew .m79 .rcm b,#prf.x8p #pme .x8t,#prf.x8p .pnm b,#tag .th,#yst .y72 .j9b2 b,#yst .y72 .j9b3 b,#yst .y72 .j9glt b,#yst .y72 .k9d1h em,#yst .y72 .k9s b,#yst .y72 .x8nt b,#yst .y72 .zmh .wm,#yst .y72 .zno2 .tx b,#yst .y72 .zsq b,.a67h b,.acd b,.acd.actr .acx b,.acd.actr .ct b,.acd.actr .tn,.acd.actr-nw b,.acd.nw span,.adw b,.afc .cd b,.afc .cf b,.afc.v60 .afh b,.afe .q,.afh .ct,.afh b,.afk.al b,.afr .tx b,.aft b,.alh b,.amc b,.anew h4,.avt b){font-family:var(--u9tt)!important;font-weight:400!important}
+#phone :is(.ayh .tt,.c9tl.t-mondo b,.cd2 .fcn,.d9hh b,.d9n,.dkh b,.dv79 .r9h b,.e9pt b,.en .nm i,.en>b,.f65h b,.f9h b,.fcf b,.fcv .id b,.fhold .fcn,.fhold b,.flead,.fmh b,.fmy .tx b,.frw .tx b,.fscr.v48 .ftl em,.fscr.v65 .ftl em,.fsh b,.fsr b,.fst b,.fwy b,.gnw .ghd,.gnw .gp2 .ghd,.gnw.done2 .gwt i,.gnw.done2 .gwt i:nth-child(odd),.h9cd,.hl,.hpfr .more .r i,.hpgrid .ct b,.hprq b,.hpt2,.hptg span b,.hptn,.hpwd,.hsec h3){font-family:var(--u9tt)!important;font-weight:400!important}
+#phone :is(.j9afh b,.j9fps b,.k9ish b,.k9no b,.k9obl,.ko b,.lnin b,.lnl b,.mdh b,.mnr .n,.mo9 .cty b,.mohd .mh,.mohd h2,.mokp b,.moone b,.mow b,.mrc .st i,.mrc>b,.msl.m-day b,.msty button,.ob .obfin,.ob .obh,.ob .obnm,.ob .obop .obst,.ob .obst,.ob .wcst,.odbig,.odt,.orb .lens .lnin b,.orb .oc b,.otx>b,.p9ms .hd b,.p9pt .en,.pact b,.peh b,.phe b,.pkh b,.pnm b,.pstat b,.rc79 .r9fin>b){font-family:var(--u9tt)!important;font-weight:400!important}
+#phone :is(.rc79 .r9in b,.rc79 .r9lb b,.rm .msys.all,.rm .rmemp b,.rm .rmt b,.rqh b,.rvh b,.t0tx b,.t1 .top b,.t3 .big,.tcn .tx>b,.tdv .tdh b,.th77 .ttl b,.tpd,.tpr .ar,.trb .ct b,.trc.nw b,.trc.v56 .tn,.trh b,.ttl b,.twd button b,.twn input,.tws .lb,.yfa span,.yfh .ct,.yfh b,.yhl,.yoh h2,.z9tg b,.z9ttl){font-family:var(--u9tt)!important;font-weight:400!important}
+/* v118 追記:下の 丸の 列から カメラ(写真)の 丸を 消す(どの ページでも 出さない) */
+#home #hpi.u9dk button[data-i="0"],#home #hpi.u9dk.away button[data-i="0"]{display:none!important}

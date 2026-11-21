@@ -1,0 +1,75 @@
+/* ===== v105(モック v106 ・ PROMPT v119):デザインの 総点検  名前:u9w / u9x ===== */
+/* A) Today の カード:すけない ・ ライム ・ 数字も セリフ */
+#home #tdv{background:#121014!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 30px 60px -30px rgba(0,0,0,.9),inset 0 0 0 1px rgba(255,255,255,.07)!important;border-radius:32px;padding:20px 18px 18px}
+#phone .tdv .tdh b{font-size:36px!important;line-height:1}
+#phone .tdv .tdh span{font-family:var(--u9tt)!important;font-style:normal!important;font-weight:400!important;font-size:34px!important;color:#FAFAF7}
+#phone .tdv .tdh span s{font-size:20px!important;color:#6E6E75}
+#phone .tdv .tdl{font-size:12px!important;font-weight:700!important;letter-spacing:.02em!important;color:#8C8C93;margin-top:8px}
+#phone .tdv .tdq{font-size:11.5px!important;letter-spacing:.01em!important}
+#phone .tdv .tf.nx span{font-size:12px!important;font-weight:800!important;letter-spacing:.04em!important}
+/* B) 小さな 見出し(きのう ・ アルバム ・ この日) */
+#phone #home .axh:not(.u9wx){font-size:12.5px!important;font-weight:800!important;letter-spacing:.04em!important;color:#8C8C93;margin:32px 20px 12px;text-transform:none}
+#phone #home .axh:not(.u9wx) em{font-style:normal;font-size:11.5px;font-weight:700;color:#6E6E75;letter-spacing:.02em}
+#phone #home .alh span{font-size:11px!important;font-weight:700!important;letter-spacing:.02em!important}
+#phone #home .ayh .sts span{font-size:11.5px!important;font-weight:700!important;letter-spacing:.02em!important}
+#home #amd,#home .axh.u9xm{display:none!important}
+/* C) Friends の かたまり(v118 を ととのえる:まっすぐ ・ ボタンの 字は ゴシック ・ かざりは 1つ) */
+.afc.j9af.u9w{margin:10px 14px 0;padding:20px 16px 16px;border-radius:32px}
+.u9wh b{font-size:36px!important}
+.u9wh small{font-size:12.5px}
+.u9wh .go{background:#1F1F23}
+.u9wh .go svg{stroke:#FAFAF7}
+.u9wrq{width:100%;margin-top:16px;height:60px;border-radius:22px;background:#1A1A1D;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);display:flex;align-items:center;gap:12px;padding:0 10px 0 12px;text-align:left;color:#F4F1EA;transition:scale .3s cubic-bezier(.34,1.56,.64,1)}
+.u9wrq .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.u9wrq b{font:800 14.5px/1.2 var(--u9ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u9wrq small{font:700 11.5px/1.2 var(--u9ui);color:#8C8C93;white-space:nowrap}
+.u9wrq em{flex:none;height:40px;padding:0 18px;border-radius:20px;background:#FF9CC8;color:#111113;font:800 13.5px/40px var(--u9ui);font-style:normal}
+.u9wrq:active{scale:.97}
+.u9wg{grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;padding:0;align-items:stretch}
+.u9wl{rotate:0deg;min-height:0;border-radius:28px;padding:16px;box-shadow:none;justify-content:flex-end;gap:4px}
+.u9wl .ic{left:16px;top:16px;width:48px;height:48px;border-radius:24px}
+.u9wl .ar{position:absolute;right:16px;top:23px;width:34px;height:34px;display:grid;place-items:center}
+.u9wl .ar svg{width:20px;height:20px;fill:none;stroke:#111113;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+#phone .u9w .u9wl b.t{font-family:var(--u9ui)!important;font-weight:800!important;font-size:19px!important;letter-spacing:-.01em!important;line-height:1.15;white-space:nowrap}
+.u9wl small{font-size:12px;color:rgba(17,17,19,.6)}
+.u9wq{rotate:2deg;border-radius:8px;padding:10px 10px 0;margin:2px 4px 2px 2px}
+.u9wq .tp{position:absolute;top:-9px;left:50%;width:52px;height:17px;margin-left:-26px;rotate:-4deg;background:rgba(255,156,200,.92);z-index:2}
+.u9wq b{font-size:13px;padding:11px 0 12px}
+.u9wr{gap:10px;margin-top:14px}
+.u9wr button{height:56px;border-radius:22px;padding:0 14px 0 9px}
+.u9wr .sc,.u9wr .id{flex:1;min-width:0}
+.u9wr span{color:#F4F1EA;font:800 13.5px var(--u9ui)}
+/* D) Trip の かたまり:見出しを そろえる ・ 二重の ふちを 消す */
+.axh.u9wx{margin:28px 20px 14px 22px;padding-top:0;border-top:0;align-items:center}
+.axh.u9wx>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.u9wx b{font-size:36px!important}
+.u9wx b i{font-style:normal;color:inherit}
+.u9wx small{padding:0;font:700 12.5px/1.3 var(--u9ui);color:#8C8C93}
+.u9wx .go{flex:none;width:44px;height:44px;border-radius:22px;background:#1F1F23;display:grid;place-items:center}
+.u9wx .go svg{width:17px;height:17px;fill:none;stroke:#FAFAF7;stroke-width:2.8;stroke-linecap:round}
+#aact{padding:0 14px 4px!important}
+#aact>.acd.nw:only-child::before{display:none!important}
+#aact>.acd.nw:only-child{height:132px;border-radius:32px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);grid-template-columns:120px 1fr 52px;padding:0 18px 0 6px}
+#aact>.acd.nw:only-child b{font-size:30px!important}
+#aact>.acd.nw:only-child small{font-size:12.5px}
+#aact>.acd.nw:only-child::after{box-shadow:none;width:46px;height:46px;border-radius:23px;font-size:28px}
+/* E) きのう の カード:Mondo の ボタンを やめる */
+#phone #home .ayh .bt .w{font-size:14.5px!important;font-weight:800!important}
+/* v105:Home の 下に のこって いた UI の 緑 → ライム */
+#phone #home .alh span.hot{color:#C8F25A!important}
+#phone #home .alr.go .alh b::after{background:#C8F25A!important;box-shadow:0 0 0 4px rgba(200,242,90,.18)!important}
+#phone #home .tdv .tdl i{background:#C8F25A!important;box-shadow:0 0 8px #C8F25A!important}
+#phone #home .tdv .tdp i{background:linear-gradient(90deg,#E4F9A8,#C8F25A)!important}
+#phone #home .tdv .tdp i::after{background:#C8F25A!important;box-shadow:0 0 0 4px rgba(200,242,90,.22),0 0 12px #C8F25A!important}
+#phone #home .tdv .tdq em{color:#C8F25A!important}
+#phone #home .ayh .sts .cir path{stroke:#C8F25A!important}
+#phone #home .otc .bk b{color:#C8F25A!important}
+#phone #home .otx .yr i{background:#C8F25A!important}
+/* D2) Trip も 1枚の カードに 見せる(見出し + 中身)・ 申請の 丸を 大きく */
+.axh.u9wx{margin:14px 14px 0!important;padding:20px 16px 0 20px!important;background:#111113;border-radius:32px 32px 0 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 1px 0 0 rgba(255,255,255,.07),inset -1px 0 0 rgba(255,255,255,.07)}
+#aact{margin:0 14px!important;padding:14px 16px 16px!important;background:#111113;border-radius:0 0 32px 32px;box-shadow:inset 0 -1px 0 rgba(255,255,255,.07),inset 1px 0 0 rgba(255,255,255,.07),inset -1px 0 0 rgba(255,255,255,.07);scroll-padding:16px}
+#aact>.acd.nw:only-child{height:112px;border-radius:24px;background:#1A1A1D;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);grid-template-columns:108px 1fr 50px;padding:0 14px 0 2px}
+#aact>.acd.nw:only-child .st3{scale:.74}
+#aact>.acd.nw:only-child b{font-size:28px!important}
+.u9wrq .k9mav i{width:34px!important;height:34px!important;font-size:14px!important;line-height:34px}
+.u9wrq .k9mav{flex:none}

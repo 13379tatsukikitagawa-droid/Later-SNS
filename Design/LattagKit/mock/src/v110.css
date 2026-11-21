@@ -1,0 +1,54 @@
+/* ===== v110(モック v111 ・ PROMPT v124):Home の 3つの ボタン 追加の 5案  名前:u9dv-(tk|st|mk|inf|wd) ===== */
+/* --- 案5 チケット(半券) --- */
+#home.u9nb.u9dv-tk #hpi.u9dk{gap:12px!important}
+#home.u9nb.u9dv-tk #hpi.u9dk button{position:relative;flex-direction:row!important;width:104px!important;height:64px!important;gap:7px!important;background:none!important;filter:drop-shadow(0 6px 0 color-mix(in srgb,var(--bc),#111 34%)) drop-shadow(0 16px 12px rgba(0,0,0,.5));margin-bottom:34px;transition:translate .16s cubic-bezier(.3,1.4,.5,1),filter .16s!important}
+#home.u9nb.u9dv-tk #hpi.u9dk button::before{content:'';position:absolute;inset:0;border-radius:14px;background:linear-gradient(90deg,transparent 0 70%,rgba(17,17,19,.28) 70% calc(70% + 1.5px),transparent 0) 0 9px/100% 8px repeat-y,var(--bc);-webkit-mask:radial-gradient(circle 8px at 0 50%,#0000 97%,#000) 0 0/51% 100% no-repeat,radial-gradient(circle 8px at 100% 50%,#0000 97%,#000) 100% 0/51% 100% no-repeat;mask:radial-gradient(circle 8px at 0 50%,#0000 97%,#000) 0 0/51% 100% no-repeat,radial-gradient(circle 8px at 100% 50%,#0000 97%,#000) 100% 0/51% 100% no-repeat}
+#home.u9nb.u9dv-tk #hpi.u9dk button[data-i="1"]{rotate:-4deg}#home.u9nb.u9dv-tk #hpi.u9dk button[data-i="3"]{rotate:4deg}
+#home.u9nb.u9dv-tk #hpi.u9dk button:active{translate:0 4px;filter:drop-shadow(0 2px 0 color-mix(in srgb,var(--bc),#111 34%))}
+#home.u9nb.u9dv-tk #hpi.u9dk button i{position:static!important;width:22px!important;height:22px!important;background:none!important;box-shadow:none!important;translate:none!important;rotate:none!important;transform:none!important;z-index:1}
+#home.u9nb.u9dv-tk #hpi.u9dk button i svg{width:21px!important;height:21px!important;stroke-width:2.4!important}
+#home.u9nb.u9dv-tk #hpi.u9dk button span{position:relative;z-index:1;color:#111113!important;font-size:14px!important;letter-spacing:0!important;margin-right:6px!important}
+#home.u9nb.u9dv-tk #hpi.u9dk button em{right:-4px;top:-10px;z-index:2}
+/* --- 案6 ステッカーの 形(花 ・ ギザギザ ・ まる四角) --- */
+#home.u9nb.u9dv-st #hpi.u9dk button{position:relative}
+#home.u9nb.u9dv-st #hpi.u9dk button::after{content:'';position:absolute;left:50%;top:2px;width:88px;height:88px;margin-left:-44px;background:color-mix(in srgb,var(--bc),#111 34%);clip-path:var(--shp);transition:translate .16s}
+#home.u9nb.u9dv-st #hpi.u9dk button::before{z-index:1;transition:translate .16s cubic-bezier(.3,1.4,.5,1)}
+#home.u9nb.u9dv-st #hpi.u9dk button i{transition:translate .16s cubic-bezier(.3,1.4,.5,1)!important}
+#home.u9nb.u9dv-st #hpi.u9dk button::before{content:'';position:absolute;left:50%;top:-5px;width:88px;height:88px;margin-left:-44px;background:#FAFAF7;clip-path:var(--shp)}
+#home.u9nb.u9dv-st #hpi.u9dk button i{width:78px!important;height:78px!important;border-radius:0!important;box-shadow:none!important;clip-path:var(--shp);rotate:none!important;translate:none!important;z-index:2}
+#home.u9nb.u9dv-st #hpi.u9dk button[data-i="1"]{--shp:var(--u9s-flower)}#home.u9nb.u9dv-st #hpi.u9dk button[data-i="2"]{--shp:var(--u9s-squ)}#home.u9nb.u9dv-st #hpi.u9dk button[data-i="3"]{--shp:var(--u9s-burst)}
+#home.u9nb.u9dv-st #hpi.u9dk button[data-i="1"] i,#home.u9nb.u9dv-st #hpi.u9dk button[data-i="1"]::before,#home.u9nb.u9dv-st #hpi.u9dk button[data-i="1"]::after{rotate:-8deg!important}
+#home.u9nb.u9dv-st #hpi.u9dk button[data-i="3"] i,#home.u9nb.u9dv-st #hpi.u9dk button[data-i="3"]::before,#home.u9nb.u9dv-st #hpi.u9dk button[data-i="3"]::after{rotate:8deg!important}
+#home.u9nb.u9dv-st #hpi.u9dk button i svg{width:31px!important;height:31px!important}
+#home.u9nb.u9dv-st #hpi.u9dk button:active i{translate:0 5px!important}
+#home.u9nb.u9dv-st #hpi.u9dk button:active::before{translate:0 5px}
+#home.u9nb.u9dv-st #hpi.u9dk button em{position:absolute;right:6px;top:-12px;z-index:3}
+#home.u9nb.u9dv-st #hpi.u9dk button span{position:relative;z-index:1;margin-top:4px!important}
+/* --- 案7 ミルク(白い タイル + 色の 丸) --- */
+#home.u9nb.u9dv-mk #hpi.u9dk button i{width:76px!important;height:76px!important;border-radius:26px!important;rotate:none!important;background:radial-gradient(circle at 50% 50%,var(--bc) 0 25px,#FAFAF7 26px)!important;box-shadow:0 7px 0 var(--bc),0 22px 26px -12px rgba(0,0,0,.75),inset 0 2px 0 #fff!important}
+#home.u9nb.u9dv-mk #hpi.u9dk button:active i{translate:0 5px;box-shadow:0 2px 0 var(--bc),inset 0 2px 0 #fff!important}
+#home.u9nb.u9dv-mk #hpi.u9dk button i svg{width:27px!important;height:27px!important}
+#home.u9nb.u9dv-mk #hpi.u9dk button em{box-shadow:0 0 0 3px #0A0A0B!important}
+/* --- 案8 じょうほう つき(横長の タイル:名前 + いまの 様子) --- */
+#home.u9nb.u9dv-inf #hpi.u9dk{gap:10px!important}
+#home.u9nb.u9dv-inf #hpi.u9dk button{position:relative;width:104px!important;height:104px!important;border-radius:26px!important;background:var(--bc)!important;align-items:flex-start!important;justify-content:flex-end!important;gap:3px!important;padding:0 0 13px 14px!important;box-sizing:border-box;box-shadow:0 0 0 3px #FAFAF7,0 7px 0 3px color-mix(in srgb,var(--bc),#111 34%),0 22px 26px -12px rgba(0,0,0,.75),inset 0 2px 0 rgba(255,255,255,.5)!important;margin-bottom:10px;transition:translate .16s cubic-bezier(.3,1.4,.5,1),box-shadow .16s!important}
+#home.u9nb.u9dv-inf #hpi.u9dk button:active{translate:0 5px;box-shadow:0 0 0 3px #FAFAF7,0 2px 0 3px color-mix(in srgb,var(--bc),#111 34%),inset 0 2px 0 rgba(255,255,255,.5)!important}
+#home.u9nb.u9dv-inf #hpi.u9dk button i{position:absolute!important;left:13px;top:13px;width:26px!important;height:26px!important;background:none!important;box-shadow:none!important;rotate:none!important;translate:none!important;transform:none!important}
+#home.u9nb.u9dv-inf #hpi.u9dk button i svg{width:25px!important;height:25px!important;stroke-width:2.3!important}
+#home.u9nb.u9dv-inf #hpi.u9dk button span{color:#111113!important;font-size:16px!important;letter-spacing:0!important}
+#home.u9nb.u9dv-inf #hpi.u9dk button .u9ds{display:block;font:800 11px/1.2 var(--u9ui);color:rgba(17,17,19,.62);white-space:nowrap}
+#home.u9nb.u9dv-inf #hpi.u9dk button em{display:none!important}
+/* --- 案9 ことば(セリフの 大きな 字 + 色の 点) --- */
+#home.u9nb.u9dv-wd #hpi.u9dk{gap:4px!important}
+#home.u9nb.u9dv-wd #hpi.u9dk button{position:relative;width:112px!important;height:96px!important;gap:7px!important;margin-bottom:18px}
+#home.u9nb.u9dv-wd #hpi.u9dk button i{width:14px!important;height:14px!important;border-radius:50%!important;rotate:none!important;box-shadow:0 0 14px color-mix(in srgb,var(--bc) 80%,transparent)!important;transition:scale .25s cubic-bezier(.34,1.56,.64,1)!important}
+#home.u9nb.u9dv-wd #hpi.u9dk button i svg{display:none!important}
+#home.u9nb.u9dv-wd #hpi.u9dk button .u9dw{display:block;font-family:var(--u9tt)!important;font-weight:400!important;font-size:29px!important;line-height:1;letter-spacing:-.015em;color:#FAFAF7;border-bottom:2.5px solid var(--bc);padding-bottom:5px}
+#home.u9nb.u9dv-wd #hpi.u9dk button span{font-size:11.5px!important;color:#8C8C93!important}
+#home.u9nb.u9dv-wd #hpi.u9dk button:active i{translate:none!important;scale:1.6}
+#home.u9nb.u9dv-wd #hpi.u9dk button:active .u9dw{color:var(--bc)}
+#home.u9nb.u9dv-wd #hpi.u9dk button em{right:auto!important;left:18px;top:-8px!important;box-shadow:0 0 0 3px #0A0A0B!important}
+#home.u9nb:not(.u9dv-inf) #hpi.u9dk .u9ds,#home.u9nb:not(.u9dv-wd) #hpi.u9dk .u9dw{display:none}
+:root{--u9s-flower:polygon(50.0% 0.0%,52.6% 0.2%,55.2% 0.7%,57.7% 1.5%,60.1% 2.6%,62.3% 4.0%,64.4% 5.7%,66.2% 7.7%,67.9% 9.9%,69.2% 12.3%,70.0% 15.4%,73.0% 14.6%,75.8% 14.5%,78.5% 14.8%,81.1% 15.4%,83.6% 16.4%,86.0% 17.6%,88.2% 19.1%,90.1% 20.8%,91.9% 22.8%,93.3% 25.0%,94.5% 27.3%,95.3% 29.8%,95.9% 32.4%,96.1% 35.0%,96.0% 37.7%,95.5% 40.3%,94.8% 42.9%,93.7% 45.4%,92.2% 47.8%,90.0% 50.0%,92.2% 52.2%,93.7% 54.6%,94.8% 57.1%,95.5% 59.7%,96.0% 62.3%,96.1% 65.0%,95.9% 67.6%,95.3% 70.2%,94.5% 72.7%,93.3% 75.0%,91.9% 77.2%,90.1% 79.2%,88.2% 80.9%,86.0% 82.4%,83.6% 83.6%,81.1% 84.6%,78.5% 85.2%,75.8% 85.5%,73.0% 85.4%,70.0% 84.6%,69.2% 87.7%,67.9% 90.1%,66.2% 92.3%,64.4% 94.3%,62.3% 96.0%,60.1% 97.4%,57.7% 98.5%,55.2% 99.3%,52.6% 99.8%,50.0% 100.0%,47.4% 99.8%,44.8% 99.3%,42.3% 98.5%,39.9% 97.4%,37.7% 96.0%,35.6% 94.3%,33.8% 92.3%,32.1% 90.1%,30.8% 87.7%,30.0% 84.6%,27.0% 85.4%,24.2% 85.5%,21.5% 85.2%,18.9% 84.6%,16.4% 83.6%,14.0% 82.4%,11.8% 80.9%,9.9% 79.2%,8.1% 77.2%,6.7% 75.0%,5.5% 72.7%,4.7% 70.2%,4.1% 67.6%,3.9% 65.0%,4.0% 62.3%,4.5% 59.7%,5.2% 57.1%,6.3% 54.6%,7.8% 52.2%,10.0% 50.0%,7.8% 47.8%,6.3% 45.4%,5.2% 42.9%,4.5% 40.3%,4.0% 37.7%,3.9% 35.0%,4.1% 32.4%,4.7% 29.8%,5.5% 27.3%,6.7% 25.0%,8.1% 22.8%,9.9% 20.8%,11.8% 19.1%,14.0% 17.6%,16.4% 16.4%,18.9% 15.4%,21.5% 14.8%,24.2% 14.5%,27.0% 14.6%,30.0% 15.4%,30.8% 12.3%,32.1% 9.9%,33.8% 7.7%,35.6% 5.7%,37.7% 4.0%,39.9% 2.6%,42.3% 1.5%,44.8% 0.7%,47.4% 0.2%);--u9s-burst:polygon(50.0% 0.0%,55.5% 8.4%,60.9% 9.4%,69.1% 3.8%,75.0% 6.7%,75.6% 16.7%,79.7% 20.3%,83.3% 24.4%,93.3% 25.0%,88.8% 33.9%,90.6% 39.1%,99.6% 43.5%,100.0% 50.0%,91.6% 55.5%,90.6% 60.9%,88.8% 66.1%,93.3% 75.0%,83.3% 75.6%,79.7% 79.7%,80.4% 89.7%,75.0% 93.3%,66.1% 88.8%,60.9% 90.6%,56.5% 99.6%,50.0% 100.0%,44.5% 91.6%,39.1% 90.6%,30.9% 96.2%,25.0% 93.3%,24.4% 83.3%,20.3% 79.7%,16.7% 75.6%,6.7% 75.0%,11.2% 66.1%,9.4% 60.9%,0.4% 56.5%,0.0% 50.0%,8.4% 44.5%,9.4% 39.1%,11.2% 33.9%,6.7% 25.0%,10.3% 19.6%,20.3% 20.3%,19.6% 10.3%,25.0% 6.7%,33.9% 11.2%,39.1% 9.4%,43.5% 0.4%);--u9s-squ:polygon(50.0% 0.0%,54.4% 0.0%,58.8% 0.0%,63.4% 0.0%,68.1% 0.2%,73.1% 0.5%,78.2% 1.1%,83.4% 2.3%,88.2% 4.4%,92.4% 7.6%,95.6% 11.8%,97.7% 16.6%,98.9% 21.8%,99.5% 26.9%,99.8% 31.9%,100.0% 36.6%,100.0% 41.2%,100.0% 45.6%,100.0% 50.0%,100.0% 54.4%,100.0% 58.8%,100.0% 63.4%,99.8% 68.1%,99.5% 73.1%,98.9% 78.2%,97.7% 83.4%,95.6% 88.2%,92.4% 92.4%,88.2% 95.6%,83.4% 97.7%,78.2% 98.9%,73.1% 99.5%,68.1% 99.8%,63.4% 100.0%,58.8% 100.0%,54.4% 100.0%,50.0% 100.0%,45.6% 100.0%,41.2% 100.0%,36.6% 100.0%,31.9% 99.8%,26.9% 99.5%,21.8% 98.9%,16.6% 97.7%,11.8% 95.6%,7.6% 92.4%,4.4% 88.2%,2.3% 83.4%,1.1% 78.2%,0.5% 73.1%,0.2% 68.1%,0.0% 63.4%,0.0% 58.8%,0.0% 54.4%,0.0% 50.0%,0.0% 45.6%,0.0% 41.2%,0.0% 36.6%,0.2% 31.9%,0.5% 26.9%,1.1% 21.8%,2.3% 16.6%,4.4% 11.8%,7.6% 7.6%,11.8% 4.4%,16.6% 2.3%,21.8% 1.1%,26.9% 0.5%,31.9% 0.2%,36.6% 0.0%,41.2% 0.0%,45.6% 0.0%)}
+#hpi.u9dk .u9de{display:none}
+#home.u9nb.u9dv-st #hpi.u9dk button .u9de{display:block;position:absolute;right:2px;top:-12px;z-index:4;min-width:24px;height:24px;padding:0 5px;box-sizing:border-box;border-radius:12px;background:#FF4D6D;color:#fff;font:800 12.5px/24px var(--u9ui);font-style:normal;text-align:center;box-shadow:0 0 0 3px #FAFAF7}

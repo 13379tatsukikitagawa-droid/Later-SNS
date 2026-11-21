@@ -1,0 +1,45 @@
+/* ===== v101(モック v102 ・ PROMPT v115):字の 形 = ロゴと 同じ(Inter / SF Pro の 太字 + 日本語の 太い 角ゴ)・ ドームの 3案  名前:u9 ===== */
+/* 1) 字の 形 */
+#phone{--u9ui:'Inter','U9 JP','Hiragino Sans',system-ui,sans-serif}
+#phone :is(h1,h2,h3,b,strong){letter-spacing:-.02em}
+/* 2) ドーム:# を 消す */
+.u9dm .em{display:none!important}
+.u9dm .u9fl{display:none!important}
+.u9dm .grab{margin-top:9px}
+/* --- 案A:チェキの 扇(おすすめ)--- */
+.u9fan{position:relative;width:150px;height:74px;margin-top:4px}
+.u9fan i{position:absolute;left:50%;top:6px;width:38px;height:47px;margin-left:-19px;border-radius:4px;background:#fff;padding:3px 3px 10px;box-shadow:0 4px 12px rgba(0,0,0,.5);transform-origin:50% 120%;rotate:var(--r);translate:var(--x) 0;transition:rotate .45s cubic-bezier(.34,1.56,.64,1),translate .45s cubic-bezier(.34,1.56,.64,1),opacity .3s}
+.u9fan i:nth-child(1){--r:-16deg;--x:-30px}.u9fan i:nth-child(2){--r:0deg;--x:0px;z-index:2;top:0}.u9fan i:nth-child(3){--r:16deg;--x:30px}
+.u9fan i u{display:block;width:100%;height:100%;border-radius:2px;text-decoration:none;background:radial-gradient(circle at 35% 25%,#F1FFC9,#C8F25A 55%,#9CC93A);box-shadow:inset 0 0 8px rgba(110,150,20,.5)}
+.u9fan i.used{opacity:.55}.u9fan i.used u{background:#1E1E21;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.u9fan i.go{animation:u9out .6s cubic-bezier(.34,1.56,.64,1)}
+@keyframes u9out{40%{translate:var(--x) -16px;scale:1.15}}
+.u9dm.idle .u9fan i:nth-child(2){animation:u9peek 2.4s ease-in-out infinite}
+@keyframes u9peek{50%{translate:0 -5px}}
+#home #hmoon:active .u9fan i{scale:.94}
+.u9fan b{position:absolute;left:50%;top:11px;width:22px;height:22px;margin-left:-11px;z-index:3;display:grid;place-items:center}
+.u9fan b svg{width:22px;height:22px}
+/* --- 案B:フィルム カウンター --- */
+.u9cnt{position:relative;margin-top:6px;width:84px;height:62px;border-radius:20px;background:rgba(10,14,8,.72);box-shadow:inset 0 0 0 1.5px rgba(200,242,90,.55),0 6px 16px rgba(0,0,0,.45);display:grid;place-items:center}
+.u9cnt svg.tk{position:absolute;left:0;top:0;width:84px;height:62px}
+.u9cnt b,#home #hmoon .u9cnt b{font:900 34px/1 'Inter',sans-serif!important;color:#C8F25A!important;letter-spacing:-.04em;text-shadow:0 0 14px rgba(200,242,90,.6);margin-top:6px}
+.u9cnt b.go{animation:u9roll .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes u9roll{0%{transform:translateY(-14px);opacity:0}}
+.u9cnt.lock b{display:none}
+.u9cnt .mn{width:28px;height:28px;margin-top:6px}
+/* --- 案C:地球の 光 --- */
+.u9glow{position:relative;width:170px;height:70px;margin-top:2px}
+.u9glow i{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:radial-gradient(circle,#F6FFD9 0,#C8F25A 45%,rgba(200,242,90,0) 72%);box-shadow:0 0 18px 6px rgba(200,242,90,.45);animation:u9tw 2.2s ease-in-out infinite}
+.u9glow i:nth-child(1){left:38px;top:44px;animation-delay:.2s}.u9glow i:nth-child(2){left:85px;top:22px}.u9glow i:nth-child(3){left:132px;top:44px;animation-delay:.4s}
+.u9glow i.used{background:rgba(255,255,255,.18);box-shadow:none;animation:none;width:9px;height:9px;margin:-4.5px 0 0 -4.5px}
+@keyframes u9tw{50%{transform:scale(1.35);opacity:.8}}
+.u9glow .mn{position:absolute;left:50%;top:14px;width:26px;height:26px;margin-left:-13px}
+/* しまった 時の バー:数字 だけ */
+.u9pill{width:160px;margin-left:-80px;gap:10px}
+.u9pill .u9fl{display:none}
+.u9pill .u9b b{font:900 22px/1 'Inter',sans-serif;color:#111113;letter-spacing:-.04em}
+.u9pill .u9b.lock b{display:none}
+.u9pill .u9b small{position:absolute;bottom:-2px;right:-2px}
+.u9pill .lbl{font:800 13px/1.2 'Inter','U9 JP',sans-serif;color:#C9C9CF;flex:1;text-align:left;white-space:nowrap}
+/* ドームの 案を えらぶ(モックの デモ だけ)*/
+@media (prefers-reduced-motion:reduce){.u9fan i,.u9glow i,.u9cnt b{animation:none!important}}
