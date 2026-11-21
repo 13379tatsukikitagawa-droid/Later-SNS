@@ -350,51 +350,6 @@ struct HVLiveDot: View {
 
 // MARK: - ヘッダーの 部品
 
-struct HVAvatar: View {
-    let input: HomeV64Input
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                // 外側 7pt の 輪:今日 撮った 枚数 ÷ 3 だけ 緑
-                Circle().stroke(Color.black.opacity(0.10), lineWidth: 2.5).frame(width: 60, height: 60)
-                Circle().trim(from: 0, to: CGFloat(min(1, Double(input.shotsUsed) / Double(max(1, input.limit)))))
-                    .stroke(HV.green, style: StrokeStyle(lineWidth: 2.5, lineCap: .round)).rotationEffect(.degrees(-90)).frame(width: 60, height: 60)
-                    .animation(.easeOut(duration: 0.6), value: input.shotsUsed)
-                ZStack {
-                    if let img = input.avatar { Image(uiImage: img).resizable().scaledToFill() }
-                    else { HVDefaultAvatar() }
-                }
-                .frame(width: 46, height: 46).clipShape(Circle())
-                .overlay(Circle().strokeBorder(.white, lineWidth: 2.5))
-                .overlay(Circle().strokeBorder(Color(red: 17 / 255, green: 17 / 255, blue: 17 / 255).opacity(0.08), lineWidth: 1).padding(-3.5))
-                .shadow(color: HV.green.opacity(0.55), radius: 11, y: 10)
-                if input.avatarBadge {
-                    Circle().fill(HV.red).overlay(Circle().strokeBorder(.white, lineWidth: 2)).frame(width: 13, height: 13).offset(x: 18, y: -20)
-                }
-            }
-            .frame(width: 70, height: 70)
-            .contentShape(Circle())
-        }
-        .buttonStyle(HVPress(scale: 0.94))
-        .offset(x: -12, y: -12)   // 外へ 12pt ひろげた 押せる 範囲
-        .accessibilityLabel("Profile")
-    }
-}
-
-/// 初期の アバター(みどりの 顔)
-struct HVDefaultAvatar: View {
-    var body: some View {
-        ZStack {
-            Circle().fill(Color(hex: "5ED67A"))
-            HStack(spacing: 9) { Circle().fill(HV.ink).frame(width: 5.5, height: 5.5); Circle().fill(HV.ink).frame(width: 5.5, height: 5.5) }.offset(y: -4)
-            Capsule().fill(Color(hex: "F59BB8").opacity(0.9)).frame(width: 7, height: 5).offset(x: -13, y: 3)
-            Capsule().fill(Color(hex: "F59BB8").opacity(0.9)).frame(width: 7, height: 5).offset(x: 13, y: 3)
-            Circle().trim(from: 0.1, to: 0.4).stroke(HV.ink, style: StrokeStyle(lineWidth: 2.2, lineCap: .round)).frame(width: 14, height: 14).rotationEffect(.degrees(30)).offset(y: 3)
-        }
-    }
-}
-
 struct HVScrollKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }

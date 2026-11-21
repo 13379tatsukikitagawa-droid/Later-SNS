@@ -7,14 +7,13 @@ struct HomeV64LowerData {
     struct Today { var thumbs: [UIImage?] = []; var times: [String] = []; var dates: [Date] = [] }
     struct Hero { var photo: UIImage?; var tag: String = "#朝"; var tagColor: Color = Color(hex: "9ED8FF"); var dateLabel = "NOV 15"; var moments = 0; var people = 0; var daysLeft = 6 }
     struct Tile: Identifiable { let id = UUID(); var photo: UIImage?; var name: String; var time: String?; var own = false; var kept = false }
-    struct Album: Identifiable { let id = UUID(); var label: String; var left: String; var tiles: [UIImage?]; var more: Int }
+    struct Album: Identifiable { let id = UUID(); var label: String; var left: String; var tiles: [UIImage?]; var more: Int; var hot = false }
     var today = Today()
     var hero: Hero?
     var tiles: [Tile] = []
     var albums: [Album] = []
     var onThisDay: (photo: UIImage?, daysLeft: Int, date: String)?
     var trips: [(id: UUID?, name: String, sub: String, cover: UIImage?, day: String, unread: Int)] = []
-    var weekday = "SUN"
 }
 
 enum HVL {
@@ -22,18 +21,32 @@ enum HVL {
     static let line = Color.white.opacity(0.08)
     static let label = Color(hex: "8E8E93")
     static let card = Color(hex: "121214")
+
+    /// v119 5章:アルバムの のこり(「あと 6日 ・ 金」/「あした 消える」)。2日 以下は ライム
+    static func albumLeft(daysLeft: Int, date: Date) -> (text: String, hot: Bool) {
+        if daysLeft <= 1 { return ("あした 消える", true) }
+        let f = DateFormatter(); f.locale = Locale(identifier: "ja_JP"); f.dateFormat = "E"
+        return ("あと \(daysLeft)日 ・ \(f.string(from: date))", daysLeft <= 2)
+    }
+
+    /// きのうの 曜日(「土曜日」)
+    static func weekdayJA(_ date: Date) -> String {
+        let f = DateFormatter(); f.locale = Locale(identifier: "ja_JP"); f.dateFormat = "EEEE"
+        return f.string(from: date)
+    }
 }
 
 struct HVLabel: View {
     let text: String
     var trailing: String? = nil
     var body: some View {
-        HStack {
-            Text(text).font(Typo.label(10.5)).tracking(2.1).foregroundStyle(HVL.label)
+        // v119 5章:日本語 ・ 12.5pt 太字 ・ 灰色(等幅 ・ 広い 字間は やめる)
+        HStack(alignment: .firstTextBaseline) {
+            Text(text).font(Typo.ui(800, 12.5)).foregroundStyle(Color(hex: "8C8C93"))
             Spacer()
-            if let trailing { Text(trailing).font(Typo.label(10)).tracking(2.0).foregroundStyle(HVL.label.opacity(0.8)) }
+            if let trailing { Text(trailing).font(Typo.ui(700, 11.5)).foregroundStyle(Color(hex: "6E6E75")).lineLimit(1) }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 20)
     }
 }
 
@@ -316,7 +329,7 @@ struct HVYesterdayBlock: View {
         VStack(alignment: .leading, spacing: 8) {
             HVAnchor(id: "sec-yesterday", locked: input.locked)
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
-            HVLabel(text: "YESTERDAY", trailing: data.weekday).padding(.top, 8).padding(.bottom, 6)
+            HVLabel(text: "きのう", trailing: HVL.weekdayJA(Calendar.current.date(byAdding: .day, value: -1, to: input.now) ?? input.now)).padding(.top, 8).padding(.bottom, 6)
             if input.isFirstDay { firstDay } else { hero(locked: locked) }
             if !input.isFirstDay {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
@@ -342,11 +355,18 @@ struct HVYesterdayBlock: View {
             }
             let h = data.hero
             Text("Yesterday").font(Typo.title(54)).foregroundStyle(.white).frame(width: 362, height: 78).offset(y: 206)
-            Text(h?.dateLabel ?? "NOV 15").font(Typo.label(10.5)).tracking(3).foregroundStyle(.white.opacity(0.7)).frame(width: 362).offset(y: 268)
-            stat("\(h?.moments ?? 6)", "Moments").frame(width: 100).offset(x: 31, y: 296)
-            ZStack { Ellipse().stroke(HV.green, lineWidth: 2.5).frame(width: 68, height: 46).rotationEffect(.degrees(-4)); stat("\(h?.daysLeft ?? 6)d", "Left") }.frame(width: 100).offset(x: 131, y: 296)
-            stat("\(h?.people ?? 4)", "People ›").frame(width: 100).offset(x: 231, y: 296)
-            Image(systemName: "bubble.left").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 54, height: 54).background(Color.white.opacity(0.14), in: Circle()).offset(x: 292, y: 382)
+            Text(h?.dateLabel ?? "").font(Typo.ui(700, 10.5)).foregroundStyle(.white.opacity(0.7)).frame(width: 362).offset(y: 268)
+            stat("\(h?.moments ?? 0)", "枚").frame(width: 100).offset(x: 31, y: 296)
+            ZStack { Ellipse().stroke(HV.lime, lineWidth: 2.5).frame(width: 68, height: 46).rotationEffect(.degrees(-4)); stat("\(h?.daysLeft ?? 6)日", "のこり") }.frame(width: 100).offset(x: 131, y: 296)
+            stat("\(h?.people ?? 0)", "人 ›").frame(width: 100).offset(x: 231, y: 296)
+            // v119:Mondo の ボタン → 「きのうを ひらく」(きのうの 画面へ)
+            Button { Haptics.play(.pop); actions.openYesterday() } label: {
+                Text("きのうを ひらく").font(Typo.ui(800, 14.5)).foregroundStyle(Color(hex: "111111"))
+                    .frame(width: 268, height: 54).background(.white, in: Capsule())
+            }
+            .buttonStyle(HVPress(scale: 0.97))
+            .offset(x: 16, y: 382)
+            Image(systemName: "bubble.left").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 54, height: 54).background(Color.white.opacity(0.12), in: Circle()).offset(x: 292, y: 382)
             if !locked, let h { Text(h.tag).font(Typo.ui(900, 14)).foregroundStyle(HV.ink).padding(.horizontal, 12).padding(.vertical, 8).background(h.tagColor, in: RoundedRectangle(cornerRadius: 12)).rotationEffect(.degrees(8)).offset(x: 293, y: 18) }
         }
         .frame(width: 362, height: 452).clipShape(RoundedRectangle(cornerRadius: 30))
@@ -380,23 +400,23 @@ struct HVYesterdayBlock: View {
     }
 
     private func stat(_ n: String, _ l: String) -> some View {
-        VStack(spacing: 2) { Text(n).font(Typo.title(34, italic: true)).foregroundStyle(.white); Text(l).font(Typo.ui(600, 13)).foregroundStyle(.white.opacity(0.75)) }
+        VStack(spacing: 2) { Text(n).font(Typo.title(31)).foregroundStyle(.white); Text(l).font(Typo.ui(700, 11.5)).foregroundStyle(.white.opacity(0.62)) }
     }
 
     private func tile(_ t: HomeV64LowerData.Tile, locked: Bool) -> some View {
         ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: 26).fill(HVL.card)
+            RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color(hex: "161618"))
             if let img = t.photo { Image(uiImage: img).resizable().scaledToFill().blur(radius: locked ? 14 : 0).saturation(locked ? 0.4 : 1) }
             LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
             HStack {
-                if !locked { Text("\(t.name).").font(Typo.title(20, italic: true)).foregroundStyle(.white) }
+                if !locked { Text(t.own ? "わたし." : "\(t.name).").font(Typo.title(21)).foregroundStyle(.white).lineLimit(1) }
                 Spacer()
                 if locked { Image(systemName: "lock.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white) }
                 else if let tm = t.time { Text(tm).font(Typo.label(9.5)).foregroundStyle(Color(hex: "FF9A3C")) }
             }.padding(14)
         }
-        .frame(height: 212).clipShape(RoundedRectangle(cornerRadius: 26))
-        .overlay(RoundedRectangle(cornerRadius: 26).strokeBorder(.white.opacity(0.08), lineWidth: 1))
+        .frame(height: 212).clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
         .overlay(alignment: .topTrailing) { if t.own { Image(systemName: "star").font(.system(size: 15, weight: .bold)).foregroundStyle(Color(hex: "FFD60A")).padding(12) } }
     }
 }
@@ -417,13 +437,13 @@ struct HVAlbums: View {
         VStack(alignment: .leading, spacing: 0) {
             HVAnchor(id: "sec-albums")
             Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
-            HVLabel(text: "ALBUMS", trailing: "7 DAYS · RECAP ›").padding(.top, 14)
+            HVLabel(text: "アルバム", trailing: "7日で 消える ・ まとめ ›").padding(.top, 14)
             ForEach(Array(data.albums.enumerated()), id: \.element.id) { k, a in
                 VStack(alignment: .leading, spacing: 9) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(a.label).font(Typo.title(26)).tracking(-0.26).foregroundStyle(.white).frame(height: 25)
+                        Text(a.label).font(Typo.title(25)).tracking(Typo.titleTracking(25)).foregroundStyle(.white).frame(height: 25)
                         Spacer()
-                        Text(a.left).font(Typo.label(9.5)).tracking(1.6).foregroundStyle(HVL.label)
+                        Text(a.left).font(Typo.ui(700, 11)).foregroundStyle(a.hot ? HV.lime : Color(hex: "55555B")).lineLimit(1)
                     }.padding(.horizontal, 18)
                     HStack(spacing: 7) {
                         ForEach(0..<3, id: \.self) { j in
@@ -435,7 +455,7 @@ struct HVAlbums: View {
                         }
                         ZStack {
                             if let img = a.tiles.first ?? nil { Image(uiImage: img).resizable().scaledToFill().blur(radius: 10).brightness(-0.1) }
-                            Text("+\(a.more)").font(Typo.ui(600, 18)).foregroundStyle(.white)
+                            Text("+\(a.more)").font(Typo.ui(600, 15)).foregroundStyle(.white)
                         }.frame(maxWidth: .infinity).frame(height: 112).background(HVL.card).clipShape(RoundedRectangle(cornerRadius: 18))
                     }.padding(.horizontal, 14)
                 }
@@ -454,7 +474,7 @@ struct HVOnThisDay: View {
             VStack(alignment: .leading, spacing: 0) {
                 HVAnchor(id: "sec-onthisday")
                 Rectangle().fill(HVL.line).frame(height: 1).padding(.horizontal, 18)
-                HVLabel(text: "ON THIS DAY", trailing: "1 MONTH AGO").padding(.top, 20)
+                HVLabel(text: "この日", trailing: "1か月 前").padding(.top, 20)
                 HStack(alignment: .top, spacing: 18) {
                     ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 4).fill(Color(hex: "F4F1EA"))
@@ -465,9 +485,9 @@ struct HVOnThisDay: View {
                     }.frame(width: 154, height: 186).rotationEffect(.degrees(-4)).shadow(color: .black.opacity(0.6), radius: 14, y: 10)
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Oct 17").font(Typo.title(44)).tracking(-0.9).foregroundStyle(.white).padding(.top, 14)
-                        Text("1 month ago").font(Typo.title(19, italic: true)).foregroundStyle(HVL.label)
-                        ZStack(alignment: .leading) { Capsule().fill(Color.white.opacity(0.08)).frame(height: 3); Capsule().fill(Color(hex: "24A03C")).frame(width: 150, height: 3) }.padding(.top, 14)
-                        Text("\(o.daysLeft) DAYS LEFT").font(Typo.label(10)).tracking(2).foregroundStyle(HVL.label)
+                        Text("1か月 前").font(Typo.ui(700, 14)).foregroundStyle(HVL.label)
+                        ZStack(alignment: .leading) { Capsule().fill(Color.white.opacity(0.08)).frame(height: 3); Capsule().fill(HV.lime).frame(width: 150, height: 3) }.padding(.top, 14)
+                        Text("あと \(o.daysLeft)日").font(Typo.ui(700, 12)).foregroundStyle(HVL.label)
                         HStack(spacing: 5) { Capsule().fill(.white).frame(width: 14, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5); Circle().fill(.white.opacity(0.3)).frame(width: 5, height: 5) }
                     }
                     Spacer(minLength: 0)

@@ -199,7 +199,8 @@ struct HomeV64Host: View {
             }
         }
         low.albums = L.film.prefix(7).enumerated().map { i, d in
-            .init(label: Self.dayLabel(d.date), left: "\(max(0, 7 - d.ago))D LEFT", tiles: [Self.filmImage(d)], more: 0)
+            let left = HVL.albumLeft(daysLeft: max(0, 7 - d.ago), date: d.date)
+            return .init(label: Self.dayLabel(d.date), left: left.text, tiles: [Self.filmImage(d)], more: 0, hot: left.hot)
         }
         input.lower = low
         return input
@@ -262,8 +263,9 @@ struct HomeV64Host: View {
     }
 
     private static func dateLabel(_ d: Date, now: Date) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "MMM d"
-        return f.string(from: d).uppercased()
+        // v119:小さな 日付は 11/20
+        let f = DateFormatter(); f.dateFormat = "M/d"
+        return f.string(from: d)
     }
 
     private static func dayLabel(_ d: Date) -> String {

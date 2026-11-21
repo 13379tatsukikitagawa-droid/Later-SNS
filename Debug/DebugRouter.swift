@@ -164,9 +164,9 @@ struct HomeV64Preview: View {
         let P = SampleData.photo
         low.today = { let c = Calendar.current; let ds = [(9, 12), (13, 40), (20, 43)].compactMap { c.date(bySettingHour: $0.0, minute: $0.1, second: 0, of: Date()) }
             return .init(thumbs: [P("c"), P("a"), P("e")], times: ["09:12", "13:40", "20:43"], dates: ds) }()
-        low.hero = .init(photo: P("d"), tag: "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: "NOV 15", moments: 6, people: 4, daysLeft: 6)
+        low.hero = .init(photo: P("d"), tag: "#朝", tagColor: Color(hex: "9ED8FF"), dateLabel: "11/15", moments: 6, people: 4, daysLeft: 6)
         low.tiles = [.init(photo: P("d"), name: "あや", time: "17:05"), .init(photo: P("b"), name: "you", time: "16:05", own: true), .init(photo: P("d"), name: "れな", time: "12:40"), .init(photo: P("e"), name: "そら", time: "09:12")]
-        low.albums = (1...6).map { k in .init(label: "Nov \(16 - k)", left: "\(7 - k)D LEFT · \(["SUN", "SAT", "FRI", "THU", "WED", "TUE"][k - 1])", tiles: [[P("c"), P("d"), P("e")], [P("e"), P("f"), nil], [P("a"), P("b"), P("c")], [P("d"), P("e"), P("f")], [P("a"), P("c"), P("e")], [P("b"), P("d"), P("f")]][k - 1], more: [8, 5, 12, 3, 9, 6][k - 1]) }
+        low.albums = (1...6).map { k in let lf = HVL.albumLeft(daysLeft: 7 - k, date: Calendar.current.date(byAdding: .day, value: -k, to: Date()) ?? Date()); return .init(label: "Nov \(16 - k)", left: lf.text, tiles: [[P("c"), P("d"), P("e")], [P("e"), P("f"), nil], [P("a"), P("b"), P("c")], [P("d"), P("e"), P("f")], [P("a"), P("c"), P("e")], [P("b"), P("d"), P("f")]][k - 1], more: [8, 5, 12, 3, 9, 6][k - 1], hot: lf.hot) }
         low.onThisDay = (P("c"), 335, "'26 10 17")
         if d.bool(forKey: "debugTrip") { low.trips = [(id: UUID(), name: "Kyoto", sub: "京都 2泊3日", cover: SampleData.photo("b"), day: "DAY 2 / 3", unread: 2)] }
         input.lower = low
