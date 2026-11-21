@@ -188,11 +188,15 @@ struct JoinFlowView: View {
         case loading
         case invitation(PreparedInvitation)
         case failure(GroupJoinService.Failure, PreparedInvitation?)
+        /// v111 §7:入れた あとの 搭乗ゲート
+        case boarding(LaterGroup, PreparedInvitation)
     }
 
     @Environment(\.modelContext) private var modelContext
     @State private var phase: Phase = .loading
     @State private var haptics = ExposureHaptics()
+    @Query private var profiles: [UserProfile]
+    private var myProfile: UserProfile? { UserProfile.current(from: profiles) }
 
     var body: some View {
         ZStack {
@@ -226,10 +230,20 @@ struct JoinFlowView: View {
                     NotificationCenter.default.post(name: .homeToastRequested, object: "入りませんでした")
                     onFinish()
                 }, onHome: { group in
-                    NotificationCenter.default.post(name: .groupJoined, object: group.id)
-                    NotificationCenter.default.post(name: .homeToastRequested, object: "\(group.name) に入りました")
-                    onFinish()
+                    withAnimation(.easeInOut(duration: 0.25)) { phase = .boarding(group, prepared) }
                 })
+                .transition(.opacity)
+            case .boarding(let group, let prepared):
+                BoardingGateV111(
+                    tripName: group.name, colorIndex: prepared.invitation.colorIndex, seatIndex: prepared.seatIndex,
+                    memberLimit: prepared.memberLimit, occupied: prepared.memberCount,
+                    myName: myProfile?.name ?? "", myAvatar: myProfile?.profileImageData.flatMap { UIImage(data: $0) },
+                    onDone: {
+                        NotificationCenter.default.post(name: .groupJoined, object: group.id)
+                        NotificationCenter.default.post(name: .homeToastRequested, object: "\(group.name) に入りました")
+                        onFinish()
+                    }
+                )
                 .transition(.opacity)
             case .failure(let failure, let prepared):
                 JoinErrorView(failure: failure, prepared: prepared, onHome: onFinish, onPassphrase: {
@@ -831,6 +845,7 @@ struct InvitationView: View {
                 joinedGroup = group
                 Task { await SocialClient.joinTripMembership(group) }   // v111:チャット通知の 宛先に 自分を 登録
                 successAt = Date().timeIntervalSince(joinStart)
+                onHome(group)   // v111:参加が 終わった 時点で 搭乗ゲートへ(古い 到着の 演出は 使わない)
             case .failure(let failure):
                 // アニメを途中で止めて、エラーへ
                 self.joinStart = nil
