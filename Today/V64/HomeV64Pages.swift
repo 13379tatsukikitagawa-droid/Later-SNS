@@ -9,6 +9,8 @@ struct HomeV64Friend: Identifiable {
     var name: String
     var color: Color
     var image: UIImage? = nil
+    /// アイコン写真 だけ(今日の 写真の モザイクは 入れない。Home の 写真の カード 用)
+    var avatar: UIImage? = nil
     /// 今日 撮った 枚数(0〜3)
     var shots: Int = 0
     /// 最後に 撮った 時刻("17:05")。わからない ときは nil

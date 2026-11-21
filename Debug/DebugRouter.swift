@@ -144,7 +144,8 @@ struct HomeV64Preview: View {
             input.tripItems = [ti("大阪", -1, 1, 0, "e", shots: 14), ti("部活の 合宿", 4, 6, 2, "c"), ti("京都", -28, -26, 3, "a")]
         }
         let names = ["あや", "れな", "そら"], cols = [Color(hex: "61DD7A"), Color(hex: "7FB0FF"), Color(hex: "6FCB8C")]
-        input.friends = (0..<min(3, friends)).map { HomeV64Friend(id: "fr\($0)", name: names[$0], color: cols[$0], image: SampleData.photo(["b", "b", "f"][$0]), shots: [3, 2, 0][$0], time: ["17:05", "12:40", nil][$0]) }
+        input.friends = (0..<min(3, friends)).map { HomeV64Friend(id: "fr\($0)", name: names[$0], color: cols[$0], image: SampleData.photo(["b", "b", "f"][$0]), avatar: SampleData.photo(["b", "b", "f"][$0]), shots: [3, 2, 0][$0], time: ["17:05", "12:40", nil][$0]) }
+        input.friendsCardPhoto = friends > 0 ? SampleData.photo("b") : nil
         if input.requestCount > 0 {
             let rn = friends > 0 ? [("ひなた", "@hinata_3304", "1h", "a"), ("りこ", "@riko_6982", "2h", "c"), ("さき", "@saki_6611", "5h", "b")] : [("りこ", "@riko_6982", "2h", "c"), ("さき", "@saki_6611", "5h", "b")]
             input.requests = rn.enumerated().map { i, r in HomeV64Request(id: "rq\(i)", name: r.0, handle: r.1, ago: r.2, color: Color(hex: "7FB0FF"), image: SampleData.photo(r.3)) }
@@ -167,7 +168,8 @@ struct HomeV64Preview: View {
         low.onThisDay = (P("c"), 335, "'26 10 17")
         if d.bool(forKey: "debugTrip") { low.trips = [(id: UUID(), name: "Kyoto", sub: "京都 2泊3日", cover: SampleData.photo("b"), day: "DAY 2 / 3", unread: 2)] }
         input.lower = low
-        input.now = Calendar.current.date(bySettingHour: 11, minute: 54, second: 0, of: Date()) ?? Date()
+        // -debugHour 7 で 9:00 まえ(きのうの カードは ぼかし + 鍵)
+        input.now = Calendar.current.date(bySettingHour: d.object(forKey: "debugHour") == nil ? 11 : d.integer(forKey: "debugHour"), minute: 54, second: 0, of: Date()) ?? Date()
         return HomeV64View(input: input).background(Color.black).ignoresSafeArea()
     }
 }

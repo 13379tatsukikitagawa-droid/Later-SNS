@@ -24,6 +24,8 @@ struct HomeV64Input {
     var avatar: UIImage?
     var avatarName = ""
     var avatarBadge = false
+    /// v131:写真の カードの Friends に 敷く 友だちの アイコン写真(なければ 色の 地)
+    var friendsCardPhoto: UIImage?
     /// v108:お知らせの 数(未対応の 友だち申請 + Trip の 招待)
     var inboxCount = 0
     /// うしろに ぼかして 敷く 写真(友だちの 今日 → 自分の きのう → なし)
@@ -96,6 +98,8 @@ struct HomeV64View: View {
     @State private var scrollY: CGFloat = 0
     @State private var dragVal: CGFloat = 0
     @State private var compact = false
+    @State private var mini = false
+    @State private var scrollTopTick = 0
     @State private var afFlash = false
     @State private var lastCompactTick = Date.distantPast
 
@@ -121,6 +125,7 @@ struct HomeV64View: View {
                                 .scaleEffect(entered || reduceMotion ? 1 : 1.06)
                                 .allowsHitTesting(scrollY < 700)
                                 .modifier(HVVeil(on: input.spotlight || showLive, dim: input.spotlight))
+                            Color.clear.frame(width: 1, height: 1).id("top")
                             VStack(spacing: 0) { Color.clear.frame(width: 1, height: input.debugScroll); Color.clear.frame(width: 1, height: 1).id("dbg"); Spacer(minLength: 0) }.frame(width: 1)
                             VStack(spacing: 0) {
                                 Color.clear.frame(height: 810 + 2 * f.mid)
@@ -129,10 +134,13 @@ struct HomeV64View: View {
                         }
                         }
                     .onChange(of: wantsToday) { _, _ in withAnimation(.easeInOut(duration: 0.6)) { proxy.scrollTo("today", anchor: .top) } }
+                    .onChange(of: scrollTopTick) { _, _ in proxy.scrollTo("top", anchor: .top) }
                     .scrollHaptics()
                     .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.contentOffset.y + $0.contentInsets.top) } action: { _, new in
                         scrollY = new
                         let want = new > 60
+                        let wantMini = new > 150
+                        if wantMini != mini { mini = wantMini; if wantMini { Haptics.play(.notch) } }
                         if want != compact, Date().timeIntervalSince(lastCompactTick) > 0.3 { compact = want; lastCompactTick = Date(); Haptics.play(.tick) }
                     }
                     .onAppear {
@@ -149,7 +157,17 @@ struct HomeV64View: View {
                 }
                 .modifier(HVVeil(on: input.spotlight || showLive, dim: input.spotlight))
                 .animation(.easeOut(duration: 0.35), value: input.spotlight)
-                moon(f)
+                // v131:150pt より 下で 小さな 列(カード 3枚は 消える)
+                HVMiniRowV131(requestCount: input.requestCount, onSelect: { i in
+                    if i == 3 { actions.openYesterday() } else { withAnimation(nil) { scrollTop() }; goPage(i) }
+                }, onUp: { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.45)) { scrollTop() } })
+                .scaleEffect(mini ? 1 : 0.7)
+                .offset(y: mini ? 0 : 40)
+                .opacity(mini ? 1 : 0)
+                .allowsHitTesting(mini)
+                .animation(reduceMotion ? .easeOut(duration: 0.2) : .timingCurve(0.3, 1.35, 0.5, 1, duration: 0.5), value: mini)
+                .frame(width: f.w, height: f.h, alignment: .bottom)
+                .padding(.bottom, 26)
                 HVCountdownV100(active: !input.spotlight && tourStep == nil && !showLive).frame(width: f.w, height: f.h)
                 if showLive { HVLivePanel(input: input, onClose: { withAnimation(.easeOut(duration: 0.25)) { showLive = false } }, onShoot: actions.shoot).zIndex(10) }
             }
@@ -202,6 +220,7 @@ struct HomeV64View: View {
     // MARK: カード(5ページの 横スライド + 目次)
 
     private struct _Unused {}
+    private func scrollTop() { scrollTopTick += 1 }
     private func goPage(_ i: Int, delay: Double = 0) {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             let changed = i != page
@@ -222,9 +241,13 @@ struct HomeV64View: View {
             HVPager(pages: views, page: $page, width: f.w, contentWidth: cardW, onChange: { _ in Haptics.play(.sel) }, onDrag: { dragVal = $0 })
                 .frame(width: f.w, height: 508)
                 .offset(x: 0, y: top)
-            // 目次(ページに 重ねる)
-            HVDock(selected: page) { i in goPage(i) }
-                .position(x: f.cx, y: 650 + f.mid)
+            // v131:NEXT の 下の 写真の カード 3枚(どの ページでも 同じ 所)。スクロールで 小さな 列に かわる
+            HVPhotoCardsV131(model: HVCardsModel(input), page: page, width: f.w,
+                             onFriends: { goPage(1) }, onTrip: { goPage(2) }, onYesterday: actions.openYesterday)
+                .offset(y: 652 + f.mid)
+                .opacity(mini ? 0 : 1)
+                .allowsHitTesting(!mini)
+                .animation(.easeOut(duration: 0.2), value: mini)
         }
     }
 
@@ -241,29 +264,24 @@ struct HomeV64View: View {
             }, onTap: {
                 if input.done { Haptics.play(.click); actions.openYesterday() } else { Haptics.play(.shutter); actions.shoot() }
             })
-            .position(x: f.cx, y: 214)
-            // v95-8:NEXT(レンズの すぐ 下 ・ 画面の 上 514)
+            .position(x: f.cx, y: 426 - 178)
+            // v131:レンズの 下(NEXT の 上)に ライムの 札「タップで 撮る」(押す じゃまは しない)
+            if !input.done {
+                Text("タップで 撮る").font(Typo.ui(800, 11.5)).tracking(Typo.em(11.5, 0.06)).foregroundStyle(Color(hex: "111113"))
+                    .padding(.horizontal, 11).padding(.vertical, 6)
+                    .background(HV.lime, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).strokeBorder(Color(hex: "0A0A0B"), lineWidth: 3).padding(-3))
+                    .fixedSize()
+                    .position(x: f.cx, y: 523.75 - 178)
+                    .allowsHitTesting(false)
+            }
+            // v131:NEXT(紙の カード ・ 上から 538)
             HVNextCapsule(input: input, actions: actions, onLive: { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showLive = true } })
-                .frame(width: 318).position(x: f.cx, y: 514 - 178 + 34)
+                .frame(width: 340).position(x: f.cx, y: 575 - 178 + 5)
         }
         .frame(width: f.w, height: 508, alignment: .topLeading)
     }
 
-    // MARK: 月(今日を撮る)
-
-    private func moon(_ f: HV.Frame) -> some View {
-        let d = MoonLayout.diameter(screenWidth: f.w)
-        let top = 712 + 2 * f.mid
-        return ZStack(alignment: .top) {
-            HVMoon(input: input, d: d) { Haptics.play(.click); if input.done { actions.openYesterday() } else { actions.shoot() } }
-                .frame(width: d, height: d)
-                .position(x: f.cx, y: top + d / 2)
-            if input.showHint {
-                HVHintBubble(text: "撮ると、きのうが 1枚 ひらく").position(x: f.cx, y: 694.2 + 19 + 2 * f.mid)
-            }
-        }
-        .frame(width: f.w, height: f.h, alignment: .top)
-    }
 }
 
 // MARK: - 背景
@@ -330,56 +348,6 @@ struct HVLiveDot: View {
 
 // MARK: - 目次(ナビピル)
 
-struct HVDock: View {
-    let selected: Int
-    let onSelect: (Int) -> Void
-    @Namespace private var ns
-    // Camera は # の 画面。そこでは 出さない(v79)。ほかの ページでは 左に 小さな 丸(字 なし)= Camera へ もどる
-    private let items: [(Int, HVIconKind, String)] = [(1, .friends, "Friends"), (2, .trip, "Trip")]
-
-    var body: some View {
-        HStack(spacing: 4) {
-            if selected != 0 {
-                Button { Haptics.play(.tick); onSelect(0) } label: {
-                    ZStack {
-                        Circle().stroke(.white.opacity(0.78), lineWidth: 1.8).frame(width: 16.4, height: 16.4)
-                        Circle().fill(.white.opacity(0.78)).frame(width: 7.2, height: 7.2)
-                    }
-                    .frame(width: 44, height: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(HVPress(scale: 1.08))
-                .accessibilityLabel("Camera")
-            }
-            ForEach(items, id: \.0) { item in
-                let on = item.0 == selected
-                Button { Haptics.play(.tick); onSelect(item.0) } label: {
-                    HStack(spacing: 7) {
-                        HVIcon(kind: item.1, size: 20, color: on ? HV.ink : .white.opacity(0.78))
-                        if on { Text(item.2.uppercased()).font(Typo.label(10)).tracking(1.2).foregroundStyle(HV.ink).fixedSize() }
-                    }
-                    .padding(.leading, on ? 13 : 12).padding(.trailing, on ? 16 : 12)
-                    .frame(height: 44).frame(minWidth: 44)
-                    .background {
-                        if on {
-                            Capsule().fill(HV.lime)
-                                .overlay(Capsule().strokeBorder(Color.white.opacity(0.55), lineWidth: 1.5).mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.2))))
-                                .shadow(color: Color(red: 140 / 255, green: 190 / 255, blue: 40 / 255).opacity(0.6), radius: 7, y: 6)
-                                .matchedGeometryEffect(id: "mark", in: ns)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(HVPress(scale: 1.08))
-                .accessibilityLabel("ページ、\(item.2)")
-            }
-        }
-        .padding(.horizontal, selected == 0 ? 10 : 4).padding(.vertical, 4)
-        .hvGlass(radius: 26, tint: 0.13)
-        .shadow(color: .black.opacity(0.8), radius: 16, y: 16)
-        .animation(.spring(response: 0.44, dampingFraction: 0.72), value: selected)
-    }
-}
-
 // MARK: - ヘッダーの 部品
 
 struct HVAvatar: View {
@@ -427,73 +395,6 @@ struct HVDefaultAvatar: View {
     }
 }
 
-// MARK: - 月(今日を撮る)
-
-struct HVMoon: View {
-    let input: HomeV64Input
-    let d: CGFloat
-    let action: () -> Void
-    @State private var pressing = false
-
-    var body: some View {
-        let title: String = { switch input.shotsUsed { case 0: return "今日を撮る"; case 1, 2: return "もう1枚 撮る"; default: return "9:00に、ひらきます" } }()
-        let sub: String = input.done ? "あした 9:00 に ひらく" : "のこり \(input.remaining)こま"
-        Button(action: action) {
-            ZStack(alignment: .top) {
-                Circle().fill(LinearGradient(stops: [.init(color: Color(hex: "1E6A33"), location: 0), .init(color: Color(hex: "0E3A1B"), location: 0.22), .init(color: Color(hex: "07190C"), location: 0.52), .init(color: Color(hex: "040A06"), location: 1)], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: Color(red: 59 / 255, green: 211 / 255, blue: 90 / 255).opacity(0.35), radius: 30, y: -14)
-                HV72DomeGlobe(d: d, pressing: pressing)
-                Circle().strokeBorder(HV.lime.opacity(0.55), lineWidth: 1)
-                HVRim(radius: d / 2, width: 1.2).opacity(0.6)
-                VStack(spacing: 15) {
-                    HStack(spacing: 9) {
-                        if !input.done { HVCameraGlyph(width: 26, line: 1.8, color: .white, showsFlash: false) }
-                        Text(title).font(Typo.ui(800, 21)).tracking(-0.21).foregroundStyle(input.done ? .white.opacity(0.6) : .white).shadow(color: .black.opacity(0.75), radius: 7, y: 2)
-                    }
-                    .frame(height: 30)
-                    HStack(spacing: 8) {
-                        if !input.done {
-                            HStack(spacing: 4) {
-                                ForEach(0..<3, id: \.self) { i in
-                                    RoundedRectangle(cornerRadius: 3).fill(i < input.remaining ? HV.lime : .white.opacity(0.2)).frame(width: 14, height: 6)
-                                }
-                            }
-                        }
-                        Text(sub).font(Typo.label(10.5)).tracking(1.47).foregroundStyle(.white.opacity(0.7))
-                    }
-                    .frame(height: 16)
-                }
-                .padding(.top, 28)
-                .offset(y: pressing ? -4 : 0)
-            }
-            .frame(width: d, height: d)
-            .scaleEffect(pressing ? 1.015 : 1)
-            .contentShape(Circle())
-        }
-        .buttonStyle(HVPress(scale: 1.0, onPress: { pressing = $0 }))
-        .accessibilityLabel(title)
-    }
-}
-
-struct HVHintBubble: View {
-    let text: String
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle().fill(Color(hex: "25A93F")).frame(width: 8, height: 8)
-            Text(text).font(Typo.ui(800, 13.5)).tracking(-0.135).foregroundStyle(.white).fixedSize()
-        }
-        .padding(.leading, 12).padding(.trailing, 16).frame(height: 38)
-        .background(Color(hex: "111111"), in: Capsule())
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Color(hex: "111111")).frame(width: 14, height: 14).clipShape(RoundedRectangle(cornerRadius: 3)).rotationEffect(.degrees(45)).offset(y: 7)
-        }
-        .shadow(color: .black.opacity(0.55), radius: 14, y: 12)
-        .allowsHitTesting(false)
-    }
-}
-
-// MARK: - スクロールの 位置 / 暗さ(ヘッダーの 配色)
-
 struct HVScrollKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
@@ -532,5 +433,238 @@ struct HVCardShadow: View {
     var body: some View {
         RoundedRectangle(cornerRadius: 40, style: .continuous).fill(Color.black.opacity(0.5))
             .padding(.horizontal, 14).padding(.vertical, 22).blur(radius: 26).offset(y: 26).allowsHitTesting(false)
+    }
+}
+
+// MARK: - v131:写真の カード 3枚(NEXT の 下)と スクロール 中の 小さな 列
+
+/// カードの 色(v114 の 3色。この カードと 小さな 列 だけに 使う)
+enum HVCardTint {
+    static let friends = Color(hex: "FF9CC8")
+    static let trip = Color(hex: "7CCBFF")
+    static let yesterday = Color(hex: "FFD84D")
+    static let badge = Color(hex: "FF4D6D")
+    static let ground = Color(hex: "141416")
+    static let milk = Color(hex: "FAFAF7")
+}
+
+/// カード 3枚に 出す 中身(HomeV64Input から 作る)
+struct HVCardsModel {
+    var friendsPhoto: UIImage?
+    var friendFaces: [HomeV64Face]
+    var requestCount: Int
+    var friendsLine: String
+    var tripPhoto: UIImage?
+    var tripTag: String?
+    var tripLine: String
+    var yesterdayPhoto: UIImage?
+    var open: Bool
+    var yesterdayLine: String
+
+    @MainActor init(_ i: HomeV64Input) {
+        // 友だちの カードは アイコン写真 だけ(今日の 写真 ・ モザイクは 出さない)
+        friendsPhoto = i.friendsCardPhoto
+        friendFaces = Array((i.requestFaces.isEmpty ? i.friends.map { HomeV64Face(id: $0.id, initial: String($0.name.prefix(1)), color: $0.color, image: $0.avatar) } : i.requestFaces).prefix(3))
+        requestCount = i.requestCount
+        let took = i.friends.filter { $0.shots > 0 }.count
+        friendsLine = i.requestCount > 0 ? "\(i.requestCount)人 から 申請" : took > 0 ? "\(took)人 撮った" : (i.friendCount > 0 || !i.friends.isEmpty) ? "まだ だれも" : "よんで みよう"
+        let cal = Calendar.current
+        let live = i.tripItems.first { TripHubRules.phase(start: $0.start, end: $0.end, created: $0.created, now: i.now).phase == .live }
+        tripPhoto = live?.cover
+        if let live, let st = live.start, let en = live.end {
+            tripTag = "DAY \(TripHubRules.dayNumber(start: st, now: i.now, cal: cal)) / \(TripHubRules.totalDays(start: st, end: en, cal: cal))"
+        }
+        tripLine = live.map { "\($0.name) ・ いま" } ?? "つくる"
+        yesterdayPhoto = i.yesterdayThumbs.first?.image ?? i.yesterdayPhoto
+        open = cal.component(.hour, from: i.now) >= 9
+        yesterdayLine = open ? "ひらいた" : "9:00 に ひらく"
+    }
+}
+
+struct HVPhotoCardsV131: View {
+    let model: HVCardsModel
+    /// いま ひらいて いる ページ(1 = Friends ・ 2 = Trip)
+    let page: Int
+    let width: CGFloat
+    let onFriends: () -> Void
+    let onTrip: () -> Void
+    let onYesterday: () -> Void
+
+    var body: some View {
+        let w = (width - 32 - 20) / 3
+        HStack(spacing: 10) {
+            card(title: "Friends", size: 34, tint: HVCardTint.friends, on: page == 1, w: w, photo: model.friendsPhoto, tinted: true, locked: false, line: model.friendsLine, label: "Friends") {
+                HStack(spacing: 0) {
+                    HStack(spacing: -8) {
+                        ForEach(model.friendFaces) { f in
+                            HVCardFace(face: f).frame(width: 24, height: 24).overlay(Circle().strokeBorder(HVCardTint.ground, lineWidth: 2).padding(-2))
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    if model.requestCount > 0 {
+                        Text(verbatim: "\(model.requestCount)").font(Typo.ui(800, 11)).foregroundStyle(.white)
+                            .padding(.horizontal, 6).frame(minWidth: 20, minHeight: 20).background(HVCardTint.badge, in: Capsule())
+                    }
+                }
+            } action: { onFriends() }
+            card(title: "Trip", size: 46, tint: HVCardTint.trip, on: page == 2, w: w, photo: model.tripPhoto, tinted: false, locked: false, line: model.tripLine, label: "Trip") {
+                HStack {
+                    Spacer(minLength: 0)
+                    if let tag = model.tripTag {
+                        Text(tag).font(Typo.ui(800, 10.5)).foregroundStyle(HVCardTint.trip).lineLimit(1)
+                            .padding(.horizontal, 7).frame(height: 20).background(Color(hex: "111113").opacity(0.72), in: Capsule())
+                    }
+                }
+            } action: { onTrip() }
+            card(title: "Yesterday", size: 30, tint: HVCardTint.yesterday, on: false, w: w, photo: model.yesterdayPhoto, tinted: false, locked: !model.open, line: model.yesterdayLine, label: "Yesterday") {
+                EmptyView()
+            } action: { onYesterday() }
+        }
+        .padding(.horizontal, 16)
+        .frame(width: width)
+    }
+
+    private func card<Top: View>(title: String, size: CGFloat, tint: Color, on: Bool, w: CGFloat, photo: UIImage?, tinted: Bool, locked: Bool, line: String, label: String,
+                                 @ViewBuilder top: () -> Top, action: @escaping () -> Void) -> some View {
+        Button { Haptics.play(.pop); action() } label: {
+            ZStack(alignment: .bottomLeading) {
+                HVCardTint.ground
+                if let photo {
+                    // 9:00 まえ:小さく して 1回 だけ ぼかした 画像(毎フレーム ぼかさない)
+                    Image(uiImage: locked ? HVCardBlur.locked(photo) : photo).resizable().scaledToFill()
+                        .frame(width: w, height: 120).clipped()
+                    if tinted { tint.opacity(0.3).blendMode(.softLight) }
+                } else if locked {
+                    Color(hex: "1C1C1F")
+                }
+                LinearGradient(stops: [.init(color: Color(hex: "0A0A0B").opacity(0), location: 0.25), .init(color: Color(hex: "0A0A0B").opacity(0.15), location: 0.45), .init(color: Color(hex: "0A0A0B").opacity(0.82), location: 1)], startPoint: .top, endPoint: .bottom)
+                if locked {
+                    ZStack {
+                        Circle().fill(Color(hex: "111113").opacity(0.7))
+                        Image(systemName: "lock").font(.system(size: 13, weight: .bold)).foregroundStyle(HVCardTint.milk)
+                    }
+                    .frame(width: 30, height: 30)
+                    .position(x: w / 2, y: 120 * 0.38)
+                }
+                top().padding(.horizontal, 10).frame(maxHeight: .infinity, alignment: .top).padding(.top, 10)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(verbatim: title).font(Typo.title(size)).tracking(Typo.em(size, -0.02)).foregroundStyle(HVCardTint.milk)
+                        .lineLimit(1).minimumScaleFactor(16 / size)
+                        .shadow(color: .black.opacity(0.45), radius: 6, y: 2)
+                    HStack(spacing: 5) {
+                        Circle().fill(tint).frame(width: 6, height: 6).shadow(color: tint, radius: 3)
+                        Text(line).font(Typo.ui(800, 10.5)).tracking(Typo.em(10.5, 0.02)).foregroundStyle(Color(hex: "E9E9EC")).lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                }
+                .padding(.horizontal, 11).padding(.bottom, 11)
+            }
+            .frame(width: w, height: 120)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(on ? tint : .white.opacity(0.12), lineWidth: on ? 2 : 1))
+            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        }
+        .buttonStyle(HVCardPress())
+        .accessibilityLabel(label)
+    }
+}
+
+/// 押すと 0.95 → ばね(cubic-bezier(.34,1.56,.64,1) .25s)
+struct HVCardPress: ButtonStyle {
+    var scale: CGFloat = 0.95
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? scale : 1)
+            .animation(.timingCurve(0.34, 1.56, 0.64, 1, duration: 0.25), value: configuration.isPressed)
+    }
+}
+
+/// 人の 丸(写真 か 名前の 1文字 + 色)
+struct HVCardFace: View {
+    let face: HomeV64Face
+    var body: some View {
+        ZStack {
+            Circle().fill(face.color)
+            if let img = face.image { Image(uiImage: img).resizable().scaledToFill().clipShape(Circle()) }
+            else { Text(face.initial).font(Typo.ui(800, 11)).foregroundStyle(Color(hex: "111113")) }
+        }
+    }
+}
+
+/// 9:00 まえの きのうの カード:64px に 縮めて 1回 だけ ぼかす(blur 7 ・ 彩度 0.6 ・ 明るさ 0.8)。結果は キャッシュ
+enum HVCardBlur {
+    @MainActor private static var cache: [ObjectIdentifier: UIImage] = [:]
+    @MainActor static func locked(_ src: UIImage) -> UIImage {
+        let key = ObjectIdentifier(src)
+        if let c = cache[key] { return c }
+        let out = make(src) ?? src
+        if cache.count > 8 { cache.removeAll() }
+        cache[key] = out
+        return out
+    }
+    private static func make(_ src: UIImage) -> UIImage? {
+        let side: CGFloat = 64
+        let scale = side / max(1, max(src.size.width, src.size.height))
+        let size = CGSize(width: max(1, src.size.width * scale), height: max(1, src.size.height * scale))
+        let small = UIGraphicsImageRenderer(size: size, format: { let f = UIGraphicsImageRendererFormat(); f.scale = 1; return f }()).image { _ in src.draw(in: CGRect(origin: .zero, size: size)) }
+        guard let ci = CIImage(image: small) else { return nil }
+        let blurred = ci.clampedToExtent()
+            .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: 3.8])
+            .applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 0.6])
+            .applyingFilter("CIColorMatrix", parameters: ["inputRVector": CIVector(x: 0.8, y: 0, z: 0, w: 0), "inputGVector": CIVector(x: 0, y: 0.8, z: 0, w: 0), "inputBVector": CIVector(x: 0, y: 0, z: 0.8, w: 0)])
+            .cropped(to: ci.extent)
+        guard let cg = CIContext(options: [.useSoftwareRenderer: false]).createCGImage(blurred, from: ci.extent) else { return nil }
+        return UIImage(cgImage: cg)
+    }
+}
+
+/// v120 / v131:150pt より 下へ スクロール した 時の 小さな 列(黒い 丸 + 色の 絵 × 3 + ↑)
+struct HVMiniRowV131: View {
+    let requestCount: Int
+    let onSelect: (Int) -> Void
+    let onUp: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            dot(.friends, tint: HVCardTint.friends, label: "Friends", badge: requestCount) { onSelect(1) }
+            dot(.trip, tint: HVCardTint.trip, label: "Trip", badge: 0) { onSelect(2) }
+            dot(.yesterday, tint: HVCardTint.yesterday, label: "Yesterday", badge: 0) { onSelect(3) }
+            Button { Haptics.play(.tick); onUp() } label: {
+                ZStack {
+                    Circle().fill(Color(hex: "2A2A2F"))
+                    Image(systemName: "arrow.up").font(.system(size: 16, weight: .bold)).foregroundStyle(HVCardTint.milk)
+                }
+                .frame(width: 38, height: 38).frame(width: 44, height: 44).contentShape(Circle())
+            }
+            .buttonStyle(HVCardPress(scale: 0.9))
+            .accessibilityLabel("上へ もどる")
+        }
+        .padding(.leading, 12).padding(.trailing, 10).padding(.top, 8).padding(.bottom, 6)
+        .background(Color(red: 22 / 255, green: 22 / 255, blue: 24 / 255).opacity(0.94), in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 1))
+        .shadow(color: .black.opacity(0.9), radius: 17, y: 16)
+    }
+
+    private func dot(_ kind: HVIconKind, tint: Color, label: String, badge: Int, _ action: @escaping () -> Void) -> some View {
+        Button { Haptics.play(.pop); action() } label: {
+            ZStack(alignment: .topTrailing) {
+                ZStack {
+                    Circle().fill(Color(hex: "1C1C1F"))
+                    Circle().strokeBorder(.white.opacity(0.12), lineWidth: 1)
+                    HVIcon(kind: kind, size: 21, color: tint)
+                }
+                .frame(width: 46, height: 46)
+                if badge > 0 {
+                    Text(verbatim: "\(badge)").font(Typo.ui(800, 10.5)).foregroundStyle(.white)
+                        .padding(.horizontal, 4).frame(minWidth: 18, minHeight: 18)
+                        .background(HVCardTint.badge, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color(hex: "161618"), lineWidth: 2).padding(-2))
+                        .offset(x: 5, y: -5)
+                }
+            }
+            .padding(.bottom, 4)
+            .contentShape(Circle())
+        }
+        .buttonStyle(HVCardPress(scale: 0.88))
+        .accessibilityLabel(label)
     }
 }

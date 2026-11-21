@@ -157,8 +157,9 @@ struct HomeV64Host: View {
             return HomeV64Request(id: r.id, name: r.fromName.isEmpty ? "ともだち" : r.fromName, handle: r.fromUsername.isEmpty ? "" : "@\(r.fromUsername)", ago: ago, color: Self.color(for: UUID(uuidString: r.fromUserID.padding(toLength: 36, withPad: "0", startingAt: 0)) ?? UUID()))
         }
         input.friends = others.prefix(7).map { f in
-            HomeV64Friend(id: f.id, name: f.name, color: Self.color(for: f.seed), image: image(f.avatarData, "av\(f.id)", max: 160) ?? image(f.mosaicTiny, "mt\(f.id)", max: 160), shots: f.hasShot ? 3 : 0)
+            HomeV64Friend(id: f.id, name: f.name, color: Self.color(for: f.seed), image: image(f.avatarData, "av\(f.id)", max: 160) ?? image(f.mosaicTiny, "mt\(f.id)", max: 160), avatar: image(f.avatarData, "av\(f.id)", max: 160), shots: f.hasShot ? 3 : 0)
         }
+        input.friendsCardPhoto = others.lazy.compactMap { image($0.avatarData, "avc\($0.id)", max: 240) }.first
         input.faces = others.filter(\.hasShot).prefix(3).map { f in
             HomeV64Face(id: f.id, initial: String(f.name.prefix(1)), color: Self.color(for: f.seed), image: image(f.avatarData, "av\(f.id)", max: 96) ?? image(f.mosaicTiny, "mt\(f.id)", max: 96))
         }

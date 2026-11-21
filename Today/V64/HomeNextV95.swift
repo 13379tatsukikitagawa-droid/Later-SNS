@@ -56,13 +56,19 @@ struct HVNextCapsule: View {
             if let cur {
                 VStack(spacing: 6) {
                     Button { tap(cur) } label: { capsule(cur, n: n) }
-                        .buttonStyle(HVPress(scale: 0.98))
+                        .buttonStyle(HVPress(scale: 0.96))
                         .id(cur.id)
                         .transition(.asymmetric(insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
                                                 removal: .move(edge: forward ? .leading : .trailing).combined(with: .opacity)))
+                    // v114:いまの 点は 白で 横長 14pt
                     HStack(spacing: 4) {
-                        ForEach(0..<n, id: \.self) { k in Circle().fill(.white.opacity(k == min(index, n - 1) ? 0.9 : 0.25)).frame(width: 4, height: 4) }
-                    }.frame(height: 6).opacity(n > 1 ? 1 : 0)
+                        ForEach(0..<n, id: \.self) { k in
+                            let on = k == min(index, n - 1)
+                            Capsule().fill(.white.opacity(on ? 1 : 0.3)).frame(width: on ? 14 : 4, height: 4)
+                        }
+                    }
+                    .frame(height: 6).opacity(n > 1 ? 1 : 0)
+                    .animation(.easeOut(duration: 0.3), value: index)
                 }
                 .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { v in
                     guard n > 1, abs(v.translation.width) > abs(v.translation.height) * 1.4, abs(v.translation.width) > 30 else { return }
@@ -87,26 +93,40 @@ struct HVNextCapsule: View {
         withAnimation(.timingCurve(0.3, 1.0, 0.4, 1, duration: 0.45)) { index = ((index + d) % n + n) % n }
     }
 
+    /// v114 2-1:紙の カード(330 × 66 ・ 角丸 22 ・ #F7F5EF ・ -1.2° ・ 上に テープ = フレームの 色)
     private func capsule(_ it: HVNextItem, n: Int) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 11) {
             ZStack {
-                if it.alert { Circle().fill(Color(hex: "FF3B30")).frame(width: 36, height: 36).modifier(HVNextPulse(color: Color(hex: "FF3B30"))) }
-                else { Circle().fill(HV.lime).frame(width: 36, height: 36) }
-                Image(systemName: it.icon).font(.system(size: 15, weight: .bold)).foregroundStyle(it.alert ? .white : HV.ink)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill((it.alert ? Color(hex: "FF7AB6") : HV.lime).shadow(.inner(color: Color(hex: "111113").opacity(0.14), radius: 0, y: -2)))
+                Image(systemName: it.icon).font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: "111113"))
             }
-            VStack(alignment: .leading, spacing: 1) {
-                Text("NEXT ・ \(min(index, n - 1) + 1)/\(n)").font(Typo.label(9)).tracking(1.2).foregroundStyle(it.alert ? Color(hex: "FF6A60") : HV.lime)
-                Text(it.title).font(Typo.ui(800, 14.5)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
-                Text(it.sub).font(Typo.ui(600, 10.5)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+            .frame(width: 44, height: 44)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("NEXT ・ \(min(index, n - 1) + 1)/\(n)").font(Typo.ui(700, 10)).foregroundStyle(Color(hex: "8C8778"))
+                Text(it.title).font(Typo.ui(800, 16)).foregroundStyle(Color(hex: "111113")).lineLimit(1).minimumScaleFactor(0.75)
+                Text(it.sub).font(Typo.ui(600, 11.5)).foregroundStyle(Color(hex: "6E6A60")).lineLimit(1)
             }
             Spacer(minLength: 4)
-            Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(.white.opacity(0.6))
+            ZStack {
+                Circle().fill(Color(hex: "111113"))
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .heavy)).foregroundStyle(HV.lime)
+            }
+            .frame(width: 38, height: 38)
         }
-        .padding(.horizontal, 11).frame(width: 318, height: 58)
-        .background(Color.black.opacity(0.86), in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 1))
-        .contentShape(Capsule())
+        .padding(.leading, 11).padding(.trailing, 14)
+        .frame(width: 330, height: 66)
+        .background(Color(hex: "F7F5EF"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(alignment: .top) {
+            Rectangle().fill(HVNextCapsule.tapeColor.opacity(0.9)).frame(width: 58, height: 18).rotationEffect(.degrees(3)).offset(y: -9)
+        }
+        .rotationEffect(.degrees(-1.2))
+        .shadow(color: .black.opacity(0.45), radius: 13, y: 12)
+        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
+
+    /// テープの 色 = 画面の フレームの 色(フレームが なし の 時は ライム)
+    static var tapeColor: Color { HV.lime }
 
     private func tap(_ it: HVNextItem) {
         Haptics.play(.pop)

@@ -1,6 +1,7 @@
 import SwiftUI
 
-// P15(v71)§4 + v73:まんなかの 本物の カメラの レンズ。直径 312 の 座標で 作って 0.737倍(≈ 230pt)。押す 間 0.70倍。まんなかは 黄緑の シャッター。
+// P15(v71)§4 + v73:まんなかの 本物の カメラの レンズ。直径 312 の 座標で 作る。まんなかは 黄緑の シャッター。
+// v131:レンズ = 撮る ボタン。1.06倍(≈ 331pt)・ 押す 間 1.09倍(モック v117 の 中身の 列 の 値)。
 // 全部 Shape と グラデーション(画像 ・ ぼかし なし)。動かない 部分は 1つの Canvas + drawingGroup。
 
 /// しぼり羽根:6枚。`hole` = 羽根の 内側の 線が 中心から 何pt か(ふだん 104 ・ 押す 間 66 ・ シャッターで 0)
@@ -139,6 +140,10 @@ private struct HV68LensGlass: View {
 }
 
 struct HV68Lens: View {
+    /// v131:ふだん 1.06 倍 ・ 押す 間 1.09 倍(312 の 座標 から)
+    static let scale: CGFloat = 1.06
+    static let pressScale: CGFloat = 1.09
+    static var size: CGFloat { 312 * scale }
     let input: HomeV64Input
     let pressing: Bool
     let onPress: (Bool) -> Void
@@ -179,7 +184,7 @@ struct HV68Lens: View {
     }
 
     private var lensBody: some View {
-        let k: CGFloat = pressing ? 0.70 : 0.737
+        let k: CGFloat = pressing ? HV68Lens.pressScale : HV68Lens.scale
         return ZStack {
             // 黒い 影(半径 26pt 外まで 55% → 0)
             Circle().fill(RadialGradient(colors: [.black.opacity(0.55), .clear], center: .center, startRadius: 155, endRadius: 181)).frame(width: 362, height: 362)
@@ -206,7 +211,7 @@ struct HV68Lens: View {
         .frame(width: 362, height: 362)
         .rotationEffect(.degrees(0))
         .scaleEffect(k)
-        .frame(width: 230, height: 230)
+        .frame(width: HV68Lens.size, height: HV68Lens.size)
         .overlay {
             if !input.done {
                 HV72Shutter(pressing: pressing).scaleEffect(k)
