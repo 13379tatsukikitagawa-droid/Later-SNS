@@ -142,7 +142,7 @@ struct HomeV64Preview: View {
             let cal = Calendar.current, today = cal.startOfDay(for: Date())
             func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today) ?? today }
             func ti(_ name: String, _ s: Int, _ e: Int, _ color: Int, _ cover: String, shots: Int = 0) -> TripHubItem {
-                TripHubItem(id: UUID(), name: name, members: 3, memberImages: [SampleData.photo("a"), SampleData.photo("b"), SampleData.photo("c")], memberNames: ["よ", "れ", "か"], cover: SampleData.photo(cover), start: day(s), end: day(e), created: day(s - 5), color: color, shotsToday: shots, photoCount: 20)
+                TripHubItem.debugSample(id: UUID(), name: name, members: 3, memberImages: [SampleData.photo("a"), SampleData.photo("b"), SampleData.photo("c")], memberNames: ["よ", "れ", "か"], cover: SampleData.photo(cover), start: day(s), end: day(e), created: day(s - 5), color: color, shotsToday: shots, photoCount: 20)
             }
             input.tripItems = [ti("大阪", -1, 1, 0, "e", shots: 14), ti("部活の 合宿", 4, 6, 2, "c"), ti("京都", -28, -26, 3, "a")]
         }
@@ -248,7 +248,7 @@ struct YesterdayV64Preview: View {
             let cal = Calendar.current, today = cal.startOfDay(for: Date())
             func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today) ?? today }
             func item(_ name: String, _ s: Int, _ e: Int, _ color: Int, cover: String, members: Int = 3, shots: Int = 0, photos: Int = 0) -> TripHubItem {
-                TripHubItem(id: UUID(), name: name, members: members, memberImages: [ph("a"), ph("b"), ph("c")], memberNames: ["よ", "れ", "か"], cover: ph(cover), start: day(s), end: day(e), created: day(s - 5), color: color, shotsToday: shots, photoCount: photos)
+                TripHubItem.debugSample(id: UUID(), name: name, members: members, memberImages: [ph("a"), ph("b"), ph("c")], memberNames: ["よ", "れ", "か"], cover: ph(cover), start: day(s), end: day(e), created: day(s - 5), color: color, shotsToday: shots, photoCount: photos)
             }
             y.trips = [item("大阪", -1, 1, 0, cover: "e", shots: 14), item("部活の 合宿", 4, 6, 2, cover: "c", members: 5), item("沖縄", 13, 16, 1, cover: "d"),
                        item("京都", -28, -26, 3, cover: "a", photos: 41), item("伊豆", -50, -48, 1, cover: "b", photos: 18)]
@@ -439,3 +439,14 @@ struct TripLeavePreviewV106: View {
     var body: some View { GroupLeaveOverlay(snapshot: snap, haptics: ExposureHaptics(), perform: { try await Task.sleep(for: .seconds(0.3)) }, onCancel: {}, onHome: {}, isEndingTrip: true) }
 }
 #endif
+
+extension TripHubItem {
+    /// DEBUG:ひらいた 写真の 行の 見本(いまの Trip だけ ・ 4枚 + 鍵)
+    static func debugSample(id: UUID, name: String, members: Int, memberImages: [UIImage?], memberNames: [String], cover: UIImage?, start: Date?, end: Date?, created: Date, color: Int, shotsToday: Int, photoCount: Int = 0) -> TripHubItem {
+        var t = TripHubItem(id: id, name: name, members: members, memberImages: memberImages, memberNames: memberNames, cover: cover, start: start, end: end, created: created, color: color, shotsToday: shotsToday, photoCount: photoCount)
+        t.openedThumbs = ["a", "b", "c", "d"].map { SampleData.photo($0) }
+        t.openedDay = 1; t.openedCount = 18; t.hasLocked = shotsToday > 0
+        t.lockedThumb = SampleData.photo("e").map { V64Images.blurred(key: "dbglock", source: $0, maxPixel: 48, radius: 8, saturation: 0.6) }
+        return t
+    }
+}

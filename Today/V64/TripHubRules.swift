@@ -19,9 +19,37 @@ struct TripHubItem: Identifiable {
     var shotsToday = 0
     var photoCount = 0
     var perDay = 23
+    // v132 1-3:ひらいた 写真の 行(サムネ だけ ・ きょうの 分は ぼかし + 鍵)
+    var openedThumbs: [UIImage?] = []
+    var openedDay = 0
+    var openedCount = 0
+    var lockedThumb: UIImage?
+    var hasLocked = false
+}
+
+/// ひらいた 写真の 行に 出す 物(9:00 の ルールは `PhotoDevelop` と 同じ 1つ)
+struct TripOpenedSummary: Equatable {
+    var day = 0              // いちばん 新しい ひらいた 日の DAY n(0 = まだ なし)
+    var count = 0            // その 日の 枚数
+    var pick: [Int] = []     // 見せる 写真の 番号(新しい 順 ・ 4枚 まで)
+    var hasLocked = false    // まだ ひらいて いない 写真が ある(= 鍵の 1枚)
 }
 
 enum TripHubRules {
+    static func openedSummary(_ dates: [Date], tripStart: Date?, now: Date, cal: Calendar = .current) -> TripOpenedSummary {
+        var out = TripOpenedSummary()
+        let opened = dates.enumerated().filter { PhotoDevelop.isDeveloped(takenAt: $0.element, now: now, calendar: cal) }
+        out.hasLocked = opened.count < dates.count
+        guard let newest = opened.max(by: { $0.element < $1.element }) else { return out }
+        let day = cal.startOfDay(for: newest.element)
+        let same = opened.filter { cal.isDate($0.element, inSameDayAs: day) }.sorted { $0.element > $1.element }
+        let start = tripStart ?? dates.min() ?? day
+        out.day = dayNumber(start: start, now: day, cal: cal)
+        out.count = same.count
+        out.pick = same.prefix(4).map(\.offset)
+        return out
+    }
+
     /// 日にちが ない 古い Trip を「いま」に 出す 期間(作って から 7日)
     static let undatedLiveDays = 7
 
@@ -127,13 +155,22 @@ enum TripHubRules {
         let colors = resolveColors(trips)
         return trips.map { g in
             let today = g.photos.lazy.filter { cal.isDate($0.captureDate, inSameDayAs: now) }.count
-            return TripHubItem(
+            let photos = Array(g.photos)
+            let sum = openedSummary(photos.map(\.captureDate), tripStart: g.tripStart, now: now, cal: cal)
+            let locked = photos.filter { !PhotoDevelop.isDeveloped(takenAt: $0.captureDate, now: now, calendar: cal) }.max { $0.captureDate < $1.captureDate }
+            var item = TripHubItem(
                 id: g.id, name: g.name, members: g.members.count,
                 memberImages: g.members.prefix(4).map { V64Images.image(key: "tm\($0.id)", data: $0.profileImageData, maxPixel: 96) },
                 memberNames: g.members.prefix(4).map(\.name),
                 cover: V64Images.image(key: "tg\(g.id)", data: g.iconImageData, maxPixel: 480),
                 start: g.tripStart, end: g.tripEnd, created: g.creationDate, color: colors[g.id] ?? 0,
                 shotsToday: today, photoCount: g.photos.count)
+            item.openedThumbs = sum.pick.map { V64Images.image(key: "to\(photos[$0].id)", data: photos[$0].imageData, maxPixel: 140) }
+            item.openedDay = sum.day; item.openedCount = sum.count; item.hasLocked = sum.hasLocked
+            if let locked, let img = V64Images.image(key: "tl\(locked.id)", data: locked.imageData, maxPixel: 64) {
+                item.lockedThumb = V64Images.blurred(key: "tlb\(locked.id)", source: img, maxPixel: 48, radius: 8, saturation: 0.6)
+            }
+            return item
         }
     }
 }

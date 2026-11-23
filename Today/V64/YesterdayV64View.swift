@@ -37,6 +37,7 @@ struct YesterdayV64Input {
     var viewerOnly: [Cell] = []
     var requestFaces: [HomeV64Face] = []
     var requestCount = 0
+    var inboxCount = 0
     var friendCount = 0
     var shotFriends = 0
     var trips: [TripHubItem] = []
@@ -94,17 +95,9 @@ struct YesterdayV64View: View {
     @State private var mineIndex = 1
     @State private var swapped: [String: Int] = [:]
     @State private var tip = false
-    @State private var avatarPress = false
-    @State private var singleTask: DispatchWorkItem?
     @State private var lastTick = Date.distantPast
 
     private var compact: Bool { scrollY > 24 }
-
-    /// いま 1 ・ これから 2 ・ おわった 2
-    private var tripSubtitle: String {
-        let c = TripHubRules.counts(input.trips, now: input.now)
-        return "いま \(c.live) ・ これから \(c.upcoming) ・ おわった \(c.ended)"
-    }
 
     private var hasMine: Bool { !input.mine.isEmpty }
     private var noFriends: Bool { input.friendCount == 0 && input.posts.isEmpty }
@@ -159,56 +152,20 @@ struct YesterdayV64View: View {
     // MARK: 上の 帯(Lattag の ロゴは 出さない)
 
     private func header(w: CGFloat) -> some View {
-        let k: CGFloat = compact ? 0.8 : 1
         return ZStack(alignment: .topLeading) {
             Rectangle().fill(compact ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear)).overlay(Color.black.opacity(compact ? 0.78 : 0))
                 .frame(width: w, height: compact ? 96 : 112)
                 .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(compact ? 0.12 : 0)).frame(height: 0.5) }
                 .background(alignment: .top) { LinearGradient(stops: [.init(color: .black, location: 0.7), .init(color: .black.opacity(0), location: 1)], startPoint: .top, endPoint: .bottom).frame(height: 112).opacity(compact ? 0 : 1) }
                 .allowsHitTesting(false)
-            // 通知
-            Button { Haptics.play(.pop); withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) { notices = true } } label: {
-                Image(systemName: "bell").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44)
-                    .background(.white.opacity(0.10), in: Circle()).overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 0.8))
-                    .overlay(alignment: .topTrailing) { if input.hasNew || input.requestCount > 0 { Circle().fill(PopColor.pink).frame(width: 9, height: 9).offset(x: -6, y: 9) } }
-            }.buttonStyle(HVPress(scale: 0.92)).scaleEffect(k).offset(x: 12 + (compact ? 4 : 0), y: compact ? 50 : 52)
-            .accessibilityLabel("通知")
-            // タブの 名前
-            VStack(spacing: 1) {
-                Text(tab == 0 ? "Friends" : "Trip").font(Typo.ui(900, compact ? 17 : 24)).tracking(compact ? -0.7 : -0.96).foregroundStyle(.white).frame(height: compact ? 22 : 30)
-                if !compact {
-                    Text(tab == 0 ? friendsSubtitle : tripSubtitle)
-                        .font(Typo.ui(600, 11.5)).foregroundStyle(.white.opacity(0.5)).frame(height: 16)
-                }
-            }.frame(width: 250).offset(x: (w - 250) / 2, y: compact ? 58 : 52)
-            // 右上 = 自分の アイコン(1回 → プロフィール ・ 2回 → 今日)
-            avatar.frame(width: 60, height: 60).contentShape(Circle()).scaleEffect(k * (avatarPress ? 0.9 : 1))
-                .animation(.easeOut(duration: 0.2), value: avatarPress)
-                .onTapGesture(count: 2) { singleTask?.cancel(); Haptics.play(.sel); actions.close() }
-                .onTapGesture {
-                    Haptics.play(.tick); avatarPress = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { avatarPress = false }
-                    singleTask?.cancel()
-                    let t = DispatchWorkItem { actions.openProfile() }; singleTask = t
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.34, execute: t)
-                }
-                .accessibilityAddTraits(.isButton)
-                .offset(x: w - 16 - 60 + 2 - (compact ? 4 : 0), y: compact ? 47 : 45)
-                .accessibilityLabel("プロフィール。2回 タップで 今日へ")
+            // v133 3章:Home ・ Friends ・ Trip で 同じ 部品
+            TopBar(title: tab == 0 ? "Friends" : "Trip", subtitle: tab == 0 ? friendsSubtitle : nil, width: w,
+                   inboxCount: input.inboxCount, avatar: input.avatar, avatarName: input.avatarName, compact: compact, switchLabel: "今日へ",
+                   onBell: { Haptics.play(.pop); withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) { notices = true } },
+                   onProfile: { actions.openProfile() }, onSwitch: { actions.close() })
         }
         .frame(width: w, alignment: .topLeading)
         .animation(.timingCurve(0.3, 1.15, 0.4, 1, duration: 0.45), value: compact)
-    }
-
-    private var avatar: some View {
-        ZStack {
-            Circle().fill(Color.black).frame(width: 56, height: 56)
-            Group {
-                if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
-                else { Circle().fill(LinearGradient(colors: [Color(hex: "61D278"), Color(hex: "EE5E9C")], startPoint: .topLeading, endPoint: .bottomTrailing)).overlay(Text(String(input.avatarName.prefix(1))).font(Typo.ui(900, 20)).foregroundStyle(.white)) }
-            }.frame(width: 52, height: 52).clipShape(Circle())
-            Circle().strokeBorder(HV.lime, lineWidth: compact ? 1 : 1.5).frame(width: 56, height: 56)
-        }.frame(width: 56, height: 56)
     }
 
     // MARK: Friends

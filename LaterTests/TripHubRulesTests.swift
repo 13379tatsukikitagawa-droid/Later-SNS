@@ -60,3 +60,30 @@ struct TripHubRulesTests {
         #expect(c.live == 1 && c.upcoming == 1 && c.ended == 1)
     }
 }
+
+@MainActor
+struct TripOpenedSummaryTests {
+    private var cal: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "Asia/Tokyo")!; return c }
+    private func at(_ d: Int, _ h: Int) -> Date { cal.date(from: DateComponents(year: 2026, month: 11, day: d, hour: h))! }
+
+    @Test func todaysPhotosAreLockedAndNewestOpenedDayIsShown() {
+        let dates = [at(20, 10), at(20, 18), at(21, 8), at(22, 12)]   // 22 日 12:00 = きょう(鍵)
+        let s = TripHubRules.openedSummary(dates, tripStart: at(20, 0), now: at(22, 13), cal: cal)
+        #expect(s.hasLocked)
+        #expect(s.day == 2)            // 21 日の 8:00 の 写真は 21 日 9:00 に ひらいた
+        #expect(s.count == 1)
+        #expect(s.pick == [2])
+        #expect(!s.pick.contains(3))   // きょうの 写真は 出さない
+    }
+
+    @Test func nothingOpenedYet() {
+        let s = TripHubRules.openedSummary([at(22, 10)], tripStart: at(22, 0), now: at(22, 11), cal: cal)
+        #expect(s.day == 0 && s.pick.isEmpty && s.hasLocked)
+    }
+
+    @Test func capsAtFourNewestOfTheDay() {
+        let dates = (0..<6).map { at(20, 10 + $0) }
+        let s = TripHubRules.openedSummary(dates, tripStart: at(20, 0), now: at(21, 12), cal: cal)
+        #expect(s.count == 6 && s.pick == [5, 4, 3, 2])
+    }
+}

@@ -82,6 +82,7 @@ struct HomeV64Host: View {
         y.shotsUsed = min(FilmRoll.shotsPerDay, src.shotsToday)
         y.now = now
         y.avatar = src.avatarImage
+        y.inboxCount = incoming.count + tripInviteCount
         y.cells = L.yesterday.map { c in
             .init(id: c.id, photo: image(c.imageData, "yd\(c.id)", max: 480) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), name: c.authorName, time: c.imageData == nil ? nil : df.string(from: c.captureDate), tag: c.tag)
         }

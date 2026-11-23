@@ -35,106 +35,14 @@ struct HV68Header: View {
             LinearGradient(colors: [.black.opacity(0.34), .clear], startPoint: .top, endPoint: .bottom)
                 .frame(width: f.w, height: 170).opacity(scrollY > 24 ? 0 : 1).allowsHitTesting(false)
 
-            // ロゴ ・ モード(まとまる とき 上へ 10pt + 0.86倍 + 消える)
-            Group {
-                Text(Brand.name).font(Typo.ui(900, 30)).tracking(-1.95).foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.35), radius: 7, y: 1)
-                    .scaleEffect(logoScale, anchor: .leading)
-                    .frame(height: 40, alignment: .leading).fixedSize()
-                    .contentShape(Rectangle())
-                    .onTapGesture { signTap() }   // v100 §7:Lattag の サイン(ラ・タッ・グ)+ はずむ
-                    .frame(width: f.w).offset(x: 0, y: 56)   // v108:まんなか
-            }
-            .scaleEffect(compact ? 0.86 : 1, anchor: .topLeading)
-            .offset(y: compact ? -10 : 0)
-            .opacity(compact ? 0 : 1)
-            .allowsHitTesting(!compact)
-
             hud
-            bell
-            avatar
+            TopBar(title: Brand.name, width: f.w, inboxCount: input.inboxCount, avatar: input.avatar, avatarName: input.avatarName,
+                   ring: input.limit == 0 ? 0 : Double(min(input.shotsUsed, input.limit)) / Double(input.limit), showsSwitchBadge: true,
+                   compact: compact, hidesTitleWhenCompact: true, showsTip: true, switchLabel: "きのうへ",
+                   onBell: onInbox, onProfile: onProfile, onSwitch: onYesterday, onTitleTap: { signTap() }, titleScale: logoScale)
         }
         .frame(width: f.w, height: f.h, alignment: .topLeading)
         .animation(Self.spring, value: compact)
-    }
-
-    // MARK: アバター + 今日の 撮影の 進みの 輪
-
-    @State private var tapMark = 0
-    @State private var avatarPop = false
-    @State private var tip = false
-    @AppStorage("home.switchTipSeen") private var tipSeen = false
-
-    /// v108 §2:左上の お知らせ(右の アイコンと 同じ 大きさ ・ 数の しるし)
-    private var bell: some View {
-        let size: CGFloat = 56
-        return Button { Haptics.play(.tick); onInbox() } label: {
-            Image(systemName: "bell").font(.system(size: 21, weight: .semibold)).foregroundStyle(.white)
-                .frame(width: size, height: size)
-                .background(Color(red: 28 / 255, green: 28 / 255, blue: 31 / 255).opacity(0.9), in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.1), lineWidth: 1))
-                .overlay(alignment: .topTrailing) {
-                    if input.inboxCount > 0 {
-                        Text(input.inboxCount > 9 ? "9+" : "\(input.inboxCount)").font(Typo.ui(800, 11)).foregroundStyle(HV.ink)
-                            .padding(.horizontal, 5).frame(minWidth: 20, minHeight: 20).background(PopColor.pink, in: Capsule())
-                            .overlay(Capsule().strokeBorder(.black, lineWidth: 2.5)).offset(x: 4, y: -4)
-                    }
-                }
-        }
-        .buttonStyle(HVPress(scale: 0.92))
-        .scaleEffect(compact ? 0.77 : 1, anchor: .leading)
-        .offset(x: 16, y: 47)
-        .accessibilityLabel(input.inboxCount > 0 ? "お知らせ \(input.inboxCount)件" : "お知らせ")
-    }
-
-    private var avatar: some View {
-        let ratio = input.limit == 0 ? 0 : Double(min(input.shotsUsed, input.limit)) / Double(input.limit)
-        let size: CGFloat = 56
-        return ZStack(alignment: .bottomLeading) {
-            ZStack {
-                Circle().stroke(.white.opacity(0.22), lineWidth: 1.6).frame(width: size, height: size)
-                Circle().trim(from: 0, to: ratio).stroke(HV.lime, style: StrokeStyle(lineWidth: 1.6, lineCap: .round)).rotationEffect(.degrees(-90)).frame(width: size, height: size)
-                Group {
-                    if let a = input.avatar { Image(uiImage: a).resizable().scaledToFill() }
-                    else { Circle().fill(Self.color(input.avatarName)).overlay(Text(String(input.avatarName.prefix(1))).font(Typo.ui(800, 18)).foregroundStyle(HV.ink)) }
-                }
-                .frame(width: 48, height: 48).clipShape(Circle())
-                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
-                .shadow(color: .black.opacity(0.6), radius: 8, y: 4)
-            }.frame(width: size, height: size)
-            // 切りかえの 目じるし(⇄)
-            Image(systemName: "arrow.left.arrow.right").font(.system(size: 9, weight: .black)).foregroundStyle(HV.lime)
-                .frame(width: 20, height: 20).background(Color(hex: "0B0C0D"), in: Circle()).overlay(Circle().strokeBorder(HV.lime, lineWidth: 1.5))
-                .rotationEffect(.degrees(avatarPop ? 180 : 0)).offset(x: -4, y: 4)
-        }
-        .frame(width: size, height: size)
-        .scaleEffect((compact ? 0.77 : 1) * (avatarPop ? 1.14 : 1))
-        .contentShape(Circle())
-        .onTapGesture(count: 2) {
-            Haptics.play(.sel)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) { avatarPop = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onYesterday(); withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { avatarPop = false } }
-        }
-        .onTapGesture { Haptics.play(.tick); onProfile() }
-        .overlay(alignment: .bottom) {
-            if tip { Text("2回 タップで きのうへ").font(Typo.ui(700, 12)).foregroundStyle(.white).fixedSize().padding(.horizontal, 12).padding(.vertical, 7).background(Color.black.opacity(0.85), in: Capsule()).overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1)).offset(y: 40).transition(.opacity.combined(with: .scale(scale: 0.9))) }
-        }
-        .offset(x: f.w - 72, y: 47)
-        .onAppear {
-            guard !tipSeen else { return }
-            tipSeen = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { withAnimation(.easeOut(duration: 0.3)) { tip = true }; DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { withAnimation(.easeOut(duration: 0.3)) { tip = false } } }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("プロフィール。2回 タップで きのうへ")
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction(named: "きのうへ") { onYesterday() }
-    }
-
-    private static func color(_ name: String) -> Color {
-        let palette = ["61DD7A", "7FB0FF", "EE5E9C", "C8F25A", "B28CFF", "5AC8FF", "FFD25A"]
-        let n = name.unicodeScalars.reduce(0) { ($0 &+ Int($1.value)) & 0xFFFF }
-        return Color(hex: palette[n % palette.count])
     }
 
     // MARK: v100 サイン ・ 長押し
