@@ -25,6 +25,7 @@ enum DebugRouter {
         case "trip": showRaw(TripV83Preview())
         case "pop": showRaw(PopPreview())
         case "triphome": showRaw(TripHomeV83Preview())
+        case "tripchat": showRaw(TripChatV129Preview())
         case "tripsettings": showRaw(TripSettingsPreviewV106())
         case "tripend": showRaw(TripLeavePreviewV106())
         case "me": showRaw(MEV86Preview())
@@ -288,6 +289,41 @@ struct TripHomeV83Preview: View {
         data.chat = .init(name: "れな", text: "あと そらだけ。はよ 撮って", face: ms[1])
         data.unread = 2
         return TripRoomView(data: data, debugScrollY: d.object(forKey: "debugScrollY") == nil ? nil : CGFloat(d.double(forKey: "debugScrollY")))
+    }
+}
+
+/// DEBUG:Trip の チャット(`-debugTray photos|stickers`)。見本の メッセージ + 見本の 写真
+struct TripChatV129Preview: View {
+    @State private var container: ModelContainer = {
+        let schema = Schema([LaterPhoto.self, LaterGroup.self, UserProfile.self, PhotoVote.self, BlockedUser.self, ExposureDay.self])
+        return try! ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+    }()
+    var body: some View {
+        let cal = Calendar.current
+        let day0 = cal.startOfDay(for: cal.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        func t(_ d: Int, _ h: Int, _ m: Int) -> Date { cal.date(bySettingHour: h, minute: m, second: 0, of: cal.date(byAdding: .day, value: d, to: day0) ?? day0) ?? day0 }
+        let g = LaterGroup(name: "Kyoto")
+        g.creationDate = day0; g.tripColor = 1; g.tripStart = day0; g.tripEnd = cal.date(byAdding: .day, value: 2, to: day0)
+        let names = [("me", "ゆい"), ("rena", "れな"), ("aya", "あや"), ("sora", "そら")]
+        for (rn, n) in names { let u = UserProfile(name: n, username: rn); u.cloudKitUserRecordName = rn; g.members.append(u) }
+        for (i, k) in ["b", "c", "d", "e"].enumerated() {
+            if let img = SampleData.photo(k), let data = img.jpegData(compressionQuality: 0.8) {
+                let p = LaterPhoto(imageData: data, captureDate: t(0, 10 + i, 0), unlockDate: t(1, 9, 0)); p.ckRecordName = "ph\(i + 1)"; g.photos.append(p)
+            }
+        }
+        // きょう 撮った 写真(一覧に 出ては いけない)
+        if let img = SampleData.photo("f"), let data = img.jpegData(compressionQuality: 0.8) {
+            let p = LaterPhoto(imageData: data, captureDate: Date(), unlockDate: t(2, 9, 0)); p.ckRecordName = "today"; g.photos.append(p)
+        }
+        let gid = g.id
+        func m(_ id: String, _ who: String, _ at: Date, _ kind: ChatMessage.Kind = .text, text: String = "", sticker: String? = nil, photo: String? = nil) -> ChatMessage {
+            ChatMessage(id: id, groupID: gid, senderId: who, kind: kind, text: text, stickerId: sticker, photoRecordName: photo, sentAt: at, expiresAt: at.addingTimeInterval(86400 * 7))
+        }
+        let msgs = [m("s", "rena", t(0, 8, 1), .system, text: "れなが 乗りました"), m("1", "rena", t(0, 8, 2), text: "のった〜!"), m("2", "aya", t(0, 8, 3), .sticker, sticker: "star-sun"),
+                    m("3", "me", t(0, 8, 10), text: "あした 9:00 に ひらくの 楽しみ"), m("4", "aya", t(1, 10, 24), .photo, photo: "ph1"), m("5", "rena", t(1, 10, 31), text: "あと そらだけ。はよ 撮って"),
+                    m("6", "rena", t(1, 10, 32), text: "さむい"), m("7", "me", t(1, 13, 4), text: "まって 今 京都タワー"), m("8", "sora", t(1, 13, 4), text: "えらい")]
+        return TripChatV129View(group: g, onClose: {}, readCount: { $0.senderId == "me" ? 3 : 0 }, debugMessages: msgs, debugMe: "me", debugTray: UserDefaults.standard.string(forKey: "debugTray"))
+            .modelContainer(container)
     }
 }
 

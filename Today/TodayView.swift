@@ -793,7 +793,17 @@ struct TodayView: View {
                 .zIndex(8)
             }
 
-            if let group = chatGroup {
+            if let group = chatGroup, !group.isPersonalSpace {
+                // v129:Trip の チャット = TripChatV129View(送れる チャット)
+                TripChatV129View(
+                    group: group,
+                    onClose: { withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) { chatGroup = nil } },
+                    initialReply: chatReply
+                )
+                .onDisappear { chatReply = nil }
+                .transition(.move(edge: .trailing))
+                .zIndex(9)
+            } else if let group = chatGroup {
                 GroupChatRoomView(
                     group: group,
                     friends: layerData(sharedGroups: sharedGroups).friends,

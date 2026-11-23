@@ -69,6 +69,8 @@ enum ChatRules {
 struct ChatMessage: Codable, Identifiable, Equatable {
     enum Kind: String, Codable {
         case text, sticker, photoReply, system
+        /// v129:ひらいた 写真を そのまま 送る(レコード参照)。返信(photoReply)とは 別
+        case photo
     }
 
     enum Status: String, Codable {
