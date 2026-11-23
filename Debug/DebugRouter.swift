@@ -281,13 +281,13 @@ struct TripHomeV83Preview: View {
     var body: some View {
         let d = UserDefaults.standard
         let ph = { (k: String) in SampleData.photo(k) }
-        let ms: [TripHomeData.Member] = [.init(id: "me", name: "you", avatar: ph("f")), .init(id: "a", name: "れな", avatar: nil), .init(id: "b", name: "あや", avatar: nil), .init(id: "c", name: "そら", avatar: nil)]
-        var data = TripHomeData(name: "Kyoto", sub: "京都 2泊3日 ・ 11/16 — 11/18", dayNumber: 2, dayTotal: 3, cover: ph("b"), members: ms, shotsToday: 7, shooters: Array(ms.prefix(3)))
+        let ms: [TripRoomData.Member] = [.init(id: "me", name: "you", avatar: ph("f")), .init(id: "a", name: "れな", avatar: nil), .init(id: "b", name: "あや", avatar: nil), .init(id: "c", name: "そら", avatar: nil)]
+        var data = TripRoomData(name: "Kyoto", sub: "京都 2泊3日 ・ 11/20 〜 11/22", dayNumber: 2, dayTotal: 3, colorIndex: 1, cover: ph("b"), members: ms, shotsToday: 7, shooters: Array(ms.prefix(3)))
         let all = ["b", "c", "d", "e", "f", "a", "b", "c"].map { ph($0) }
-        data.days = [.init(id: "d1", label: "DAY 1 ・ 11/16(月)", opened: 23, photos: all), .init(id: "d2", label: "DAY 2 ・ 11/17(火)", opened: 7, photos: all, isToday: true), .init(id: "d3", label: "DAY 3 ・ 11/18(水)", opened: 0, photos: Array(repeating: nil, count: 4), isFuture: true)]
-        data.chatLine = ("れな", "あと そらだけ。はよ 撮って")
+        data.days = [.init(id: "d1", number: 1, date: "11/20(金)", opened: 23, photos: all), .init(id: "d2", number: 2, date: "11/21(土)", opened: 7, photos: all, isToday: true), .init(id: "d3", number: 3, date: "11/22(日)", opened: 0, photos: Array(repeating: nil, count: 4), isFuture: true)]
+        data.chat = .init(name: "れな", text: "あと そらだけ。はよ 撮って", face: ms[1])
         data.unread = 2
-        return TripHomeV83View(data: data, debugScrollY: d.object(forKey: "debugScrollY") == nil ? nil : CGFloat(d.double(forKey: "debugScrollY")))
+        return TripRoomView(data: data, debugScrollY: d.object(forKey: "debugScrollY") == nil ? nil : CGFloat(d.double(forKey: "debugScrollY")))
     }
 }
 

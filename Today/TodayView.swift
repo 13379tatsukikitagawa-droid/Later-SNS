@@ -781,12 +781,11 @@ struct TodayView: View {
             }
 
             if let group = tripHome {
-                TripHomeV83View(
+                TripRoomView(
                     data: tripHomeData(group),
                     onClose: { withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) { tripHome = nil } },
                     onShoot: { tripHome = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { CaptureRequestStore.shared.pendingRequestID = UUID() } },
                     onChat: { withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) { chatGroup = group } },
-                    onQR: { openTripPass(group) },
                     onMore: { settingsGroup = group },
                     onInvite: { sheetGroup = group }
                 )
@@ -2416,23 +2415,23 @@ struct TodayView: View {
     }
 
     /// v83:Trip の ホームの 中身(今ある グループの データから)
-    private func tripHomeData(_ group: LaterGroup) -> TripHomeData {
+    private func tripHomeData(_ group: LaterGroup) -> TripRoomData {
         let cal = Calendar.current
         let start = cal.startOfDay(for: group.creationDate)
         let today = cal.startOfDay(for: Date())
         let dayNo = max(1, (cal.dateComponents([.day], from: start, to: today).day ?? 0) + 1)
         let df = DateFormatter(); df.locale = Locale(identifier: "ja_JP"); df.dateFormat = "MM/dd(E)"
         let sd = DateFormatter(); sd.dateFormat = "MM/dd"
-        let members = group.members.map { m in TripHomeData.Member(id: m.id.uuidString, name: m.name, avatar: m.profileImageData.flatMap { UIImage(data: $0) }) }
+        let members = group.members.map { m in TripRoomData.Member(id: m.id.uuidString, name: m.name, avatar: m.profileImageData.flatMap { UIImage(data: $0) }) }
         let todays = group.photos.filter { cal.isDate($0.captureDate, inSameDayAs: Date()) }
-        var data = TripHomeData(name: group.name, sub: "\(sd.string(from: group.creationDate)) から ・ \(members.count)人", dayNumber: dayNo, dayTotal: nil,
+        var data = TripRoomData(name: group.name, sub: "\(sd.string(from: group.creationDate)) から ・ \(members.count)人", dayNumber: dayNo, dayTotal: nil, colorIndex: group.tripColor,
                                 cover: group.iconImageData.flatMap { UIImage(data: $0) }, members: members, shotsToday: min(23, todays.count),
                                 shooters: Array(Set(todays.compactMap { $0.owner?.id.uuidString })).compactMap { id in members.first { $0.id == id } })
         for i in 0..<min(dayNo, 7) {
             guard let d = cal.date(byAdding: .day, value: i, to: start) else { continue }
             let ps = group.photos.filter { cal.isDate($0.captureDate, inSameDayAs: d) }.sorted { $0.captureDate < $1.captureDate }
             let isToday = cal.isDate(d, inSameDayAs: Date())
-            data.days.append(.init(id: "d\(i)", label: "DAY \(i + 1) ・ \(df.string(from: d))", opened: ps.count, photos: ps.prefix(8).map { V64Images.image(key: "th\($0.id)", data: $0.imageData, maxPixel: 240) }, isToday: isToday))
+            data.days.append(.init(id: "d\(i)", number: i + 1, date: df.string(from: d), opened: ps.count, photos: ps.prefix(8).map { V64Images.image(key: "th\($0.id)", data: $0.imageData, maxPixel: 240) }, isToday: isToday))
         }
         data.days.reverse()
         data.members = members
@@ -2442,7 +2441,9 @@ struct TodayView: View {
         let store = GroupChatStore.shared
         if let last = store.last(group.id, blocked: blocked), last.kind != .system {
             let who = group.members.first { ($0.cloudKitUserRecordName ?? "local_\($0.id.uuidString)") == last.senderId }?.name ?? "だれか"
-            data.chatLine = (last.senderId == me ? "あなた" : who, last.kind == .sticker ? "#" + (last.stickerId ?? "") : last.text)
+            let sender = group.members.first { ($0.cloudKitUserRecordName ?? "local_\($0.id.uuidString)") == last.senderId }
+            let face = sender.map { TripRoomData.Member(id: $0.id.uuidString, name: $0.name, avatar: $0.profileImageData.flatMap { UIImage(data: $0) }) }
+            data.chat = .init(name: last.senderId == me ? "あなた" : who, text: last.kind == .sticker ? "ステッカー" : (last.kind == .photoReply ? "写真" : last.text), face: face)
         }
         data.unread = store.unreadCount(group.id, me: me, blocked: blocked)
         return data
