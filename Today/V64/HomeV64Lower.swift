@@ -235,13 +235,13 @@ struct HVTodayPanel: View {
                 ForEach(0..<3, id: \.self) { i in
                     let y = HVTodayString.y(atX: HVTodayString.slotX[i]) + 4
                     slot(i)
-                        .frame(width: 96, height: 132)
+                        .frame(width: 96, height: 124)
                         .overlay(alignment: .top) { HVTodayClip().offset(y: -9) }
-                        .position(x: HVTodayString.slotX[i] * k, y: y + 66)
+                        .position(x: HVTodayString.slotX[i] * k, y: y + 62)
                 }
             }
         }
-        .frame(height: 196)
+        .frame(height: 172)
     }
 
     @ViewBuilder private func slot(_ i: Int) -> some View {
@@ -251,25 +251,32 @@ struct HVTodayPanel: View {
                         rz: HVTodayString.tilt[i], feel: feel, enter: enter, reduce: reduceMotion, onTap: onDevelop)
         } else if i == n, canShoot {
             Button { Haptics.play(.pop); onShoot() } label: {
-                VStack(spacing: 4) {
-                    Image(systemName: "plus").font(.system(size: 24, weight: .bold))
-                    Text("撮る").font(Typo.ui(800, 16))
-                    Text("のこり \(3 - n)").font(Typo.ui(800, 11)).opacity(0.62)
+                // v133:白い チェキ(-2°)。ライムは まんなかの 丸 1つ だけ
+                VStack(spacing: 0) {
+                    ZStack {
+                        Color(hex: "E4E0D6")
+                        Image(systemName: "plus").font(.system(size: 24, weight: .heavy)).foregroundStyle(Self.ink)
+                            .frame(width: 48, height: 48).background(HV.lime, in: Circle())
+                            .background(Circle().fill(Color(hex: "97C235")).offset(y: 3))
+                    }.frame(width: 84, height: 84)
+                    Text("撮る").font(Typo.ui(800, 13)).foregroundStyle(.black).frame(maxHeight: .infinity)
                 }
-                .foregroundStyle(Self.ink)
-                .frame(width: 96, height: 122)
+                .padding(.top, 6).padding(.horizontal, 6)
+                .frame(width: 96, height: 124)
+                .background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .shadow(color: .black.opacity(0.5), radius: 9, y: 10)
+                .rotationEffect(.degrees(-2))
+                .contentShape(Rectangle())
             }
-            .buttonStyle(HVLedgePress(face: HV.lime, ledge: Color(hex: "97C235"), radius: 18, depth: 6))
+            .buttonStyle(HVPress(scale: 0.96))
             .accessibilityLabel("撮る ・ のこり \(3 - n)枚")
             .modifier(HVDropIn(index: i, enter: enter, reduce: reduceMotion))
             .padding(.top, 4)
             .frame(maxHeight: .infinity, alignment: .top)
         } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.2), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                Text(verbatim: "\(i + 1)").font(Typo.title(30)).foregroundStyle(.white.opacity(0.22))
-            }
-            .frame(width: 96, height: 128)
+            Circle().strokeBorder(.white.opacity(0.16), lineWidth: 1.5).frame(width: 26, height: 26)
+                .overlay(Text(verbatim: "\(i + 1)").font(Typo.ui(800, 12)).foregroundStyle(.white.opacity(0.4)))
+                .frame(width: 96, height: 124, alignment: .top).padding(.top, 22)
             .modifier(HVDropIn(index: i, enter: enter, reduce: reduceMotion))
             .padding(.top, 4)
             .frame(maxHeight: .infinity, alignment: .top)
@@ -354,9 +361,9 @@ struct HVTodayStringView: View {
         let path = HVTodayString.path(width: width)
         let k = width / HVTodayString.baseW
         ZStack(alignment: .topLeading) {
-            path.stroke(.white.opacity(0.3), style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+            path.stroke(.white.opacity(0.42), style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
             Color.clear.keyframeAnimator(initialValue: 1.0, trigger: enter) { c, f in
-                c.overlay(path.trim(from: 0, to: progress * f).stroke(HVCardTint.milk, style: StrokeStyle(lineWidth: 2.6, lineCap: .round)))
+                c.overlay(path.trim(from: 0, to: progress * f).stroke(HVCardTint.milk, style: StrokeStyle(lineWidth: 3, lineCap: .round)))
             } keyframes: { _ in
                 KeyframeTrack {
                     MoveKeyframe(reduce ? 1.0 : 0.0); LinearKeyframe(reduce ? 1.0 : 0.0, duration: 0.2)
@@ -439,7 +446,7 @@ struct HVHangCheki: View {
         .gesture(HVTouchTracker { pt in
             guard !reduce else { return }
             if let pt {
-                let nx = pt.x / 96 * 2 - 1, ny = pt.y / 132 * 2 - 1
+                let nx = pt.x / 96 * 2 - 1, ny = pt.y / 124 * 2 - 1
                 if !live { live = true }
                 withAnimation(.linear(duration: 0.08)) { touch = CGSize(width: max(-12, min(12, -ny * 12)), height: max(-12, min(12, nx * 12))) }
                 if Date().timeIntervalSince(lastTick) >= 0.2 { lastTick = Date(); Haptics.play(.tick) }
@@ -477,7 +484,7 @@ struct HVHangCheki: View {
             .padding([.top, .horizontal], 6)
             Color.clear.frame(height: 26)
         }
-        .frame(width: 96, height: 132)
+        .frame(width: 96, height: 124)
         .overlay(alignment: .bottomLeading) {
             Text(verbatim: time).font(Typo.ui(800, 11)).foregroundStyle(HVTodayPanel.ink).padding(.leading, 8).padding(.bottom, 6)
         }

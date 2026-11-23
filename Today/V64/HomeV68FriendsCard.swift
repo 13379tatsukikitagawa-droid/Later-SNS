@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-// v119 3章 + v121 3章:Home 下の Friends の かたまり。見出し + 申請の 行 + マイカード(QR の チェキ ・ 自分 ・ リンクを 送る)+ 下 2つ。
+// v119 3章 + v121 3章:Home 下の Friends の かたまり。見出し + 申請の 行 + マイカード 1枚(v133:QR の チェキ ・ 自分 ・ 読む / さがす ・ リンクを 送る)。
 
 /// かたまりの 見出し(v119 ⑥:タイトル 38pt セリフ + 説明 1行 + 右に 丸い →)
 struct HVBlockHeader<Line: View>: View {
@@ -62,14 +62,8 @@ struct HVFriendsCard: View {
             .padding(.horizontal, 22)
             requestRow.modifier(HV68Rise(on: on, index: 0))
             myCard.padding(.top, 14).padding(.horizontal, 16).modifier(HV68Rise(on: on, index: 1))
-            HStack(spacing: 10) {
-                smallButton("viewfinder", "QR を 読む") { actions.scanQR() }
-                smallButton("magnifyingglass", "ID で さがす") { actions.searchByID() }
-            }
-            .padding(.top, 13).padding(.horizontal, 16)
-            .modifier(HV68Rise(on: on, index: 2))
         }
-        .padding(.top, 20).padding(.bottom, 15)
+        .padding(.top, 20).padding(.bottom, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(hex: "111113"), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).strokeBorder(.white.opacity(0.07), lineWidth: 1))
@@ -124,74 +118,75 @@ struct HVFriendsCard: View {
     private var myCard: some View {
         let name = input.avatarName.isEmpty ? (me?.name ?? "") : input.avatarName
         let handle = (me?.username).map { $0.isEmpty ? "" : "@\($0)" } ?? ""
-        return HStack(alignment: .top, spacing: 12) {
-            Button { Haptics.play(.click); actions.showQR() } label: { qrCheki }
-                .buttonStyle(HVPress(scale: 0.96))
-                .accessibilityLabel("QR を 見せる")
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 10) {
-                    photo(input.avatar, name: name, color: Color(hex: "3A3A3C"), size: 40)
-                        .overlay(Circle().strokeBorder(HVCardTint.milk, lineWidth: 2))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(name).font(Typo.ui(800, 16)).foregroundStyle(HVCardTint.milk).lineLimit(1).truncationMode(.tail)
-                        if !handle.isEmpty { Text(handle).font(Typo.ui(700, 12)).foregroundStyle(Color(hex: "8C8C93")).lineLimit(1).truncationMode(.tail) }
+        return VStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 14) {
+                Button { Haptics.play(.click); actions.showQR() } label: { qrCheki }
+                    .buttonStyle(HVPress(scale: 0.96))
+                    .accessibilityLabel("QR を 見せる")
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 10) {
+                        photo(input.avatar, name: name, color: Color(hex: "3A3A3C"), size: 44)
+                            .overlay(Circle().strokeBorder(HVCardTint.milk, lineWidth: 2))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(name).font(Typo.ui(800, 17)).foregroundStyle(HVCardTint.milk).lineLimit(1).truncationMode(.tail)
+                            if !handle.isEmpty { Text(handle).font(Typo.ui(700, 12.5)).foregroundStyle(Color(hex: "8E8E95")).lineLimit(1).truncationMode(.tail) }
+                        }
                     }
-                }
-                .padding(.top, 18)
-                Spacer(minLength: 0)
-                Button { Haptics.play(.click); actions.shareLink() } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .bold))
-                        Text("リンクを 送る").font(Typo.ui(800, 15.5)).lineLimit(1).minimumScaleFactor(0.8)
+                        smallButton("viewfinder", "読む") { actions.scanQR() }
+                        smallButton("magnifyingglass", "さがす") { actions.searchByID() }
                     }
-                    .foregroundStyle(Color(hex: "111113"))
-                    .frame(maxWidth: .infinity).frame(height: 52)
                 }
-                .buttonStyle(HVLedgePress(face: HV.lime, ledge: Color(hex: "97C235"), radius: 26, depth: 5))
-                Text("LINE ・ AirDrop ・ インスタ").font(Typo.ui(700, 11.5)).foregroundStyle(Color(hex: "6E6E75")).lineLimit(1).minimumScaleFactor(0.8)
-                    .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 20)
             }
+            Button { Haptics.play(.click); actions.shareLink() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.and.arrow.up").font(.system(size: 20, weight: .bold))
+                    Text("リンクを 送る").font(Typo.ui(900, 15.5)).lineLimit(1).minimumScaleFactor(0.8)
+                }
+                .foregroundStyle(Color(hex: "111113"))
+                .frame(maxWidth: .infinity).frame(height: 54)
+            }
+            .buttonStyle(HVLedgePress(face: HV.lime, ledge: Color(hex: "97C235"), radius: 18, depth: 4))
+            .padding(.bottom, 4)
         }
-        .padding(.leading, 13).padding(.trailing, 16).padding(.vertical, 12)
-        .frame(height: 234)
-        .background(LinearGradient(colors: [Color(hex: "202024"), Color(hex: "17171A")], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(16)
+        .background(Color(hex: "111113"), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(.white.opacity(0.07), lineWidth: 1))
     }
 
-    /// QR の チェキ(-2.5° ・ 上に ピンクの テープ ・ 下に「タップで 大きく」)
+    /// QR の チェキ(幅 112 ・ -4° ・ 上に ピンクの テープ ・ 下に「タップで 大きく」)
     private var qrCheki: some View {
         VStack(spacing: 0) {
             ZStack {
                 Color.white
-                if let m = QRMatrix.make(myLinkText) { StyledQRView(matrix: m, side: 100) } else { Image(systemName: "qrcode").font(.system(size: 60)).foregroundStyle(.black) }
+                if let m = QRMatrix.make(myLinkText) { StyledQRView(matrix: m, side: 98) } else { Image(systemName: "qrcode").font(.system(size: 56)).foregroundStyle(.black) }
             }
-            .frame(width: 110, height: 150)
-            .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
-            .padding(.top, 9)
-            Text("タップで 大きく").font(Typo.ui(800, 11.5)).foregroundStyle(Color(hex: "6E6E75")).lineLimit(1)
-                .frame(height: 39)
+            .frame(width: 98, height: 98)
+            .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+            .padding(.top, 7)
+            Text("タップで 大きく").font(Typo.ui(800, 10.5)).foregroundStyle(Color(hex: "6E6E75")).lineLimit(1).minimumScaleFactor(0.8)
+                .frame(height: 24)
         }
-        .frame(width: 128, height: 198)
-        .background(HVCardTint.milk, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .frame(width: 112)
+        .background(Color(hex: "F4F1EA"), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
         .overlay(alignment: .top) {
-            Rectangle().fill(HVCardTint.friends.opacity(0.92)).frame(width: 52, height: 22).rotationEffect(.degrees(-4)).offset(x: -4, y: -11)
+            Rectangle().fill(HVCardTint.friends.opacity(0.92)).frame(width: 56, height: 18).rotationEffect(.degrees(3)).offset(y: -9)
         }
-        .rotationEffect(.degrees(-2.5))
-        .shadow(color: .black.opacity(0.7), radius: 13, y: 12)
+        .rotationEffect(.degrees(-4))
+        .shadow(color: .black.opacity(0.6), radius: 10, y: 8)
+        .padding(.top, 8).padding(.leading, 2)
     }
 
     private func smallButton(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
         Button { Haptics.play(.click); action() } label: {
-            HStack(spacing: 10) {
-                Image(systemName: icon).font(.system(size: 16, weight: .bold)).foregroundStyle(HV.lime)
-                    .frame(width: 38, height: 38).background(HV.lime.opacity(0.14), in: Circle())
-                Text(title).font(Typo.ui(800, 13.5)).foregroundStyle(Color(hex: "F4F1EA")).lineLimit(1).minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
+            VStack(spacing: 3) {
+                Image(systemName: icon).font(.system(size: 18, weight: .bold))
+                Text(title).font(Typo.ui(800, 11.5))
             }
-            .padding(.horizontal, 9)
-            .frame(maxWidth: .infinity).frame(height: 56)
-            .background(Color(hex: "1A1A1D"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.07), lineWidth: 1))
+            .foregroundStyle(Color(hex: "F4F1EA"))
+            .frame(maxWidth: .infinity).frame(height: 58)
+            .background(Color(hex: "1D1D20"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
         }
         .buttonStyle(HVPress(scale: 0.96))
     }
