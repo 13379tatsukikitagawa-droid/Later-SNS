@@ -1,0 +1,164 @@
+/* ===== v119 モック(PROMPT v133 案):バズの 仕かけ 3画面  印 bz9 =====
+   1 9:00 解禁「あかりが つく」 2 シェア カード(3案) 3 チラ見せ 招待 ・ 昼(白)/ 夜(黒) */
+#bz9{position:absolute;inset:0;z-index:2147481000;display:none;overflow:hidden;border-radius:inherit;
+  --bzbg:#FAFAF7;--bzink:#111113;--bzsub:#6E6E76;--bzcard:#FFFFFF;--bzline:rgba(17,17,19,.08);--bzfr:var(--u9c,#C8F25A)}
+#bz9.bz9n{--bzbg:#0A0A0B;--bzink:#FAFAF7;--bzsub:#8E8E96;--bzcard:#151517;--bzline:rgba(255,255,255,.08)}
+#bz9.bz9on{display:block}
+#bz9 :where(button){appearance:none;border:0;margin:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#phone #bz9 :is(.bz9tt,.bz9clk,.bz9big,.bz9ser){font-family:var(--u9tt)!important;font-weight:400!important;letter-spacing:-.01em}
+#phone #bz9{font-family:var(--u9ui)}
+.bz9pg{position:absolute;inset:0;background:var(--bzbg);color:var(--bzink);display:flex;flex-direction:column}
+.bz9top{flex:none;height:104px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 18px 10px}
+.bz9x{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}
+.bz9x i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--bzcard);box-shadow:inset 0 0 0 1px var(--bzline)}
+.bz9x svg,.bz9ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.bz9tt{font-size:34px;line-height:1}
+.bz9sm{font:700 12.5px/1.3 var(--u9ui);color:var(--bzsub)}
+.bz9lime{height:56px;border-radius:20px;background:#C8F25A;color:#111113;font:800 16px var(--u9ui);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 5px 0 #97C235;transition:translate .12s,box-shadow .12s}
+.bz9lime:active{translate:0 4px;box-shadow:0 1px 0 #97C235}
+.bz9ghost{height:56px;border-radius:20px;background:var(--bzcard);color:var(--bzink);font:800 15px var(--u9ui);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 0 0 1.5px var(--bzline),0 4px 0 var(--bzline)}
+.bz9note{position:absolute;right:14px;bottom:96px;z-index:9;padding:5px 9px;border-radius:10px;background:rgba(17,17,19,.78);color:#C8F25A;font:800 10.5px var(--u9ui);opacity:0;transition:opacity .2s;pointer-events:none}
+.bz9note.on{opacity:1}
+
+/* ---------- 1 9:00 解禁 ---------- */
+.bz9u{background:#0A0A0B;color:#FAFAF7}
+.bz9u .bz9dark{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px}
+.bz9lens{position:relative;width:104px;height:104px;border-radius:50%;background:#C8F25A;display:grid;place-items:center;box-shadow:0 0 0 10px #161618,0 0 0 11px #2A2A2E}
+.bz9lens b{font:900 54px/1 var(--u9ui);color:#111113;margin-top:-4px}
+.bz9clk{font-size:96px;line-height:1;color:#FAFAF7;font-variant-numeric:tabular-nums}
+.bz9clk.flip{animation:bz9flip .42s cubic-bezier(.3,1.4,.5,1)}
+@keyframes bz9flip{0%{transform:translateY(-14px);opacity:0}100%{transform:none;opacity:1}}
+.bz9light{position:absolute;left:50%;top:50%;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;background:#FAFAF7;transform:scale(0);pointer-events:none}
+.bz9u .bz9day{position:absolute;inset:0;background:#FAFAF7;color:#111113;display:flex;flex-direction:column;opacity:0;pointer-events:none}
+.bz9u.lit .bz9day{opacity:1;pointer-events:auto}
+.bz9u.lit .bz9dark{opacity:0}
+.bz9hd{padding:96px 24px 0;display:flex;align-items:flex-end;justify-content:space-between}
+.bz9hd .bz9tt{font-size:40px}
+.bz9hd .bz9sm{margin-top:8px}
+.bz9date{text-align:right}
+.bz9date b{display:block;font-size:30px;line-height:1}
+.bz9pile{position:relative;height:300px;margin:18px 0 0}
+.bz9ck{position:absolute;top:0;width:150px;padding:8px 8px 34px;border-radius:5px;background:#FFFFFF;box-shadow:0 20px 34px -16px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.05);rotate:var(--r)}
+.bz9ck .bz9ph{position:relative;aspect-ratio:1;border-radius:2px;overflow:hidden;background:#ddd center/cover}
+.bz9ck .bz9ph i{position:absolute;inset:-14px;background:inherit;filter:blur(14px) saturate(.6) brightness(1.25);opacity:1;transition:opacity 1.2s cubic-bezier(.4,0,.2,1)}
+.bz9ck.dev .bz9ph i{opacity:0}
+.bz9ck small{position:absolute;left:10px;bottom:9px;font:800 11px var(--u9ui);color:#111113}
+.bz9ck .bz9pick{position:absolute;right:-8px;bottom:-8px;width:44px;height:44px;display:grid;place-items:center}
+.bz9ck .bz9pick i{width:28px;height:28px;border-radius:50%;background:#111113;color:#C8F25A;display:grid;place-items:center;box-shadow:0 0 0 3px #FAFAF7;transition:background .2s,color .2s}
+.bz9ck .bz9pick svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.bz9ck.off .bz9pick i{background:#E6E5E0;color:transparent}
+.bz9ck.off .bz9ph{filter:grayscale(.7) brightness(.9)}
+.bz9rv{margin:0 24px;font:700 12.5px var(--u9ui);color:#6E6E76;text-align:center}
+.bz9fr{margin:18px 16px 0;padding:14px;border-radius:26px;background:#111113;color:#FAFAF7;display:flex;align-items:center;gap:12px;opacity:0;transform:translateY(16px)}
+.bz9u.fr .bz9fr{opacity:1;transform:none;transition:opacity .45s,transform .5s cubic-bezier(.3,1.3,.5,1)}
+.bz9fav{display:flex;flex:none}
+.bz9fav i{position:relative;width:40px;height:50px;margin-left:-10px;border-radius:8px;overflow:hidden;box-shadow:0 0 0 2px #111113;background:#333 center/cover}
+.bz9fav i:first-child{margin-left:0}
+.bz9fav i::before{content:'';position:absolute;inset:-8px;background:inherit;filter:blur(8px) brightness(.8)}
+.bz9fav i::after{content:attr(data-n);position:absolute;left:0;right:0;bottom:3px;text-align:center;font:800 10.5px var(--u9ui);color:#fff}
+.bz9fr .bz9ft{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.bz9fr .bz9ft b{font:800 14px var(--u9ui)}
+.bz9fr .bz9ft small{font:700 11.5px var(--u9ui);color:#A8A8B0}
+.bz9shot{flex:none;width:52px;height:52px;border-radius:50%;background:#FAFAF7;color:#111113;display:grid;place-items:center}
+.bz9shot svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2}
+.bz9act{margin-top:auto;padding:0 16px 34px;display:grid;grid-template-columns:1fr auto;gap:10px}
+.bz9act .bz9ghost{width:56px;padding:0}
+
+/* ---------- 2 シェア カード ---------- */
+.bz9s .bz9stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.bz9card{position:relative;width:258px;height:458px;border-radius:22px;overflow:hidden;background:var(--bzfr);box-shadow:0 30px 60px -24px rgba(0,0,0,.55),0 0 0 1px var(--bzline);color:#111113;transition:transform .4s cubic-bezier(.3,1.3,.5,1)}
+.bz9card.pop{animation:bz9pop .45s cubic-bezier(.3,1.4,.5,1)}
+@keyframes bz9pop{0%{transform:scale(.94) rotate(-1.5deg)}100%{transform:none}}
+.bz9wm{position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:6px;font:900 15px var(--u9ui);letter-spacing:-.04em;color:#111113}
+.bz9wm i{width:20px;height:20px;border-radius:6px;background:#111113;color:var(--bzfr);display:grid;place-items:center;font:900 13px/1 var(--u9ui);font-style:normal;letter-spacing:0}
+.bz9stp{position:absolute;right:14px;bottom:12px;text-align:right;font:800 10.5px/1.25 var(--u9ui);color:#111113}
+/* A プリの 帯 */
+.bz9cA .bz9strip{position:absolute;left:50%;top:26px;width:148px;margin-left:-74px;padding:8px 8px 40px;background:#FFFFFF;border-radius:4px;rotate:-2.5deg;display:flex;flex-direction:column;gap:7px;box-shadow:0 18px 30px -14px rgba(0,0,0,.5)}
+.bz9cA .bz9strip i{display:block;aspect-ratio:1;background:#ccc center/cover;border-radius:2px;position:relative}
+.bz9cA .bz9strip i::after{content:attr(data-t);position:absolute;left:4px;bottom:3px;font:800 9.5px var(--u9ui);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.bz9cA .bz9strip p{position:absolute;left:10px;right:10px;bottom:9px;margin:0;display:flex;justify-content:space-between;align-items:baseline}
+.bz9cA .bz9strip p b{font-size:22px;line-height:1}
+.bz9cA .bz9strip p small{font:800 9.5px var(--u9ui);color:#6E6E76}
+/* B チェキ ちらし */
+.bz9cB .bz9big{position:absolute;left:16px;top:18px;font-size:50px;line-height:.9;color:#111113}
+.bz9cB .bz9big small{display:block;margin-top:6px;font:800 11px var(--u9ui);letter-spacing:.02em}
+.bz9cB .bz9c{position:absolute;width:122px;padding:6px 6px 24px;background:#FFFFFF;border-radius:4px;box-shadow:0 16px 26px -12px rgba(0,0,0,.55);rotate:var(--r)}
+.bz9cB .bz9c i{display:block;aspect-ratio:1;background:#ccc center/cover;border-radius:2px}
+.bz9cB .bz9c small{position:absolute;left:8px;bottom:6px;font:800 9.5px var(--u9ui)}
+.bz9cB .bz9stk{position:absolute;width:58px;height:58px;border-radius:50%;background:#FF7AB6;color:#111113;display:grid;place-items:center;text-align:center;font:900 10.5px/1.05 var(--u9ui);rotate:12deg;box-shadow:0 6px 12px -6px rgba(0,0,0,.5)}
+/* C 19時間 */
+.bz9cC .bz9ful{position:absolute;inset:12px 12px 52px;border-radius:12px;background:#ccc center/cover;overflow:hidden}
+.bz9cC .bz9ful::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.72))}
+.bz9cC .bz9tl{position:absolute;left:24px;right:24px;bottom:70px;z-index:2;color:#FAFAF7}
+.bz9cC .bz9tl .bz9ln{display:flex;align-items:center;gap:8px;font:800 11px var(--u9ui)}
+.bz9cC .bz9tl .bz9ln u{flex:1;height:0;border-top:2px dashed rgba(255,255,255,.7)}
+.bz9cC .bz9tl .bz9big{display:block;margin-top:6px;font-size:44px;line-height:.95}
+.bz9cC .bz9tl small{display:block;margin-top:6px;font:800 11.5px var(--u9ui)}
+.bz9cC .bz9lb{position:absolute;left:24px;top:24px;z-index:2;width:34px;height:34px;border-radius:50%;background:#C8F25A;display:grid;place-items:center;font:900 19px/1 var(--u9ui);color:#111113;box-shadow:0 0 0 3px rgba(17,17,19,.35)}
+/* 案の 切りかえ */
+.bz9seg{flex:none;display:flex;gap:6px;justify-content:center;padding:12px 0 4px}
+.bz9seg button{height:44px;padding:0 16px;border-radius:22px;font:800 13.5px var(--u9ui);color:var(--bzsub);box-shadow:inset 0 0 0 1.5px var(--bzline)}
+.bz9seg button.on{background:var(--bzink);color:var(--bzbg);box-shadow:none}
+.bz9s .bz9act{margin-top:10px}
+
+/* ---------- 3 チラ見せ 招待 ---------- */
+.bz9i .bz9ih{padding:4px 22px 0}
+.bz9i .bz9ih .bz9sm{margin-top:8px}
+.bz9pk{display:flex;gap:8px;padding:16px 22px 4px}
+.bz9pk button{position:relative;width:70px;height:70px;border-radius:14px;overflow:hidden;background:#ccc center/cover;box-shadow:inset 0 0 0 0 var(--bzink);transition:box-shadow .15s}
+.bz9pk button.on{box-shadow:0 0 0 3px var(--bzbg),0 0 0 5.5px var(--bzink)}
+.bz9pk button small{position:absolute;left:5px;bottom:4px;font:800 9.5px var(--u9ui);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+.bz9chat{margin:16px 16px 0;padding:16px 14px;border-radius:26px;background:var(--bzcard);box-shadow:inset 0 0 0 1px var(--bzline);display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.bz9chat>small{align-self:center;font:700 10.5px var(--u9ui);color:var(--bzsub)}
+.bz9bub{width:236px;border-radius:20px 20px 6px 20px;overflow:hidden;background:#111113;color:#FAFAF7;box-shadow:0 12px 26px -16px rgba(0,0,0,.6)}
+.bz9og{position:relative;height:150px;overflow:hidden;background:#333}
+.bz9og i{position:absolute;inset:-18px;background:#333 center/cover;filter:blur(13px) saturate(.9) brightness(.85)}
+.bz9og .bz9lk{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-34px 0 0 -26px;border-radius:50%;background:rgba(17,17,19,.72);display:grid;place-items:center;color:#FAFAF7}
+.bz9og .bz9lk svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.bz9og .bz9ot{position:absolute;left:0;right:0;bottom:12px;text-align:center;font:800 11px var(--u9ui);color:#FAFAF7}
+.bz9og .bz9fx{position:absolute;inset:0;box-shadow:inset 0 0 0 6px var(--bzfr)}
+.bz9bub .bz9bt{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px}
+.bz9bub .bz9bt b{font-size:22px;line-height:1.05}
+.bz9bub .bz9bt small{font:700 11px var(--u9ui);color:#A8A8B0}
+.bz9chat .bz9me{font:700 10.5px var(--u9ui);color:var(--bzsub)}
+.bz9i .bz9act{grid-template-columns:1fr 1fr}
+.bz9i .bz9act .bz9ghost{width:auto;padding:0 12px}
+.bz9safe{margin:12px 22px 0;display:flex;gap:8px;align-items:flex-start;font:700 11.5px/1.45 var(--u9ui);color:var(--bzsub)}
+.bz9safe svg{flex:none;width:16px;height:16px;margin-top:1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+@media (prefers-reduced-motion:reduce){.bz9ck .bz9ph i,.bz9card,.bz9fr{transition:none!important;animation:none!important}}
+
+/* --- 古い ボタンの 指定に 負けない よう 強く(撮って 見つけた 所)--- */
+#phone #bz9 svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#phone #bz9 .bz9lime{background:#C8F25A!important;color:#111113!important;font:800 16px var(--u9ui)!important;border-radius:20px!important}
+#phone #bz9 .bz9ghost{background:var(--bzcard)!important;color:var(--bzink)!important;font:800 15px var(--u9ui)!important;border-radius:20px!important}
+#phone #bz9 .bz9lime span,#phone #bz9 .bz9ghost span{white-space:nowrap}
+#phone #bz9 .bz9seg button{background:transparent!important;color:var(--bzsub)!important;font:800 13.5px var(--u9ui)!important;border-radius:22px!important;box-shadow:inset 0 0 0 1.5px var(--bzline)!important}
+#phone #bz9 .bz9seg button.on{background:var(--bzink)!important;color:var(--bzbg)!important;box-shadow:none!important}
+#phone #bz9 .bz9shot{background:#FAFAF7!important;color:#111113!important;border-radius:50%!important}
+#phone #bz9 .bz9shot svg{width:24px;height:24px}
+#phone #bz9 .bz9clk{display:block!important;color:#FAFAF7!important;font-size:96px!important;line-height:1!important}
+#phone #bz9 .bz9pick svg{width:15px;height:15px;stroke-width:3}
+#phone #bz9 .bz9x svg{width:18px;height:18px}
+/* 解禁:チェキを 大きく まんなかへ */
+.bz9pile{height:330px;margin-top:22px}
+.bz9ck{width:168px}
+.bz9rv{margin-top:-4px}
+/* A の 帯を カードに おさめる */
+.bz9cA .bz9strip{width:124px;margin-left:-62px;top:24px}
+#phone #bz9 .bz9seg button{height:44px!important;min-width:76px;padding:0 16px!important;display:inline-flex;align-items:center;justify-content:center}
+.bz9ck.off{opacity:.5}
+/* 解禁:撮る まで 自分の 写真は ぼやけた まま + 鍵 */
+.bz9lkc{position:absolute;left:50%;top:132px;z-index:9;width:64px;height:64px;margin-left:-32px;border-radius:50%;background:rgba(17,17,19,.86);color:#FAFAF7;display:grid;place-items:center;box-shadow:0 0 0 4px #FAFAF7,0 12px 24px -10px rgba(0,0,0,.6);transition:opacity .3s,transform .4s cubic-bezier(.3,1.4,.5,1)}
+#phone #bz9 .bz9lkc svg{width:26px;height:26px;stroke-width:2.4}
+.bz9u.open .bz9lkc{opacity:0;transform:scale(.6)}
+.bz9u:not(.open) .bz9pick{display:none}
+.bz9u:not(.lit) .bz9lkc{opacity:0}
+.bz9fl{position:absolute;inset:0;z-index:20;background:#FFFFFF;opacity:0;pointer-events:none}
+#phone #bz9 .bz9fr{width:auto;text-align:left;background:#111113!important;color:#FAFAF7!important;border-radius:26px!important}
+.bz9fav i::before{display:none}
+.bz9go{flex:none;width:44px;height:44px;border-radius:50%;background:#FAFAF7;color:#111113;display:grid;place-items:center}
+.bz9act .bz9one{grid-column:1/-1}
+#phone #bz9 .bz9fr{margin:16px 16px 0!important;padding:12px 12px 12px 14px!important;display:flex!important;align-items:center;gap:12px;width:auto!important;box-sizing:border-box}
+#phone #bz9 .bz9fav i{width:40px;height:50px}
+.bz9rv{margin-top:2px}

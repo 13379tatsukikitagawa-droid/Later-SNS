@@ -1,0 +1,108 @@
+/* ===== v120 モック(PROMPT v134 案):Today ・ Friends の かたまりを 磨く + 上の バーを そろえる  印 t9(Today)・ w9(Friends)・ hd9(上の バー) ===== */
+
+/* ---------- hd9:Friends / Trip に 移っても 上の バーは Home と 同じ ---------- */
+#phone #g9 .g9hd{position:relative!important;display:block!important;height:120px!important;padding:0!important;box-sizing:border-box}
+#phone #g9 .g9hd>.g9ib:not(.g9me){position:absolute!important;left:16px!important;top:49px!important;width:52px!important;height:52px!important;border-radius:26px!important;
+  background:rgba(28,28,31,.9)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)!important;margin:0!important}
+#phone #g9 .g9hd>.g9ib:not(.g9me) svg{width:23px!important;height:23px!important}
+#phone #g9 .g9hd .g9bd{position:absolute!important;left:30px!important;top:2px!important;right:auto!important;background:#C8F25A!important;color:#111!important;box-shadow:0 0 0 2.5px #000!important;font:800 11px/20px var(--u9ui)!important;min-width:20px;height:20px;padding:0 5px!important;border-radius:10px!important;box-sizing:border-box;text-align:center}
+#phone #g9 .g9hd .g9me{position:absolute!important;left:318px!important;top:47px!important;width:56px!important;height:56px!important;border-radius:50%!important;margin:0!important;
+  background-size:cover!important;background-position:center!important;box-shadow:0 0 0 2px #fff,0 8px 20px -8px rgba(0,0,0,.6)!important}
+#phone #g9 .g9hd .g9tt{position:absolute!important;left:84px!important;right:84px!important;top:56px!important;display:flex!important;flex-direction:column;align-items:center;gap:2px;margin:0!important}
+#phone #g9 #g9tt{font:900 30px/40px Inter,-apple-system,"SF Pro Display","Hiragino Sans",sans-serif!important;letter-spacing:-1.95px!important;color:#fff!important}
+#phone #g9 #g9sub{font:700 11px/14px var(--u9ui)!important;color:#8E8E95!important;white-space:nowrap}
+#phone #g9.v8hon #g9sub{display:none}
+
+/* ---------- t9:Today(暗室の ひも)3案 ---------- */
+.x9t.c .x9str .bg{stroke:rgba(255,255,255,.42)!important;stroke-width:2.2!important}
+.x9t.c .x9str .fg{stroke-width:3!important}
+/* 1 同じ 大きさの 3枚(おすすめ) */
+.x9t.c.t9-1 .x9hang{height:172px}
+.x9t.c.t9-1 .x9slot{width:96px;height:124px;margin-left:-48px}
+#phone .x9t.c.t9-1 .x9slot>.x9s{top:4px!important;border-radius:5px!important;padding:6px 6px 0!important;display:flex!important;flex-direction:column;align-items:stretch!important;justify-content:flex-start!important;gap:0!important;
+  background:#C8F25A!important;box-shadow:0 3px 0 #97C235,0 14px 22px -14px rgba(200,242,90,.5)!important}
+.x9t.c.t9-1 .t9in{display:grid;place-items:center;aspect-ratio:1;border-radius:2px;background:#111113;color:#C8F25A}
+#phone .x9t.c.t9-1 .t9in svg{width:30px!important;height:30px!important;stroke:#C8F25A!important;stroke-width:2.6}
+#phone .x9t.c.t9-1 .x9s .x9sl{height:30px;display:grid;place-items:center;font:800 14px var(--u9ui)!important;color:#111113!important;letter-spacing:.04em}
+.x9t.c.t9-1 .x9e.t9em{top:4px;border:0!important;border-radius:5px!important;padding:6px 6px 0;display:flex!important;flex-direction:column;background:rgba(244,241,234,.07);box-shadow:inset 0 0 0 1.5px rgba(244,241,234,.16)}
+.x9t.c.t9-1 .x9e.t9em .t9in{background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+#phone .x9t.c.t9-1 .x9e.t9em .x9en{height:30px;display:grid;place-items:center;font:800 12px var(--u9ui)!important;color:rgba(255,255,255,.3)!important}
+/* 2 次の 1枚 だけ(ライムは 小さな 丸 だけ) */
+.x9t.c.t9-2 .x9hang{height:172px}
+.x9t.c.t9-2 .x9slot{width:96px;height:124px;margin-left:-48px}
+#phone .x9t.c.t9-2 .x9slot>.x9s{top:4px!important;border-radius:5px!important;padding:6px 6px 0!important;display:flex!important;flex-direction:column;align-items:stretch!important;justify-content:flex-start!important;gap:0!important;
+  background:#F4F1EA!important;box-shadow:0 14px 22px -14px rgba(0,0,0,.9)!important;rotate:-2deg}
+.x9t.c.t9-2 .x9s .t9in{display:grid;place-items:center;aspect-ratio:1;border-radius:2px;background:#E4E0D6}
+.x9t.c.t9-2 .x9s .t9in u{width:48px;height:48px;border-radius:50%;background:#C8F25A;display:grid;place-items:center;box-shadow:0 3px 0 #97C235}
+#phone .x9t.c.t9-2 .x9s .t9in svg{width:24px!important;height:24px!important;stroke:#111113!important;stroke-width:2.8}
+#phone .x9t.c.t9-2 .x9s .x9sl{height:30px;display:grid;place-items:center;font:800 13px var(--u9ui)!important;color:#111113!important}
+.x9t.c.t9-2 .x9e.t9em{top:4px;border:0!important;background:none!important}
+.x9t.c.t9-2 .x9e.t9em .t9in{display:none}
+#phone .x9t.c.t9-2 .x9e.t9em .x9en{position:absolute;left:50%;top:22px;translate:-50% 0;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:800 12px var(--u9ui)!important;color:rgba(255,255,255,.4)!important;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16)}
+/* 3 ひも + 下に 撮る ボタン */
+.x9t.c.t9-3 .x9hang{height:146px}
+.x9t.c.t9-3 .x9slot{width:80px;height:102px;margin-left:-40px}
+.x9t.c.t9-3 .x9e.t9em,.x9t.c.t9-3 .x9s.t9nx{top:4px;border:0!important;border-radius:5px!important;padding:5px 5px 0;display:flex!important;flex-direction:column;background:rgba(244,241,234,.07)!important;box-shadow:inset 0 0 0 1.5px rgba(244,241,234,.16)!important}
+.x9t.c.t9-3 .x9s.t9nx{box-shadow:inset 0 0 0 2px #C8F25A!important}
+.x9t.c.t9-3 .t9in{display:block;aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.03)}
+#phone .x9t.c.t9-3 .x9en,#phone .x9t.c.t9-3 .x9s.t9nx .x9sl{height:24px;display:grid;place-items:center;font:800 11px var(--u9ui)!important;color:rgba(255,255,255,.35)!important}
+#phone .x9t.c.t9-3 .x9s.t9nx .x9sl{color:#C8F25A!important}
+.x9t.c.t9-3 .x9s.t9nx svg{display:none}
+.t9pill{margin-top:12px;width:100%;height:56px;border-radius:20px;background:#C8F25A;color:#111113;display:flex;align-items:center;justify-content:center;gap:8px;font:800 16px var(--u9ui);box-shadow:0 4px 0 #97C235}
+#phone .t9pill{background:#C8F25A!important;color:#111113!important;border-radius:20px!important}
+.t9pill svg{width:22px;height:22px;stroke:#111113;stroke-width:2.6;fill:none}
+.t9pill small{font:800 12px var(--u9ui);opacity:.6}
+.t9pill:active{translate:0 3px;box-shadow:0 1px 0 #97C235}
+
+/* ---------- w9:Friends の かたまり 3案 ---------- */
+#phone :where(#afc.w9 button){appearance:none;border:0;margin:0;padding:0;background:none;color:inherit;font:inherit;cursor:pointer}
+.w9 .w9sv{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#1D1D20;color:#FAFAF7;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+#phone .w9 .w9sv svg{width:20px!important;height:20px!important}
+.w9 .w9card{position:relative;margin-top:12px;padding:16px;border-radius:28px;background:#111113;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.w9 .w9qr{position:relative;flex:none;background:#F4F1EA;border-radius:5px;padding:8px 8px 26px;box-shadow:0 16px 26px -14px rgba(0,0,0,.9);rotate:-4deg}
+.w9 .w9qr .qr{display:block;background:#fff;border-radius:2px;padding:6px}
+.w9 .w9qr .qr svg{display:block;width:100%;height:auto}
+.w9 .w9qr .tp{position:absolute;left:50%;top:-9px;width:56px;height:18px;margin-left:-28px;rotate:3deg;background:color-mix(in srgb,#FF7AB6 85%,transparent)}
+.w9 .w9qr small{position:absolute;left:0;right:0;bottom:6px;text-align:center;font:800 10.5px var(--u9ui);color:#55555C}
+.w9 .w9me{display:flex;align-items:center;gap:10px;min-width:0}
+.w9 .w9me .av{flex:none;width:44px;height:44px;border-radius:50%;background:#333 center/cover;box-shadow:0 0 0 2px #FAFAF7}
+.w9 .w9me b{display:block;font:800 17px var(--u9ui);color:#FAFAF7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w9 .w9me small{display:block;margin-top:2px;font:700 12.5px var(--u9ui);color:#8E8E95}
+.w9 .w9link{width:100%;height:54px;border-radius:18px;background:#C8F25A;color:#111113;display:flex;align-items:center;justify-content:center;gap:8px;font:800 15.5px var(--u9ui);box-shadow:0 4px 0 #97C235}
+#phone .w9 .w9link{background:#C8F25A!important;color:#111113!important;border-radius:18px!important}
+#phone .w9 .w9link svg{width:20px!important;height:20px!important}
+.w9 .w9link:active{translate:0 3px;box-shadow:0 1px 0 #97C235}
+.w9 .w9two{display:flex;gap:8px}
+.w9 .w9pl{flex:1;height:48px;border-radius:16px;background:#1D1D20;color:#FAFAF7;display:flex;align-items:center;justify-content:center;gap:7px;font:800 13.5px var(--u9ui);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+#phone .w9 .w9pl svg{width:18px!important;height:18px!important}
+/* 1 マイカード 1枚(おすすめ) */
+.w9-1 .w9card{display:grid;grid-template-columns:112px 1fr;grid-template-rows:auto auto;gap:14px 16px}
+.w9-1 .w9qr{grid-row:1;width:112px;box-sizing:border-box}
+.w9-1 .w9side{display:flex;flex-direction:column;justify-content:space-between;gap:12px;min-width:0}
+.w9-1 .w9side .w9two{gap:8px}
+.w9-1 .w9side .w9two .w9pl{height:44px;font-size:12.5px;border-radius:14px}
+.w9-1 .w9link{grid-column:1/-1}
+/* 2 QR が 主役(チェキに 名前) */
+.w9-2 .w9card{display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:22px}
+.w9-2 .w9qr{width:176px;box-sizing:border-box;padding:10px 10px 46px}
+.w9-2 .w9qr .w9nm{position:absolute;left:12px;right:12px;bottom:9px;display:flex;align-items:center;gap:7px}
+.w9-2 .w9qr .w9nm i{flex:none;width:24px;height:24px;border-radius:50%;background:#333 center/cover}
+.w9-2 .w9qr .w9nm b{font:800 13px var(--u9ui);color:#111113;white-space:nowrap}
+.w9-2 .w9qr .w9nm small{position:static;font:700 10.5px var(--u9ui);color:#6E6E76;white-space:nowrap}
+.w9-2 .w9two{width:100%}
+/* 3 3つの 道(QR は 押すと 出る) */
+.w9-3 .w9card{display:flex;flex-direction:column;gap:12px}
+.w9-3 .w9three{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+.w9-3 .w9three button{height:88px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:800 13px var(--u9ui);background:#1D1D20;color:#FAFAF7;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+#phone .w9-3 .w9three button.w9lm{background:#C8F25A!important;color:#111113!important;box-shadow:0 4px 0 #97C235!important}
+#phone .w9-3 .w9three svg{width:24px!important;height:24px!important}
+.w9-3 .w9find{height:48px;border-radius:16px;background:#1D1D20;color:#8E8E95;display:flex;align-items:center;gap:8px;padding:0 16px!important;font:700 14px var(--u9ui);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+#phone .w9-3 .w9find svg{width:18px!important;height:18px!important}
+
+#phone .w9 .w9qr .qr{width:auto!important;height:auto!important;box-sizing:border-box}
+#phone .w9 .w9qr .qr svg{width:100%!important;height:auto!important}
+#phone .w9-1 .w9qr{width:112px!important;padding:7px 7px 24px!important}
+#phone .w9-2 .w9qr{width:176px!important;padding:10px 10px 46px!important}
+.w9-1 .w9side .w9two{flex-direction:row}
+.w9-1 .w9side .w9two .w9pl{flex-direction:column;gap:3px;height:58px;font-size:11.5px}
+#phone .w9-2 .w9qr .w9nm b{display:block!important;color:#111113!important;font:800 13px var(--u9ui)!important}

@@ -19,7 +19,7 @@ function vprData(){const fresh=VPRO.data==='new',now=new Date(),before9=now.getH
 const vprDt=d=>`${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 const vprNum=D=>`<div class="vprnum"><div><b class="vprl">${D.streak}</b><small>日 れんぞく</small></div><div><b>${D.shots}</b><small>枚 撮った</small></div><div><b>${D.opened}</b><small>日 ひらいた</small></div></div>`;
 const vprTags=()=>`<div class="vprtg"><p style="--c:${G9C.lime}">#朝型</p><p style="--c:${G9C.pink}">#散歩</p></div>`;
-const vprBar=()=>`<div class="h9bar"><button class="h9cb" data-a="x" aria-label="とじる">${h9Ic('down')}</button><b class="vprid">@later_6sd6dr7v</b>
+const vprBar=()=>`<div class="h9bar"><button class="h9cb" data-a="x" aria-label="とじる">${h9Ic('down')}</button><b class="vprid">@${K9.id}</b>
   <div class="vprmini" aria-hidden="true"><i style="background-image:url(${PH.c})"></i><b>たつき</b></div><button class="h9cb" aria-label="設定" data-a="set">${h9Ic('gear')}</button></div>`;
 function vprGrid(D){
   const td=`<button class="vprtd" data-a="today" aria-label="きょうの 写真"><i class="vprdots">${[0,1,2].map(i=>`<i class="${i<D.today?'vpron':''}"></i>`).join('')}</i><b>きょう ${D.today}/3</b><small>あした 9:00<br>に ひらく</small></button>`;

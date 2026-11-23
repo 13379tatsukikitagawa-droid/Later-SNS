@@ -69,6 +69,9 @@
 61. `v117_trip.css`(**v132 ・ モック v118**:Trip の 一覧 = 搭乗パスの 束 + ひらいた 写真の 列 ・ 印 `v8h`)
 62. `v117_prof.css`(**v132 ・ モック v118**:プロフィール = アーカイブ(ひらいた 日が 3列)・ 印 `vpr`)
 63. `v117_today.css`(**v132 ・ モック v118**:Today = 暗室の ひも + 9:00 の 札 ・ 印 `x9t`)
+64. `v118_nomondo.css`(**モック v119**:のこって いた Mondo を 消す ・ 横スライド 3枚目 = Yesterday ・ きのうの 画面 = Friends | Trip)
+65. `v118_buzz.css`(**モック v119 ・ まだ 決めて いない 案**:9:00 解禁 ・ シェア カード ・ 招待 ・ 印 `bz9` ・ 作らない)
+66. `v119_polish.css`(**v133 ・ モック v120**:Today = `.t9-2` ・ Friends = `.w9-1` ・ 上の バー = `hd9`)
 > **v128**:Home の 3つの ボタンは `v112.css` の `u9dv-au`(オーラ)。モックは はじめから オーラ(`v109.js` の `U9.dv='au'`)。
 17. `v75.css`(**v78 + v79**:Home = 大きな # ・ 時間の カプセル ・ ピルから CAMERA を 外す)
 
@@ -76,7 +79,7 @@
 
 `app.js` の 最後に ある `window.__api={...}` の **直前** に、次の 順で 入って います:
 
-`v46.js` → `v48.js` → `v49.js` → `v50.js` → `v51.js` → `v52.js` → `v53.js` → `v54.js` → `v55.js` → `v56.js` → `v57.js` → `v58.js` → `v61.js` → `v62.js` → `v63.js` → `v64.js` → `v65.js` → `v66.js` → `v67.js` → `v68.js` → `v69.js` → `v70.js` → `v71.js` → `v72.js` → `v73.js` → `v74.js` → `v75.js` → `v76.js` → `v77.js` → `v78.js` → `v79.js` → `v80.js` → `v81.js` → `v82.js` → `v83.js` → `v84.js` → `v85.js` → `v86.js` → `v87.js` → `v88.js` → `v89.js` → `v90.js` → `v91.js` → `v92.js` → `v93.js` → `v94.js` → `v95.js` → `v96.js` → `v97.js` → `v98.js` → `v99.js` → `v100.js` → `v101.js` → `v102.js` → `v103.js` → `v104.js` → `v105.js` → `v106.js` → `v107.js` → `v108.js` → `v109.js` → `v110.js` → `v111.js` → `v112.js` → `v113.js` → `v114.js` → `v116.js` → `v117_trip.js` → `v117_prof.js` → `v117_today.js`(この 3つは アプリの 関数の 中の **いちばん 最後**、`window.__api` の あと に 入る)
+`v46.js` → `v48.js` → `v49.js` → `v50.js` → `v51.js` → `v52.js` → `v53.js` → `v54.js` → `v55.js` → `v56.js` → `v57.js` → `v58.js` → `v61.js` → `v62.js` → `v63.js` → `v64.js` → `v65.js` → `v66.js` → `v67.js` → `v68.js` → `v69.js` → `v70.js` → `v71.js` → `v72.js` → `v73.js` → `v74.js` → `v75.js` → `v76.js` → `v77.js` → `v78.js` → `v79.js` → `v80.js` → `v81.js` → `v82.js` → `v83.js` → `v84.js` → `v85.js` → `v86.js` → `v87.js` → `v88.js` → `v89.js` → `v90.js` → `v91.js` → `v92.js` → `v93.js` → `v94.js` → `v95.js` → `v96.js` → `v97.js` → `v98.js` → `v99.js` → `v100.js` → `v101.js` → `v102.js` → `v103.js` → `v104.js` → `v105.js` → `v106.js` → `v107.js` → `v108.js` → `v109.js` → `v110.js` → `v111.js` → `v112.js` → `v113.js` → `v114.js` → `v116.js` → `v117_trip.js` → `v117_prof.js` → `v117_today.js` → `v118_nomondo.js` → `v118_buzz.js` → `v119_polish.js`(この 6つは アプリの 関数の 中の **いちばん 最後**、`window.__api` の あと に 入る)
 
 - 上書きの 書き方:`{const _r=renderOrb;renderOrb=function(){_r(); …足す 処理…}}`。**最後に 定義された もの が 本当の 動き**。
 - `v60.*` は `v61.*` に 置きかわった ので 入って いない。
