@@ -2455,7 +2455,9 @@ struct TodayView: View {
             let face = sender.map { TripRoomData.Member(id: $0.id.uuidString, name: $0.name, avatar: $0.profileImageData.flatMap { UIImage(data: $0) }) }
             data.chat = .init(name: last.senderId == me ? "あなた" : who, text: last.kind == .sticker ? "ステッカー" : (last.kind == .photoReply ? "写真" : last.text), face: face)
         }
-        data.unread = store.unreadCount(group.id, me: me, blocked: blocked)
+        // v129:Trip の 未読 = 自分の lastReadAt より 後の 相手の メッセージ(TripReadStore)。古い lastSeen は 個人スペース用
+        data.unread = group.isPersonalSpace ? store.unreadCount(group.id, me: me, blocked: blocked)
+            : TripReadStore.shared.unread(group.id, me: me, messages: store.visible(group.id, blocked: blocked))
         return data
     }
 

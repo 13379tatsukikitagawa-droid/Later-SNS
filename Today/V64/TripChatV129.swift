@@ -12,7 +12,7 @@ struct TripChatV129View: View {
     /// はじめから この 写真への 返信に する
     var initialReply: LaterPhoto? = nil
     /// 既読 N(自分の メッセージ より 後に 読んだ 人の 数)。C で `TripReadStore` に つなぐ
-    var readCount: (ChatMessage) -> Int = { _ in 0 }
+    var readCount: (ChatMessage) -> Int = { TripReadStore.shared.readCount(of: $0) }
     /// DEBUG:見本の メッセージを 出す
     var debugMessages: [ChatMessage]? = nil
     var debugMe: String? = nil
@@ -66,11 +66,13 @@ struct TripChatV129View: View {
             if debugMessages != nil { return }
             store.openRoom = group.id
             store.markSeen(group.id)
+            readNow()
             if let initialReply { replyPhoto = initialReply; DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { focused = true } }
         }
         .onDisappear {
             if store.openRoom == group.id { store.openRoom = nil }
             store.markSeen(group.id)
+            if debugMessages == nil { TripReadStore.shared.markRead(group: group, flush: true) }
         }
         .task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(30)); now = Date() } }
         .confirmationDialog("通報する 理由", isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }), titleVisibility: .visible) {
@@ -132,7 +134,7 @@ struct TripChatV129View: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .defaultScrollAnchor(.bottom)
-            .onChange(of: items.count) { _, _ in withAnimation(.easeOut(duration: 0.25)) { reader.scrollTo("bottom", anchor: .bottom) }; store.markSeen(group.id) }
+            .onChange(of: items.count) { _, _ in withAnimation(.easeOut(duration: 0.25)) { reader.scrollTo("bottom", anchor: .bottom) }; store.markSeen(group.id); readNow() }
             .onChange(of: focused) { _, f in if f { withAnimation(.easeOut(duration: 0.25)) { reader.scrollTo("bottom", anchor: .bottom) } } }
             .onChange(of: tray) { _, _ in DispatchQueue.main.async { withAnimation(.easeOut(duration: 0.25)) { reader.scrollTo("bottom", anchor: .bottom) } } }
         }
@@ -370,6 +372,12 @@ struct TripChatV129View: View {
         if kind == .sticker { tray = nil }
         Haptics.play(kind == .sticker ? .heart : .pop)
         store.send(kind: kind, text: text, stickerId: stickerId, photoRecordName: photo?.ckRecordName, group: group)
+    }
+
+    /// ひらいて いる 間 は 「ここまで 読んだ」を 進める(1秒に 1回 まで)
+    private func readNow() {
+        guard debugMessages == nil else { return }
+        TripReadStore.shared.markRead(group: group, at: max(Date(), messages.last?.sentAt ?? .distantPast))
     }
 
     // MARK: 人

@@ -808,6 +808,12 @@ final class CloudKitManager: NSObject {
                 GroupChatStore.shared.receive(record: record, groupID: group.id, myRecordName: currentUserRecordName)
             }
             return
+        case TripReadRecordType.state:
+            // v129:Trip の 既読(メンバー ごとの lastReadAt)。端末の JSON に 入れる
+            if let group = fetchOne(LaterGroup.self, { $0.cachedZoneID == record.recordID.zoneID }) {
+                TripReadStore.shared.receive(record: record, groupID: group.id)
+            }
+            return
         case AppRecordType.memberEvent:
             // 今日のホームの層の「ノック」(文字なし)。自分あてなら1回だけ知らせる
             if KnockInbox.handle(record: record, myRecordName: currentUserRecordName) { return }
@@ -854,6 +860,8 @@ final class CloudKitManager: NSObject {
         switch recordType {
         case ChatRecordType.message, ChatRecordType.sticker:
             GroupChatStore.shared.removeRecord(named: recordName)
+        case TripReadRecordType.state:
+            TripReadStore.shared.removeRecord(named: recordName)
         case AppRecordType.memberEvent:
             MemberEventStore.remove(id: recordName)
         case AppRecordType.photoVote:

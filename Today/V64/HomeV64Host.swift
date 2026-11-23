@@ -21,6 +21,7 @@ struct HomeV64Host: View {
     /// v96:ウィジェットから 来た 行き先
     @State private var widgetRoute = WidgetRouteStore.shared
     @Query private var profiles: [UserProfile]
+    @Query private var blockedUsers: [BlockedUser]
     /// v108 §5-2:LINE などへ 送る 文(友だち)。ID が 無い 時は 今までの リンク
     private var myShare: [Any] {
         let me = UserProfile.current(from: profiles)
@@ -189,7 +190,9 @@ struct HomeV64Host: View {
         var low = HomeV64LowerData()
         low.trips = src.groups.filter { !$0.isPersonalSpace }.sorted { $0.creationDate > $1.creationDate }.map { g in
             let n = (Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: g.creationDate), to: Calendar.current.startOfDay(for: now)).day ?? 0) + 1
-            return (id: g.id as UUID?, name: g.name, sub: "DAY \(n) ・ \(g.members.count)人", cover: g.iconImageData.flatMap { UIImage(data: $0) }, day: "DAY \(n)", unread: 0)
+            return (id: g.id as UUID?, name: g.name, sub: "DAY \(n) ・ \(g.members.count)人", cover: g.iconImageData.flatMap { UIImage(data: $0) }, day: "DAY \(n)",
+                        // v129:未読 = 自分の lastReadAt より 後の 相手の メッセージ(部屋の 下の バーと 同じ 数)
+                        unread: TripReadStore.shared.unread(g.id, me: CloudKitManager.current?.currentUserRecordName, messages: GroupChatStore.shared.visible(g.id, blocked: Set(blockedUsers.map(\.blockedCloudKitUserRecordName)))))
         }
         low.today = .init(thumbs: [], times: src.todayShots.map { df.string(from: $0.takenAt) }, dates: src.todayShots.map(\.takenAt))
         if let first = L.yesterday.first {
