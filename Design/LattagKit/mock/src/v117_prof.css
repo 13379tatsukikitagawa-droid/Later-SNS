@@ -1,0 +1,159 @@
+/* ===== v118(モック v118 ・ PROMPT v132 案):プロフィールを プロの 形に ・ 3案  名前:vpr ===== */
+/* 共通 */
+.h9prof.vpr{background:var(--bg)}
+.vpr .vprsc{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 48px;display:flex;flex-direction:column;scrollbar-width:none}
+.vpr .vprsc::-webkit-scrollbar{display:none}
+.vpr .vprsc>*{flex-shrink:0}
+.vpr .h9bar{padding:54px 16px 6px;background:var(--bg)}
+#phone .vpr .vprid{font:700 14px/1 var(--u9ui)!important;color:#C9C9CF;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .25s,transform .25s}
+.vpr .vprmini{position:absolute;left:50%;top:60px;translate:-50% 0;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;pointer-events:none}
+.vpr .vprmini i{width:30px;height:30px;border-radius:9px;background:#222 center/cover;box-shadow:0 0 0 2px var(--paper)}
+#phone .vpr .vprmini b{font:400 22px/1 var(--u9tt)!important}
+.vpr.vprmin .vprmini{opacity:1;transform:none}
+.vpr.vprmin .vprid{opacity:0;transform:translateY(-8px)}
+.vprs svg,.vpri svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.vpri{display:block;width:20px;height:20px;flex:none}
+/* 名前 ・ 数字 = セリフ */
+#phone .vpr :is(.vprnm,.vprnum b,.vprstk .vprt b,.vprhd b){font-family:var(--u9tt)!important;font-weight:400!important;letter-spacing:-.015em!important}
+/* 数字(3つ)*/
+.vprnum{display:grid;grid-template-columns:repeat(3,1fr)}
+.vprnum>div{display:flex;flex-direction:column;align-items:center;gap:5px;position:relative}
+.vprnum>div+div::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:1px;background:var(--line)}
+.vprnum b{font-size:34px;line-height:.95;color:#FAFAF7}
+.vprnum b.vprl{color:var(--lime)}
+.vprnum small{font:700 12px/1 var(--u9ui);color:var(--mute);white-space:nowrap}
+/* ボタン(段つき)*/
+.vprb{height:48px;border-radius:16px;background:var(--card2);display:flex;align-items:center;justify-content:center;gap:7px;font:800 14px/1 var(--u9ui);color:#FAFAF7;box-shadow:inset 0 0 0 1px var(--line),0 3px 0 #0E0E10;white-space:nowrap}
+.vprb.vprpri{background:var(--lime);color:var(--ink);box-shadow:0 4px 0 #97C235}
+#phone .vpr .vprb:active{transform:translateY(3px)!important;box-shadow:inset 0 0 0 1px var(--line),0 0 0 #0E0E10;transition:transform .06s}
+#phone .vpr .vprb.vprpri:active{box-shadow:0 1px 0 #97C235}
+.vprb.vpric{width:48px;flex:none}
+/* タグ(中身なので 字 だけ)*/
+.vprtg{display:flex;gap:6px;flex-wrap:wrap}
+.vprtg p{margin:0;height:26px;padding:0 10px;border-radius:13px;background:var(--card2);display:flex;align-items:center;gap:6px;font:800 12px/1 var(--u9ui);color:#E6E6EA}
+.vprtg p::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--c)}
+.vprsub{margin:0;font:700 13px/1.3 var(--u9ui);color:var(--mute);white-space:nowrap}
+/* チェキ(共通の 紙)*/
+.vprck{position:relative;background:var(--paper);border-radius:6px;box-shadow:0 18px 36px -14px rgba(0,0,0,.8),inset 0 0 0 1px rgba(0,0,0,.05)}
+.vprck .vprph{display:block;aspect-ratio:1;border-radius:2px;background:#222 center/cover;position:relative;overflow:hidden}
+.vprck .vprph::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 26px rgba(0,0,0,.3)}
+.vprck .vprnm{position:absolute;left:16px;right:16px;bottom:12px;color:#1E1E22;white-space:nowrap;overflow:hidden;line-height:1}
+.vprtp{position:absolute;left:50%;top:-11px;width:84px;height:24px;margin-left:-42px;rotate:-3deg;background:color-mix(in srgb,var(--lime) 88%,transparent);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.vprchg{position:absolute;right:10px;top:10px;width:34px;height:34px;border-radius:17px;background:#111113;color:#fff;display:grid;place-items:center;z-index:2}
+.vprchg .vpri{width:17px;height:17px}
+.vprchg::before{content:'';position:absolute;inset:-7px}
+
+/* ========== 案A カード(いちばん シンプル)========== */
+.vpr-a .vprsc{align-items:center;padding:10px 20px 48px;gap:0}
+.vpr-a .vprck{width:244px;padding:10px 10px 62px;rotate:-2deg;margin-top:14px}
+.vpr-a .vprnm{font-size:36px}
+.vpr-a .vprsub{margin-top:22px;text-align:center}
+.vpr-a .vprtg{justify-content:center;margin-top:12px}
+.vpr-a .vprnum{width:100%;margin-top:24px}
+.vpr-a .vprprim{width:100%;margin-top:26px;height:56px;font-size:16px;border-radius:18px}
+.vpr-a .vprrow{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.vpr-a .vprrow .vprb{height:50px;font-size:13px;gap:6px}
+.vpr-a .vprrow .vpri{width:18px;height:18px}
+
+/* ========== 案B アーカイブ(中身が 見える)========== */
+.vpr-b .vprhd{display:grid;grid-template-columns:104px 1fr;gap:20px;align-items:center;padding:14px 20px 0}
+.vpr-b .vprck{width:100px;padding:6px 6px 22px;rotate:-4deg}
+.vpr-b .vprck .vprtp{width:44px;height:14px;margin-left:-22px;top:-7px}
+.vpr-b .vprck .vprchg{right:-10px;top:auto;bottom:6px;width:30px;height:30px;box-shadow:0 0 0 3px var(--bg)}
+.vpr-b .vprhd .vprtx{min-width:0;display:flex;flex-direction:column;gap:8px}
+.vpr-b .vprhd b.vprnm{position:static;font-size:40px;color:#FAFAF7;line-height:.95}
+.vpr-b .vprtg{margin-top:2px}
+.vpr-b .vprnum{margin:22px 20px 0}
+.vpr-b .vprnum>div{align-items:center}
+.vpr-b .vprbtns{display:flex;gap:8px;margin:20px 20px 0}
+.vpr-b .vprbtns .vprb:not(.vpric){flex:1}
+.vpr-b .vprbtns .vprb.vprpri{flex:1.35}
+/* タブ(上に くっつく)*/
+.vprtab{position:sticky;top:0;z-index:4;display:grid;grid-template-columns:1fr 1fr;margin-top:20px;background:var(--bg);box-shadow:inset 0 -1px 0 var(--line)}
+.vprtab button{height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font:800 14px/1 var(--u9ui);color:var(--mute);position:relative}
+.vprtab button.vpron{color:#FAFAF7}
+.vprtab button.vpron::after{content:'';position:absolute;left:28%;right:28%;bottom:0;height:3px;border-radius:2px;background:#FAFAF7}
+.vprtab .vpri{width:18px;height:18px}
+.vprtab em{font:800 12px/1 var(--u9ui);font-style:normal;color:var(--mute)}
+/* グリッド */
+.vprg{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:3px 12px 0}
+.vprg>button{position:relative;aspect-ratio:1;overflow:hidden;background:#151517;border-radius:6px}
+.vprg>button .vprbg{position:absolute;inset:0;background:#222 center/cover}
+.vprg>button .vprst{position:absolute;left:7px;bottom:6px;font:800 11px/1 var(--u9ui);color:var(--sun);letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+.vprg>button .vprct{position:absolute;right:6px;top:6px;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;background:rgba(17,17,19,.78);color:#FAFAF7;font:800 11px/20px var(--u9ui)}
+.vprg>button.vprlk .vprbg{filter:blur(9px) saturate(.6) brightness(.75);inset:-12px}
+.vprg>button.vprtd{background:#111113;box-shadow:inset 0 0 0 1.5px rgba(200,242,90,.55)}
+.vprg>button.vprtd,.vprg>button.vprlk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+.vprg>button.vprtd>*,.vprg>button.vprlk>*:not(.vprbg){position:relative}
+.vprg .vprlkc{width:30px;height:30px;border-radius:15px;background:rgba(17,17,19,.75);display:grid;place-items:center;color:#FAFAF7}
+.vprg .vprlkc .vpri{width:15px;height:15px}
+.vprg .vprtd b{font:800 13px/1 var(--u9ui);color:#FAFAF7}
+.vprg .vprtd small,.vprg .vprlk small{font:700 11px/1.25 var(--u9ui);color:#C9C9CF}
+.vprg .vprtd i.vprdots{display:flex;gap:4px}.vprg .vprtd i.vprdots i{width:8px;height:8px;border-radius:4px;background:#2A2A2E}.vprg .vprtd i.vprdots i.vpron{background:var(--lime)}
+.vprg>button:active{transform:scale(.97)}
+.vpremp{padding:34px 30px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.vpremp b{font:800 16px/1.3 var(--u9ui);color:#FAFAF7}
+.vpremp small{font:700 13px/1.5 var(--u9ui);color:var(--mute)}
+.vprtrip{display:flex;flex-direction:column;gap:10px;padding:14px 16px}
+.vprtrip button{display:flex;align-items:center;gap:12px;padding:10px;border-radius:20px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);text-align:left}
+.vprtrip button i{width:64px;height:64px;border-radius:12px;background:#222 center/cover;flex:none}
+.vprtrip button span{display:flex;flex-direction:column;gap:5px;min-width:0}
+.vprtrip button b{font:800 15px/1.2 var(--u9ui)}
+.vprtrip button small{font:700 12px/1.2 var(--u9ui);color:var(--mute)}
+
+/* ========== 案C めくる チェキ(いちばん Lattag らしい ・ 3D は これ 1つ)========== */
+.vpr-c .vprsc{align-items:center;padding:6px 20px 48px}
+.vprfl{position:relative;width:262px;margin-top:16px;perspective:900px;--rx:0deg;--ry:0deg}
+.vprfl .vprin{position:relative;transform-style:preserve-3d;transform:rotateX(var(--rx)) rotateY(calc(var(--ry) + var(--fy,0deg))) rotate(-2deg);transition:transform .7s cubic-bezier(.3,1.35,.5,1)}
+.vprfl.vprdrag .vprin{transition:transform .08s linear}
+.vprfl.vprback{--fy:180deg}
+.vprfl .vprck{padding:10px 10px 64px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.vprfl .vprnm{font-size:36px}
+.vprfl .vprbk{position:absolute;inset:0;transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px}
+.vprfl .vprbk .q9q{width:196px;height:196px}
+.vprfl .vprbk .q9q .dk circle{fill:#0B0C0D}.vprfl .vprbk .q9q .gr circle{fill:#1F8F37}
+.vprfl .vprbk b{font:800 15px/1 var(--u9ui);color:#1E1E22}
+.vprfl .vprbk small{font:700 12px/1 var(--u9ui);color:#6B6B72}
+.vprfl .vprgl{position:absolute;inset:0;border-radius:6px;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.28) var(--gx,50%),transparent calc(var(--gx,50%) + 16%));mix-blend-mode:soft-light;z-index:3}
+.vprhint{margin-top:18px;height:30px;padding:0 13px;border-radius:15px;background:var(--card2);display:flex;align-items:center;gap:6px;font:800 12px/1 var(--u9ui);color:#E6E6EA;box-shadow:inset 0 0 0 1px var(--line)}
+.vprhint .vpri{width:15px;height:15px}
+.vpr-c .vprsub{margin-top:14px}
+.vprstk{width:100%;margin-top:22px;padding:16px 16px 14px;border-radius:24px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.vprstk .vprt{display:flex;align-items:baseline;gap:8px}
+.vprstk .vprt b{font-size:40px;line-height:.9;color:var(--lime)}
+.vprstk .vprt small{font:800 14px/1 var(--u9ui);color:#FAFAF7}
+.vprstk .vprt em{margin-left:auto;font:700 12px/1 var(--u9ui);font-style:normal;color:var(--mute)}
+.vprstk .vprd{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.vprstk .vprd i{aspect-ratio:1;border-radius:5px;background:#232326}
+.vprstk .vprd i.vpron{background:#FAFAF7}
+.vprstk .vprd i.vprtd{background:transparent;box-shadow:inset 0 0 0 2px var(--lime)}
+.vprstk .vprd i.vprtd.vpron{background:var(--lime);box-shadow:none}
+.vprstk .vprf{display:flex;justify-content:space-between;font:700 12px/1 var(--u9ui);color:var(--mute)}
+.vprstk .vprf b{color:#FAFAF7;font:800 12px/1 var(--u9ui)}
+.vpr-c .vprbtns{width:100%;display:flex;gap:8px;margin-top:16px}
+.vpr-c .vprbtns .vprb.vprpri{flex:1;height:52px}
+.vpr-c .vprbtns .vprb.vpric{height:52px;width:52px}
+.vprreel{width:calc(100% + 40px);margin:26px -20px 0;display:flex;flex-direction:column;gap:12px}
+.vprreel h4{margin:0 20px;display:flex;align-items:center;justify-content:space-between;font:800 15px/1 var(--u9ui);color:#FAFAF7}
+.vprreel h4 small{font:700 12px/1 var(--u9ui);color:var(--mute)}
+.vprreel .vprr{display:flex;gap:12px;overflow-x:auto;padding:8px 20px 14px;scrollbar-width:none}
+.vprreel .vprr::-webkit-scrollbar{display:none}
+.vprreel .vprr>button{flex:none;width:104px;padding:5px 5px 24px;background:var(--paper);border-radius:4px;position:relative;box-shadow:0 10px 20px -10px rgba(0,0,0,.8)}
+.vprreel .vprr>button:nth-child(odd){rotate:-2.5deg}.vprreel .vprr>button:nth-child(even){rotate:2deg}
+.vprreel .vprr>button i{display:block;aspect-ratio:1;background:#222 center/cover;border-radius:2px}
+.vprreel .vprr>button small{position:absolute;left:7px;bottom:7px;font:800 11px/1 var(--u9ui);color:#3A3A40}
+
+/* QR の シート(案A ・ B の「QR」)*/
+.vprq{position:absolute;inset:0;z-index:99;background:rgba(10,10,11,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;pointer-events:none;transition:opacity .25s}
+.vprq.vpron{opacity:1;pointer-events:auto}
+.vprq .vprck{width:270px;padding:18px 18px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;rotate:-1.5deg;transform:scale(.9);transition:transform .45s cubic-bezier(.3,1.35,.5,1)}
+.vprq.vpron .vprck{transform:none}
+.vprq .q9q{width:220px;height:220px}
+.vprq .q9q .dk circle{fill:#0B0C0D}.vprq .q9q .gr circle{fill:#1F8F37}
+.vprq .vprck b{font:800 16px/1 var(--u9ui);color:#1E1E22}
+.vprq .vprck small{font:700 12px/1 var(--u9ui);color:#6B6B72}
+.vprq .vprx{height:48px;padding:0 26px;border-radius:24px;background:var(--card2);font:800 14px/1 var(--u9ui);color:#FAFAF7;box-shadow:inset 0 0 0 1px var(--line)}
+
+@media (prefers-reduced-motion:reduce){.vprfl .vprin{transition:opacity .3s}.vprfl .vprgl{display:none}}
+/* プロフィールの 上から ひらく 共有 ・ QR を 読む ・ トーストを 前へ(v117 では プロフィールの 下に かくれて いた)*/
+#phone:has(#h9p.vpr.on) :is(#shs,#qrs,#toast){z-index:98!important}
