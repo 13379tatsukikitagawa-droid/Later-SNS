@@ -72,3 +72,33 @@ struct TripChatRulesTests {
         #expect(TripChatRules.canSendText("はよ 撮って"))
     }
 }
+
+/// v129 D:通知
+@MainActor
+struct TripChatPushRulesTests {
+    private func push(_ id: UUID) -> [AnyHashable: Any] { ["kind": "trip_chat", "tripId": id.uuidString.lowercased()] }
+
+    @Test func groupIDFromPush() {
+        let g = UUID()
+        #expect(TripChatPushRules.groupID(fromPush: push(g)) == g)
+        #expect(TripChatPushRules.groupID(fromPush: ["kind": "friend_request"]) == nil)
+        #expect(TripChatPushRules.groupID(fromPush: ["kind": "trip_chat", "tripId": "bad"]) == nil)
+    }
+
+    @Test func openRoomIsNotPresented() {
+        let g = UUID(), other = UUID()
+        #expect(!TripChatPushRules.shouldPresentInForeground(userInfo: push(g), openRoom: g))
+        #expect(TripChatPushRules.shouldPresentInForeground(userInfo: push(g), openRoom: other))
+        #expect(TripChatPushRules.shouldPresentInForeground(userInfo: push(g), openRoom: nil))
+        // ほかの 通知(友だち申請 など)は いつも 出す
+        #expect(TripChatPushRules.shouldPresentInForeground(userInfo: ["kind": "friend_request"], openRoom: g))
+        #expect(TripChatPushRules.shouldPresentInForeground(userInfo: [:], openRoom: g))
+    }
+
+    @Test func localNotificationOnlyWhenWorkerIsOff() {
+        #expect(TripChatPushRules.shouldPostLocal(useWorker: false, isOpenRoom: false, muted: false))
+        #expect(!TripChatPushRules.shouldPostLocal(useWorker: true, isOpenRoom: false, muted: false))   // 二重に しない
+        #expect(!TripChatPushRules.shouldPostLocal(useWorker: false, isOpenRoom: true, muted: false))
+        #expect(!TripChatPushRules.shouldPostLocal(useWorker: false, isOpenRoom: false, muted: true))
+    }
+}

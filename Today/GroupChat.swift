@@ -389,7 +389,8 @@ final class GroupChatStore {
             Haptics.play(.soft)
             return
         }
-        guard !muted.contains(message.groupID) else { return }
+        // v129 D:Worker の プッシュが 有効な 間は 端末の 通知を 出さない(二重に 鳴らさない)
+        guard TripChatPushRules.shouldPostLocal(useWorker: SocialFlag.useWorker, isOpenRoom: false, muted: muted.contains(message.groupID)) else { return }
         // 同じ グループは 1分に 1回まで
         if let last = lastNotified[message.groupID], Date().timeIntervalSince(last) < 60 { return }
         lastNotified[message.groupID] = Date()

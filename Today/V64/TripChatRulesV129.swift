@@ -93,3 +93,25 @@ enum TripChatRules {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
+
+// MARK: - 通知(v129 D)
+
+/// Trip の チャットの 通知の きまり(画面も 通信も 持たない)
+enum TripChatPushRules {
+    /// Worker からの 通知(`kind == trip_chat` ・ `tripId` = LaterGroup.id の 小文字)の 行き先の グループ
+    static func groupID(fromPush userInfo: [AnyHashable: Any]) -> UUID? {
+        guard userInfo["kind"] as? String == "trip_chat", let raw = userInfo["tripId"] as? String else { return nil }
+        return UUID(uuidString: raw)
+    }
+
+    /// アプリを ひらいて いる 時の バナー:**いま ひらいて いる 部屋の 通知は 出さない**(音も 出さない)
+    static func shouldPresentInForeground(userInfo: [AnyHashable: Any], openRoom: UUID?) -> Bool {
+        guard let id = groupID(fromPush: userInfo) else { return true }
+        return id != openRoom
+    }
+
+    /// 端末で 出す ローカル通知(「新しい メッセージが あります」)は、Worker の プッシュが 有効な 間は 出さない(同じ メッセージで 2回 鳴らさない)
+    static func shouldPostLocal(useWorker: Bool, isOpenRoom: Bool, muted: Bool) -> Bool {
+        !useWorker && !isOpenRoom && !muted
+    }
+}

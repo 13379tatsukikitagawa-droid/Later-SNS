@@ -41,7 +41,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .sound, .badge])
+        // v129 D:いま ひらいて いる Trip の 部屋の チャット通知は 出さない
+        let userInfo = notification.request.content.userInfo
+        DispatchQueue.main.async {
+            if TripChatPushRules.shouldPresentInForeground(userInfo: userInfo, openRoom: GroupChatStore.shared.openRoom) {
+                completionHandler([.banner, .sound, .badge])
+            } else {
+                completionHandler([])
+            }
+        }
     }
 
     // 通知タップ時。撮影通知(PhotoNotificationService)は、タップした瞬間に該当
@@ -51,6 +59,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         handlePhotoNotificationTapIfNeeded(userInfo: userInfo)
         // v23:チャットの 通知(端末で 出した ローカル通知)→ その 部屋を ひらく
         if let raw = userInfo["chatGroup"] as? String, let groupID = UUID(uuidString: raw) {
+            Task { @MainActor in NotificationCenter.default.post(name: .chatNotificationTapped, object: groupID) }
+        } else if let groupID = TripChatPushRules.groupID(fromPush: userInfo) {
+            // v129 D:Worker の Trip チャット通知(tripId つき)→ その 部屋を ひらく
             Task { @MainActor in NotificationCenter.default.post(name: .chatNotificationTapped, object: groupID) }
         }
         completionHandler()
@@ -97,6 +108,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     /// CKSubscriptionによるプッシュを受けて、CloudKitManagerに即座にfetchさせる。
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any]) async -> UIBackgroundFetchResult {
         // v108 (2):Worker からの 通知(`kind` つき)→ 裏で 友だちを 反映
+        // v129 D:Trip の チャット通知 → 裏で 同期(メッセージを 先に 取りこむ)
+        if TripChatPushRules.groupID(fromPush: userInfo) != nil {
+            await CloudKitManager.current?.handleRemoteNotification()
+            return .newData
+        }
         if SocialFlag.useWorker, userInfo["kind"] != nil {
             await FriendRequestBridgeV108.handlePush()
             return .newData
