@@ -337,6 +337,7 @@
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
 		F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */; };
 		F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */; };
+		E5A000000000000000000019 /* V64/ProfileArchiveRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000018 /* V64/ProfileArchiveRules.swift */; };
 		E5A000000000000000000017 /* V64/TripBoardingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000016 /* V64/TripBoardingViews.swift */; };
 		E5A000000000000000000015 /* V64/TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000014 /* V64/TopBar.swift */; };
 		F8A7E335B296727E10CB3A2F /* V64/IntroStoryV99.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8BB7E4F22E6B8A27E143AB /* V64/IntroStoryV99.swift */; };
@@ -442,6 +443,7 @@
 		453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsMid.swift; sourceTree = "<group>"; };
 		48D0F07632A5009E1A3721A3 /* LGPressable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGPressable.swift; sourceTree = "<group>"; };
 		49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripRoomView.swift; sourceTree = "<group>"; };
+		E5A000000000000000000018 /* V64/ProfileArchiveRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ProfileArchiveRules.swift; sourceTree = "<group>"; };
 		E5A000000000000000000016 /* V64/TripBoardingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripBoardingViews.swift; sourceTree = "<group>"; };
 		E5A000000000000000000014 /* V64/TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TopBar.swift; sourceTree = "<group>"; };
 		4D9D4396C8C8475A92B50C4C /* CachedChekiImage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CachedChekiImage.swift; sourceTree = "<group>"; };
@@ -1100,6 +1102,7 @@
 				5C13685A780690F0FA8C5EC9 /* V64/MEV86View.swift */,
 				8B65E06F99EE28EDBF6A9F6E /* V64/RecapV86Model.swift */,
 				49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */,
+				E5A000000000000000000018 /* V64/ProfileArchiveRules.swift */,
 				E5A000000000000000000016 /* V64/TripBoardingViews.swift */,
 				E5A000000000000000000014 /* V64/TopBar.swift */,
 				E5A000000000000000000006 /* V64/TripReadStore.swift */,
@@ -1743,6 +1746,7 @@
 				56A59AA661817280B45B8698 /* V64/MEV86View.swift in Sources */,
 				8A5236B97D5A98BF504683EE /* V64/RecapV86Model.swift in Sources */,
 				F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */,
+				E5A000000000000000000019 /* V64/ProfileArchiveRules.swift in Sources */,
 				E5A000000000000000000017 /* V64/TripBoardingViews.swift in Sources */,
 				E5A000000000000000000015 /* V64/TopBar.swift in Sources */,
 				E5A000000000000000000007 /* V64/TripReadStore.swift in Sources */,

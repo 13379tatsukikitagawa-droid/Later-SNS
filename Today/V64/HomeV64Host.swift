@@ -60,7 +60,7 @@ struct HomeV64Host: View {
         .fullScreenCover(isPresented: $showYesterday) {
             YesterdayV64View(input: makeYesterdayInput(now: Date()), actions: makeYesterdayActions())
                 .fullScreenCover(isPresented: $showProfileOverYesterday) {
-                    ProfileV82Host(onBack: { showProfileOverYesterday = false }, onShoot: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } }, onMe: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { src.onOpenProfile() } })
+                    ProfileV82Host(onBack: { showProfileOverYesterday = false }, onShoot: { showProfileOverYesterday = false; showYesterday = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { CaptureRequestStore.shared.pendingRequestID = UUID() } })
                 }
         }
     }

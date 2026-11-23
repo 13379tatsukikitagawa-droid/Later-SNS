@@ -48,8 +48,7 @@ struct MainNavigationView: View {
                             onShoot: {
                                 show(.home)
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { CaptureRequestStore.shared.pendingRequestID = UUID() }
-                            },
-                            onMe: { show(.me) }
+                            }
                         )
                     } else {
                         ProfileShelfView(

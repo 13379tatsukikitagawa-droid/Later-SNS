@@ -31,7 +31,7 @@ enum DebugRouter {
         case "me": showRaw(MEV86Preview())
         case "friendcard": showRaw(ZStack { Color.black.opacity(0.62).ignoresSafeArea();  FriendCardV82Sheet(name: "れな", avatar: SampleData.photo("d"), tag: "雨の日", city: nil, times: ["08:14", "12:40"], mosaics: [SampleData.photo("d"), SampleData.photo("d")]).padding(8).frame(maxHeight: .infinity, alignment: .bottom) })
         case "dm": showRaw(DirectMessageView(friendID: "x", friendName: "れな", yesterdayCount: 4, injected: [.init(id: "1", senderID: "れな", text: "きのうの 写真 みた?", createdAt: Date()), .init(id: "2", senderID: "れな", text: "わたしの 帰り道", createdAt: Date())]))
-        case "profile": showRaw(ProfileV82View(data: ProfileV82Data(name: "ゆい", username: "yui_0612", avatar: UserDefaults.standard.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f"), tags: ["カフェ", "音楽", "夜型"], since: "Oct 2026", streak: 11, shots: 48, kept: 9, recapPhotos: [SampleData.photo("d")], recapRange: "NOV 9–15", weekHas: [true, true, true, true, true, true, true]), debugScrollY: UserDefaults.standard.object(forKey: "debugScrollY") == nil ? nil : CGFloat(UserDefaults.standard.double(forKey: "debugScrollY"))))
+        case "profile": showRaw(ProfileDebugV132.view())
         case "boarding": showRaw(BoardingGateV111(tripName: "修学旅行", colorIndex: 1, seatIndex: 1, memberLimit: 8, occupied: 1, myName: "たつき", myAvatar: SampleData.photo("f"), onDone: {}))
         case "framecolor": showRaw(ScreenFrameColorSheet(onClose: {}).frame(maxHeight: .infinity, alignment: .bottom).background(Color.black))
         case "notifask": showRaw(NotifAskSheetV111(why: .friend, onOK: {}, onLater: {}).frame(maxHeight: 500).frame(maxHeight: .infinity, alignment: .bottom).background(Color.black))
@@ -448,5 +448,27 @@ extension TripHubItem {
         t.openedDay = 1; t.openedCount = 18; t.hasLocked = shotsToday > 0
         t.lockedThumb = SampleData.photo("e").map { V64Images.blurred(key: "dbglock", source: $0, maxPixel: 48, radius: 8, saturation: 0.6) }
         return t
+    }
+}
+
+/// DEBUG:プロフィール(`-debugRoute profile -debugProfileDays 13|0 -debugProfileLock 1 -debugTab 1 -debugScrollY 400`)
+enum ProfileDebugV132 {
+    @MainActor static func view() -> some View {
+        let d = UserDefaults.standard
+        let days = d.object(forKey: "debugProfileDays") == nil ? 13 : d.integer(forKey: "debugProfileDays")
+        let lockYesterday = d.bool(forKey: "debugProfileLock")
+        let cal = Calendar.current, today = cal.startOfDay(for: Date())
+        var data = ProfileV82Data(name: "たつき", username: "later_6sd6dr7v", avatar: UserDefaults.standard.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f"), tags: ["朝型", "散歩"], since: "2026年11月 から", streak: days > 0 ? 14 : 1, shots: days > 0 ? 38 : 2, opened: days)
+        data.cells = [ProfileDayCell(day: today, kind: .today, count: days > 0 ? 2 : 0, coverIndex: nil)]
+        let keys = ["d", "a", "b", "c", "e", "f"]
+        for i in 0..<days {
+            let day = cal.date(byAdding: .day, value: -(i + 1), to: today) ?? today
+            if i == 0 && lockYesterday { data.cells.append(ProfileDayCell(day: day, kind: .locked, count: 3, coverIndex: nil)); continue }
+            data.cells.append(ProfileDayCell(day: day, kind: .opened, count: i % 3 == 1 ? 2 : 3, coverIndex: 0))
+            data.covers[day] = SampleData.photo(keys[i % keys.count])
+        }
+        data.opened = data.cells.filter { $0.kind == .opened }.count
+        data.trips = [ProfileTripRow(id: UUID(), name: "大阪", range: "11/22 〜 11/24", count: 14, cover: SampleData.photo("e")), ProfileTripRow(id: UUID(), name: "京都", range: "10/27 〜 10/29", count: 41, cover: SampleData.photo("a"))]
+        return ProfileV82View(data: data, debugScrollY: d.object(forKey: "debugScrollY") == nil ? nil : CGFloat(d.double(forKey: "debugScrollY")), debugTab: d.integer(forKey: "debugTab"))
     }
 }
