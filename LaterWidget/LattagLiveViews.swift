@@ -166,6 +166,66 @@ struct LiveOpeningView: View {
     }
 }
 
+// MARK: v134 あかりが つくまで(1枚目を 撮った 瞬間 → あした 9:00)
+
+/// #レンズ(小)。ライムの 玉に # と 小さな レンズ
+struct WLiveLens: View {
+    var size: CGFloat = 46
+    var body: some View {
+        ZStack {
+            Circle().fill(RadialGradient(colors: [Color(hex6: 0xF6FFD2), Color(hex6: 0xDDFB7D), WColor.lime, Color(hex6: 0x8DB928)], center: UnitPoint(x: 0.3, y: 0.18), startRadius: 0, endRadius: size * 0.8))
+            Image(systemName: "number").font(.system(size: size * 0.5, weight: .black)).foregroundStyle(Color(hex6: 0x0B0D06))
+        }
+        .frame(width: size, height: size)
+        .shadow(color: WColor.lime.opacity(0.5), radius: size * 0.16, y: size * 0.08)
+        .accessibilityHidden(true)
+    }
+}
+
+struct LiveWaitingView: View {
+    let s: LiveState
+    var stale = false
+    var now: Date = Date()
+    private var range: ClosedRange<Date> { now...max(s.endsAt, now.addingTimeInterval(1)) }
+    private var clock: DateFormatter { let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "HH:mm"; return f }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                WLiveLens(size: 46)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(stale ? "あかりがつきました" : "あかりがつくまで").font(.system(size: 17, weight: .heavy)).foregroundStyle(.white)
+                    if stale {
+                        Text("今日の1枚を撮ると、きのうがひらく").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color(hex6: 0xA3A3AB))
+                    } else {
+                        (Text("あと ") + Text(timerInterval: range, pauseTime: nil, countsDown: true, showsHours: true)).monospacedDigit()
+                            .font(.system(size: 14, weight: .semibold)).foregroundStyle(Color(hex6: 0xA3A3AB))
+                    }
+                }
+                Spacer(minLength: 6)
+                HStack(spacing: 6) {
+                    ForEach(0..<3, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(i < s.shotsTaken ? AnyShapeStyle(LinearGradient(colors: [Color(hex6: 0xECEAE3), Color(hex6: 0xD2CEC3)], startPoint: .topLeading, endPoint: .bottomTrailing)) : AnyShapeStyle(Color.clear))
+                            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(.white.opacity(i < s.shotsTaken ? 0 : 0.3), lineWidth: 1))
+                            .frame(width: 20, height: 28)
+                    }
+                }
+            }
+            if let shotAt = s.shotAt, !stale {
+                ProgressView(timerInterval: shotAt...max(s.endsAt, shotAt.addingTimeInterval(1)), countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+                    .tint(WColor.lime)
+                HStack {
+                    Text("撮った \(clock.string(from: shotAt))").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color(hex6: 0x66666E))
+                    Spacer()
+                    Text("9:00 ひらく").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color(hex6: 0x66666E))
+                }
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+    }
+}
+
 // MARK: ロック画面 + Dynamic Island
 
 struct LattagLiveWidget: Widget {
@@ -175,39 +235,41 @@ struct LattagLiveWidget: Widget {
                 switch ctx.state.phase {
                 case .lastCall: LiveLastCallView(s: ctx.state)
                 case .opening, .opened: LiveOpeningView(s: ctx.state)
+                case .waiting: LiveWaitingView(s: ctx.state, stale: ctx.isStale)
                 default: LiveFilmView(s: ctx.state)
                 }
             }
             .activityBackgroundTint(ctx.state.phase == .lastCall ? WColor.lime : Color.black.opacity(0.9))
             .activitySystemActionForegroundColor(.white)
-            .widgetURL(ctx.state.phase == .opened ? LattagShared.Link.yesterday() : LattagShared.Link.shoot)
+            .widgetURL(ctx.state.phase == .opened || ctx.state.phase == .waiting ? LattagShared.Link.yesterday() : LattagShared.Link.shoot)
         } dynamicIsland: { ctx in
             let s = ctx.state
             let lime = s.phase == .lastCall
             return DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) { WIcon(size: 26) }
-                DynamicIslandExpandedRegion(.trailing) { Text("● LIVE").font(WFont.mono(10)).foregroundStyle(WColor.lime) }
+                DynamicIslandExpandedRegion(.leading) { if s.phase == .waiting { WLiveLens(size: 30) } else { WIcon(size: 26) } }
+                DynamicIslandExpandedRegion(.trailing) { if s.phase == .waiting { Text("9:00 ひらく").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color(hex6: 0xA3A3AB)) } else { Text("● LIVE").font(WFont.mono(10)).foregroundStyle(WColor.lime) } }
                 DynamicIslandExpandedRegion(.center) {
                     Text(timerInterval: Date.now...max(s.endsAt, Date.now.addingTimeInterval(1)), pauseTime: nil, countsDown: true, showsHours: s.phase != .lastCall)
                         .font(WFont.inter(900, 40)).monospacedDigit().foregroundStyle(lime ? WColor.lime : .white).lineLimit(1).minimumScaleFactor(0.5)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
-                        Text(s.phase == .opening || s.phase == .opened ? "9:00 に ひらく" : "のこり \(max(0, 3 - s.shotsTaken))こま").font(WFont.inter(800, 13)).foregroundStyle(.white)
+                        Text(s.phase == .waiting ? "あかりがつくまで" : (s.phase == .opening || s.phase == .opened ? "9:00 に ひらく" : "のこり \(max(0, 3 - s.shotsTaken))こま")).font(WFont.inter(800, 13)).foregroundStyle(.white)
                         Spacer()
-                        if s.phase != .opening && s.phase != .opened {
+                        if s.phase != .opening && s.phase != .opened && s.phase != .waiting {
                             Button(intent: OpenCameraIntent()) { Text("撮る").font(WFont.inter(900, 14)).foregroundStyle(Color(hex6: 0x0B0B0C)).padding(.horizontal, 18).frame(height: 32).background(WColor.lime, in: Capsule()) }.buttonStyle(.plain)
                         }
                     }
                 }
             } compactLeading: {
-                WIcon(size: 22)
+                if s.phase == .waiting { WLiveLens(size: 22) } else { WIcon(size: 22) }
             } compactTrailing: {
                 Text(timerInterval: Date.now...max(s.endsAt, Date.now.addingTimeInterval(1)), pauseTime: nil, countsDown: true, showsHours: s.phase != .lastCall)
                     .font(s.phase == .film ? WFont.mono(14) : WFont.inter(900, 14)).monospacedDigit()
-                    .foregroundStyle(s.phase == .film ? wStamp : (lime ? .black : WColor.lime)).frame(maxWidth: 62)
+                    .foregroundStyle(s.phase == .waiting ? WColor.lime : (s.phase == .film ? wStamp : (lime ? .black : WColor.lime))).frame(maxWidth: 62)
             } minimal: {
-                if s.phase == .opening || s.phase == .opened { Text("9:00").font(WFont.inter(900, 11)).foregroundStyle(WColor.lime) }
+                if s.phase == .waiting { WLiveLens(size: 18) }
+                else if s.phase == .opening || s.phase == .opened { Text("9:00").font(WFont.inter(900, 11)).foregroundStyle(WColor.lime) }
                 else { Text("\(max(0, 3 - s.shotsTaken))").font(WFont.inter(900, 14)).foregroundStyle(WColor.lime) }
             }
             .keylineTint(WColor.lime)

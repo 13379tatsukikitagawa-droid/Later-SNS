@@ -16,10 +16,13 @@ struct HomeV134View: View {
     @State private var feedPos = ScrollPosition()
     @State private var showFilm = false
     @State private var showFriends = false
+    @State private var showMorning = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var compact: Bool { scrollY > 80 }
     private var status: HomeV134Rules.FilmStatus { HomeV134Rules.filmStatus(shots: input.shotsUsed, now: input.now) }
+    private var night: Bool { HomeV134Rules.isNight(input.now) }
+    private var yesterdayTimes: [Date] { input.mine.compactMap(\.captured) }
 
     var body: some View {
         GeometryReader { g in
@@ -34,6 +37,8 @@ struct HomeV134View: View {
                         .opacity(tab == 1 ? 1 : 0).allowsHitTesting(tab == 1)
                 }
                 .animation(.easeOut(duration: 0.18), value: tab)
+                .blur(radius: night ? 26 : 0).brightness(night ? -0.5 : 0).allowsHitTesting(!night)
+                if night { LightsOutV134(times: yesterdayTimes, target: status.target, now: input.now).transition(.opacity) }
                 header(safeTop: g.safeAreaInsets.top, width: g.size.width)
                 bottomBar(safeBottom: g.safeAreaInsets.bottom)
             }
@@ -41,12 +46,19 @@ struct HomeV134View: View {
         .preferredColorScheme(.dark)
         .onAppear {
             tab = startTab
+            if HomeV134Rules.shouldShowGoodMorning(now: input.now, lastShownDay: GoodMorningStore.lastShownDay, hasYesterday: !yesterdayTimes.isEmpty) || UserDefaults.standard.bool(forKey: "debugGM") {
+                GoodMorningStore.markShown(now: input.now)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showMorning = true }
+            }
             #if DEBUG
             switch UserDefaults.standard.string(forKey: "debugSheet") { case "film": showFilm = true; case "friends": showFriends = true; default: break }
             #endif
             if let y = input.debugScrollY { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { if tab == 0 { feedPos.scrollTo(y: y) } else { tripPos.scrollTo(y: y) } } }
         }
         .onChange(of: tab) { _, _ in scrollY = 0 }
+        .fullScreenCover(isPresented: $showMorning) {
+            GoodMorningV134(times: yesterdayTimes, now: input.now, onShoot: { showMorning = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { actions.shoot() } }, onLater: { showMorning = false })
+        }
         .sheet(isPresented: $showFilm) {
             TodaysFilmSheetV134(shotTimes: input.shotTimes, status: status, now: input.now)
                 .presentationDetents([.height(560)]).presentationCornerRadius(LTRadius.sheet).presentationBackground(Color(hex6: 0x0B0B0D))
@@ -117,6 +129,7 @@ struct HomeV134View: View {
             }
         }
         .scrollPosition($feedPos)
+        .scrollDisabled(night)
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, v in if tab == 0 { scrollY = v } }
         .ignoresSafeArea(edges: .top)
     }

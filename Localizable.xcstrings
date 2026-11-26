@@ -2022,13 +2022,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "it's 9:00. shoot today."
+            "value" : "The lights are on. Shoot one today and yesterday opens."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "9:00 になりました。今日を撮れます。"
+            "value" : "あかりがつきました。今日の1枚を撮ると、きのうがひらきます。"
           }
         }
       }

@@ -264,6 +264,7 @@ struct YesterdayV64Preview: View {
         y.requestItems = [.init(id: "r1", name: "りこ", sub: "@riko_6982 · 共通のともだち 3人"), .init(id: "r2", name: "さき", sub: "@saki_6611 · 同じTrip")].prefix(d.integer(forKey: "debugRequests")).map { $0 }
         y.tripBadge = 1
         if d.object(forKey: "debugHour") != nil { y.now = cal0.date(bySettingHour: d.integer(forKey: "debugHour"), minute: 30, second: 0, of: y.now) ?? y.now }
+        if !d.bool(forKey: "debugGM") { GoodMorningStore.markShown(now: y.now) } else { UserDefaults.standard.removeObject(forKey: GoodMorningStore.key) }
         return HomeV134View(input: y, startTab: d.integer(forKey: "debugTab"))
     }
 }

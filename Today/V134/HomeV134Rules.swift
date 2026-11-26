@@ -86,4 +86,23 @@ enum HomeV134Rules {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "HH:mm"
         return f.string(from: d)
     }
+
+    // MARK: GOOD MORNING(9:00 以降に はじめて ひらいた とき 1日1回)
+
+    static func dayKey(_ d: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%04d%02d%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    /// きのう 撮った 写真が あり、9:00 を すぎて いて、きょうは まだ 出して いない
+    static func shouldShowGoodMorning(now: Date, lastShownDay: String?, hasYesterday: Bool, calendar: Calendar = .current) -> Bool {
+        hasYesterday && !isNight(now, calendar: calendar) && lastShownDay != dayKey(now, calendar: calendar)
+    }
+}
+
+/// 「1日1回」の 目じるし(日付だけ UserDefaults に 書く)
+enum GoodMorningStore {
+    static let key = "goodMorning.lastDay"
+    static var lastShownDay: String? { UserDefaults.standard.string(forKey: key) }
+    static func markShown(now: Date = Date()) { UserDefaults.standard.set(HomeV134Rules.dayKey(now), forKey: key) }
 }

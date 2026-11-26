@@ -8,7 +8,9 @@ import AppIntents
 // App Group の ぼかし 画像の ファイル名 だけ 入れる。友だちの 本物の 写真は 出さない。
 
 struct LattagLiveAttributes: ActivityAttributes {
-    enum Phase: String, Codable, Hashable { case film, lastCall, done, opening, opened }
+    enum Phase: String, Codable, Hashable { case film, lastCall, done, opening, opened
+        /// v134:1枚目を 撮った 瞬間から、あした 9:00 まで(あかりが つくまで)
+        case waiting }
 
     struct ContentState: Codable, Hashable {
         var phase: Phase
@@ -22,6 +24,8 @@ struct LattagLiveAttributes: ActivityAttributes {
         var friendCount: Int
         /// 現像の 進み(%)
         var devPercent: Int
+        /// v134:最初に 撮った 時刻(`.waiting` の 進みの はじまり ・「撮った 22:14」)
+        var shotAt: Date? = nil
     }
 
     /// "2026-11-18"
@@ -53,6 +57,9 @@ enum LattagLiveClock {
     private static func at(_ h: Int, _ m: Int, _ now: Date, _ c: Calendar) -> Date {
         c.date(byAdding: .minute, value: h * 60 + m, to: c.startOfDay(for: now)) ?? now
     }
+
+    /// v134:1枚でも 撮ったら あした 9:00 まで 待つ(ライブ アクティビティ)
+    static func isWaiting(shots: Int, now: Date, opensAt: Date) -> Bool { shots >= 1 && now < opensAt }
 
     /// 今 出す べき 形(出さない 時間帯は nil)
     static func phase(now: Date, shots: Int, shotYesterday: Bool, night: Bool, morning: Bool, calendar: Calendar = .current) -> LattagLiveAttributes.Phase? {

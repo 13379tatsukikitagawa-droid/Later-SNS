@@ -36,3 +36,25 @@ struct HomeV134RulesTests {
         #expect(HomeV134Rules.stamp(date(10, 0, day: 25)) == "'26 11 25")
     }
 }
+
+struct GoodMorningLiveRulesTests {
+    private var cal: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "Asia/Tokyo")!; return c }
+    private func date(_ h: Int, _ m: Int, day: Int = 26) -> Date { cal.date(from: DateComponents(year: 2026, month: 11, day: day, hour: h, minute: m))! }
+
+    @Test func goodMorningOncePerDayAfterNine() {
+        #expect(HomeV134Rules.shouldShowGoodMorning(now: date(9, 5), lastShownDay: nil, hasYesterday: true, calendar: cal))
+        #expect(!HomeV134Rules.shouldShowGoodMorning(now: date(8, 59), lastShownDay: nil, hasYesterday: true, calendar: cal))
+        #expect(!HomeV134Rules.shouldShowGoodMorning(now: date(12, 0), lastShownDay: "20261126", hasYesterday: true, calendar: cal))
+        #expect(HomeV134Rules.shouldShowGoodMorning(now: date(9, 0, day: 27), lastShownDay: "20261126", hasYesterday: true, calendar: cal))
+        #expect(!HomeV134Rules.shouldShowGoodMorning(now: date(10, 0), lastShownDay: nil, hasYesterday: false, calendar: cal))
+        #expect(HomeV134Rules.dayKey(date(9, 0), calendar: cal) == "20261126")
+    }
+
+    @Test func liveActivityWaitsFromFirstShotUntilNine() {
+        let nine = date(9, 0, day: 27)
+        #expect(!LattagLiveClock.isWaiting(shots: 0, now: date(12, 30), opensAt: nine))
+        #expect(LattagLiveClock.isWaiting(shots: 1, now: date(12, 30), opensAt: nine))
+        #expect(LattagLiveClock.isWaiting(shots: 3, now: date(23, 59), opensAt: nine))
+        #expect(!LattagLiveClock.isWaiting(shots: 3, now: nine, opensAt: nine))
+    }
+}

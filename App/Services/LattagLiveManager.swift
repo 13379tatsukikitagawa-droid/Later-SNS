@@ -44,12 +44,14 @@ enum LattagLive {
     /// スナップショット(最新)から 同期
     static func sync(snapshot: WidgetSnapshot, now: Date = Date()) {
         let model = WidgetModel.make(snapshot, now: now, filmShots: WidgetFilm.shots(now: now))
-        sync(model: model, thumbs: model.shotBlurs, now: now)
+        sync(model: model, thumbs: model.shotBlurs, now: now, firstShot: model.shots > 0 ? snapshot.shotTimes.first : nil)
     }
 
-    static func sync(model m: WidgetModel, thumbs: [String], now: Date = Date()) {
+    static func sync(model m: WidgetModel, thumbs: [String], now: Date = Date(), firstShot: Date? = nil) {
         let existing = Activity<LattagLiveAttributes>.activities
-        let phase = LattagLiveClock.phase(now: now, shots: m.shots, shotYesterday: m.shots >= 1, night: nightOn, morning: morningOn)
+        // v134:1枚目を 撮ったら あした 9:00 まで 1つの 形(夜の 設定が オフなら 出さない)
+        let waiting = nightOn && LattagLiveClock.isWaiting(shots: m.shots, now: now, opensAt: m.opensAt)
+        let phase = waiting ? LattagLiveAttributes.Phase.waiting : LattagLiveClock.phase(now: now, shots: m.shots, shotYesterday: m.shots >= 1, night: nightOn, morning: morningOn)
         let key = LaterDay.key(for: now)
         guard let phase else {
             // 出さない 時間: 3枚 撮った / 24:00 なら 「現像に 入りました」で 終える。それ以外は すぐ 消す
@@ -62,9 +64,10 @@ enum LattagLive {
             return
         }
         let isMorning = phase == .opening
-        let ends = isMorning ? LattagLiveClock.opens(now) : LattagLiveClock.lightsOut(now)
+        let ends = waiting ? m.opensAt : (isMorning ? LattagLiveClock.opens(now) : LattagLiveClock.lightsOut(now))
         let state = LattagLiveAttributes.ContentState(phase: phase, shotsTaken: m.shots, endsAt: ends, frameThumbs: Array(thumbs.prefix(3)),
-                                                      friendCount: isMorning ? (m.yesterday?.people ?? 0) : m.friendsShot, devPercent: m.devPercent)
+                                                      friendCount: isMorning ? (m.yesterday?.people ?? 0) : m.friendsShot, devPercent: m.devPercent,
+                                                      shotAt: waiting ? firstShot : nil)
         let content = ActivityContent(state: state, staleDate: ends)
         if let a = existing.first(where: { $0.attributes.dayKey == key }) {
             if a.content.state != state { Task { await a.update(content) } }
