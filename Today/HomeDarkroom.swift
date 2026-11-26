@@ -981,7 +981,7 @@ struct ActiveGroupCard: View {
                 Group {
                     if member.isMe {
                         Circle().fill(RadialGradient(colors: [Color(hex: "FFE2C4"), Color(hex: "FF9A62"), Color(hex: "EE5E9C")], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 14))
-                            .overlay(Circle().strokeBorder(AngularGradient(colors: [Color(hex: "9B8CFF"), Color(hex: "5AC8FF"), Color(hex: "5AD6B0"), Color(hex: "C8F25A"), Color(hex: "F2A65A"), Color(hex: "EE5E9C"), Color(hex: "9B8CFF")], center: .center), lineWidth: 2.5).padding(-3.5))
+                            .overlay(Circle().strokeBorder(AngularGradient(colors: [Color(hex: "9B8CFF"), Color(hex: "5AC8FF"), Color(hex: "5AD6B0"), LattagPalette.lime, Color(hex: "F2A65A"), Color(hex: "EE5E9C"), Color(hex: "9B8CFF")], center: .center), lineWidth: 2.5).padding(-3.5))
                     } else {
                         LayerAvatar(data: member.avatarData, seed: member.seed, name: member.name)
                     }

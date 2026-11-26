@@ -381,7 +381,7 @@ struct FriendsV68View: View {
                 Text("Friends").font(Typo.title(28)).foregroundStyle(.white)
                 Spacer()
                 if tookCount > 0 {
-                    HStack(spacing: 5) { Circle().fill(Color(hex: "C8F25A")).frame(width: 5, height: 5); Text("\(tookCount) SHOT TODAY").font(Typo.label(9.5)).tracking(1.1).foregroundStyle(Color(hex: "C8F25A")) }
+                    HStack(spacing: 5) { Circle().fill(LattagPalette.lime).frame(width: 5, height: 5); Text("\(tookCount) SHOT TODAY").font(Typo.label(9.5)).tracking(1.1).foregroundStyle(LattagPalette.lime) }
                 }
             }.frame(height: 28).padding(.horizontal, 20).padding(.top, requests.isEmpty ? 30 : 27)
             VStack(spacing: 0) {

@@ -50,7 +50,7 @@ struct HVCountdownV100: View {
             if let n {
                 ZStack {
                     Circle().fill(.black.opacity(0.8)).background(.ultraThinMaterial, in: Circle())
-                    Circle().strokeBorder(n <= 3 ? Color(hex: "C8F25A") : .white.opacity(0.12), lineWidth: n <= 3 ? 3 : 1)
+                    Circle().strokeBorder(n <= 3 ? LattagPalette.lime : .white.opacity(0.12), lineWidth: n <= 3 ? 3 : 1)
                     Text("\(n)").font(Typo.ui(900, 92)).foregroundStyle(.white).monospacedDigit().contentTransition(.numericText(countsDown: true))
                 }
                 .frame(width: 176, height: 176)

@@ -15,14 +15,14 @@ enum OB {
     /// 名前の ハッシュで 決まる 色(OBP)
     static let palette: [(Color, Color)] = [
         (Color(hex: "61D278"), Color(hex: "EE5E9C")), (Color(hex: "9ED8FF"), Color(hex: "9B8CFF")),
-        (Color(hex: "C8F25A"), Color(hex: "18FA45")), (Color(hex: "63DC7B"), Color(hex: "FFD25A")),
+        (LattagPalette.lime, Color(hex: "18FA45")), (Color(hex: "63DC7B"), Color(hex: "FFD25A")),
         (Color(hex: "B28CFF"), Color(hex: "F27CC0")), (Color(hex: "5AC8FF"), Color(hex: "3A4ACF")),
     ]
     /// タグの 候補(OBT)
     static let tags = ["#ねむい", "#推し活", "#カフェ", "#部活", "#音楽", "#さんぽ", "#甘党", "#夜型", "#ゲーム", "#映画", "#ダンス"]
     /// チェキに はる タグの 色・字・かたむき(OBTC)
     static let tagStyle: [(bg: Color, fg: Color, rot: Double)] = [
-        (Color(hex: "EE5E9C"), .white, -8), (Color(hex: "C8F25A"), Color(hex: "111111"), 7), (Color(hex: "9ED8FF"), Color(hex: "111111"), 5),
+        (Color(hex: "EE5E9C"), .white, -8), (LattagPalette.lime, Color(hex: "111111"), 7), (Color(hex: "9ED8FF"), Color(hex: "111111"), 5),
     ]
     /// ミルク色の 膜の 濃さ(OBMK)
     static func milk(_ s: OBStep) -> Double {

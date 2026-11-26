@@ -14,7 +14,7 @@ enum ScreenFrameColor: String, CaseIterable, Identifiable {
 
     var color: Color? {
         switch self {
-        case .lime: return Color(hex: "C8F25A")
+        case .lime: return LattagPalette.lime
         case .pink: return Color(hex: "FFB8D6")
         case .sky: return Color(hex: "A9DCFF")
         case .lemon: return Color(hex: "FFE07A")
@@ -70,7 +70,7 @@ final class ScreenFrameStore: ObservableObject {
     }
 
     /// テープ などに 使う 色(なし の 時は ライム)
-    var accent: Color { current.color ?? Color(hex: "C8F25A") }
+    var accent: Color { current.color ?? LattagPalette.lime }
 }
 
 /// 端末の 画面の 角丸(わかる 物 だけ)。中の 角 = 画面の 角丸 − 9pt。わからない 端末は 44pt

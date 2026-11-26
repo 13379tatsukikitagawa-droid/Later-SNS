@@ -11,7 +11,7 @@ enum SampleData {
     static let friends: [Friend] = [
         .init(id: "yui", name: "ゆい", handle: "@yui_0612", color: Color(hex: "EE5E9C"), tags: ["#夕焼け", "#ひるね"]),
         .init(id: "ren", name: "れん", handle: "@ren_k", color: Color(hex: "9ED8FF"), tags: ["#散歩", "#コーヒー"]),
-        .init(id: "mio", name: "みお", handle: "@mio.m", color: Color(hex: "C8F25A"), tags: ["#ねこ", "#本"]),
+        .init(id: "mio", name: "みお", handle: "@mio.m", color: LattagPalette.lime, tags: ["#ねこ", "#本"]),
     ]
     static let requests: [Friend] = [
         .init(id: "sou", name: "そう", handle: "@sou_7", color: Color(hex: "FFD60A"), tags: ["#朝"]),

@@ -621,7 +621,7 @@ struct TagScreen: View {
                 .lineLimit(1).minimumScaleFactor(0.75)
                 .padding(.horizontal, 12)
                 .frame(height: 28)
-                .background(Capsule().fill(Color(hex: "C8F25A")))
+                .background(Capsule().fill(LattagPalette.lime))
         }
         .buttonStyle(SquishButtonStyle(pressedScale: 0.94))
         .frame(maxWidth: 250)

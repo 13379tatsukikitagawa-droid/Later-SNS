@@ -3,7 +3,7 @@ import SwiftUI
 // v99 の 12場面。ぜんぶ「時間 t(場面の はじめ から の 秒)の 関数」。動きは offset / scaleEffect / opacity / rotationEffect だけ。
 // 写真は 説明用の 色の 絵(いつも 同じ ・ 本番の 友だち写真は 使わない)。人は 名前の 1文字 + 色の 丸。
 
-private let lime = Color(hex: "C8F25A")
+private let lime = LattagPalette.lime
 private typealias M = IntroMath
 
 /// 説明用の 写真(色の 絵 6枚)

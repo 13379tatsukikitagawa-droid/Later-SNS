@@ -63,7 +63,7 @@ struct TripPassView: View {
     var body: some View {
         ZStack {
             Color(hex: "0B0B0C").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "C8F25A").opacity(0.14), .clear], center: UnitPoint(x: 0.5, y: 0.12), startRadius: 0, endRadius: 300)
+            RadialGradient(colors: [LattagPalette.lime.opacity(0.14), .clear], center: UnitPoint(x: 0.5, y: 0.12), startRadius: 0, endRadius: 300)
                 .frame(maxWidth: .infinity, maxHeight: .infinity).ignoresSafeArea().allowsHitTesting(false)
             VStack(spacing: 0) {
                 header
@@ -98,16 +98,16 @@ struct TripPassView: View {
 
     private var header: some View {
         HStack(spacing: 7) {
-            Circle().fill(Color(hex: "C8F25A")).frame(width: 6, height: 6)
-            Text(newlyMade ? "YOUR TRIP IS READY" : "TRIP PASS").font(Typo.label(10.5)).tracking(2.5).foregroundStyle(Color(hex: "C8F25A"))
+            Circle().fill(LattagPalette.lime).frame(width: 6, height: 6)
+            Text(newlyMade ? "YOUR TRIP IS READY" : "TRIP PASS").font(Typo.label(10.5)).tracking(2.5).foregroundStyle(LattagPalette.lime)
         }
     }
 
     /// プリンターの 口(高さ 26)。ランプは 印刷中 オレンジ → できたら ライム
     private var slot: some View {
         HStack(spacing: 8) {
-            Circle().fill(lampDone ? Color(hex: "C8F25A") : Color(hex: "FF7A2F")).frame(width: 7, height: 7)
-                .shadow(color: (lampDone ? Color(hex: "C8F25A") : Color(hex: "FF7A2F")), radius: 4)
+            Circle().fill(lampDone ? LattagPalette.lime : Color(hex: "FF7A2F")).frame(width: 7, height: 7)
+                .shadow(color: (lampDone ? LattagPalette.lime : Color(hex: "FF7A2F")), radius: 4)
             Text(lampDone ? "LATTAG" : "PRINTING").font(Typo.label(9)).tracking(2.2).foregroundStyle(Color(hex: "6E6E75"))
         }
         .frame(maxWidth: .infinity).frame(height: 26)
@@ -160,7 +160,7 @@ struct TripPassView: View {
                 LinearGradient(colors: [Color(hex: "2A2A2E"), Color(hex: "0E0E10")], startPoint: .top, endPoint: .bottom)
             }
             if data.cover == nil {
-                HV72HashShape().fill(Color(hex: "C8F25A").opacity(0.9)).frame(width: 150, height: 150).offset(x: 190, y: 60)
+                HV72HashShape().fill(LattagPalette.lime.opacity(0.9)).frame(width: 150, height: 150).offset(x: 190, y: 60)
             }
             LinearGradient(stops: [.init(color: .black.opacity(0.45), location: 0), .init(color: .black.opacity(0.05), location: 0.35),
                                    .init(color: .black.opacity(0.2), location: 0.6), .init(color: .black.opacity(0.8), location: 1)], startPoint: .top, endPoint: .bottom)
@@ -227,11 +227,11 @@ struct TripPassView: View {
             Text("ISSUED").font(Typo.label(9)).tracking(1.8)
             Text(issued).font(Typo.ui(900, 13))
         }
-        .foregroundStyle(Color(hex: "C8F25A"))
+        .foregroundStyle(LattagPalette.lime)
         .padding(.horizontal, 10).padding(.vertical, 5)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: "0B0B0C").opacity(0.55)))
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color(hex: "C8F25A"), lineWidth: 2.5))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(LattagPalette.lime, lineWidth: 2.5))
         .rotationEffect(.degrees(-14))
         .scaleEffect(stampScale)
         .opacity(stamped ? 1 : 0)
@@ -258,13 +258,13 @@ struct TripPassView: View {
     private func passButton(_ icon: String, _ title: String, _ i: Int, ok: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button { Haptics.play(.tick); action() } label: {
             VStack(spacing: 5) {
-                Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(Color(hex: "C8F25A"))
+                Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(LattagPalette.lime)
                 Text(title).font(Typo.ui(800, 11.5)).lineLimit(1).minimumScaleFactor(0.7)
             }
-            .foregroundStyle(ok ? Color(hex: "C8F25A") : .white)
+            .foregroundStyle(ok ? LattagPalette.lime : .white)
             .frame(maxWidth: .infinity).frame(height: 64)
-            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(ok ? Color(hex: "C8F25A").opacity(0.12) : Color(hex: "17171A")))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(ok ? Color(hex: "C8F25A").opacity(0.5) : .white.opacity(0.07), lineWidth: ok ? 1.5 : 1))
+            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(ok ? LattagPalette.lime.opacity(0.12) : Color(hex: "17171A")))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(ok ? LattagPalette.lime.opacity(0.5) : .white.opacity(0.07), lineWidth: ok ? 1.5 : 1))
         }
         .buttonStyle(HVPress(scale: 0.95))
         .opacity(buttonsIn ? 1 : 0).offset(y: buttonsIn ? 0 : 18)
@@ -274,7 +274,7 @@ struct TripPassView: View {
     private var startButton: some View {
         Button { Haptics.play(.click); onStart() } label: {
             Text(newlyMade ? "Trip を はじめる" : "とじる").font(Typo.ui(900, 16.5)).foregroundStyle(Color(hex: "111111"))
-                .frame(maxWidth: .infinity).frame(height: 58).background(Capsule().fill(Color(hex: "C8F25A")))
+                .frame(maxWidth: .infinity).frame(height: 58).background(Capsule().fill(LattagPalette.lime))
         }
         .buttonStyle(HVPress(scale: 0.98)).padding(.top, 10)
         .opacity(buttonsIn ? 1 : 0).offset(y: buttonsIn ? 0 : 18)

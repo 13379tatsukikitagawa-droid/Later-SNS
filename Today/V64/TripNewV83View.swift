@@ -60,7 +60,7 @@ struct TripTicket: View {
                     Text("\(members.count)人 ・ 1日 23枚").font(Typo.label(9.5)).foregroundStyle(ink.opacity(0.55)).lineLimit(1)
                 }
             }.padding(.leading, 14).padding(.trailing, 10).padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading)
-            VStack(spacing: 0) { ForEach(0..<14, id: \.self) { i in Rectangle().fill(i % 2 == 0 ? Color(hex: "C8F25A") : Color(hex: "24A03C")).frame(width: 8, height: 148.0 / 14) } }
+            VStack(spacing: 0) { ForEach(0..<14, id: \.self) { i in Rectangle().fill(i % 2 == 0 ? LattagPalette.lime : Color(hex: "24A03C")).frame(width: 8, height: 148.0 / 14) } }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.6), value: members.count)
         .frame(height: 148).background(Color(hex: "F4EFE6"))

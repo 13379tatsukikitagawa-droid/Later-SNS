@@ -221,7 +221,7 @@ struct MusicSheet: View {
             Spacer(minLength: 20)
             ZStack {
                 ForEach(0..<3, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 18, style: .continuous).fill([Color(hex: "C8F25A"), Color(hex: "EE5E9C"), Color(hex: "9ED8FF")][i]).frame(width: 96, height: 96)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous).fill([LattagPalette.lime, Color(hex: "EE5E9C"), Color(hex: "9ED8FF")][i]).frame(width: 96, height: 96)
                         .overlay(Image(systemName: "music.note").font(.system(size: 34, weight: .bold)).foregroundStyle(Color(hex: "0B0C0D")))
                         .rotationEffect(.degrees([-12, 0, 12][i])).offset(x: CGFloat(i - 1) * 62, y: i == 1 ? -8 : 0)
                 }

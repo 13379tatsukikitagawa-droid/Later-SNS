@@ -6,7 +6,7 @@ enum PopColor {
     static let pink = Color(hex: "FF7AB6")
     static let sky = Color(hex: "6EC8FF")
     static let sun = Color(hex: "FFD84D")
-    static let lime = Color(hex: "C8F25A")
+    static let lime = LattagPalette.lime
     /// ぷっくり ボタンの 下の 濃い 色
     static let limeDeep = Color(hex: "8FB23A")
     static let skyDeep = Color(hex: "3E93C4")

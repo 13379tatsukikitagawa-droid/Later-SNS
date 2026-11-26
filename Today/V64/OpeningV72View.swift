@@ -89,7 +89,7 @@ struct OPIcon: View {
     var body: some View {
         Canvas { ctx, sz in
             let k = sz.width / 1024
-            ctx.fill(Path(CGRect(origin: .zero, size: sz)), with: .linearGradient(Gradient(colors: [Color(hex: "D6F76E"), Color(hex: "C8F25A")]), startPoint: .zero, endPoint: CGPoint(x: 0, y: sz.height)))
+            ctx.fill(Path(CGRect(origin: .zero, size: sz)), with: .linearGradient(Gradient(colors: [Color(hex: "D6F76E"), LattagPalette.lime]), startPoint: .zero, endPoint: CGPoint(x: 0, y: sz.height)))
             let ink = Color(hex: "0B0C0D")
             for r in [CGRect(x: 196, y: 320, width: 632, height: 104), CGRect(x: 196, y: 600, width: 632, height: 104),
                       CGRect(x: 320, y: 196, width: 104, height: 632), CGRect(x: 600, y: 196, width: 104, height: 632)] {
@@ -98,7 +98,7 @@ struct OPIcon: View {
             var c = ctx
             c.translateBy(x: 512 * k, y: 512 * k); c.scaleBy(x: lensScale, y: lensScale); c.translateBy(x: -512 * k, y: -512 * k)
             func disc(_ r: CGFloat, _ shading: GraphicsContext.Shading) { c.fill(Path(ellipseIn: CGRect(x: (512 - r) * k, y: (512 - r) * k, width: 2 * r * k, height: 2 * r * k)), with: shading) }
-            disc(116, .color(Color(hex: "C8F25A")))
+            disc(116, .color(LattagPalette.lime))
             disc(104, .color(ink))
             disc(92, .color(Color(hex: "3A3A40")))
             disc(80, .radialGradient(Gradient(stops: [.init(color: Color(hex: "2A3A5A"), location: 0), .init(color: Color(hex: "05070A"), location: 0.6), .init(color: .black, location: 1)]),
@@ -107,7 +107,7 @@ struct OPIcon: View {
             var g = c
             g.translateBy(x: 484 * k, y: 482 * k); g.rotate(by: .degrees(-30))
             g.fill(Path(ellipseIn: CGRect(x: -28 * k, y: -18 * k, width: 56 * k, height: 36 * k)), with: .color(.white.opacity(0.85)))
-            c.fill(Path(ellipseIn: CGRect(x: (542 - 9) * k, y: (542 - 9) * k, width: 18 * k, height: 18 * k)), with: .color(Color(hex: "C8F25A").opacity(0.8)))
+            c.fill(Path(ellipseIn: CGRect(x: (542 - 9) * k, y: (542 - 9) * k, width: 18 * k, height: 18 * k)), with: .color(LattagPalette.lime.opacity(0.8)))
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.224, style: .continuous))
@@ -336,7 +336,7 @@ struct OpeningV72View: View {
                         }
                     }.frame(height: OP72.iconEnd)
                     Text("9:00").font(Typo.ui(900, OP72.nineFont)).tracking(-0.02 * OP72.nineFont).monospacedDigit()
-                        .foregroundStyle(Color(hex: "C8F25A")).fixedSize()
+                        .foregroundStyle(LattagPalette.lime).fixedSize()
                         .scaleEffect(nineScale, anchor: .bottomLeading).rotationEffect(.degrees(nineRot), anchor: .bottomLeading).opacity(min(1, max(0, nu * 2)))
                         .offset(x: letterW + 5, y: 19)
                 }
@@ -345,7 +345,7 @@ struct OpeningV72View: View {
 
                 // アイコン(影は 132 の 大きさで 1枚の 絵に して 縮める)
                 OPIcon(size: OP72.iconStart, lensScale: CGFloat(lens))
-                    .shadow(color: Color(hex: "C8F25A").opacity(0.38), radius: 20 * OP72.iconStart / OP72.iconEnd, x: 0, y: 18 * OP72.iconStart / OP72.iconEnd)
+                    .shadow(color: LattagPalette.lime.opacity(0.38), radius: 20 * OP72.iconStart / OP72.iconEnd, x: 0, y: 18 * OP72.iconStart / OP72.iconEnd)
                     .padding(90)
                     .drawingGroup()
                     .scaleEffect(iconK)
@@ -372,7 +372,7 @@ private struct OPGlow: View {
                 c.translateBy(x: cx, y: cy); c.scaleBy(x: rx, y: ry)
                 c.fill(Path(CGRect(x: -3, y: -3, width: 6, height: 6)), with: .radialGradient(Gradient(stops: stops), center: .zero, startRadius: 0, endRadius: 1))
             }
-            let g = Color(red: 36 / 255, green: 160 / 255, blue: 60 / 255), l = Color(hex: "C8F25A")
+            let g = Color(red: 36 / 255, green: 160 / 255, blue: 60 / 255), l = LattagPalette.lime
             ellipse(size.width * 1.30, size.height * 0.55, size.width * 0.5, size.height * 1.08,
                     [.init(color: g.opacity(0.62 * amount), location: 0), .init(color: g.opacity(0.18 * amount), location: 0.45), .init(color: g.opacity(0), location: 0.70)])
             ellipse(size.width * 0.55, size.height * 0.32, size.width * 0.5, size.height * 0.48,

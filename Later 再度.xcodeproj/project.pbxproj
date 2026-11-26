@@ -337,6 +337,10 @@
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
 		F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */; };
 		F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */; };
+		E5A00000000000000000002F /* ../DesignSystem/LTHashLens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000002E /* ../DesignSystem/LTHashLens.swift */; };
+		E5A00000000000000000002D /* ../DesignSystem/LTHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000002C /* ../DesignSystem/LTHold.swift */; };
+		E5A00000000000000000002B /* ../DesignSystem/LTHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000002A /* ../DesignSystem/LTHaptics.swift */; };
+		E5A000000000000000000029 /* ../DesignSystem/LTTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000028 /* ../DesignSystem/LTTheme.swift */; };
 		E5A000000000000000000019 /* V64/ProfileArchiveRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000018 /* V64/ProfileArchiveRules.swift */; };
 		E5A000000000000000000017 /* V64/TripBoardingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000016 /* V64/TripBoardingViews.swift */; };
 		E5A000000000000000000015 /* V64/TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000014 /* V64/TopBar.swift */; };
@@ -344,6 +348,8 @@
 		F8E0DFF51C9B372080711A94 /* V64/TripNewV83View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7343874A578885D6CDBBBEA4 /* V64/TripNewV83View.swift */; };
 		F9604D53BE6964B061D9D199 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
 		F961362EE48E1FE4EEA0FB5B /* Fonts/SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */; };
+		E5A0000000000000000000F3 /* Fonts/BarlowCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5A0000000000000000000F1 /* Fonts/BarlowCondensed-ExtraBold.ttf */; };
+		E5A0000000000000000000F4 /* Fonts/SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */; };
 		F961437D7997B742D8DB03BF /* Fonts/Inter-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 27B30D00E22A4904938D7ED6 /* Fonts/Inter-Black.ttf */; };
 		F961BA115D793A320DC57F96 /* Fonts/Caveat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1E0C4DD10F0C4B52A04FEBD2 /* Fonts/Caveat-SemiBold.ttf */; };
 		F963FA3B5DE24372F133E3BF /* LattagWidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F968A0D710669EED695D952C /* LattagWidgetSnapshot.swift */; };
@@ -416,6 +422,7 @@
 		0C5B5FBF72EB9A3061E80E58 /* V64/OpeningV72View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/OpeningV72View.swift; sourceTree = "<group>"; };
 		0CA8A488F1FFC6077E23CA40 /* ../Pop/PopColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Pop/PopColor.swift; sourceTree = "<group>"; };
 		0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/SpaceMono-Bold.ttf"; sourceTree = "<group>"; };
+		E5A0000000000000000000F1 /* Fonts/BarlowCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/BarlowCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		109414FC4E47E9391C73F5BB /* ProfileChekiCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileChekiCard.swift; sourceTree = "<group>"; };
 		119556FA11AB4599AE228BA8 /* PhotoImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoImageCache.swift; sourceTree = "<group>"; };
 		1AC0274BA30C6CB65F46DD6A /* V64/NotificationsV111.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/NotificationsV111.swift; sourceTree = "<group>"; };
@@ -443,6 +450,10 @@
 		453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsMid.swift; sourceTree = "<group>"; };
 		48D0F07632A5009E1A3721A3 /* LGPressable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGPressable.swift; sourceTree = "<group>"; };
 		49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripRoomView.swift; sourceTree = "<group>"; };
+		E5A00000000000000000002E /* ../DesignSystem/LTHashLens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../DesignSystem/LTHashLens.swift; sourceTree = "<group>"; };
+		E5A00000000000000000002C /* ../DesignSystem/LTHold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../DesignSystem/LTHold.swift; sourceTree = "<group>"; };
+		E5A00000000000000000002A /* ../DesignSystem/LTHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../DesignSystem/LTHaptics.swift; sourceTree = "<group>"; };
+		E5A000000000000000000028 /* ../DesignSystem/LTTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../DesignSystem/LTTheme.swift; sourceTree = "<group>"; };
 		E5A000000000000000000018 /* V64/ProfileArchiveRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/ProfileArchiveRules.swift; sourceTree = "<group>"; };
 		E5A000000000000000000016 /* V64/TripBoardingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripBoardingViews.swift; sourceTree = "<group>"; };
 		E5A000000000000000000014 /* V64/TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TopBar.swift; sourceTree = "<group>"; };
@@ -958,6 +969,7 @@
 				5988548E0712404AB28D5F6B /* Fonts/LaterMincho-Black.otf */,
 				5EB475C0B25346EBBDDE292C /* Fonts/SpaceMono-Regular.ttf */,
 				0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */,
+				E5A0000000000000000000F1 /* Fonts/BarlowCondensed-ExtraBold.ttf */,
 				22FBEAF337854AA894688A73 /* Fonts/KleeOne-SemiBold.ttf */,
 				E3A000000000000000000007 /* Fonts/YuseiMagic-Later.ttf */,
 				71186888D37FC45B1244C6D9 /* Profile/Views/ReportSheet.swift */,
@@ -1102,6 +1114,10 @@
 				5C13685A780690F0FA8C5EC9 /* V64/MEV86View.swift */,
 				8B65E06F99EE28EDBF6A9F6E /* V64/RecapV86Model.swift */,
 				49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */,
+				E5A00000000000000000002E /* ../DesignSystem/LTHashLens.swift */,
+				E5A00000000000000000002C /* ../DesignSystem/LTHold.swift */,
+				E5A00000000000000000002A /* ../DesignSystem/LTHaptics.swift */,
+				E5A000000000000000000028 /* ../DesignSystem/LTTheme.swift */,
 				E5A000000000000000000018 /* V64/ProfileArchiveRules.swift */,
 				E5A000000000000000000016 /* V64/TripBoardingViews.swift */,
 				E5A000000000000000000014 /* V64/TopBar.swift */,
@@ -1573,6 +1589,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E5A0000000000000000000F3 /* Fonts/BarlowCondensed-ExtraBold.ttf in Resources */,
+				E5A0000000000000000000F4 /* Fonts/SpaceMono-Bold.ttf in Resources */,
 				A315CD9F302201D800432037 /* Media.xcassets in Resources */,
 				0CB5597A41C7748CA695DC8A /* GoogleService-Info.plist in Resources */,
 				2F59CFC5A2704E50F22C7F5B /* Fonts/Caveat-Bold.ttf in Resources */,
@@ -1746,6 +1764,10 @@
 				56A59AA661817280B45B8698 /* V64/MEV86View.swift in Sources */,
 				8A5236B97D5A98BF504683EE /* V64/RecapV86Model.swift in Sources */,
 				F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */,
+				E5A00000000000000000002F /* ../DesignSystem/LTHashLens.swift in Sources */,
+				E5A00000000000000000002D /* ../DesignSystem/LTHold.swift in Sources */,
+				E5A00000000000000000002B /* ../DesignSystem/LTHaptics.swift in Sources */,
+				E5A000000000000000000029 /* ../DesignSystem/LTTheme.swift in Sources */,
 				E5A000000000000000000019 /* V64/ProfileArchiveRules.swift in Sources */,
 				E5A000000000000000000017 /* V64/TripBoardingViews.swift in Sources */,
 				E5A000000000000000000015 /* V64/TopBar.swift in Sources */,

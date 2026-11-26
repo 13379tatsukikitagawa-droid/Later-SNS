@@ -653,7 +653,7 @@ struct ProfileShelfView: View {
     }
 
     private static let stickerSlots: [StickerSlot] = [
-        StickerSlot(dx: -113, dy: -112, rotation: -9, bg: Color(hex: "C8F25A"), ink: .black, opacity: 1),
+        StickerSlot(dx: -113, dy: -112, rotation: -9, bg: LattagPalette.lime, ink: .black, opacity: 1),
         StickerSlot(dx: 113, dy: -85, rotation: 8, bg: Color(hex: "EE5E9C"), ink: .white, opacity: 1),
         StickerSlot(dx: -127, dy: 43, rotation: 6, bg: Color(hex: "9ED8FF"), ink: .black, opacity: 1),
         StickerSlot(dx: 122, dy: 61, rotation: -7, bg: Color(hex: "FFD60A"), ink: .black, opacity: 0.92),

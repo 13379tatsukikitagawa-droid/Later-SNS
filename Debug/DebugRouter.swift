@@ -183,7 +183,7 @@ extension SampleData {
     static func photo(_ key: String) -> UIImage? { UIImage(contentsOfFile: "/tmp/lattag_ph/\(key).jpg") }
 
     static func faces(count: Int) -> [HomeV64Face] {
-        let colors = [Color(hex: "EE5E9C"), Color(hex: "9ED8FF"), Color(hex: "C8F25A")]
+        let colors = [Color(hex: "EE5E9C"), Color(hex: "9ED8FF"), LattagPalette.lime]
         return (0..<min(3, count)).map { HomeV64Face(id: "f\($0)", initial: ["あ", "ケ", "ゆ"][$0], color: colors[$0], image: photo(["d", "c", "b"][$0])) }
     }
 

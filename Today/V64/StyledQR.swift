@@ -79,7 +79,7 @@ struct StyledQRView: View, Animatable {
                            with: .radialGradient(Gradient(stops: [.init(color: Color(hex: "2A3A5A"), location: 0), .init(color: Color(hex: "05070A"), location: 0.6), .init(color: Self.ink, location: 1)]),
                                                  center: CGPoint(x: cx + lr * 0.2, y: cy + lr * 0.2), startRadius: 0, endRadius: lr * 1.1))
                     let dr = 0.38 * Double(cell)
-                    e.fill(Path(ellipseIn: CGRect(x: cx - lr * 0.35 - dr, y: cy - lr * 0.35 - dr, width: dr * 2, height: dr * 2)), with: .color(Color(hex: "C8F25A")))
+                    e.fill(Path(ellipseIn: CGRect(x: cx - lr * 0.35 - dr, y: cy - lr * 0.35 - dr, width: dr * 2, height: dr * 2)), with: .color(LattagPalette.lime))
                 }
             }
             if n > 0 {
@@ -88,7 +88,7 @@ struct StyledQRView: View, Animatable {
                     if let coverImage {
                         Image(uiImage: coverImage).resizable().scaledToFill().frame(width: ic, height: ic)
                             .clipShape(RoundedRectangle(cornerRadius: ic * 0.224, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: ic * 0.224, style: .continuous).strokeBorder(Color(hex: "C8F25A"), lineWidth: max(1.5, ic * 0.045)))
+                            .overlay(RoundedRectangle(cornerRadius: ic * 0.224, style: .continuous).strokeBorder(LattagPalette.lime, lineWidth: max(1.5, ic * 0.045)))
                     } else {
                         OPIcon(size: ic, lensScale: 1)
                     }

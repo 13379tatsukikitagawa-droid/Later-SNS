@@ -578,7 +578,7 @@ enum Haptics {
     /// 間引きの記録を消す(テスト用)
     static func resetForTesting() { last = [:]; lastAny = .distantPast; playedLog = [] }
 
-    fileprivate static func sharedEngine() -> CHHapticEngine? {
+    static func sharedEngine() -> CHHapticEngine? {
         startEngine()
         return engine
     }

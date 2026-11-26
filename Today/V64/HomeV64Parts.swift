@@ -7,7 +7,7 @@ enum HV {
     static let bg = Color(red: 239 / 255, green: 239 / 255, blue: 234 / 255)          // #EFEFEA
     static let ink = Color(hex: "111111")
     static let green = Color(hex: "24A03C")
-    static let lime = Color(hex: "C8F25A")
+    static let lime = LattagPalette.lime
     static let red = Color(hex: "D8262C")
     static let gray = Color(hex: "8E8E93")
     static let cardBase = Color(hex: "0D0D0E")

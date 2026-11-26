@@ -473,7 +473,7 @@ struct MEScreenV19: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Your").font(.custom("InstrumentSerif-Regular", size: 46)).foregroundStyle(.white)
-                    Text("week.").font(.custom("InstrumentSerif-Italic", size: 52)).foregroundStyle(Color(hex: "C8F25A"))
+                    Text("week.").font(.custom("InstrumentSerif-Italic", size: 52)).foregroundStyle(LattagPalette.lime)
                     HStack(spacing: 4) {
                         statNumber(shots.count); Text("shots").font(statLabelFont)
                         statNumber(7); Text("days").font(statLabelFont)

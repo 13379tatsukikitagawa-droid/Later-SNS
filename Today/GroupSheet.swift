@@ -93,7 +93,7 @@ struct GroupSheet: View {
     /// 「しずくさんが、抜けました。」+ 日時(一度見たら消える・7日で消える)
     private func leftNotice(_ event: MemberEventStore.Event) -> some View {
         HStack(spacing: 10) {
-            Circle().fill(Color(hex: "C8F25A")).frame(width: 7, height: 7).shadow(color: Color(hex: "C8F25A").opacity(0.8), radius: 4)
+            Circle().fill(LattagPalette.lime).frame(width: 7, height: 7).shadow(color: LattagPalette.lime.opacity(0.8), radius: 4)
             Text("\(event.memberName)さんが、抜けました。")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white)
@@ -137,13 +137,13 @@ struct GroupSheet: View {
                 if let img = V64Images.image(key: "tg\(group.id)", data: summary.iconData, maxPixel: 200) {
                     Image(uiImage: img).resizable().scaledToFill()
                 } else {
-                    Color(hex: "2A2A2E").overlay(HV72HashShape().fill(Color(hex: "C8F25A")).frame(width: 26, height: 26))
+                    Color(hex: "2A2A2E").overlay(HV72HashShape().fill(LattagPalette.lime).frame(width: 26, height: 26))
                 }
             }
             .frame(width: 52, height: 52)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(2)
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color(hex: "C8F25A"), lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(LattagPalette.lime, lineWidth: 1.5))
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.name).font(Typo.title(28)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
                 Text("DAY \(dayNumber) ・ \(summary.memberCount) / \(summary.memberLimit)人")
@@ -207,10 +207,10 @@ struct GroupSheet: View {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         shape.fill(.white.opacity(0.1))
-                        Color(hex: "C8F25A")
+                        LattagPalette.lime
                             .frame(width: proxy.size.width * p)
                             .clipShape(shape)
-                        shape.strokeBorder(Color(hex: "C8F25A").opacity(0.6), lineWidth: 1)
+                        shape.strokeBorder(LattagPalette.lime.opacity(0.6), lineWidth: 1)
                         Text(holdModel.isPressing ? "そのまま、持っていて…" : "長押しで、グループの昨日をひらく")
                             .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(.white)

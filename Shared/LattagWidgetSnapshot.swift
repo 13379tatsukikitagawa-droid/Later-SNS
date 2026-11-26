@@ -280,9 +280,14 @@ struct WidgetModel: Equatable {
 
 // MARK: - 色(PROMPT_v96 §0 の 値 だけ)
 
+/// v134 Phase 1:ライムは ここ 1か所だけ(アプリ ・ ウィジェット 共通)。ほかは すべて これを 指す。
+enum LattagPalette {
+    static let lime = Color(.sRGB, red: 200 / 255, green: 242 / 255, blue: 90 / 255, opacity: 1)   // #C8F25A
+}
+
 enum WColor {
     static let ground = Color(hex6: 0x0B0B0C)
-    static let lime = Color(hex6: 0xC8F25A)
+    static let lime = LattagPalette.lime
     static let paper = Color(hex6: 0xF4F1EA)
     static let pink = Color(hex6: 0xEE5E9C)
     static let sky = Color(hex6: 0x9ED8FF)

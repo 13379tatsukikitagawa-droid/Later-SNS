@@ -51,22 +51,22 @@ struct TripSeatMap: View {
                     if let img = p.image {
                         Image(uiImage: img).resizable().scaledToFill().frame(width: d, height: d).clipShape(Circle())
                     } else {
-                        Circle().fill(Color(hex: "C8F25A")).frame(width: d, height: d)
+                        Circle().fill(LattagPalette.lime).frame(width: d, height: d)
                             .overlay(Text(String(p.name.prefix(1))).font(Typo.ui(800, d * 0.4)).foregroundStyle(Color(hex: "111111")))
                     }
                 } else {
-                    Circle().strokeBorder(Color(hex: "C8F25A").opacity(0.45), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(width: d, height: d)
-                        .overlay(Image(systemName: "plus").font(.system(size: 13, weight: .regular)).foregroundStyle(Color(hex: "C8F25A")))
+                    Circle().strokeBorder(LattagPalette.lime.opacity(0.45), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(width: d, height: d)
+                        .overlay(Image(systemName: "plus").font(.system(size: 13, weight: .regular)).foregroundStyle(LattagPalette.lime))
                 }
             }
             Text(p?.name ?? code(i)).font(Typo.label(9.5)).tracking(0.8).lineLimit(1).frame(maxWidth: 60)
-                .foregroundStyle(on ? Color(hex: "C8F25A") : Color(hex: "6E6E75"))
+                .foregroundStyle(on ? LattagPalette.lime : Color(hex: "6E6E75"))
         }
         .padding(.top, 8).padding(.bottom, 6).frame(maxWidth: .infinity)
         .background(UnevenRoundedRectangle(topLeadingRadius: 14, bottomLeadingRadius: 8, bottomTrailingRadius: 8, topTrailingRadius: 14, style: .continuous)
-            .fill(on ? Color(hex: "C8F25A").opacity(0.1) : Color(hex: "19191C")))
+            .fill(on ? LattagPalette.lime.opacity(0.1) : Color(hex: "19191C")))
         .overlay(UnevenRoundedRectangle(topLeadingRadius: 14, bottomLeadingRadius: 8, bottomTrailingRadius: 8, topTrailingRadius: 14, style: .continuous)
-            .strokeBorder(on ? Color(hex: "C8F25A").opacity(0.5) : .white.opacity(0.06), lineWidth: 1.5))
+            .strokeBorder(on ? LattagPalette.lime.opacity(0.5) : .white.opacity(0.06), lineWidth: 1.5))
         .opacity(shown || reduceMotion ? 1 : 0).offset(y: shown || reduceMotion ? 0 : 10)
         .animation(reduceMotion ? nil : .timingCurve(0.2, 0.9, 0.25, 1, duration: 0.4).delay(Double(i / 4) * 0.045 + Double(i % 4) * 0.045), value: shown)
         .accessibilityElement(children: .combine)
@@ -89,7 +89,7 @@ struct TripInvitePreview: View {
                 HStack(spacing: 0) {
                     Group {
                         if let cover { Image(uiImage: cover).resizable().scaledToFill() }
-                        else { Color(hex: "2A2A2E").overlay(HV72HashShape().fill(Color(hex: "C8F25A")).frame(width: 46, height: 46)) }
+                        else { Color(hex: "2A2A2E").overlay(HV72HashShape().fill(LattagPalette.lime).frame(width: 46, height: 46)) }
                     }
                     .frame(width: 92, height: 118).clipped()
                     VStack(alignment: .leading, spacing: 2) {
@@ -137,7 +137,7 @@ struct TripSendButton: View {
             }
             .foregroundStyle(Color(hex: "111111")).padding(.horizontal, 20)
             .frame(maxWidth: .infinity).frame(height: 64)
-            .background(Capsule().fill(Color(hex: "C8F25A")))
+            .background(Capsule().fill(LattagPalette.lime))
         }
         .buttonStyle(HVPress(scale: 0.98))
     }
@@ -151,7 +151,7 @@ struct TripTwoButtons: View {
     var body: some View {
         HStack(spacing: 8) {
             Button { Haptics.play(.tick); onQR() } label: {
-                HStack(spacing: 8) { Image(systemName: "qrcode").font(.system(size: 16, weight: .semibold)).foregroundStyle(Color(hex: "C8F25A")); Text("QR を 見せる").font(Typo.ui(800, 13.5)) }
+                HStack(spacing: 8) { Image(systemName: "qrcode").font(.system(size: 16, weight: .semibold)).foregroundStyle(LattagPalette.lime); Text("QR を 見せる").font(Typo.ui(800, 13.5)) }
                     .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 50)
                     .background(Capsule().fill(Color(hex: "1C1C1F"))).overlay(Capsule().strokeBorder(.white.opacity(0.07), lineWidth: 1))
             }.buttonStyle(HVPress(scale: 0.97))
@@ -160,7 +160,7 @@ struct TripTwoButtons: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { copied = false }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color(hex: "C8F25A"))
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.system(size: 15, weight: .semibold)).foregroundStyle(LattagPalette.lime)
                     Text(key.isEmpty ? "—" : (key.hasPrefix("#") ? key : "#" + key)).font(Typo.label(13.5)).lineLimit(1).minimumScaleFactor(0.7)
                 }
                 .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 50)
@@ -184,7 +184,7 @@ struct TripBoardingView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("BOARDING ・ \(people.count) / 8").font(Typo.label(10)).tracking(2.2).foregroundStyle(Color(hex: "C8F25A"))
+                Text("BOARDING ・ \(people.count) / 8").font(Typo.label(10)).tracking(2.2).foregroundStyle(LattagPalette.lime)
                 Text("なかまを のせよう").font(Typo.ui(900, 28)).tracking(-0.8).foregroundStyle(.white).padding(.top, -6)
                 Text("入ると、ここで 話せる ・ 1日 23枚を みんなで").font(Typo.ui(600, 12.5)).foregroundStyle(Color(hex: "8C8C93")).padding(.top, -6)
                 TripSeatMap(people: people)

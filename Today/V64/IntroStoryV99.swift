@@ -181,7 +181,7 @@ struct IntroStoryView: View {
         let intro = e < Self.titleDur && !reduceMotion
         ZStack(alignment: .topLeading) {
             Color(hex: "0B0B0C")
-            Ellipse().fill(RadialGradient(colors: [Color(hex: "C8F25A").opacity(sc.night ? 0.035 : 0.14), .clear], center: .center, startRadius: 0, endRadius: 190))
+            Ellipse().fill(RadialGradient(colors: [LattagPalette.lime.opacity(sc.night ? 0.035 : 0.14), .clear], center: .center, startRadius: 0, endRadius: 190))
                 .frame(width: 351, height: 388).position(x: 195, y: 340)
             progress(e, i)
             topRow(i, shownName: !intro)
@@ -203,7 +203,7 @@ struct IntroStoryView: View {
             ForEach(0..<4, id: \.self) { n in
                 ZStack(alignment: .leading) {
                     Capsule().fill(.white.opacity(0.18))
-                    Capsule().fill(Color(hex: "C8F25A")).frame(width: w * (n < i ? 1 : n == i ? max(0, min(1, sceneT(e) / Self.sceneDur)) : 0))
+                    Capsule().fill(LattagPalette.lime).frame(width: w * (n < i ? 1 : n == i ? max(0, min(1, sceneT(e) / Self.sceneDur)) : 0))
                 }.frame(width: w, height: 3)
             }
         }.offset(x: 20, y: 54)
@@ -211,7 +211,7 @@ struct IntroStoryView: View {
 
     private func topRow(_ i: Int, shownName: Bool) -> some View {
         HStack(spacing: 10) {
-            ZStack { Circle().fill(Color(hex: "C8F25A")); HVIcon(kind: kind.icon, size: 16, color: .black) }.frame(width: 28, height: 28)
+            ZStack { Circle().fill(LattagPalette.lime); HVIcon(kind: kind.icon, size: 16, color: .black) }.frame(width: 28, height: 28)
             Text(kind.name).font(Typo.title(25, italic: true)).foregroundStyle(.white).opacity(shownName ? 1 : 0)
             Spacer()
             Button { close(false) } label: {
@@ -226,7 +226,7 @@ struct IntroStoryView: View {
     private func lineBlock(_ sc: IntroKind.Scene, t: Double) -> some View {
         let p = reduceMotion ? 1 : IntroMath.ease(t, 0.15, 0.45)
         return VStack(spacing: 10) {
-            Text(sc.label).font(Typo.label(10)).tracking(3).foregroundStyle(Color(hex: "C8F25A"))
+            Text(sc.label).font(Typo.label(10)).tracking(3).foregroundStyle(LattagPalette.lime)
             Text(sc.line).font(Typo.ui(900, 27)).lineSpacing(27 * 0.28 - 4).multilineTextAlignment(.center).foregroundStyle(.white)
                 .lineLimit(2).minimumScaleFactor(0.7).frame(width: 340)
         }
@@ -241,7 +241,7 @@ struct IntroStoryView: View {
                 VStack(spacing: 6) {
                     Button { close(true) } label: {
                         Text(actionTitle).font(Typo.ui(900, 16.5)).foregroundStyle(Color(hex: "111111"))
-                            .frame(maxWidth: .infinity).frame(height: 58).background(Capsule().fill(Color(hex: "C8F25A")))
+                            .frame(maxWidth: .infinity).frame(height: 58).background(Capsule().fill(LattagPalette.lime))
                     }.buttonStyle(HVPress(scale: 0.97))
                     Button { Haptics.play(.sel); jump(to: 0); accum = 0.0; runStart = paused ? nil : Date() } label: {
                         Text("↺ もう一度").font(Typo.ui(700, 12.5)).foregroundStyle(.white.opacity(0.6)).frame(minHeight: 44)
@@ -274,7 +274,7 @@ struct IntroStoryView: View {
         let fly = IntroMath.clamp((p - 0.55) / 0.45)
         let ef = 1 - pow(1 - fly, 3)
         let sc = 96.0 + (25.0 - 96.0) * ef
-        return Text(kind.name).font(Typo.title(96, italic: true)).foregroundStyle(Color(hex: "C8F25A"))
+        return Text(kind.name).font(Typo.title(96, italic: true)).foregroundStyle(LattagPalette.lime)
             .scaleEffect(sc / 96).fixedSize()
             .opacity(IntroMath.clamp(p / 0.25))
             .position(x: 195 + (20 + 38 + 40 - 195) * ef, y: 400 + (84 - 400) * ef)

@@ -70,8 +70,8 @@ private struct HV68LensBody: View {
                     ctx.stroke(p, with: .color(.white.opacity(0.16)), style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 } else {
                     ctx.drawLayer { l in
-                        l.addFilter(.shadow(color: Color(hex: "C8F25A").opacity(0.8), radius: 6))
-                        l.stroke(p, with: .color(Color(hex: "C8F25A")), style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        l.addFilter(.shadow(color: LattagPalette.lime.opacity(0.8), radius: 6))
+                        l.stroke(p, with: .color(LattagPalette.lime), style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     }
                 }
             }
@@ -88,7 +88,7 @@ private struct HV68LensBody: View {
                 cc.translateBy(x: c.x, y: c.y)
                 cc.rotate(by: .radians(a))
                 cc.translateBy(x: 0, y: -121)
-                cc.draw(Text(String(ch)).font(Typo.label(9.5)).foregroundStyle(isLime ? Color(hex: "C8F25A") : Color.white.opacity(0.62)), at: .zero, anchor: .center)
+                cc.draw(Text(String(ch)).font(Typo.label(9.5)).foregroundStyle(isLime ? LattagPalette.lime : Color.white.opacity(0.62)), at: .zero, anchor: .center)
             }
             // 113 前の ガラス(いちばん 奥まで 黒い)
             let gc = CGPoint(x: c.x - 113 + 226 * 0.44, y: c.y - 113 + 226 * 0.38)
@@ -99,7 +99,7 @@ private struct HV68LensBody: View {
             // 111 / 92 / 70 中の レンズの 輪
             ctx.stroke(disc(111), with: .color(.white.opacity(0.18)), lineWidth: 1)
             ctx.stroke(disc(92), with: .color(Color(hex: "3BD35A").opacity(0.16)), lineWidth: 1)
-            ctx.stroke(disc(70), with: .color(Color(hex: "C8F25A").opacity(0.18)), lineWidth: 1)
+            ctx.stroke(disc(70), with: .color(LattagPalette.lime.opacity(0.18)), lineWidth: 1)
         }
         .frame(width: 312, height: 312)
         .drawingGroup()
@@ -111,7 +111,7 @@ private struct HV68LensGlass: View {
     var body: some View {
         ZStack {
             // 反射 1(左上):黄緑 34%(幅 144 ・ 高さ 112 ・ -18°)
-            Ellipse().fill(RadialGradient(colors: [Color(hex: "C8F25A").opacity(0.34), .clear], center: .center, startRadius: 0, endRadius: 56))
+            Ellipse().fill(RadialGradient(colors: [LattagPalette.lime.opacity(0.34), .clear], center: .center, startRadius: 0, endRadius: 56))
                 .frame(width: 144, height: 112).rotationEffect(.degrees(-18)).position(x: 138, y: 104)
             // 反射 2(右下):緑 34%
             Ellipse().fill(RadialGradient(colors: [Color(hex: "3BD35A").opacity(0.34), Color(red: 36 / 255, green: 160 / 255, blue: 60 / 255).opacity(0)], center: .center, startRadius: 0, endRadius: 30))
@@ -121,7 +121,7 @@ private struct HV68LensGlass: View {
             PausableTimeline(minimumInterval: 1.0 / 12) { date in
                 let a = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 16) / 16 * 360
                 Circle().fill(AngularGradient(stops: [
-                    .init(color: .clear, location: 0), .init(color: Color(hex: "C8F25A").opacity(0.16), location: 0.12),
+                    .init(color: .clear, location: 0), .init(color: LattagPalette.lime.opacity(0.16), location: 0.12),
                     .init(color: .clear, location: 0.2), .init(color: .clear, location: 0.55),
                     .init(color: Color(hex: "3BD35A").opacity(0.16), location: 0.68), .init(color: .clear, location: 0.78), .init(color: .clear, location: 1)],
                     center: .center))
@@ -194,7 +194,7 @@ struct HV68Lens: View {
             // しぼり羽根(半径 109 で 切る)
             HV68Iris(hole: hole)
                 .fill(LinearGradient(colors: [Color(hex: "252B22"), Color(hex: "0A0D09")], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(0.97))
-                .overlay(HV68Iris(hole: hole).stroke(Color(hex: "C8F25A").opacity(0.22), lineWidth: 1))
+                .overlay(HV68Iris(hole: hole).stroke(LattagPalette.lime.opacity(0.22), lineWidth: 1))
                 .frame(width: 312, height: 312)
                 .clipShape(Circle().inset(by: 47))
                 .allowsHitTesting(false)

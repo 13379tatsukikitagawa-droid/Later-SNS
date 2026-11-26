@@ -48,7 +48,7 @@ struct ShutterIconV94: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shownK = 0.0
     private let s: CGFloat = 84
-    private let lime = Color(hex: "C8F25A")
+    private let lime = LattagPalette.lime
 
     var body: some View {
         let k = max(shownK, 0)

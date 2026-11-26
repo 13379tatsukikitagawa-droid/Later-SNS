@@ -5,7 +5,7 @@ import AVKit
 
 enum CaptureRetro {
     /// 橙(スタンプ・時刻)
-    static let orange = Color(hex: "C8F25A")
+    static let orange = LattagPalette.lime
     /// 橙(アクセント:ダイヤルの灯・チップの縁・縁の文字)
     static let accent = Color(hex: "ffb27a")
     /// 場所チップの文字
@@ -184,7 +184,7 @@ struct DigitDial: View {
             ForEach(Array((0...maxValue).reversed()), id: \.self) { number in
                 Text("\(number)")
                     .font(CaptureFonts.monoBold(18))
-                    .foregroundStyle(Color(hex: "C8F25A"))
+                    .foregroundStyle(LattagPalette.lime)
                     .shadow(color: Color(hex: "FF6E14").opacity(0.85), radius: 6)
                     .frame(width: diameter, height: diameter)
             }

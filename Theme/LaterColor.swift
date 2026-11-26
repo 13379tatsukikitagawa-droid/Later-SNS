@@ -14,7 +14,7 @@ enum LaterColor {
     /// 暗い 所の 緑の 文字(LIVE・9:00 OPEN)
     static let liveGreen = Color(hex: "7EE08F")
     /// 黄緑(テープ・week.・Oct 2026 など アクセント)
-    static let lime = Color(hex: "C8F25A")
+    static let lime = LattagPalette.lime
     /// カメラの 黒い 本体
     static let body = Color(hex: "121212")
     /// 24:00 の 線・赤い 点・帯の 赤
@@ -27,7 +27,7 @@ enum LaterColor {
     // MARK: - ハッシュタグの シール 6色(Profile・Friend の チェキ)
 
     static let stickerColors: [(background: Color, text: Color)] = [
-        (Color(hex: "C8F25A"), Color(hex: "111111")),
+        (LattagPalette.lime, Color(hex: "111111")),
         (Color(hex: "EE5E9C"), Color(hex: "FFFFFF")),
         (Color(hex: "9ED8FF"), Color(hex: "111111")),
         (Color(hex: "FFD60A"), Color(hex: "111111")),

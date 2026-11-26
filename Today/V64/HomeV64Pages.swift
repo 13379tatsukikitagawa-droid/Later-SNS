@@ -393,7 +393,7 @@ struct HVLivePanel: View {
     @State private var secOfDayNow = 0
     @State private var wave = false
 
-    private let lime = Color(hex: "C8F25A")
+    private let lime = LattagPalette.lime
 
     private func clock() -> Date {
         input.debugClock ?? Date(timeIntervalSinceReferenceDate: Date().timeIntervalSinceReferenceDate + (input.now.timeIntervalSinceReferenceDate - Date().timeIntervalSinceReferenceDate))

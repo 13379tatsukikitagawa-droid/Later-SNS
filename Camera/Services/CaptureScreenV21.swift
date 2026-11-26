@@ -206,8 +206,8 @@ struct CaptureScreenV21: View {
             HStack(spacing: 8) {
                 ZStack {
                     SevenSegmentText(text: "8", height: 26, color: Color(hex: "1A2010"))
-                    SevenSegmentText(text: "\(max(0, left))", height: 26, color: Color(hex: "C8F25A"))
-                        .shadow(color: Color(hex: "C8F25A").opacity(0.75), radius: 5)
+                    SevenSegmentText(text: "\(max(0, left))", height: 26, color: LattagPalette.lime)
+                        .shadow(color: LattagPalette.lime.opacity(0.75), radius: 5)
                         .keyframeAnimator(initialValue: 1.0, trigger: countFlick) { content, o in content.opacity(o) } keyframes: { _ in
                             KeyframeTrack { LinearKeyframe(0.2, duration: 0.08); LinearKeyframe(1, duration: 0.08); LinearKeyframe(0.3, duration: 0.08); LinearKeyframe(1, duration: 0.08) }
                         }
@@ -215,7 +215,7 @@ struct CaptureScreenV21: View {
                 .frame(width: 18, height: 28)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("のこり").font(.system(size: 8, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(Color(hex: "7A7A82"))
-                    Text("EXP").font(.system(size: 8, weight: .bold, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(Color(hex: "C8F25A"))
+                    Text("EXP").font(.system(size: 8, weight: .bold, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(LattagPalette.lime)
                 }
             }
             .padding(.leading, 10).padding(.trailing, 12)
@@ -260,7 +260,7 @@ struct CaptureScreenV21: View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
             Text(Self.stampText(context.date))
                 .font(.system(size: 14, weight: .bold, design: .monospaced)).tracking(0.06 * 14)
-                .foregroundStyle(Color(hex: "C8F25A"))
+                .foregroundStyle(LattagPalette.lime)
                 .shadow(color: Color(red: 1, green: 0.47, blue: 0.16).opacity(0.7), radius: 5)
         }
         .fixedSize()
@@ -369,10 +369,10 @@ struct CaptureScreenV21: View {
                 VStack(spacing: 5) {
                     Image(systemName: flashAuto ? "bolt.fill" : "bolt.slash")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(flashAuto ? Color(hex: "C8F25A") : .white)
+                        .foregroundStyle(flashAuto ? LattagPalette.lime : .white)
                         .frame(width: 50, height: 50)
-                        .background(Circle().fill(flashAuto ? Color(hex: "C8F25A").opacity(0.16) : .white.opacity(0.08)))
-                        .overlay(Circle().strokeBorder(flashAuto ? Color(hex: "C8F25A").opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
+                        .background(Circle().fill(flashAuto ? LattagPalette.lime.opacity(0.16) : .white.opacity(0.08)))
+                        .overlay(Circle().strokeBorder(flashAuto ? LattagPalette.lime.opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
                     Text(front ? "SCREEN" : (flashAuto ? "AUTO" : "OFF")).font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
                 }
             }
@@ -383,10 +383,10 @@ struct CaptureScreenV21: View {
             Button { flipCamera() } label: {
                 VStack(spacing: 5) {
                     Image(systemName: "arrow.triangle.2.circlepath.camera").font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(front ? Color(hex: "C8F25A") : .white)
+                        .foregroundStyle(front ? LattagPalette.lime : .white)
                         .rotationEffect(.degrees(flipIcon)).frame(width: 50, height: 50)
-                        .background(Circle().fill(front ? Color(hex: "C8F25A").opacity(0.16) : .white.opacity(0.08)))
-                        .overlay(Circle().strokeBorder(front ? Color(hex: "C8F25A").opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
+                        .background(Circle().fill(front ? LattagPalette.lime.opacity(0.16) : .white.opacity(0.08)))
+                        .overlay(Circle().strokeBorder(front ? LattagPalette.lime.opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
                     Text(front ? "FRONT" : "BACK").font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
                 }
             }
@@ -429,13 +429,13 @@ struct CaptureScreenV21: View {
                 // のこりの3つの点(アイコンの 上)
                 ForEach(0..<3, id: \.self) { i in
                     let on = i < left
-                    Circle().fill(on ? Color(hex: "C8F25A") : Color(hex: "4A4A52"))
+                    Circle().fill(on ? LattagPalette.lime : Color(hex: "4A4A52"))
                         .frame(width: on ? 6.8 : 4.8, height: on ? 6.8 : 4.8)
                         .offset(y: -56)
                         .rotationEffect(.degrees(Double(i - 1) * 14))
                 }
                 // 光の輪が1つ はじける
-                Circle().strokeBorder(Color(hex: "C8F25A"), lineWidth: 2)
+                Circle().strokeBorder(LattagPalette.lime, lineWidth: 2)
                     .frame(width: 112, height: 112)
                     .scaleEffect(snapRing ? 2.4 : 0.6)
                     .opacity(snapRing ? 0 : 0)
@@ -479,7 +479,7 @@ struct CaptureScreenV21: View {
         }()
         return Text(text)
             .font(.system(size: 9.5, design: .monospaced)).tracking(0.18 * 9.5)
-            .foregroundStyle(hintOverride != nil ? Color(hex: "C8F25A") : Color(hex: "6A6A72"))
+            .foregroundStyle(hintOverride != nil ? LattagPalette.lime : Color(hex: "6A6A72"))
             .multilineTextAlignment(.center)
             .frame(width: layout.size.width - 20)
             .position(x: layout.size.width / 2, y: min(layout.size.height - max(layout.safeBottom, 12) - 8, layout.y(792) + 6))
@@ -582,7 +582,7 @@ private struct ShutterTicks: View {
                 p.addLine(to: CGPoint(x: c.x + r2 * cos(a), y: c.y + r2 * sin(a)))
                 let on = i < lit
                 let color: Color = on
-                    ? (late ? Color(hex: "FF3B30") : (video ? (big ? Color(hex: "FFC2A8") : Color(hex: "FF7A5A")) : (big ? Color(hex: "E2FF9A") : Color(hex: "C8F25A"))))
+                    ? (late ? Color(hex: "FF3B30") : (video ? (big ? Color(hex: "FFC2A8") : Color(hex: "FF7A5A")) : (big ? Color(hex: "E2FF9A") : LattagPalette.lime)))
                     : .white.opacity(big ? 0.42 : 0.2)
                 ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: big ? 2.6 : 1.6, lineCap: .round))
             }

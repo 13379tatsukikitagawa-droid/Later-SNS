@@ -394,3 +394,11 @@
 - ✓ D たしかめ:390pt シミュレータ(Trip 0 / 3件 ・ プロフィール 0日 / 13日 / 9:00 まえの 鍵 / スクロール ・ Today 1 / 2枚 ・ 夜 8:54 ・ Home の Friends)。537 テスト + UI 4つ 通過。
   - Mondo の 検索:V64 の 画面には 出る 字 なし。のこり = 古い Home(`HomeV5*` ・ `HomeV17*`)・ `MondoModel` / `MondoService` / `EmptyYesterdayView` など データ層 + 古い 画面 → 消す かどうかは たつきさんに 確認。
   - ☐ 実機:ジャイロ ・ 立ちあがり / 前へ 出る 動きの 手ざわり ・ ヒッチ(Instruments)・ 120Hz。
+
+## v134 Phase 1(ブランチ design-v134 ・ 土台)
+- Design/v134 に zip を 置いた(文書の v133 は v134 と 読む)。タグ `experiment-p58` = 実験に 使う 状態。
+- Barlow Condensed ExtraBold を 同梱(アプリ本体 ・ UIAppFonts)。SpaceMono-Bold も アプリ本体に 登録。
+- ライムは `LattagPalette.lime`(Shared)1か所。LaterColor / PopColor / HV / WColor / LTColor は これを 指す。`Color(hex: "C8F25A")` の 直書き ~85か所も 置きかえ。
+- 新部品(DesignSystem/):LTTheme(色 ・ 字 ・ 角丸 ・ 動き ・ DisplayTitle ・ DateStamp ・ TagChip ・ LimeButtonStyle)/ LTHaptics(既存 Haptics と HapticRamp の 上の 薄い 層。新しい エンジンは 作らない)/ LTHold(HoldToConfirm ・ FilmDevelop)/ LTHashLens(#レンズ)。ガラスは 既存の `lgGlass`。
+- アセット:HashGlyph(Template ・ Preserve Vector)・ LattagWordmark。
+- まだ どの画面にも つないで いない(Phase 2 以降)。

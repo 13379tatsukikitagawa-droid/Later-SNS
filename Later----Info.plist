@@ -36,6 +36,8 @@
 		<string>Caveat-SemiBold.ttf</string>
 		<string>LaterMincho-Black.otf</string>
 		<string>KleeOne-SemiBold.ttf</string>
+		<string>BarlowCondensed-ExtraBold.ttf</string>
+		<string>SpaceMono-Bold.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

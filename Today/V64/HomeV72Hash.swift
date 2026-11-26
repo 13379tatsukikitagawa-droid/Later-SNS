@@ -71,7 +71,7 @@ struct HV72Shutter: View {
             // ボタン
             ZStack {
                 Circle().fill(RadialGradient(colors: [.black.opacity(0.55), .clear], center: .center, startRadius: 0, endRadius: 46)).frame(width: 92, height: 92).offset(y: 5)
-                Circle().fill(RadialGradient(stops: [.init(color: Color(hex: "EEFFB0"), location: 0), .init(color: Color(hex: "C8F25A"), location: 0.38),
+                Circle().fill(RadialGradient(stops: [.init(color: Color(hex: "EEFFB0"), location: 0), .init(color: LattagPalette.lime, location: 0.38),
                                                      .init(color: Color(hex: "8FCB2E"), location: 0.85), .init(color: Color(hex: "6FA622"), location: 1)],
                                              center: UnitPoint(x: 0.36, y: 0.30), startRadius: 0, endRadius: 56))
                     .frame(width: 80, height: 80)

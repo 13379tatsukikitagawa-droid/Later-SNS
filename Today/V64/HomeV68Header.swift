@@ -115,7 +115,7 @@ struct HV68Header: View {
             .mask(alignment: .leading) { Rectangle().frame(width: entered ? f.w + 40 : 0) }
             .animation(.timingCurve(0.3, 1, 0.4, 1, duration: 0.7).delay(entered ? 0.26 : 0), value: entered)
             .contentShape(Rectangle())
-            .overlay(Capsule().strokeBorder(Color(hex: "C8F25A"), lineWidth: 2).opacity(holding ? 1 : 0))
+            .overlay(Capsule().strokeBorder(LattagPalette.lime, lineWidth: 2).opacity(holding ? 1 : 0))
             .scaleEffect(holdPulse ? 1.035 : 1)
             .onTapGesture { guard Date() > suppressTapUntil else { return }; Haptics.play(.click); onLive() }
             // v100 §5:長押し = 時間を さわる(0.45秒で pop → はなす まで 1秒ごとに tick ・ 分が かわる 時は click)
