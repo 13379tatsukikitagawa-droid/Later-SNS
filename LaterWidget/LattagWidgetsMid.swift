@@ -124,32 +124,46 @@ struct LattagYesterdayWidget: Widget {
     }
 }
 
+/// v134:ともだちが「のせた」きのうの 写真いっぱい +「◯◯の きのう」+「11H 03M 見ないで待った」+ 右下に 小さい #レンズ(見本 70)
 struct LattagYesterdayView: View {
     let model: WidgetModel
+    /// "21:12" → 翌朝 9:00 までの 時間("11H 48M")
+    static func waited(_ hm: String) -> String? {
+        let p = hm.split(separator: ":").compactMap { Int($0) }
+        guard p.count == 2 else { return nil }
+        let mins = ((9 * 60 - (p[0] * 60 + p[1])) % 1440 + 1440) % 1440
+        return String(format: "%dH %02dM", mins / 60, mins % 60)
+    }
     var body: some View {
         let ppl = wPeople(model)
         let locked = !(model.unlocked && !model.yesterdayPhotos.isEmpty)
-        HStack(spacing: 0) {
+        let first = ppl.first
+        ZStack {
+            Color(hex6: 0x0E0E10)
+            if let img = first?.image {
+                Image(uiImage: img).resizable().scaledToFill().blur(radius: locked ? 18 : 0).overlay(Color.black.opacity(locked ? 0.35 : 0.12))
+            }
+            LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 0) {
-                Text("きのう ・ 9:00 OPEN").font(WFont.mono(8.5)).foregroundStyle(WColor.lime).widgetAccentable()
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(model.yesterday?.people ?? 0)").font(WFont.inter(900, 54)).foregroundStyle(.white).widgetAccentable()
-                    Text("人").font(WFont.inter(900, 20)).foregroundStyle(.white)
-                }.padding(.top, 4)
-                Text("が 撮りました").font(WFont.inter(700, 13)).foregroundStyle(.white.opacity(0.85))
-                Spacer(minLength: 4)
-                if let tag = model.yesterday?.tag {
-                    Text("#" + tag).font(WFont.inter(900, 14)).foregroundStyle(Color(hex6: 0x0B0B0C)).padding(.horizontal, 12).padding(.vertical, 5)
-                        .background(WColor.lime, in: RoundedRectangle(cornerRadius: 10)).rotationEffect(.degrees(-3)).widgetAccentable()
+                HStack(spacing: 6) {
+                    Circle().fill(.white).frame(width: 22, height: 22).overlay(Text(String((first?.name ?? "き").prefix(1))).font(.system(size: 11, weight: .heavy)).foregroundStyle(.black))
+                    Text(first.map { "\($0.name)の きのう" } ?? "きのう").font(.system(size: 14, weight: .heavy)).foregroundStyle(.white)
+                    Spacer()
                 }
-            }.frame(width: 128, alignment: .leading).padding(.leading, 16).padding(.vertical, 14)
-            ZStack {
-                ForEach(Array(ppl.prefix(3).enumerated()), id: \.offset) { i, p in
-                    WCheki(photo: p.image, name: p.name, time: p.time, width: 92, tilt: [-8, 3, 9][i % 3], tape: [WColor.pink, WColor.lime, WColor.sky][i % 3], blurred: locked)
-                        .offset(x: CGFloat([-44, 0, 44][i % 3]), y: CGFloat([6, -4, 10][i % 3]))
+                Spacer()
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if locked {
+                            Text("1枚 撮ると ひらく").font(.system(size: 14, weight: .heavy)).foregroundStyle(.white)
+                        } else if let w = first.flatMap({ Self.waited($0.time) }) {
+                            Text(w).font(.custom("BarlowCondensed-ExtraBold", size: 30)).foregroundStyle(.white)
+                            Text("見ないで待った").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white.opacity(0.85))
+                        }
+                    }
+                    Spacer()
+                    WLiveLens(size: 30)
                 }
-                if locked { Text("1枚 撮ると ひらく").font(WFont.inter(900, 11)).foregroundStyle(.white).padding(.horizontal, 10).padding(.vertical, 5).background(.black.opacity(0.8), in: Capsule()).overlay(Capsule().strokeBorder(WColor.lime, lineWidth: 1.5)) }
-            }.frame(maxWidth: .infinity)
+            }.padding(14)
         }
     }
 }

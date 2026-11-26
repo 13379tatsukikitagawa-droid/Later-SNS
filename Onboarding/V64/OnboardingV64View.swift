@@ -95,6 +95,7 @@ struct OnboardingV64View: View {
         ZStack {
             stage.ignoresSafeArea()
             bottomLayer.ignoresSafeArea(.container)
+            if step == .q || step == .why || step == .go { v134Layer.transition(.opacity) }
             if let introStart {
                 OBIntroView(start: introStart) { finishIntro() }.transition(.opacity)
             }
@@ -128,6 +129,24 @@ struct OnboardingV64View: View {
                 .presentationDetents([.large]).presentationBackground(Color(hex: "141516"))
         }
         .sheet(isPresented: $showingShare) { ShareSheet(activityItems: shareItems) { _ in } }
+    }
+
+    /// v134:質問 ・ 理由 ・ はじめる(白と黒 ・ 上に 5つの 進みバー)
+    private var v134Layer: some View {
+        ZStack(alignment: .top) {
+            LTColor.bg.ignoresSafeArea()
+            Group {
+                switch step {
+                case .q: OBQuestionV134 { _ in go(.why) }
+                case .why: OBWhyV134 { go(.name) }
+                default: OBGoV134(onProgress: { holdLevel = $0 }, onFinish: beginFinish)
+                }
+            }.id(step).transition(.opacity).padding(.top, 56)
+            OBProgressV134(filled: step == .q ? 1 : (step == .why ? 2 : 5), onBack: step.back.map { b in { go(b, back: true) } })
+        }
+        .opacity(slideOpacity)
+        .offset(y: slideY)
+        .statusBarHidden()
     }
 
     // MARK: - 画面(上から 下まで・キーボードで ずれない)
@@ -226,7 +245,7 @@ struct OnboardingV64View: View {
                 .accessibilityElement(children: .ignore).accessibilityLabel("昨日を 共有する SNS")
             }
             .frame(width: W).offset(y: 372 + mid)
-        case .mail, .sent: EmptyView()   // v104:メールの リンクは やめた
+        case .mail, .sent, .q, .why: EmptyView()   // v104:メールの リンクは やめた / v134:質問と 理由は 別の 層
         case .name:
             VStack(spacing: 0) {
                 Text("Name").font(Typo.title(editing ? 38 : 64, italic: true)).tracking(editing ? -0.76 : -1.28).foregroundStyle(.white).frame(height: editing ? 38 : 64)
@@ -431,7 +450,7 @@ struct OnboardingV64View: View {
                         .font(Typo.ui(500, 10)).foregroundStyle(OB.sub).buttonStyle(.plain).frame(height: 44).padding(.vertical, -10)
                     }
                     .padding(.bottom, 28)
-                case .mail, .sent: EmptyView()
+                case .mail, .sent, .q, .why: EmptyView()
                 case .name:
                     Button { next() } label: { Text("つぎへ") }.buttonStyle(OBButtonStyle()).disabled(!validName).padding(.bottom, editing ? 10 : 34)
                 case .id:
@@ -582,7 +601,7 @@ struct OnboardingV64View: View {
     private func handleSignInChange() {
         guard step == .signin || step == .mail || step == .sent, !appleUserID.isEmpty || !firebaseUID.isEmpty, !isCheckingAccount else { return }
         if isSetupCompleted { markCompleted(); return }
-        go(.name)
+        go(.q)   // v134:質問 → 理由 → 名前
         checkExistingAccountInBackground()
     }
 

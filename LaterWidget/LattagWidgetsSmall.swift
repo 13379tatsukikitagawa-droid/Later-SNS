@@ -44,32 +44,45 @@ struct LattagUntil9Widget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: LattagShared.Kind.until9, provider: LattagProvider()) { e in
             LattagUntil9View(model: e.model).widgetURL(LattagShared.Link.develop)
-                .containerBackground(for: .widget) { e.model.part == .evening ? WColor.ground : WColor.lime }
+                .containerBackground(for: .widget) { Color(hex6: 0x0E0E10) }
         }
         .configurationDisplayName("9:00 まで").description("現像が ひらくまで")
         .supportedFamilies([.systemSmall]).contentMarginsDisabled()
     }
 }
 
+/// v134:ひらくまで(小)。#レンズ + フィルム 3枠 + 大きい 残り時間(Barlow)+ ライムの 進み(見本 70)
 struct LattagUntil9View: View {
     let model: WidgetModel
     private var night: Bool { model.part == .evening }
+    private var target: Date { night ? model.lightsOutAt : model.opensAt }
+    private var progress: Double {
+        let total: Double = 24 * 3600
+        return min(1, max(0.03, 1 - target.timeIntervalSince(model.now) / total))
+    }
     var body: some View {
-        let ink: Color = night ? .white : Color(hex6: 0x0B0B0C)
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Circle().fill(night ? WColor.lime : Color(hex6: 0x0B0B0C)).frame(width: 8, height: 8).widgetAccentable()
-                Text(night ? "消灯まで" : "9:00 まで").font(night ? WFont.inter(800, 11) : WFont.mono(10)).foregroundStyle(ink)
-            }
-            WTimer(from: model.now, to: night ? model.lightsOutAt : model.opensAt)
-                .font(WFont.inter(900, 40)).foregroundStyle(ink).padding(.top, 6).widgetAccentable()
-            Text(night ? "のこり \(model.remaining)こま" : "あした 9:00 に ひらく").font(WFont.inter(800, 12)).foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 2)
-            Spacer(minLength: 4)
-            HStack(alignment: .bottom) {
-                WFrameRow(model: model, w: 30, h: 38, limeBase: !night)
+            HStack(alignment: .top) {
+                WLiveLens(size: 30)
                 Spacer(minLength: 0)
-                if model.shots > 0 { Text("現像\n\(model.devPercent)%").font(WFont.inter(800, 9)).foregroundStyle(ink.opacity(0.8)).multilineTextAlignment(.trailing) }
+                HStack(spacing: 3) {
+                    ForEach(0..<3, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 3, style: .continuous).fill(i < model.shots ? Color(hex6: 0xECEAE3) : .clear)
+                            .overlay(RoundedRectangle(cornerRadius: 3, style: .continuous).strokeBorder(.white.opacity(i < model.shots ? 0 : 0.3), lineWidth: 1))
+                            .frame(width: 9, height: 14)
+                    }
+                }
             }
+            Spacer(minLength: 4)
+            Text(night ? "消灯まで" : "ひらくまで").font(.system(size: 11, weight: .heavy)).foregroundStyle(Color(hex6: 0xA3A3AB))
+            WTimer(from: model.now, to: target)
+                .font(.custom("BarlowCondensed-ExtraBold", size: 40)).foregroundStyle(LinearGradient(colors: [.white, Color(hex6: 0x8C8C94)], startPoint: .top, endPoint: .bottom)).widgetAccentable()
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.12))
+                    Capsule().fill(WColor.lime).frame(width: g.size.width * progress).widgetAccentable()
+                }
+            }.frame(height: 4).padding(.top, 4)
         }
         .padding(14)
     }

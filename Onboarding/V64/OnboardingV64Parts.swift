@@ -26,7 +26,7 @@ enum OB {
     ]
     /// ミルク色の 膜の 濃さ(OBMK)
     static func milk(_ s: OBStep) -> Double {
-        switch s { case .signin, .mail, .sent: return 1; case .name, .id: return 0.8; case .tag: return 0.5; case .fr: return 0.26; case .nt: return 0.1; case .go: return 0 }
+        switch s { case .signin, .mail, .sent: return 1; case .q, .why: return 0; case .name, .id: return 0.8; case .tag: return 0.5; case .fr: return 0.26; case .nt: return 0.1; case .go: return 0 }
     }
     /// 友だちの 丸が ういている 位置(OBDOT)
     static let dots: [CGPoint] = [CGPoint(x: -148, y: 50), CGPoint(x: 148, y: 34), CGPoint(x: -150, y: 138), CGPoint(x: 150, y: 128), CGPoint(x: -140, y: 222), CGPoint(x: 142, y: 218)]
@@ -40,10 +40,10 @@ enum OB {
 }
 
 enum OBStep: String, CaseIterable {
-    case signin = "in", mail, sent, name, id, tag, fr, nt, go
+    case signin = "in", mail, sent, q, why, name, id, tag, fr, nt, go
 
     var back: OBStep? {
-        switch self { case .id: return .name; case .tag: return .id; case .fr: return .tag; case .nt: return .fr; case .mail: return .signin; case .sent: return .mail; default: return nil }
+        switch self { case .id: return .name; case .tag: return .id; case .fr: return .tag; case .nt: return .fr; case .go: return .nt; case .why: return .q; case .mail: return .signin; case .sent: return .mail; default: return nil }
     }
     /// 「01 / 04」の 番号(なければ nil)
     var page: Int? {

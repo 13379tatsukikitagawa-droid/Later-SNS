@@ -10,6 +10,8 @@ struct TripHubView: View {
     var onJoinKey: () -> Void = {}
     @Binding var position: ScrollPosition
     var topInset: CGFloat = 118
+    /// v134:大見出し(Barlow ・ 例 "Trip")。nil なら 出さない
+    var title: String? = nil
     var onScroll: (CGFloat) -> Void = { _ in }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -34,6 +36,7 @@ struct TripHubView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 Color.clear.frame(height: topInset)
+                if let title { DisplayTitle(text: title, size: 64).padding(.horizontal, 20).padding(.bottom, 10) }
                 if items.isEmpty { emptyState }
                 else {
                     weekStrip.padding(.horizontal, 16)

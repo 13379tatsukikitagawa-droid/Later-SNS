@@ -337,6 +337,7 @@
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
 		F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */; };
 		F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */; };
+		E5A00000000000000000004F /* ../Onboarding/V64/OnboardingV134Steps.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000004E /* ../Onboarding/V64/OnboardingV134Steps.swift */; };
 		E5A00000000000000000004D /* V134/ShareInviteV134.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000004C /* V134/ShareInviteV134.swift */; };
 		E5A00000000000000000004B /* V134/StoryV134.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000004A /* V134/StoryV134.swift */; };
 		E5A000000000000000000049 /* V134/MorningNightV134.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A000000000000000000048 /* V134/MorningNightV134.swift */; };
@@ -357,6 +358,7 @@
 		F9604D53BE6964B061D9D199 /* Fonts/Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56CA5502986A47109639A9F5 /* Fonts/Inter-ExtraBold.ttf */; };
 		F961362EE48E1FE4EEA0FB5B /* Fonts/SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */; };
 		E5A0000000000000000000F3 /* Fonts/BarlowCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5A0000000000000000000F1 /* Fonts/BarlowCondensed-ExtraBold.ttf */; };
+		E5A0000000000000000000F5 /* Fonts/BarlowCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5A0000000000000000000F1 /* Fonts/BarlowCondensed-ExtraBold.ttf */; };
 		E5A0000000000000000000F4 /* Fonts/SpaceMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CFB4F25EEE34F9BACCA6174 /* Fonts/SpaceMono-Bold.ttf */; };
 		F961437D7997B742D8DB03BF /* Fonts/Inter-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 27B30D00E22A4904938D7ED6 /* Fonts/Inter-Black.ttf */; };
 		F961BA115D793A320DC57F96 /* Fonts/Caveat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1E0C4DD10F0C4B52A04FEBD2 /* Fonts/Caveat-SemiBold.ttf */; };
@@ -458,6 +460,7 @@
 		453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsMid.swift; sourceTree = "<group>"; };
 		48D0F07632A5009E1A3721A3 /* LGPressable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGPressable.swift; sourceTree = "<group>"; };
 		49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripRoomView.swift; sourceTree = "<group>"; };
+		E5A00000000000000000004E /* ../Onboarding/V64/OnboardingV134Steps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Onboarding/V64/OnboardingV134Steps.swift; sourceTree = "<group>"; };
 		E5A00000000000000000004C /* V134/ShareInviteV134.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V134/ShareInviteV134.swift; sourceTree = "<group>"; };
 		E5A00000000000000000004A /* V134/StoryV134.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V134/StoryV134.swift; sourceTree = "<group>"; };
 		E5A000000000000000000048 /* V134/MorningNightV134.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V134/MorningNightV134.swift; sourceTree = "<group>"; };
@@ -1130,6 +1133,7 @@
 				5C13685A780690F0FA8C5EC9 /* V64/MEV86View.swift */,
 				8B65E06F99EE28EDBF6A9F6E /* V64/RecapV86Model.swift */,
 				49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */,
+				E5A00000000000000000004E /* ../Onboarding/V64/OnboardingV134Steps.swift */,
 				E5A00000000000000000004C /* V134/ShareInviteV134.swift */,
 				E5A00000000000000000004A /* V134/StoryV134.swift */,
 				E5A000000000000000000048 /* V134/MorningNightV134.swift */,
@@ -1646,6 +1650,7 @@
 				F961BA115D793A320DC57F96 /* Fonts/Caveat-SemiBold.ttf in Resources */,
 				F964F496F0299184A9E9486F /* Fonts/SpaceMono-Regular.ttf in Resources */,
 				F961362EE48E1FE4EEA0FB5B /* Fonts/SpaceMono-Bold.ttf in Resources */,
+				E5A0000000000000000000F5 /* Fonts/BarlowCondensed-ExtraBold.ttf in Resources */,
 				F966912C96C5ED6399DC8ED1 /* Fonts/InstrumentSerif-Italic.ttf in Resources */,
 				F96A28988D8ECD1D24CD1B67 /* Fonts/InstrumentSerif-Regular.ttf in Resources */,
 				F961437D7997B742D8DB03BF /* Fonts/Inter-Black.ttf in Resources */,
@@ -1788,6 +1793,7 @@
 				56A59AA661817280B45B8698 /* V64/MEV86View.swift in Sources */,
 				8A5236B97D5A98BF504683EE /* V64/RecapV86Model.swift in Sources */,
 				F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */,
+				E5A00000000000000000004F /* ../Onboarding/V64/OnboardingV134Steps.swift in Sources */,
 				E5A00000000000000000004D /* V134/ShareInviteV134.swift in Sources */,
 				E5A00000000000000000004B /* V134/StoryV134.swift in Sources */,
 				E5A000000000000000000049 /* V134/MorningNightV134.swift in Sources */,

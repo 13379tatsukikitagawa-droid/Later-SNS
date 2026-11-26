@@ -33,7 +33,7 @@ struct HomeV134View: View {
                     feed(width: g.size.width, safeTop: g.safeAreaInsets.top)
                         .opacity(tab == 0 ? 1 : 0).allowsHitTesting(tab == 0)
                     TripHubView(items: input.trips, now: input.now, onOpen: { actions.openTrip($0) }, onNew: { actions.newTrip() }, onJoinKey: { actions.joinKey() },
-                                position: $tripPos, topInset: g.safeAreaInsets.top + 62, onScroll: { v in if tab == 1 { scrollY = v } })
+                                position: $tripPos, topInset: g.safeAreaInsets.top + 62, title: "Trip", onScroll: { v in if tab == 1 { scrollY = v } })
                         .ignoresSafeArea(edges: .top)
                         .opacity(tab == 1 ? 1 : 0).allowsHitTesting(tab == 1)
                 }
