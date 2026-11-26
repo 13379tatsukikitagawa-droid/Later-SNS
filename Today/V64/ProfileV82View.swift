@@ -19,7 +19,12 @@ struct ProfileV82Data {
     var avatar: UIImage?
     var tags: [String] = []
     var since = ""
+    /// v134:れんぞくは 出さない(データは のこす)。「見ないで待った」= 自分だけに 見える 数字
     var streak = 0
+    var waitedHours = 0
+    var waitedPerDay: [Double] = []
+    var waitedMonth = 0
+    var todayIndex = 0
     var shots = 0
     var opened = 0
     var cells: [ProfileDayCell] = []
@@ -104,7 +109,7 @@ struct ProfileV82View: View {
                             else { Color(hex: "3A3A3F").overlay(Text(String(data.name.prefix(1))).font(Typo.ui(900, 14)).foregroundStyle(.white)) }
                         }.frame(width: 30, height: 30).clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Color(hex: "F6F2EA"), lineWidth: 2))
-                        Text(data.name).font(Typo.title(22)).foregroundStyle(.white).lineLimit(1)
+                        Text(data.name).font(LTFont.ui(17, weight: .heavy)).foregroundStyle(.white).lineLimit(1)
                     }.transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
                     Button { Haptics.play(.tick); onCopyID() } label: { Text("@\(data.username)").font(Typo.ui(800, 14)).foregroundStyle(Color(hex: "C9C9CF")).frame(minHeight: 44) }
@@ -125,7 +130,7 @@ struct ProfileV82View: View {
         HStack(alignment: .top, spacing: 20) {
             cheki.frame(width: 104)
             VStack(alignment: .leading, spacing: 6) {
-                Text(data.name).font(Typo.title(40)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
+                Text(data.name).font(LTFont.ui(30, weight: .heavy)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
                 Text(data.since).font(Typo.ui(700, 13)).foregroundStyle(Color(hex: "8E8E96"))
                 tagRow.padding(.top, 4)
             }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
@@ -169,22 +174,41 @@ struct ProfileV82View: View {
     // MARK: 数字 3つ(箱 なし)
 
     private var stats: some View {
-        HStack(spacing: 0) {
-            stat(data.streak, "日 れんぞく", HV.lime, 0)
-            Rectangle().fill(.white.opacity(0.1)).frame(width: 1, height: 44)
-            stat(data.shots, "枚 撮った", .white, 1)
-            Rectangle().fill(.white.opacity(0.1)).frame(width: 1, height: 44)
-            stat(data.opened, "日 ひらいた", .white, 2)
+        VStack(spacing: 10) {
+            HStack(alignment: .bottom, spacing: 14) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(data.waitedMonth)月、見ないで待った").font(LTFont.ui(13, weight: .heavy)).foregroundStyle(LTColor.ink3)
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text("\(shown ? data.waitedHours : 0)").font(LTFont.display(64)).contentTransition(.numericText()).monospacedDigit()
+                            .foregroundStyle(LinearGradient(colors: [.white, LTColor.tagGray], startPoint: .top, endPoint: .bottom))
+                            .animation(.easeOut(duration: 0.62), value: shown)
+                        Text("h").font(LTFont.display(28)).foregroundStyle(LTColor.tagGray)
+                    }
+                    Text("自分だけに見える数字").font(LTFont.ui(12, weight: .heavy)).foregroundStyle(LTColor.ink3)
+                }
+                waitedBars.frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
+            }
+            .padding(16)
+            .background(LTColor.surface1, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(LTColor.hairline, lineWidth: 1))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(data.waitedMonth)月、見ないで待った \(data.waitedHours)時間。自分だけに見える数字")
+            Text("\(data.shots)枚 撮った ・ \(data.opened)日 ひらいた").font(LTFont.ui(13, weight: .heavy)).foregroundStyle(LTColor.ink3)
         }
     }
 
-    private func stat(_ n: Int, _ label: String, _ c: Color, _ i: Int) -> some View {
-        VStack(spacing: 2) {
-            Text("\(shown ? n : 0)").font(Typo.title(34)).foregroundStyle(c).contentTransition(.numericText()).monospacedDigit()
-                .animation(.easeOut(duration: 0.62).delay(0.09 * Double(i)), value: shown)
-            Text(label).font(Typo.ui(700, 12)).foregroundStyle(Color(hex: "8E8E96"))
-        }.frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+    /// 日ごとの 小さな 棒(今日は 白)
+    private var waitedBars: some View {
+        let per = data.waitedPerDay
+        let top = max(1, per.max() ?? 1)
+        return GeometryReader { g in
+            HStack(alignment: .bottom, spacing: 2) {
+                ForEach(Array(per.enumerated()), id: \.offset) { i, v in
+                    Capsule().fill(i == data.todayIndex ? Color.white : Color.white.opacity(v > 0 ? 0.3 : 0.1))
+                        .frame(height: max(3, g.size.height * CGFloat(v / top) * (shown ? 1 : 0.1)))
+                }
+            }.frame(maxHeight: .infinity, alignment: .bottom).animation(.easeOut(duration: 0.6), value: shown)
+        }.accessibilityHidden(true)
     }
 
     // MARK: ボタン(編集 / 送る / QR / 読む)
@@ -411,7 +435,10 @@ struct ProfileV82Host: View {
         let photos = me.photos
         let dates = photos.map(\.captureDate)
         d.shots = photos.count
-        d.streak = ProfileArchiveRules.streak(dates, now: now)
+        d.streak = ProfileArchiveRules.streak(dates, now: now)   // データは のこす(画面には 出さない)
+        let w = HomeV134Rules.waitedTotals(captures: dates, month: now)
+        d.waitedHours = w.hours; d.waitedPerDay = w.perDay
+        d.waitedMonth = Calendar.current.component(.month, from: now); d.todayIndex = Calendar.current.component(.day, from: now) - 1
         d.since = ProfileArchiveRules.sinceLabel(dates.min(), now: now)
         d.cells = ProfileArchiveRules.cells(dates, now: now)
         d.opened = ProfileArchiveRules.openedDays(d.cells)

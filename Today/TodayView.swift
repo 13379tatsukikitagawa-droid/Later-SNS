@@ -135,6 +135,8 @@ struct TodayView: View {
     @State private var shotEvent: ShotEvent?
     /// 【D】撮ったあとの 現像の画面(前日の 自分の N枚目)と、1枚ずつの 投稿の 選択
     @State private var revealRequest: RevealRequest?
+    /// v134:のせた あと「ストーリーにのせる」(シェアカード)
+    @State private var shareCardRequest: RevealRequest?
     /// 保存の 成功を 待つ あいだの 黒い幕(最大3秒)
     @State private var revealCover = false
     /// 現像の画面の あとで、チェキを カードへ とばす
@@ -1108,6 +1110,9 @@ struct TodayView: View {
             .environment(\.palette, palette)
             .environment(\.colorScheme, palette.isNight ? .dark : .light)
         }
+        .fullScreenCover(item: $shareCardRequest) { r in
+            ShareCardScreenV134(image: r.image, captured: r.captureDate, tag: r.tag) { shareCardRequest = nil }
+        }
         .fullScreenCover(item: $introRequest) { req in
             IntroStoryView(kind: req.kind, shotToday: FilmCounter.shared.used > 0) { pressed in
                 introRequest = nil
@@ -1813,6 +1818,7 @@ struct TodayView: View {
         switch outcome {
         case .posted:
             if let currentUser, !copies.isEmpty { YesterdayPostStore.post(copies, user: currentUser, context: context) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { shareCardRequest = request }
         case .skipped:
             YesterdayPostStore.skip(copies, context: context)
         case .later:

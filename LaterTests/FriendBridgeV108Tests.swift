@@ -39,7 +39,7 @@ struct AppLinksV108Tests {
 struct ShareTextV108Tests {
     @Test func friendText() {
         let t = ShareTextV108.friend(name: "ゆい", handle: "yui_0612")!
-        #expect(t.hasPrefix("ゆい (@yui_0612) から Lattag の 友だち申請です"))
+        #expect(t.hasPrefix("ゆいの「きのう」が届いています。あなたも1枚撮ると、あしたの9:00にいっしょにひらきます。"))
         #expect(!t.contains("アプリが ない 時"))
         #expect(t.contains("https://later-app-f2606.firebaseapp.com/u/yui_0612?openExternalBrowser=1"))
         #expect(!t.contains("later://"))

@@ -58,3 +58,22 @@ struct GoodMorningLiveRulesTests {
         #expect(!LattagLiveClock.isWaiting(shots: 3, now: nine, opensAt: nine))
     }
 }
+
+struct WaitedRulesTests {
+    private var cal: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "Asia/Tokyo")!; return c }
+    private func date(_ h: Int, _ m: Int, day: Int) -> Date { cal.date(from: DateComponents(year: 2026, month: 11, day: day, hour: h, minute: m))! }
+
+    @Test func waitedBigLabel() {
+        #expect(HomeV134Rules.waitedBig(captured: date(17, 12, day: 25), calendar: cal) == "15H 48M")
+        #expect(HomeV134Rules.waitedBig(captured: date(22, 14, day: 25), calendar: cal) == "10H 46M")
+    }
+
+    @Test func monthlyTotalsSumPerDay() {
+        let caps = [date(22, 0, day: 25), date(18, 0, day: 25), date(12, 0, day: 3), date(10, 0, day: 30).addingTimeInterval(86400 * 5)]   // 最後は 12月
+        let t = HomeV134Rules.waitedTotals(captures: caps, month: date(12, 0, day: 10), calendar: cal)
+        #expect(t.perDay.count == 30)
+        #expect(Int(t.perDay[24]) == 11 + 15)
+        #expect(Int(t.perDay[2]) == 21)
+        #expect(t.hours == 11 + 15 + 21)
+    }
+}

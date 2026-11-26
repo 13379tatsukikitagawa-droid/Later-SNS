@@ -52,6 +52,8 @@ enum DebugRouter {
         case "widgets": showRaw(DebugWidgetsView())
         case "settings": showRaw(SettingsV87Sheet(name: "ゆい", username: "yui_0612", avatar: SampleData.photo("f"), blockedCount: 0))
         case "capture": showRaw(CaptureDebugV134())
+        case "sharecard": showRaw(ShareCardScreenV134(image: SampleData.photo("d"), captured: Calendar.current.date(bySettingHour: 17, minute: 12, second: 0, of: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()) ?? Date(), tag: "帰り道", onClose: {}))
+        case "invite": showRaw(InviteV134View(name: "たつき", photos: ["d", "a", "b", "c"].map { SampleData.photo($0) }, onSend: {}, onCopy: {}, onQR: {}, onClose: {}))
         case "tag": showRaw(TagScreenV134(left: 3, tags: .constant(UserDefaults.standard.bool(forKey: "debugTags") ? ["エモい", "天気よすぎ"] : []), place: "目黒区").background(Color.black).preferredColorScheme(.dark))
         default: return false
         }
@@ -470,7 +472,13 @@ enum ProfileDebugV132 {
         let days = d.object(forKey: "debugProfileDays") == nil ? 13 : d.integer(forKey: "debugProfileDays")
         let lockYesterday = d.bool(forKey: "debugProfileLock")
         let cal = Calendar.current, today = cal.startOfDay(for: Date())
-        var data = ProfileV82Data(name: "たつき", username: "later_6sd6dr7v", avatar: UserDefaults.standard.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f"), tags: ["朝型", "散歩"], since: "2026年11月 から", streak: days > 0 ? 14 : 1, shots: days > 0 ? 38 : 2, opened: days)
+        var data = ProfileV82Data()
+        data.name = "たつき"; data.username = "later_6sd6dr7v"
+        data.avatar = d.bool(forKey: "debugNoPhoto") ? nil : SampleData.photo("f")
+        data.tags = ["朝型", "散歩"]; data.since = "2026年11月 から"
+        data.streak = days > 0 ? 14 : 1; data.shots = days > 0 ? 38 : 2; data.opened = days
+        data.waitedHours = days > 0 ? 312 : 0; data.waitedMonth = 11; data.todayIndex = 25
+        data.waitedPerDay = (0..<30).map { n -> Double in days > 0 && n < 25 ? Double(8 + (n * 7) % 13) : 0 }
         data.cells = [ProfileDayCell(day: today, kind: .today, count: days > 0 ? 2 : 0, coverIndex: nil)]
         let keys = ["d", "a", "b", "c", "e", "f"]
         for i in 0..<days {

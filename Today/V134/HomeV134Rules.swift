@@ -87,6 +87,26 @@ enum HomeV134Rules {
         return f.string(from: d)
     }
 
+    // MARK: 見ないで待った(自分だけに 見える 数字 ・ シェアカード)
+
+    /// 例 "19H 18M"(シェアカード)
+    static func waitedBig(captured: Date, calendar: Calendar = .current) -> String {
+        let secs = max(0, Int(unlockTime(captured: captured, calendar: calendar).timeIntervalSince(captured)))
+        return String(format: "%dH %02dM", secs / 3600, (secs % 3600) / 60)
+    }
+
+    /// その 月に 撮った 写真が 待った 時間の 合計(時間)と、日ごとの 時間(1日 = index 0)
+    static func waitedTotals(captures: [Date], month: Date, calendar: Calendar = .current) -> (hours: Int, perDay: [Double]) {
+        guard let range = calendar.range(of: .day, in: .month, for: month) else { return (0, []) }
+        var per = [Double](repeating: 0, count: range.count)
+        for c in captures where calendar.isDate(c, equalTo: month, toGranularity: .month) {
+            let h = unlockTime(captured: c, calendar: calendar).timeIntervalSince(c) / 3600
+            let d = calendar.component(.day, from: c) - 1
+            if per.indices.contains(d) { per[d] += max(0, h) }
+        }
+        return (Int(per.reduce(0, +).rounded(.down)), per)
+    }
+
     // MARK: GOOD MORNING(9:00 以降に はじめて ひらいた とき 1日1回)
 
     static func dayKey(_ d: Date, calendar: Calendar = .current) -> String {

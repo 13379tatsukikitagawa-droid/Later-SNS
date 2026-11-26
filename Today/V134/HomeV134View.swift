@@ -17,6 +17,7 @@ struct HomeV134View: View {
     @State private var showFilm = false
     @State private var showFriends = false
     @State private var showMorning = false
+    @State private var story: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var compact: Bool { scrollY > 80 }
@@ -51,11 +52,14 @@ struct HomeV134View: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showMorning = true }
             }
             #if DEBUG
-            switch UserDefaults.standard.string(forKey: "debugSheet") { case "film": showFilm = true; case "friends": showFriends = true; default: break }
+            switch UserDefaults.standard.string(forKey: "debugSheet") { case "film": showFilm = true; case "friends": showFriends = true; case "story": if !input.posts.isEmpty { story = 0 }; case "storyp": if !input.posts.isEmpty { story = input.posts.firstIndex { !$0.published || $0.photos.isEmpty } ?? 0 }; default: break }
             #endif
             if let y = input.debugScrollY { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { if tab == 0 { feedPos.scrollTo(y: y) } else { tripPos.scrollTo(y: y) } } }
         }
         .onChange(of: tab) { _, _ in scrollY = 0 }
+        .fullScreenCover(isPresented: Binding(get: { story != nil && !input.posts.isEmpty }, set: { if !$0 { story = nil } })) {
+            StoryV134View(people: input.posts, startIndex: story ?? 0, onClose: { story = nil }, onReply: { id, name in actions.openChat(id, name) })
+        }
         .fullScreenCover(isPresented: $showMorning) {
             GoodMorningV134(times: yesterdayTimes, now: input.now, onShoot: { showMorning = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { actions.shoot() } }, onLater: { showMorning = false })
         }
@@ -143,7 +147,7 @@ struct HomeV134View: View {
                 ForEach(input.posts) { p in
                     Button {
                         LTHaptics.play(.select)
-                        if p.published, !p.photos.isEmpty { withAnimation(.easeOut(duration: 0.35)) { feedPos.scrollTo(id: "post-\(p.id)", anchor: .top) } }
+                        if let i = input.posts.firstIndex(where: { $0.id == p.id }) { story = i }
                     } label: { circle(p) }.buttonStyle(HVPress(scale: 0.94))
                 }
                 Button { LTHaptics.play(.tap); actions.shareLink() } label: {

@@ -16,6 +16,7 @@ struct HomeV64Host: View {
     @State private var incoming: [FriendRequests.Request] = []
     // v95-9:4つの ボタンは それぞれ 別の 画面
     @State private var showShare = false
+    @State private var showInvite = false
     @State private var showSelfQR = false
     @State private var showScan = false
     /// v96:ウィジェットから 来た 行き先
@@ -28,6 +29,11 @@ struct HomeV64Host: View {
         let h = HandleRules.normalize(me?.username ?? "")
         guard !h.isEmpty, let text = ShareTextV108.friend(name: me?.name ?? "", handle: h) else { return [LattagShareItem(text: myLink.absoluteString, title: "Lattag の 友だち申請", url: myLink)] }
         return [LattagShareItem.friend(text: text, name: me?.name ?? "")]
+    }
+    private var myShareText: String {
+        let me = UserProfile.current(from: profiles)
+        let h = HandleRules.normalize(me?.username ?? "")
+        return ShareTextV108.friend(name: me?.name ?? "", handle: h) ?? myLink.absoluteString
     }
     private var myLink: URL {
         let me = UserProfile.current(from: profiles)
@@ -49,6 +55,14 @@ struct HomeV64Host: View {
         }
         .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
         .sheet(isPresented: Binding(get: { chatWith != nil }, set: { if !$0 { chatWith = nil } })) { if let c = chatWith { DirectMessageView(friendID: c.id, friendName: c.name) } }
+        .fullScreenCover(isPresented: $showInvite) {
+            InviteV134View(name: UserProfile.current(from: profiles)?.name ?? src.avatarName,
+                           photos: src.layerData.yesterday.prefix(4).map { c in V64Images.image(key: "inv\(c.id)", data: c.imageData ?? c.mosaicTiny, maxPixel: 200) },
+                           onSend: { showInvite = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { showShare = true } },
+                           onCopy: { UIPasteboard.general.string = myShareText },
+                           onQR: { showInvite = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { showSelfQR = true } },
+                           onClose: { showInvite = false })
+        }
         .sheet(isPresented: $showShare) { ShareSheet(activityItems: myShare) { _ in showShare = false }.presentationDetents([.medium, .large]) }
         .fullScreenCover(isPresented: $showSelfQR) { SelfQRChekiHost(onScan: { showSelfQR = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showScan = true } }, onClose: { showSelfQR = false }) }
         .fullScreenCover(isPresented: $showScan) {

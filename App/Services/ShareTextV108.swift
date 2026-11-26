@@ -5,7 +5,7 @@ import SwiftData
 enum ShareTextV108 {
     static func friend(name: String, handle: String) -> String? {
         guard !handle.isEmpty, let url = AppLinks.friendURL(handle: handle) else { return nil }
-        return "\(name) (@\(handle)) から Lattag の 友だち申請です\n\n↓ タップで ひらく(アプリが ひらきます)\n\(url.absoluteString)"
+        return "\(name)の「きのう」が届いています。あなたも1枚撮ると、あしたの9:00にいっしょにひらきます。\n\n↓ タップで ひらく(アプリが ひらきます)\n\(url.absoluteString)"
     }
 
     /// `dates` / `members` は わからない 時は 省く。KEY は「#maple24」でも「maple24」でも よい
