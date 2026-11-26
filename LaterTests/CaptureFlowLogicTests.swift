@@ -98,11 +98,11 @@ struct CaptureFlowLogicTests {
         #expect(CaptureEase.spring(0.25) > 1)     // 少し行きすぎる
     }
 
-    /// v21:見本の 390×844 のとき、窓は 左右16・上112・高さ500、シャッターの中心は 728(上端 676 + 52)
+    /// v134:見本の 390×844 のとき、窓は 左右8・上112・3:4(幅374 × 高さ498.67)、シャッターの中心は 728(上端 676 + 52)
     @Test func layoutMatchesTheReferenceSize() {
         let layout = CaptureLayout(size: CGSize(width: 390, height: 844), safeTop: 47, safeBottom: 34)
         #expect(layout.shutterCenter == CGPoint(x: 195, y: 728))
-        #expect(layout.finder == CGRect(x: 16, y: 112, width: 358, height: 500))
+        #expect(layout.finder == CGRect(x: 8, y: 112, width: 374, height: 374.0 * 4 / 3))
         // 小さい画面(SE):上のバーと窓は重ならない
         let se = CaptureLayout(size: CGSize(width: 375, height: 667), safeTop: 20, safeBottom: 0)
         #expect(se.finder.minY >= se.topBarCenterY + 23)

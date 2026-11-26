@@ -42,6 +42,8 @@ struct CaptureScreenV21: View {
     @State private var flipIcon = 0.0
     @State private var flipBlur = 0.0
     @State private var screenFlash = false
+    @AppStorage("capture.volChipSeen") private var volChipSeen = false
+    @State private var showVolChip = false
     private var front: Bool { camera.cameraPosition == .front }
 
     private var ky: CGFloat { layout.ky }
@@ -67,12 +69,11 @@ struct CaptureScreenV21: View {
             .onTapGesture(count: 2) { flipCamera() }
             windowMask
             if screenFlash { Color.white.ignoresSafeArea().allowsHitTesting(false).transition(.opacity) }
-            corners
-            windowLabels
             topBar
+            finderTop
             modeOrRecording
             stamp
-            volumeEdge
+            volChip
             tagRow
             sideButtons
             shutter
@@ -96,7 +97,7 @@ struct CaptureScreenV21: View {
         .onChange(of: mode) { _, m in gesture.mode = m; camera.setVideoLook(m == .video) }   // v107:動画モードの 間だけ HDR オフ ・ sRGB ・ 手ぶれ補正 .standard
         .onChange(of: left) { _, _ in countFlick += 1 }
         .onChange(of: gesture.releasedEarlyToken) { _, _ in
-            hintOverride = "もうすこし、長く"
+            hintOverride = "もう少し長く"
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) { hintOverride = nil }
         }
         .onChange(of: gesture.snapToken) { _, _ in
@@ -187,47 +188,52 @@ struct CaptureScreenV21: View {
     // MARK: 上
 
     private var topBar: some View {
+        Image("LattagWordmark").renderingMode(.template).resizable().scaledToFit().frame(height: 20)
+            .foregroundStyle(.white.opacity(0.5))
+            .frame(width: layout.size.width, height: 30)
+            .position(x: layout.size.width / 2, y: layout.topBarCenterY)
+            .opacity(appearOpacity)
+            .accessibilityHidden(true)
+    }
+
+    /// v134:ファインダーの 上:もどる(→ タグ)・ フィルムの のこり ・ フラッシュ
+    private var finderTop: some View {
         HStack {
-            Button {
-                Haptics.play(.tick)
-                onBack()
-            } label: {
+            Button { Haptics.play(.tick); onBack() } label: {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
-                    .frame(width: 46, height: 46).background(GlassCapsule())
+                    .frame(width: 44, height: 44).background(Color.black.opacity(0.35), in: Circle())
             }
-            .buttonStyle(SquishButtonStyle(pressedScale: 0.88))
-            .accessibilityLabel("もどる")
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.88)).accessibilityLabel("もどる")
             Spacer()
-            HStack(alignment: .top, spacing: -2) {
-                Text("Lattag").font(.system(size: 22, weight: .black)).tracking(-0.05 * 22).foregroundStyle(.white)
-            }
-            Spacer()
-            // のこりの 7セグ(薄い 8 が下に見える)+「のこり / EXP」
-            HStack(spacing: 8) {
-                ZStack {
-                    SevenSegmentText(text: "8", height: 26, color: Color(hex: "1A2010"))
-                    SevenSegmentText(text: "\(max(0, left))", height: 26, color: LattagPalette.lime)
-                        .shadow(color: LattagPalette.lime.opacity(0.75), radius: 5)
-                        .keyframeAnimator(initialValue: 1.0, trigger: countFlick) { content, o in content.opacity(o) } keyframes: { _ in
-                            KeyframeTrack { LinearKeyframe(0.2, duration: 0.08); LinearKeyframe(1, duration: 0.08); LinearKeyframe(0.3, duration: 0.08); LinearKeyframe(1, duration: 0.08) }
-                        }
-                }
-                .frame(width: 18, height: 28)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("のこり").font(.system(size: 8, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(Color(hex: "7A7A82"))
-                    Text("EXP").font(.system(size: 8, weight: .bold, design: .monospaced)).tracking(0.14 * 8).foregroundStyle(LattagPalette.lime)
+            HStack(spacing: 5) {
+                ForEach(0..<3, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 3, style: .continuous).fill(i < shots ? Color.white : .clear)
+                        .overlay(RoundedRectangle(cornerRadius: 3, style: .continuous).strokeBorder(.white.opacity(i < shots ? 0 : 0.55), lineWidth: 1.2))
+                        .frame(width: 11, height: 16)
                 }
             }
-            .padding(.leading, 10).padding(.trailing, 12)
-            .frame(height: 44)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Color(hex: "0B0B0D")).overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.white.opacity(0.14), lineWidth: 1)))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("のこり \(max(0, left))こま")
+            .accessibilityElement(children: .ignore).accessibilityLabel("のこり \(max(0, left))枚")
+            Spacer()
+            Button { flashAuto.toggle(); Haptics.play(.click) } label: {
+                Image(systemName: flashAuto ? "bolt.fill" : "bolt.slash").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 44, height: 44).background(Color.black.opacity(0.35), in: Circle())
+            }
+            .buttonStyle(.plain).accessibilityLabel("フラッシュ、\(flashAuto ? "オート" : "オフ")")
         }
-        .padding(.horizontal, 20)
-        .frame(width: layout.size.width, height: 46)
-        .position(x: layout.size.width / 2, y: layout.topBarCenterY)
+        .padding(.horizontal, 12)
+        .frame(width: win.width)
+        .position(x: win.midX, y: win.minY + 34)
         .opacity(appearOpacity)
+    }
+
+    /// 初回だけ(4秒):音量ボタンでも 撮れる
+    @ViewBuilder private var volChip: some View {
+        if showVolChip {
+            Label("音量ボタンの長押しでも撮れます", systemImage: "speaker.wave.2").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                .padding(.horizontal, 14).frame(height: 36).lgGlass(radius: 18)
+                .position(x: win.midX, y: win.minY + 96)
+                .transition(.opacity).allowsHitTesting(false)
+        }
     }
 
     @ViewBuilder
@@ -250,7 +256,8 @@ struct CaptureScreenV21: View {
             .transition(.opacity.combined(with: .scale(scale: 0.94)))
         } else {
             CaptureModeSwitch(mode: mode) { switchMode($0) }
-                .position(x: layout.size.width / 2, y: y)
+                .scaleEffect(0.85)
+                .position(x: win.minX + 14 + 52, y: win.maxY - 28)
                 .opacity(appearOpacity)
                 .transition(.opacity)
         }
@@ -258,13 +265,10 @@ struct CaptureScreenV21: View {
 
     private var stamp: some View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
-            Text(Self.stampText(context.date))
-                .font(.system(size: 14, weight: .bold, design: .monospaced)).tracking(0.06 * 14)
-                .foregroundStyle(LattagPalette.lime)
-                .shadow(color: Color(red: 1, green: 0.47, blue: 0.16).opacity(0.7), radius: 5)
+            DateStamp(text: Self.stampText(context.date), size: 14)
         }
         .fixedSize()
-        .position(x: win.maxX - 22 - 70, y: win.maxY - 38 + 9)
+        .position(x: win.maxX - 18 - 70, y: win.maxY - 28)
         .opacity(appearOpacity)
         .allowsHitTesting(false)
     }
@@ -325,18 +329,15 @@ struct CaptureScreenV21: View {
     // MARK: 下
 
     private var tagRow: some View {
-        let shown = Array(tags.prefix(2))
-        return HStack(spacing: 7) {
-            if let place, !place.isEmpty {
-                chip(icon: "mappin", text: place, tint: Color(hex: "FFD2B0"))
-            }
-            ForEach(shown, id: \.self) { tag in chip(icon: nil, text: "#\(tag)", tint: .white) }
-            if tags.isEmpty { chip(icon: nil, text: "#タグなし", tint: .white.opacity(0.7)) }
-            if tags.count > 2 { chip(icon: nil, text: "+\(tags.count - 2)", tint: .white) }
-            if let musicTitle { chip(icon: "music.note", text: musicTitle, tint: .white) }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                if let place, !place.isEmpty { chip(icon: "mappin", text: place, tint: .white) }
+                ForEach(tags.prefix(TagRules.maxCount), id: \.self) { tag in chip(icon: nil, text: "#\(tag)", tint: .white) }
+                if let musicTitle { chip(icon: "music.note", text: musicTitle, tint: .white) }
+            }.padding(.horizontal, 16).frame(minWidth: layout.size.width)
         }
-        .frame(width: layout.size.width - 32)
-        .position(x: layout.size.width / 2, y: win.maxY + layout.y(14) + 16)
+        .frame(width: layout.size.width, height: 36)
+        .position(x: layout.size.width / 2, y: win.maxY + layout.y(14) + 18)
         .opacity(appearOpacity)
     }
 
@@ -361,39 +362,21 @@ struct CaptureScreenV21: View {
     private var sideButtons: some View {
         let y = layout.shutterCenter.y
         return ZStack(alignment: .topLeading) {
-            // 左:フラッシュ(AUTO / OFF)
-            Button {
-                flashAuto.toggle()
-                Haptics.play(.click)
-            } label: {
-                VStack(spacing: 5) {
-                    Image(systemName: flashAuto ? "bolt.fill" : "bolt.slash")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(flashAuto ? LattagPalette.lime : .white)
-                        .frame(width: 50, height: 50)
-                        .background(Circle().fill(flashAuto ? LattagPalette.lime.opacity(0.16) : .white.opacity(0.08)))
-                        .overlay(Circle().strokeBorder(flashAuto ? LattagPalette.lime.opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
-                    Text(front ? "SCREEN" : (flashAuto ? "AUTO" : "OFF")).font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
-                }
+            // 左:# → タグへ
+            Button { Haptics.play(.tick); onEditTags() } label: {
+                Text("#").font(.system(size: 26, weight: .heavy)).foregroundStyle(.white)
+                    .frame(width: 56, height: 56).background(Color(hex6: 0x151517), in: Circle())
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("フラッシュ、\(flashAuto ? "オート" : "オフ")")
-            .position(x: 52 + 29, y: y)
-            // 右:カメラ切りかえ(BACK / FRONT)。0 / 3 は 消した(のこり枚数は 右上)
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.9)).accessibilityLabel("タグを なおす")
+            .position(x: 16 + 28 + 24, y: y)
+            // 右:カメラ切りかえ
             Button { flipCamera() } label: {
-                VStack(spacing: 5) {
-                    Image(systemName: "arrow.triangle.2.circlepath.camera").font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(front ? LattagPalette.lime : .white)
-                        .rotationEffect(.degrees(flipIcon)).frame(width: 50, height: 50)
-                        .background(Circle().fill(front ? LattagPalette.lime.opacity(0.16) : .white.opacity(0.08)))
-                        .overlay(Circle().strokeBorder(front ? LattagPalette.lime.opacity(0.55) : .white.opacity(0.12), lineWidth: 1))
-                    Text(front ? "FRONT" : "BACK").font(.system(size: 8.5, design: .monospaced)).tracking(0.14 * 8.5).foregroundStyle(Color(hex: "8E8E95"))
-                }
+                Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
+                    .rotationEffect(.degrees(flipIcon)).frame(width: 56, height: 56).background(Color(hex6: 0x151517), in: Circle())
             }
-            .buttonStyle(.plain)
-            .disabled(gesture.isRecording)
+            .buttonStyle(SquishButtonStyle(pressedScale: 0.9)).disabled(gesture.isRecording)
             .accessibilityLabel("カメラを きりかえる。いま \(front ? "インカメ" : "外カメ")")
-            .position(x: layout.size.width - 52 - 29, y: y)
+            .position(x: layout.size.width - 16 - 28 - 24, y: y)
         }
         .opacity(appearOpacity)
     }
@@ -422,17 +405,19 @@ struct CaptureScreenV21: View {
                     center: .center, startRadius: 0, endRadius: 125))
                 .frame(width: 250, height: 250)
                 .scaleEffect(0.5 + 0.8 * max(e, recording ? 0.6 : 0))
-                .opacity(max(e * 0.95, recording ? 0.6 : 0))
+                .opacity(video || recording ? max(e * 0.95, recording ? 0.6 : 0) : 0)
                 .allowsHitTesting(false)
             ZStack {
-                ShutterIconV94(progress: video ? 0.06 * gesture.progress : gesture.progress, holding: gesture.phase != .idle && !recording, video: video, recording: recording, dead: dead, late: late, snapToken: gesture.snapToken, recordingProgress: ringProgress)
-                // のこりの3つの点(アイコンの 上)
-                ForEach(0..<3, id: \.self) { i in
-                    let on = i < left
-                    Circle().fill(on ? LattagPalette.lime : Color(hex: "4A4A52"))
-                        .frame(width: on ? 6.8 : 4.8, height: on ? 6.8 : 4.8)
-                        .offset(y: -56)
-                        .rotationEffect(.degrees(Double(i - 1) * 14))
+                if video || recording {
+                    ShutterIconV94(progress: video ? 0.06 * gesture.progress : gesture.progress, holding: gesture.phase != .idle && !recording, video: video, recording: recording, dead: dead, late: late, snapToken: gesture.snapToken, recordingProgress: ringProgress)
+                } else {
+                    // v134:白い 輪(90)・ 押している 間 まんなかが ちぢみ、ライムの 輪が 満ちる
+                    ZStack {
+                        Circle().strokeBorder(.white, lineWidth: 4).frame(width: 90, height: 90)
+                        Circle().fill(.white).frame(width: 70, height: 70).scaleEffect(1 - 0.74 * gesture.progress)
+                        Circle().trim(from: 0, to: gesture.progress).stroke(LTColor.lime, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                            .rotationEffect(.degrees(-90)).frame(width: 104, height: 104)
+                    }.opacity(dead ? 0.35 : 1)
                 }
                 // 光の輪が1つ はじける
                 Circle().strokeBorder(LattagPalette.lime, lineWidth: 2)
@@ -473,13 +458,14 @@ struct CaptureScreenV21: View {
         let text: String = {
             if let hintOverride { return hintOverride }
             if gesture.isRecording { return VideoShutterRules.isWarning(elapsed: gesture.elapsed) ? "もうすぐ 10びょう" : "はなすと とまる" }
-            if case .holding = gesture.phase { return ShutterRules.photoHint(stage: gesture.lit / 8) }
+            if case .holding = gesture.phase { return "そのまま…" }
             if case .charging = gesture.phase { return "○ ○ ○  そのまま" }
+            if mode == .photo { return left <= 0 ? "今日は、ここまで" : "長押しで撮る" }
             return ShutterRules.idleHint(mode: mode, left: left)
         }()
         return Text(text)
-            .font(.system(size: 9.5, design: .monospaced)).tracking(0.18 * 9.5)
-            .foregroundStyle(hintOverride != nil ? LattagPalette.lime : Color(hex: "6A6A72"))
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(hintOverride != nil ? .white : LTColor.ink3)
             .multilineTextAlignment(.center)
             .frame(width: layout.size.width - 20)
             .position(x: layout.size.width / 2, y: min(layout.size.height - max(layout.safeBottom, 12) - 8, layout.y(792) + 6))
@@ -494,6 +480,11 @@ struct CaptureScreenV21: View {
 
     private func appear() {
         gesture.mode = mode
+        if !volChipSeen {
+            volChipSeen = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { withAnimation(.easeOut(duration: 0.3)) { showVolChip = true } }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { withAnimation(.easeOut(duration: 0.3)) { showVolChip = false } }
+        }
         // のこりは FilmCounter を、そのつど見る(この関数の中の left は古くなる)
         gesture.canStart = { camera.status == .ready && !camera.isCapturing && FilmCounter.shared.remaining > 0 }
         gesture.onRefused = {

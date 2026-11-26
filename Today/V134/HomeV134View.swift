@@ -286,6 +286,8 @@ struct HomeV134View: View {
                     .fill(used ? AnyShapeStyle(LinearGradient(colors: [LTColor.milkTop, LTColor.milkBottom], startPoint: .topLeading, endPoint: .bottomTrailing)) : AnyShapeStyle(Color.clear))
                     .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Color.white.opacity(0.28), lineWidth: 1))
                     .frame(width: small ? 15 : 20, height: small ? 21 : 28)
+                    // 撮ったチェキが とんで 入る 先(`ShotFlightOverlay`)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { FilmLanding.shared.slotFrames[i] = $0 }
             }
         }.accessibilityHidden(true)
     }

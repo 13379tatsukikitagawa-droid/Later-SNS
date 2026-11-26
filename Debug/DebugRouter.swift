@@ -51,7 +51,8 @@ enum DebugRouter {
         case "live": showRaw(DebugLiveView())
         case "widgets": showRaw(DebugWidgetsView())
         case "settings": showRaw(SettingsV87Sheet(name: "ゆい", username: "yui_0612", avatar: SampleData.photo("f"), blockedCount: 0))
-        case "tag": showRaw(TagScreen(left: 3, haptics: ExposureHaptics(), tags: .constant([]), place: nil).background(Color.black).preferredColorScheme(.dark))
+        case "capture": showRaw(CaptureDebugV134())
+        case "tag": showRaw(TagScreenV134(left: 3, tags: .constant(UserDefaults.standard.bool(forKey: "debugTags") ? ["エモい", "天気よすぎ"] : []), place: "目黒区").background(Color.black).preferredColorScheme(.dark))
         default: return false
         }
         return true
@@ -480,5 +481,18 @@ enum ProfileDebugV132 {
         data.opened = data.cells.filter { $0.kind == .opened }.count
         data.trips = [ProfileTripRow(id: UUID(), name: "大阪", range: "11/22 〜 11/24", count: 14, cover: SampleData.photo("e")), ProfileTripRow(id: UUID(), name: "京都", range: "10/27 〜 10/29", count: 41, cover: SampleData.photo("a"))]
         return ProfileV82View(data: data, debugScrollY: d.object(forKey: "debugScrollY") == nil ? nil : CGFloat(d.double(forKey: "debugScrollY")), debugTab: d.integer(forKey: "debugTab"))
+    }
+}
+
+
+/// DEBUG:撮影画面の 見た目(`-debugRoute capture`)。カメラ映像は シミュレータには ない
+struct CaptureDebugV134: View {
+    @StateObject private var camera = CaptureCameraModel()
+    @State private var mode: CaptureMode = .photo
+    var body: some View {
+        GeometryReader { g in
+            CaptureScreenV21(camera: camera, layout: CaptureLayout(size: g.size, safeTop: g.safeAreaInsets.top, safeBottom: g.safeAreaInsets.bottom),
+                             tags: ["エモい", "天気よすぎ"], place: "目黒区", left: 2, mode: $mode, onBack: {}, onEditTags: {}, onPhoto: { _ in }, onRecorded: { _ in })
+        }.ignoresSafeArea().background(Color.black).preferredColorScheme(.dark)
     }
 }

@@ -117,17 +117,12 @@ struct CaptureFlow: View {
     private func content(_ layout: CaptureLayout) -> some View {
         switch step {
         case .tags:
-            TagScreen(
+            TagScreenV134(
                 left: left,
-                haptics: haptics,
                 tags: $tags,
                 place: placeProvider.placeName,
-                leaving: isLeavingTags,
-                hidesCard: expandCopy,
-                onCardFrame: { cardFrame = $0 },
                 onClose: cancel,
-                onStart: { withTags in goCapture(withTags: withTags, layout: layout) },
-                entrance: tagEntrance
+                onStart: { withTags in goCapture(withTags: withTags, layout: layout) }
             )
             .transition(.opacity)
         case .capture:

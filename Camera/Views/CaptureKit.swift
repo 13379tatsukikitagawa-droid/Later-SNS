@@ -191,7 +191,8 @@ struct CaptureLayout: Equatable {
     /// 撮影の窓(左右16・上112・高さ500・角30)。上のバーとは重ねない
     var finder: CGRect {
         let top = max(y(112), topBarCenterY + 23 + 8)
-        return CGRect(x: 16, y: top, width: max(0, size.width - 32), height: y(500))
+        let w = max(0, size.width - 16)
+        return CGRect(x: 8, y: top, width: w, height: min(w * 4 / 3, y(520)))
     }
 
     /// 撮影後の画面の、上のスロット(幅270×高18)
