@@ -402,3 +402,13 @@
 - 新部品(DesignSystem/):LTTheme(色 ・ 字 ・ 角丸 ・ 動き ・ DisplayTitle ・ DateStamp ・ TagChip ・ LimeButtonStyle)/ LTHaptics(既存 Haptics と HapticRamp の 上の 薄い 層。新しい エンジンは 作らない)/ LTHold(HoldToConfirm ・ FilmDevelop)/ LTHashLens(#レンズ)。ガラスは 既存の `lgGlass`。
 - アセット:HashGlyph(Template ・ Preserve Vector)・ LattagWordmark。
 - まだ どの画面にも つないで いない(Phase 2 以降)。
+
+## v134 Phase 2(Home)
+- 新 Home = `Today/V134/HomeV134View`(Friends | Trip)。Host(`HomeV64Host`)が `YesterdayV64Input` を 作って 渡す。
+  - 上:ともだち追加(リクエスト数の ピンクの バッジ)・ ロゴ ・ アバター。
+  - あなたのきのう(ぼかし 3枚 + 鍵 ・ ひらいた 写真は ライムの 輪)→ ともだちの丸 → きのう(投稿 ・ 待った時間 ・ 日付スタンプ ・ タグ ・ 返信 = 1対1チャットを ひらく)→ まだひらいていない → 「きのうは、ここまで。」
+  - 下:ガラスの タブ + #レンズ + 今日の フィルム(スクロールで タブが 丸に なり、フィルムが 間に 入る)。自前の TabView は 使わない。
+  - シート:今日のフィルム / ともだち(リクエスト | ともだち | さがす)。
+- ルール(`HomeV134Rules` ・ テストずみ):フィルムの 文言 ・ 夜 ・ カードの 文言 ・ 待った時間(翌朝9:00 − 撮った 時刻)・ 日付。
+- Home の Today ページは 使わない(`HomeV64View` は まだ ファイルに 残る = 未使用)。
+- 返信:「写真つきで 飛ぶ」は まだ(チャットを ひらくだけ)。#で返す は しない。

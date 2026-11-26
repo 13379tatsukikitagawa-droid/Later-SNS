@@ -6,7 +6,9 @@ import SwiftUI
 struct YesterdayV64Input {
     struct Cell: Identifiable { let id: String; var photo: UIImage?; var name: String; var time: String?; var tag: String?; var music: MusicPick? = nil }
     /// 1枚(1日 3枚まで)
-    struct Photo: Identifiable { let id: String; var image: UIImage?; var time: String; var tag: String?; var music: MusicPick? = nil }
+    struct Photo: Identifiable { let id: String; var image: UIImage?; var time: String; var tag: String?; var music: MusicPick? = nil
+        /// v134:撮った 時刻(「待った」の 計算)と、ひらいて いるか(false の 間は ぼかし + 鍵)
+        var captured: Date? = nil; var opened = true }
     /// 友だち 1人 = 1つの 投稿(大きな 1枚 + 小さな 2枚)。`published` が false =「まだ 公開して いません」
     struct Post: Identifiable {
         let id: String
@@ -59,6 +61,13 @@ struct YesterdayV64Input {
     var openMine = false
     var mineIndex = 1
     var debugScrollY: CGFloat? = nil
+    // v134
+    struct Request: Identifiable { let id: String; var name: String; var sub: String }
+    struct Friend: Identifiable { let id: String; var name: String; var avatar: UIImage? }
+    var shotTimes: [Date] = []
+    var tripBadge = 0
+    var requestItems: [Request] = []
+    var friendList: [Friend] = []
 
     var publishedCount: Int { posts.filter(\.published).count }
     var pendingCount: Int { posts.filter { !$0.published }.count }
@@ -79,6 +88,12 @@ struct YesterdayV64Actions {
     var openTrip: (UUID) -> Void = { _ in }
     var newTrip: () -> Void = {}
     var joinKey: () -> Void = {}
+    // v134
+    var dismissRequest: (String) -> Void = { _ in }
+    var showQR: () -> Void = {}
+    var shareLink: () -> Void = {}
+    var searchByID: () -> Void = {}
+    var toast: (String) -> Void = { _ in }
 }
 
 struct YesterdayV64View: View {

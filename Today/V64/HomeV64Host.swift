@@ -36,7 +36,7 @@ struct HomeV64Host: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { ctx in
-            HomeV64View(input: makeInput(now: ctx.date), actions: makeActions())
+            HomeV134View(input: makeYesterdayInput(now: ctx.date), actions: makeHomeActions(), startTab: widgetStartTab)
         }
         .accessibilityElement(children: .contain)
         .task { await refreshRequests() }
@@ -93,7 +93,7 @@ struct HomeV64Host: View {
         y.trips = TripHubRules.items(from: src.groups, now: now)
         if let first = L.yesterday.first { y.dateLabel = Self.dateLabel(first.captureDate, now: now) }
         // v76:友だち 1人 = 1つの 投稿(大きな 1枚 + 小さな 2枚)。自分の 3枚は「あなたの きのう」
-        func photo(_ c: HomeYesterdayCard) -> YesterdayV64Input.Photo { .init(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 640) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: c.imageData == nil ? "" : df.string(from: c.captureDate), tag: c.tag, music: c.musicTitle.map { MusicPick(title: $0, artist: c.musicArtist ?? "", artworkURL: c.musicArtworkURL, link: c.musicLink, service: .apple) }) }
+        func photo(_ c: HomeYesterdayCard) -> YesterdayV64Input.Photo { .init(id: c.id, image: image(c.imageData, "yd\(c.id)", max: 640) ?? image(c.mosaicTiny, "ym\(c.id)", max: 160), time: c.imageData == nil ? "" : df.string(from: c.captureDate), tag: c.tag, music: c.musicTitle.map { MusicPick(title: $0, artist: c.musicArtist ?? "", artworkURL: c.musicArtworkURL, link: c.musicLink, service: .apple) }, captured: c.captureDate, opened: c.imageData != nil) }
         let mine = L.yesterday.filter { $0.authorName == src.avatarName }
         y.mine = mine.sorted { $0.captureDate < $1.captureDate }.map(photo)
         var order: [String] = []
@@ -117,7 +117,36 @@ struct HomeV64Host: View {
         }
         if !L.yesterday.isEmpty { y.notices.append(.init(id: "opened", kind: .lattag, name: "Lattag", avatar: nil, text: "きのうの \(mine.count)枚が ひらきました", time: "9:00")) }
         y.requestCount = incoming.count
+        // v134
+        y.shotTimes = src.todayShots.map(\.takenAt)
+        y.tripBadge = tripInviteCount
+        y.requestItems = incoming.map { r in .init(id: r.id, name: r.fromName.isEmpty ? "ともだち" : r.fromName, sub: r.fromUsername.isEmpty ? "" : "@\(r.fromUsername)") }
+        y.friendList = others.map { f in .init(id: f.id, name: f.name, avatar: image(f.avatarData, "av\(f.id)", max: 96) ?? image(f.mosaicTiny, "mt\(f.id)", max: 96)) }
         return y
+    }
+
+    /// v134:Home に そのまま 出す 画面の 行き先(きのうの 画面は もう 別に ひらかない)
+    private var widgetStartTab: Int { 0 }
+
+    private func makeHomeActions() -> YesterdayV64Actions {
+        var a = YesterdayV64Actions()
+        let groups = Dictionary(src.layerData.yesterday.map { ($0.id, $0.groupID) }, uniquingKeysWith: { f, _ in f })
+        a.openPhoto = { id in if let g = groups[id] { src.layerActions.openYesterdayPhoto(g, id) } }
+        a.addFriends = src.layerActions.openFriends; a.openFriends = src.layerActions.openFriends; a.openRequests = { showInbox = true }
+        a.shoot = { makeActions().shoot() }
+        a.openProfile = src.onOpenProfile
+        a.scanQR = { showScan = true }
+        a.showQR = { showSelfQR = true }
+        a.shareLink = { showShare = true }
+        a.searchByID = { openSearch() }
+        a.toast = src.layerActions.toast
+        a.openChat = { id, name in chatWith = (id, name) }
+        a.openTrip = { id in src.onOpenChat(id) }
+        a.newTrip = { src.onCreateGroup() }
+        a.joinKey = { NotificationCenter.default.post(name: .joinFlowRequested, object: JoinFlowStart.passphrase) }
+        a.approve = { id in Task { if let r = incoming.first(where: { $0.id == id }) { _ = await FriendRequests.respond(to: r, accept: true, myName: src.avatarName); await refreshRequests() } } }
+        a.dismissRequest = { id in Task { if let r = incoming.first(where: { $0.id == id }) { _ = await FriendRequests.respond(to: r, accept: false, myName: src.avatarName); await refreshRequests() } } }
+        return a
     }
 
     private func makeYesterdayActions() -> YesterdayV64Actions {
@@ -246,7 +275,7 @@ struct HomeV64Host: View {
             case .shoot: makeActions().shoot()
             case .develop: if src.shotsToday > 0 { showDevelop = true } else { makeActions().shoot() }
             case .friends: src.layerActions.openFriends()
-            case .yesterday: showYesterday = true
+            case .yesterday: break   // v134:Home が そのまま きのう
             case .trip(let id): if let uuid = UUID(uuidString: id) { src.onOpenChat(uuid) }
             }
         }

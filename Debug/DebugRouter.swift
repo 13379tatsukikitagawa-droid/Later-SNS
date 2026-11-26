@@ -253,7 +253,17 @@ struct YesterdayV64Preview: View {
             y.trips = [item("大阪", -1, 1, 0, cover: "e", shots: 14), item("部活の 合宿", 4, 6, 2, cover: "c", members: 5), item("沖縄", 13, 16, 1, cover: "d"),
                        item("京都", -28, -26, 3, cover: "a", photos: 41), item("伊豆", -50, -48, 1, cover: "b", photos: 18)]
         }
-        return YesterdayV64View(input: y)
+        // v134:撮った 時刻(きのう)と ひらいた 状態
+        let cal0 = Calendar.current
+        func yd(_ h: Int, _ m: Int) -> Date { cal0.date(bySettingHour: h, minute: m, second: 0, of: cal0.date(byAdding: .day, value: -1, to: y.now) ?? y.now) ?? y.now }
+        let hrs = [(9, 12), (13, 40), (18, 5)]
+        for i in y.mine.indices { y.mine[i].captured = yd(hrs[i % 3].0, hrs[i % 3].1); y.mine[i].opened = i < d.integer(forKey: "debugOpened") }
+        for pi in y.posts.indices { for k in y.posts[pi].photos.indices { y.posts[pi].photos[k].captured = yd(16 + k, 42 - k * 7) } }
+        y.shotTimes = (0..<min(3, y.shotsUsed)).map { _ in y.now.addingTimeInterval(-3600) }
+        y.requestItems = [.init(id: "r1", name: "りこ", sub: "@riko_6982 · 共通のともだち 3人"), .init(id: "r2", name: "さき", sub: "@saki_6611 · 同じTrip")].prefix(d.integer(forKey: "debugRequests")).map { $0 }
+        y.tripBadge = 1
+        if d.object(forKey: "debugHour") != nil { y.now = cal0.date(bySettingHour: d.integer(forKey: "debugHour"), minute: 30, second: 0, of: y.now) ?? y.now }
+        return HomeV134View(input: y, startTab: d.integer(forKey: "debugTab"))
     }
 }
 
