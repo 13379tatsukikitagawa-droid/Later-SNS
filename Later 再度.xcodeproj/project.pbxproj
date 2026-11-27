@@ -337,6 +337,7 @@
 		F5B269821009CDA0763ABFB8 /* Services/FirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549B5B046A127ACF1C1444D0 /* Services/FirebaseAuthService.swift */; };
 		F6D510EA3FCDCB8BC8221E30 /* V64/HomeV68Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB37F5477BD5928751259EE /* V64/HomeV68Header.swift */; };
 		F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */; };
+		E5A00000000000000000007B /* V134/InboxRulesV136.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000007A /* V134/InboxRulesV136.swift */; };
 		E5A00000000000000000004F /* ../Onboarding/V64/OnboardingV134Steps.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000004E /* ../Onboarding/V64/OnboardingV134Steps.swift */; };
 		E5A00000000000000000004D /* V134/ShareInviteV134.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000004C /* V134/ShareInviteV134.swift */; };
 		E5A00000000000000000004B /* V134/StoryV134.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A00000000000000000004A /* V134/StoryV134.swift */; };
@@ -460,6 +461,7 @@
 		453AEC75A22EBA0191A0F4E3 /* LattagWidgetsMid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LattagWidgetsMid.swift; sourceTree = "<group>"; };
 		48D0F07632A5009E1A3721A3 /* LGPressable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LGPressable.swift; sourceTree = "<group>"; };
 		49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V64/TripRoomView.swift; sourceTree = "<group>"; };
+		E5A00000000000000000007A /* V134/InboxRulesV136.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V134/InboxRulesV136.swift; sourceTree = "<group>"; };
 		E5A00000000000000000004E /* ../Onboarding/V64/OnboardingV134Steps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../Onboarding/V64/OnboardingV134Steps.swift; sourceTree = "<group>"; };
 		E5A00000000000000000004C /* V134/ShareInviteV134.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V134/ShareInviteV134.swift; sourceTree = "<group>"; };
 		E5A00000000000000000004A /* V134/StoryV134.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V134/StoryV134.swift; sourceTree = "<group>"; };
@@ -1133,6 +1135,7 @@
 				5C13685A780690F0FA8C5EC9 /* V64/MEV86View.swift */,
 				8B65E06F99EE28EDBF6A9F6E /* V64/RecapV86Model.swift */,
 				49028997E3DBDE8B3B4B28F8 /* V64/TripRoomView.swift */,
+				E5A00000000000000000007A /* V134/InboxRulesV136.swift */,
 				E5A00000000000000000004E /* ../Onboarding/V64/OnboardingV134Steps.swift */,
 				E5A00000000000000000004C /* V134/ShareInviteV134.swift */,
 				E5A00000000000000000004A /* V134/StoryV134.swift */,
@@ -1793,6 +1796,7 @@
 				56A59AA661817280B45B8698 /* V64/MEV86View.swift in Sources */,
 				8A5236B97D5A98BF504683EE /* V64/RecapV86Model.swift in Sources */,
 				F82C8F8187D6C0E8E13DF4F5 /* V64/TripRoomView.swift in Sources */,
+				E5A00000000000000000007B /* V134/InboxRulesV136.swift in Sources */,
 				E5A00000000000000000004F /* ../Onboarding/V64/OnboardingV134Steps.swift in Sources */,
 				E5A00000000000000000004D /* V134/ShareInviteV134.swift in Sources */,
 				E5A00000000000000000004B /* V134/StoryV134.swift in Sources */,

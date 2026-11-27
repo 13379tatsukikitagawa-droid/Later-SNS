@@ -13,11 +13,10 @@ extension Notification.Name { static let tripLinkOpened = Notification.Name("tri
 struct InboxV108View: View {
     let myName: String
     var onChanged: () -> Void = {}
-    var onShareLink: () -> Void = {}
+    var onOpenFriends: () -> Void = {}
     var onOpenChat: (_ friendID: String, _ name: String) -> Void = { _, _ in }
     @Environment(\.dismiss) private var dismiss
 
-    enum Tab: String, CaseIterable { case all = "すべて", friends = "友だち", trip = "Trip" }
     enum Kind { case friend, trip }
     struct Row: Identifiable, Equatable {
         let id: String
@@ -36,7 +35,8 @@ struct InboxV108View: View {
     }
     struct Past: Codable, Identifiable { var id = UUID().uuidString; var text: String; var kind: String; var otherID: String; var name: String; var date: Date }
 
-    @State private var tab: Tab = TripLinkInbox.pending != nil ? .trip : .all
+    @State private var perm: NotifPermission = .on
+    @Environment(\.scenePhase) private var scenePhase
     @State private var rows: [Row] = []
     @State private var past: [Past] = Self.loadPast()
     @State private var loading = true
@@ -49,56 +49,84 @@ struct InboxV108View: View {
     }
     private func savePast() { UserDefaults.standard.set(try? JSONEncoder().encode(past), forKey: Self.pastKey) }
 
-    private var shown: [Row] { rows.filter { $0.state != .gone && (tab == .all || (tab == .friends) == ($0.kind == .friend)) } }
-    private func count(_ t: Tab) -> Int { rows.filter { $0.state == .pending && (t == .all || (t == .friends) == ($0.kind == .friend)) }.count }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Button { dismiss() } label: { Text("とじる").font(Typo.ui(700, 15)).foregroundStyle(.white).frame(height: 44).padding(.horizontal, 4) }.buttonStyle(.plain)
                 Spacer()
-                Button { Haptics.play(.sel); onShareLink() } label: {
-                    Image(systemName: "link").font(.system(size: 17, weight: .bold)).foregroundStyle(HV.lime).frame(width: 44, height: 44)
-                        .overlay(Circle().strokeBorder(HV.lime.opacity(0.5), lineWidth: 1.5).frame(width: 40, height: 40))
-                }.buttonStyle(.plain).accessibilityLabel("リンクを 送る")
-            }.padding(.horizontal, 16).overlay(Text("お知らせ").font(Typo.ui(900, 20)).foregroundStyle(.white))
-            HStack(spacing: 8) {
-                ForEach(Tab.allCases, id: \.self) { t in
-                    Button { Haptics.play(.tick); withAnimation(.easeOut(duration: 0.2)) { tab = t } } label: {
-                        HStack(spacing: 6) {
-                            Text(t.rawValue).font(Typo.ui(800, 13))
-                            if count(t) > 0 { Text("\(count(t))").font(Typo.ui(800, 11)).foregroundStyle(HV.ink).padding(.horizontal, 6).frame(minWidth: 18, minHeight: 18).background(PopColor.pink, in: Capsule()) }
-                        }
-                        .foregroundStyle(tab == t ? HV.ink : .white).padding(.horizontal, 14).frame(height: 36)
-                        .background(tab == t ? Color.white : Color.white.opacity(0.1), in: Capsule())
-                    }.buttonStyle(.plain)
-                }
-                Spacer()
-            }.padding(.horizontal, 16).padding(.top, 10)
+                Button { LTHaptics.play(.tap); onOpenFriends() } label: {
+                    Image(systemName: "person.badge.plus").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 40, height: 40).background(Color.white.opacity(0.08), in: Circle())
+                        .overlay(Circle().strokeBorder(LTColor.hairline2, lineWidth: 0.8))
+                        .frame(width: 48, height: 48).contentShape(Circle())
+                }.buttonStyle(HVPress(scale: 0.92)).accessibilityLabel("ともだち追加")
+            }.padding(.horizontal, 12).overlay(Text("NOTIFICATIONS").font(LTFont.display(24)).foregroundStyle(.white).allowsHitTesting(false))
             ScrollView {
-                VStack(spacing: 10) {
-                    if loading { ProgressView().tint(.white).padding(.top, 60) }
-                    else if shown.isEmpty && pastShown.isEmpty { empty }
-                    ForEach(shown) { r in row(r).transition(.opacity.combined(with: .offset(x: -40))) }
-                    if !pastShown.isEmpty {
-                        Text("これまで").font(Typo.ui(800, 12)).tracking(0.8).foregroundStyle(HV.gray).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
-                        ForEach(pastShown) { p in pastRow(p) }
+                VStack(alignment: .leading, spacing: 10) {
+                    if let card = InboxRulesV136.permissionCard(perm) { permissionCardView(card) }
+                    if loading { ProgressView().tint(.white).frame(maxWidth: .infinity).padding(.top, 60) }
+                    else if friendRows.isEmpty && tripRows.isEmpty && !hasPast { empty }
+                    if !friendRows.isEmpty {
+                        sectionTitle("リクエスト")
+                        ForEach(friendRows) { r in row(r).transition(.opacity.combined(with: .offset(x: -40))) }
+                    }
+                    if !tripRows.isEmpty {
+                        sectionTitle("Tripの招待")
+                        ForEach(tripRows) { r in row(r).transition(.opacity.combined(with: .offset(x: -40))) }
+                    }
+                    ForEach(InboxRulesV136.Bucket.allCases, id: \.self) { b in
+                        let items = pastShown.filter { InboxRulesV136.bucket(of: $0.date, now: Date()) == b }
+                        if !items.isEmpty {
+                            sectionTitle(b.title)
+                            ForEach(items) { p in pastRow(p) }
+                        }
                     }
                 }.padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 40)
             }
         }
         .background(Color(hex: "0A0A0B").ignoresSafeArea()).preferredColorScheme(.dark)
-        .task { await load() }
+        .task { perm = await NotifPermission.current(); await load() }
+        .onChange(of: scenePhase) { _, p in if p == .active { Task { perm = await NotifPermission.current() } } }
     }
 
-    private var pastShown: [Past] { past.filter { tab == .all || (tab == .friends) == ($0.kind == "friend") } }
+    private var friendRows: [Row] { rows.filter { $0.kind == .friend && $0.state != .gone } }
+    private var tripRows: [Row] { rows.filter { $0.kind == .trip && $0.state != .gone } }
+    private var pastShown: [Past] { past.filter { InboxRulesV136.bucket(of: $0.date, now: Date()) != nil } }
+    private var hasPast: Bool { !pastShown.isEmpty }
+
+    private func sectionTitle(_ t: String) -> some View {
+        Text(t).font(Typo.ui(800, 12)).tracking(0.8).foregroundStyle(HV.gray).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
+    }
+
+    private func permissionCardView(_ c: InboxRulesV136.PermissionCard) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(c.title).font(Typo.ui(800, 16)).foregroundStyle(.white)
+            Text(c.body).font(Typo.ui(500, 13)).foregroundStyle(HV.gray).fixedSize(horizontal: false, vertical: true)
+            PopButton(title: c.button, kind: .lime, small: true) { permissionTapped(c.action) }.padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+        .background(Color(hex: "1C1C1F"), in: RoundedRectangle(cornerRadius: 22))
+    }
+
+    private func permissionTapped(_ a: InboxRulesV136.PermissionAction) {
+        Haptics.play(.pop)
+        switch a {
+        case .turnOn:
+            Task { await NotifAskCenter.shared.accept(); perm = await NotifPermission.current() }   // 「許可しない」なら .off → ボタンが「設定をひらく」に かわる
+        case .openSettings:
+            if let u = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(u) }
+        }
+    }
 
     private var empty: some View {
         VStack(spacing: 8) {
             Image(systemName: "bell").font(.system(size: 36, weight: .regular)).foregroundStyle(HV.gray)
-            Text("お知らせは ありません").font(Typo.ui(800, 16)).foregroundStyle(.white)
-            Text("友だち申請 と Trip の 招待が ここに 来ます").font(Typo.ui(500, 13)).foregroundStyle(HV.gray)
-        }.padding(.top, 80)
+            Text(InboxRulesV136.emptyTitle).font(Typo.ui(800, 16)).foregroundStyle(.white)
+            VStack(spacing: 4) {
+                ForEach(InboxRulesV136.comingLines, id: \.self) { Text($0).font(Typo.ui(500, 13)).foregroundStyle(HV.gray) }
+            }.padding(.top, 6)
+        }.frame(maxWidth: .infinity).padding(.top, 50)
     }
 
     private func row(_ r: Row) -> some View {
@@ -112,7 +140,7 @@ struct InboxV108View: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(r.title).font(Typo.ui(800, 16)).foregroundStyle(.white).lineLimit(1)
-                if done { Text(r.kind == .friend ? "友だちに なりました ・ あしたの 9:00 から 見せあえます" : "参加しました").font(Typo.ui(600, 12)).foregroundStyle(HV.lime).fixedSize(horizontal: false, vertical: true) }
+                if done { Text(r.kind == .friend ? "ともだちになりました" : "参加しました").font(Typo.ui(600, 12)).foregroundStyle(HV.lime).fixedSize(horizontal: false, vertical: true) }
                 else {
                     if !r.handle.isEmpty { Text("@\(r.handle)").font(Typo.ui(600, 12)).foregroundStyle(HV.gray).lineLimit(1) }
                     Text(r.sub).font(Typo.ui(500, 12)).foregroundStyle(HV.gray).lineLimit(1)

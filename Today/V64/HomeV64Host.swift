@@ -16,6 +16,7 @@ struct HomeV64Host: View {
     @State private var incoming: [FriendRequests.Request] = []
     // v95-9:4つの ボタンは それぞれ 別の 画面
     @State private var showShare = false
+    @State private var showFriendsSheet = false
     @State private var showInvite = false
     @State private var showSelfQR = false
     @State private var showScan = false
@@ -50,7 +51,7 @@ struct HomeV64Host: View {
         .onReceive(NotificationCenter.default.publisher(for: .tripLinkOpened)) { _ in showInbox = true }
         .onChange(of: widgetRoute.pending) { _, _ in openWidgetRoute() }
         .fullScreenCover(isPresented: $showInbox) {
-            InboxV108View(myName: src.avatarName, onChanged: { Task { await refreshRequests() } }, onShareLink: { showShare = true },
+            InboxV108View(myName: src.avatarName, onChanged: { Task { await refreshRequests() } }, onOpenFriends: { showInbox = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { showFriendsSheet = true } },
                           onOpenChat: { id, name in chatWith = (id, name) })
         }
         .sheet(isPresented: $showRequests) { FriendRequestsView(myName: src.avatarName) { Task { await refreshRequests() } } }
@@ -62,6 +63,10 @@ struct HomeV64Host: View {
                            onCopy: { UIPasteboard.general.string = myShareText },
                            onQR: { showInvite = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { showSelfQR = true } },
                            onClose: { showInvite = false })
+        }
+        .sheet(isPresented: $showFriendsSheet) {
+            FriendsSheetV134(input: makeYesterdayInput(now: Date()), actions: makeHomeActions()) { showFriendsSheet = false }
+                .presentationDetents([.large]).presentationCornerRadius(LTRadius.sheet).presentationBackground(Color(hex6: 0x0B0B0D))
         }
         .sheet(isPresented: $showShare) { ShareSheet(activityItems: myShare) { _ in showShare = false }.presentationDetents([.medium, .large]) }
         .fullScreenCover(isPresented: $showSelfQR) { SelfQRChekiHost(onScan: { showSelfQR = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showScan = true } }, onClose: { showSelfQR = false }) }

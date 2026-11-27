@@ -52,7 +52,7 @@ struct HomeV134View: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showMorning = true }
             }
             #if DEBUG
-            switch UserDefaults.standard.string(forKey: "debugSheet") { case "film": showFilm = true; case "friends": showFriends = true; case "story": if !input.posts.isEmpty { story = 0 }; case "storyp": if !input.posts.isEmpty { story = input.posts.firstIndex { !$0.published || $0.photos.isEmpty } ?? 0 }; default: break }
+            switch UserDefaults.standard.string(forKey: "debugSheet") { case "film": showFilm = true; case "friends": showFriends = true; case "inbox": actions.openRequests(); case "story": if !input.posts.isEmpty { story = 0 }; case "storyp": if !input.posts.isEmpty { story = input.posts.firstIndex { !$0.published || $0.photos.isEmpty } ?? 0 }; default: break }
             #endif
             if let y = input.debugScrollY { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { if tab == 0 { feedPos.scrollTo(y: y) } else { tripPos.scrollTo(y: y) } } }
         }
@@ -80,15 +80,15 @@ struct HomeV134View: View {
             LinearGradient(colors: [.black.opacity(0.92), .black.opacity(0)], startPoint: .top, endPoint: .bottom)
                 .frame(height: safeTop + 84).frame(maxHeight: .infinity, alignment: .top).ignoresSafeArea().allowsHitTesting(false)
             HStack {
-                Button { LTHaptics.play(.tap); showFriends = true } label: {
-                    Image(systemName: "person.badge.plus").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                Button { LTHaptics.play(.tap); actions.openRequests() } label: {
+                    Image(systemName: "bell").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
                         .frame(width: 40, height: 40).background(Color.white.opacity(0.08), in: Circle())
                         .overlay(Circle().strokeBorder(LTColor.hairline2, lineWidth: 0.8))
                         .overlay(alignment: .topTrailing) {
-                            if input.requestCount > 0 { countBadge(input.requestCount).offset(x: 6, y: -6) }
+                            if input.inboxCount > 0 { countBadge(input.inboxCount).offset(x: 6, y: -6) }
                         }
                         .frame(width: 48, height: 48).contentShape(Circle())
-                }.buttonStyle(HVPress(scale: 0.92)).accessibilityLabel(input.requestCount > 0 ? "ともだち追加。リクエスト\(input.requestCount)件" : "ともだち追加")
+                }.buttonStyle(HVPress(scale: 0.92)).accessibilityLabel(input.inboxCount > 0 ? "通知。\(input.inboxCount)件" : "通知")
                 Spacer()
                 Button { LTHaptics.play(.tap); actions.openProfile() } label: {
                     avatar.frame(width: 40, height: 40).clipShape(Circle())
