@@ -1,6 +1,6 @@
 import SwiftUI
 
-// v134 Phase 2:ともだちシート(見本 27)。リクエスト | ともだち | さがす。ふってつながる ・ QRを見せる ・ リンクで呼ぶ。
+// v134 Phase 2:ともだちシート(見本 27)。リクエスト | ともだち | さがす。QRを見せる ・ リンクで呼ぶ。
 // 「ともだちの数は、どこにも出ません。」= 人数の 数字は 出さない(リクエストの 数だけ)。
 
 struct FriendsSheetV134: View {
@@ -24,7 +24,6 @@ struct FriendsSheetV134: View {
                 }.padding(.top, 22)
                 segment.padding(.top, 16)
                 HStack(spacing: 12) {
-                    bigButton("iphone.radiowaves.left.and.right", "ふってつながる") { onClose(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { actions.openFriends() } }
                     bigButton("qrcode", "QRを見せる") { onClose(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { actions.showQR() } }
                     bigButton("link", "リンクで呼ぶ") { onClose(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { actions.shareLink() } }
                 }.padding(.top, 16)

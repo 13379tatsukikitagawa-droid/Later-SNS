@@ -22,7 +22,6 @@ final class LattagHaptics {
         case posted    // のせた：トトン
         case warning   // できない：トン、トン
         case enter     // はじめる：ブイッ
-        case shake     // ふってつながる：ブルブル
     }
 
     private var engine: CHHapticEngine?
@@ -72,13 +71,6 @@ final class LattagHaptics {
         case .enter:
             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
             playPattern { try Self.continuous(duration: 0.35, intensity: 1.0, sharpness: 0.2, at: 0.05) }
-        case .shake:
-            playPattern {
-                try CHHapticPattern(events: [
-                    Self.continuousEvent(duration: 0.5, intensity: 0.8, sharpness: 0.5, at: 0),
-                    Self.continuousEvent(duration: 0.5, intensity: 0.8, sharpness: 0.5, at: 0.62)
-                ], parameters: [])
-            }
         }
     }
 
