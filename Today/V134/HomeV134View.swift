@@ -30,7 +30,7 @@ struct HomeV134View: View {
             ZStack(alignment: .top) {
                 LTColor.bg.ignoresSafeArea()
                 ZStack {
-                    feed(width: g.size.width, safeTop: g.safeAreaInsets.top)
+                    feed(width: g.size.width, safeTop: g.safeAreaInsets.top, screenHeight: g.size.height)
                         .opacity(tab == 0 ? 1 : 0).allowsHitTesting(tab == 0)
                     TripHubView(items: input.trips, now: input.now, onOpen: { actions.openTrip($0) }, onNew: { actions.newTrip() }, onJoinKey: { actions.joinKey() },
                                 position: $tripPos, topInset: g.safeAreaInsets.top + 62, title: "Trip", onScroll: { v in if tab == 1 { scrollY = v } })
@@ -115,11 +115,15 @@ struct HomeV134View: View {
 
     // MARK: Friends
 
-    private func feed(width: CGFloat, safeTop: CGFloat) -> some View {
+    private func feed(width: CGFloat, safeTop: CGFloat, screenHeight: CGFloat) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 YesterdayCardV134(input: input, onShoot: { shoot() })
                     .padding(.horizontal, 14).padding(.top, safeTop + 66)
+                if HomeV134Rules.hasNoFriends(friendCount: input.friendList.count) {
+                    EmptyFriendsV134(screenHeight: screenHeight, actions: actions).padding(.top, 22)
+                    Color.clear.frame(height: 170)
+                } else {
                 circles.padding(.top, 20)
                 if !published.isEmpty {
                     feedHeader.padding(.horizontal, 20).padding(.top, 26)
@@ -130,6 +134,7 @@ struct HomeV134View: View {
                 if !pending.isEmpty { pendingSection.padding(.top, 34) }
                 endMark.padding(.top, 40)
                 Color.clear.frame(height: 170)
+                }
             }
         }
         .scrollPosition($feedPos)

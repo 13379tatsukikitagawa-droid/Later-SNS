@@ -118,6 +118,15 @@ enum HomeV134Rules {
     static func shouldShowGoodMorning(now: Date, lastShownDay: String?, hasYesterday: Bool, calendar: Calendar = .current) -> Bool {
         hasYesterday && !isNight(now, calendar: calendar) && lastShownDay != dayKey(now, calendar: calendar)
     }
+    // MARK: v136 ともだち 0人の Home
+
+    /// ともだちが 0人(自分を のぞく)。0人の Home は #レンズが 主役。
+    static func hasNoFriends(friendCount: Int) -> Bool { friendCount <= 0 }
+
+    /// レンズの 直径。大きい 画面は 168。低い 画面(iPhone SE 375×667)は、レンズと「QRを見せる / IDでさがす」が スクロールなしで 見える 大きさまで 小さくする(下限 100)。
+    static func lensDiameter(screenHeight h: CGFloat) -> CGFloat {
+        min(168, max(100, 168 - max(0, 780 - h) * 0.6))
+    }
 }
 
 /// 「1日1回」の 目じるし(日付だけ UserDefaults に 書く)

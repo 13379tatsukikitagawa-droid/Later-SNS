@@ -76,4 +76,16 @@ struct WaitedRulesTests {
         #expect(Int(t.perDay[2]) == 21)
         #expect(t.hours == 11 + 15 + 21)
     }
+
+    @Test func zeroFriendsHome() {
+        #expect(HomeV134Rules.hasNoFriends(friendCount: 0))
+        #expect(!HomeV134Rules.hasNoFriends(friendCount: 1))
+    }
+    @Test func lensShrinksOnShortScreens() {
+        #expect(HomeV134Rules.lensDiameter(screenHeight: 874) == 168)     // 大きい 画面
+        #expect(HomeV134Rules.lensDiameter(screenHeight: 844) == 168)
+        #expect(HomeV134Rules.lensDiameter(screenHeight: 667) < 168)      // iPhone SE
+        #expect(HomeV134Rules.lensDiameter(screenHeight: 667) >= 100)
+        #expect(HomeV134Rules.lensDiameter(screenHeight: 480) == 100)     // 下限
+    }
 }

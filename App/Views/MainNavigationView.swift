@@ -104,7 +104,7 @@ struct MainNavigationView: View {
         // HomeView・ProfileFilmViewは、見えている時だけアニメーションや同期を動かす。
         .environment(\.selectedMainTabIndex, screen == .home ? 0 : 1)
         // v94 B-2:ID が まだ 無い 人は、次に ひらいた 時に ID を きめる(とじられない)
-        .task { try? await Task.sleep(for: .seconds(2.5)); if !HandleService.hasClaimed && UIFlag.v64 && !ProcessInfo.processInfo.arguments.contains("-debugRoute") && !ProcessInfo.processInfo.arguments.contains("-debugOnbStep") && UserDefaults.standard.bool(forKey: OnboardingStorage.completedKey) { needsHandle = true } }
+        .task { try? await Task.sleep(for: .seconds(2.5)); if !HandleService.hasClaimed && UIFlag.v64 && !ProcessInfo.processInfo.arguments.contains("-debugRoute") && !ProcessInfo.processInfo.arguments.contains("-debugNoHandle") && !ProcessInfo.processInfo.arguments.contains("-debugOnbStep") && UserDefaults.standard.bool(forKey: OnboardingStorage.completedKey) { needsHandle = true } }
         .sheet(isPresented: $needsHandle) { HandleChangeHost(forced: true) { _ in needsHandle = false } }
         .onReceive(NotificationCenter.default.publisher(for: .photoNotificationTapped)) { _ in
             // 撮影通知をタップした場合は、Homeへ戻す。
