@@ -80,6 +80,7 @@ struct PostV134: View {
     var post: YesterdayV64Input.Post
     var onReply: () -> Void
     @State private var index = 0
+    @State private var pressed = false
 
     private var photo: YesterdayV64Input.Photo { post.photos[min(index, post.photos.count - 1)] }
 
@@ -139,7 +140,12 @@ struct PostV134: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: LTRadius.photo, style: .continuous))
         .contentShape(Rectangle())
+        .scaleEffect(pressed ? 0.97 : 1)
+        .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.16), value: pressed)
         .onTapGesture { location in
+            // 押すと 少し ちぢむ(振動は なし)
+            pressed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { pressed = false }
             // 左 ・ 右の タップで 前後の 写真
             guard post.photos.count > 1 else { return }
             let w = UIScreen.main.bounds.width - 20

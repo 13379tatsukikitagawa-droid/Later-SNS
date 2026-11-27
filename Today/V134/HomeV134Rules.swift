@@ -118,6 +118,13 @@ enum HomeV134Rules {
     static func shouldShowGoodMorning(now: Date, lastShownDay: String?, hasYesterday: Bool, calendar: Calendar = .current) -> Bool {
         hasYesterday && !isNight(now, calendar: calendar) && lastShownDay != dayKey(now, calendar: calendar)
     }
+    // MARK: v136 下のバーの 上で ふわっと きえる
+
+    /// 下のバー(撮る・タブ・フィルム帯)が スクロールの 上に かぶる 高さ。スクロールの 下に この 分の 余白(safeAreaInset)を とり、
+    /// iOS 26 以降は システムの `scrollEdgeEffectStyle(.soft)` で 中身が その 余白の 上で ふわっと きえる(自作の マスクは 使わない)。
+    /// 帯(76)+ すきま(10)+ タブ・レンズ(64)+ 下の 余白。
+    static func bottomBarInset(safeBottom: CGFloat) -> CGFloat { 76 + 10 + 64 + max(safeBottom, 10) + 2 }
+
     // MARK: v136 ともだち 0人の Home
 
     /// ともだちが 0人(自分を のぞく)。0人の Home は #レンズが 主役。

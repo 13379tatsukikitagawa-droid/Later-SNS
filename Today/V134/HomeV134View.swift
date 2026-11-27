@@ -30,11 +30,12 @@ struct HomeV134View: View {
             ZStack(alignment: .top) {
                 LTColor.bg.ignoresSafeArea()
                 ZStack {
-                    feed(width: g.size.width, safeTop: g.safeAreaInsets.top, screenHeight: g.size.height)
+                    feed(width: g.size.width, safeTop: g.safeAreaInsets.top, safeBottom: g.safeAreaInsets.bottom, screenHeight: g.size.height)
                         .opacity(tab == 0 ? 1 : 0).allowsHitTesting(tab == 0)
                     TripHubView(items: input.trips, now: input.now, onOpen: { actions.openTrip($0) }, onNew: { actions.newTrip() }, onJoinKey: { actions.joinKey() },
                                 position: $tripPos, topInset: g.safeAreaInsets.top + 62, title: "Trip", onScroll: { v in if tab == 1 { scrollY = v } })
                         .ignoresSafeArea(edges: .top)
+                        .modifier(BarEdgeFadeV136(inset: HomeV134Rules.bottomBarInset(safeBottom: g.safeAreaInsets.bottom)))
                         .opacity(tab == 1 ? 1 : 0).allowsHitTesting(tab == 1)
                 }
                 .animation(.easeOut(duration: 0.18), value: tab)
@@ -115,14 +116,14 @@ struct HomeV134View: View {
 
     // MARK: Friends
 
-    private func feed(width: CGFloat, safeTop: CGFloat, screenHeight: CGFloat) -> some View {
+    private func feed(width: CGFloat, safeTop: CGFloat, safeBottom: CGFloat, screenHeight: CGFloat) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 YesterdayCardV134(input: input, onShoot: { shoot() })
                     .padding(.horizontal, 14).padding(.top, safeTop + 66)
-                if HomeV134Rules.hasNoFriends(friendCount: input.friendList.count) {
+                if HomeV134Rules.hasNoFriends(friendCount: max(input.friendCount, input.friendList.count, input.posts.count)) {
                     EmptyFriendsV134(screenHeight: screenHeight, actions: actions).padding(.top, 22)
-                    Color.clear.frame(height: 170)
+                    Color.clear.frame(height: BarEdgeFadeV136.trailingSpace)
                 } else {
                 circles.padding(.top, 20)
                 if !published.isEmpty {
@@ -133,11 +134,12 @@ struct HomeV134View: View {
                 }
                 if !pending.isEmpty { pendingSection.padding(.top, 34) }
                 endMark.padding(.top, 40)
-                Color.clear.frame(height: 170)
+                Color.clear.frame(height: BarEdgeFadeV136.trailingSpace)
                 }
             }
         }
         .scrollPosition($feedPos)
+        .modifier(BarEdgeFadeV136(inset: HomeV134Rules.bottomBarInset(safeBottom: safeBottom)))
         .scrollDisabled(night)
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, v in if tab == 0 { scrollY = v } }
         .ignoresSafeArea(edges: .top)
@@ -253,7 +255,7 @@ struct HomeV134View: View {
             }
         }
         .padding(.horizontal, 16).padding(.bottom, max(safeBottom, 10) + 2)
-        .background(alignment: .bottom) { LinearGradient(colors: [.black.opacity(0), .black.opacity(0.85)], startPoint: .top, endPoint: .bottom).frame(height: 190).ignoresSafeArea().allowsHitTesting(false) }
+        .background(alignment: .bottom) { LinearGradient(colors: [.black.opacity(0), .black.opacity(BarEdgeFadeV136.shadeOpacity)], startPoint: .top, endPoint: .bottom).frame(height: 190).ignoresSafeArea().allowsHitTesting(false) }
         .animation(anim, value: compact)
     }
 
@@ -274,7 +276,7 @@ struct HomeV134View: View {
             .foregroundStyle(tab == index ? .white : Color.white.opacity(0.62)).frame(width: 92, height: 56)
             .background(tab == index ? Color.white.opacity(0.1) : .clear, in: Capsule())
             .overlay(alignment: .topTrailing) { if badge > 0 { countBadge(badge).offset(x: -16, y: 2) } }
-        }.buttonStyle(.plain).accessibilityLabel(title).accessibilityAddTraits(tab == index ? [.isSelected] : [])
+        }.buttonStyle(HVPress(scale: 0.96)).accessibilityLabel(title).accessibilityAddTraits(tab == index ? [.isSelected] : [])
     }
 
     private func accessory(compact: Bool) -> some View {
@@ -325,5 +327,28 @@ enum HomeV134Parts {
     static func hashColor(_ tag: String) -> Color {
         let n = tag.unicodeScalars.reduce(0) { ($0 &+ Int($1.value)) & 0xFFFF }
         return [LTColor.tagPink, LTColor.tagSky, LTColor.tagYellow, LTColor.lime][n % 4]
+    }
+}
+
+
+/// v136:スクロールの 中身が 下のバーの 上で ふわっと きえる。iOS 26 以降は システムの `scrollEdgeEffectStyle(.soft)`(自作の マスクではない)。
+/// それより 前の OS は これまでどおり 黒い グラデーション(バーの 背景)。
+struct BarEdgeFadeV136: ViewModifier {
+    var inset: CGFloat
+    static var usesSystemEdgeEffect: Bool { if #available(iOS 26.0, *) { return true } else { return false } }
+    /// 最後の 要素の 下の 余白(バーの 余白を とる OS では 少しで よい)
+    /// バーの うしろの 黒の 濃さ。明るい カードの 上でも タブの 字が 読める ように 少し 残す(システムの ぼかしが ある OS は 弱め)
+    static var shadeOpacity: Double { usesSystemEdgeEffect ? 0.6 : 0.85 }
+    static var trailingSpace: CGFloat { usesSystemEdgeEffect ? 30 : 170 }
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+                // 完全に 透明(Color.clear)だと 効果が 出ない。ほぼ 透明の 板を バーとして 登録する
+                .safeAreaBar(edge: .bottom, spacing: 0) { Rectangle().fill(Color.black.opacity(0.01)).frame(height: inset).allowsHitTesting(false) }
+                .scrollEdgeEffectStyle(.soft, for: .bottom)
+        } else {
+            content
+        }
     }
 }

@@ -127,3 +127,11 @@ struct InviteCardRulesV136Tests {
         #expect(InviteCardRulesV136.shownName("たつき") == "たつき")
     }
 }
+
+struct BottomBarInsetTests {
+    @Test func insetCoversTheBarAndTheHomeIndicator() {
+        #expect(HomeV134Rules.bottomBarInset(safeBottom: 34) == CGFloat(186))
+        #expect(HomeV134Rules.bottomBarInset(safeBottom: 0) == CGFloat(162))   // iPhone SE
+        #expect(HomeV134Rules.bottomBarInset(safeBottom: 34) > HomeV134Rules.bottomBarInset(safeBottom: 0))
+    }
+}
