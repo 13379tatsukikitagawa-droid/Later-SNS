@@ -188,7 +188,7 @@ enum DailyWindow {
     static func capsuleParts(now: Date, calendar: Calendar = .current) -> (label: String, time: String) {
         let c = capsule(now: now, calendar: calendar)
         let time = String(format: "%02d:%02d", c.minutes / 60, c.minutes % 60)
-        return (c.isNight ? "ひらくまで" : "消灯まで", time)
+        return (c.isNight ? "ひらくまで" : "24:00まで", time)
     }
 }
 

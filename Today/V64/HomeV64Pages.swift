@@ -420,7 +420,7 @@ struct HVLivePanel: View {
                 .padding(.horizontal, 10).frame(height: 22).background(lime.opacity(0.12), in: Capsule()).offset(x: 18, y: 19)
                 Text(clockText).font(Typo.label(12)).foregroundStyle(Color(hex: "5A5A5F")).offset(x: 104, y: 22)
                 Button { Haptics.play(.soft); onClose() } label: { Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.7)).frame(width: 30, height: 30).background(Color(hex: "1C1C1E"), in: Circle()) }.buttonStyle(.plain).offset(x: 318, y: 15)
-                Text("消灯まで").font(Typo.ui(600, 13)).foregroundStyle(Color(hex: "8E8E93")).offset(x: 18, y: 56)
+                Text("24:00まで").font(Typo.ui(600, 13)).foregroundStyle(Color(hex: "8E8E93")).offset(x: 18, y: 56)
                 // 大きな 時間(ころがる 数字)
                 HStack(alignment: .bottom, spacing: 0) {
                     HStack(spacing: 0) { OdometerDigit(value: digits[0], size: 62); OdometerDigit(value: digits[1], size: 62) }

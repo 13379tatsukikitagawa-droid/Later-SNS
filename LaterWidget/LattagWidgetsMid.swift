@@ -281,7 +281,7 @@ struct LattagBoardView: View {
             Spacer()
             HStack(spacing: 6) {
                 if model.beforeNine || !model.unlocked {
-                    Text("消灯まで").font(WFont.inter(700, 9)).foregroundStyle(.white.opacity(0.6))
+                    Text("24:00まで").font(WFont.inter(700, 9)).foregroundStyle(.white.opacity(0.6))
                     WTimer(from: model.now, to: model.part == .lightsOut ? model.opensAt : model.lightsOutAt).font(WFont.inter(900, 14)).foregroundStyle(.white).frame(maxWidth: 64)
                 } else {
                     Text("ひらいた").font(WFont.inter(700, 9)).foregroundStyle(.white.opacity(0.6))
@@ -295,7 +295,7 @@ struct LattagBoardView: View {
     private var nextCapsule: some View {
         let item = model.next
         let title = item?.title ?? (model.remaining > 0 ? "のこり \(model.remaining)こま ・ 撮る" : "今日は ここまで")
-        let sub = item?.sub ?? "消灯まで " + WTimeText.hm(model.lightsOutAt.timeIntervalSince(model.now))
+        let sub = item?.sub ?? "24:00まで " + WTimeText.hm(model.lightsOutAt.timeIntervalSince(model.now))
         return HStack(spacing: 10) {
             Image(systemName: "camera.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(Color(hex6: 0x0B0B0C)).frame(width: 40, height: 40).background(WColor.lime, in: Circle()).widgetAccentable()
             VStack(alignment: .leading, spacing: 1) {

@@ -22,7 +22,7 @@ enum HVNextBuilder {
             let cal = Calendar.current
             let end = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: i.now) ?? i.now)
             let s = max(0, Int(end.timeIntervalSince(i.now)))
-            return "消灯まで \(s / 3600):" + String(format: "%02d", (s % 3600) / 60)
+            return "24:00まで \(s / 3600):" + String(format: "%02d", (s % 3600) / 60)
         }()
         if i.shotsUsed == 0 { out.append(.init(id: "first", title: "最初の 1枚を 撮ろう", sub: left, icon: "camera.fill", go: .shoot)) }
         if let r = i.requests.first {

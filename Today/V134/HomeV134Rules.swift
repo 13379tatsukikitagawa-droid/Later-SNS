@@ -23,10 +23,10 @@ enum HomeV134Rules {
         let tomorrowNine = calendar.date(byAdding: .day, value: 1, to: todayNine) ?? now.addingTimeInterval(86400)
         let midnight = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
         if isNight(now, calendar: calendar) {
-            return .init(title: "消灯中", sub: "あかりがつくまで", shortLabel: "9:00まで", target: todayNine, lensLocked: true, night: true)
+            return .init(title: "いまは撮れません", sub: "9:00まで", shortLabel: "9:00まで", target: todayNine, lensLocked: true, night: true)
         }
         if shots <= 0 {
-            return .init(title: "今日のフィルム", sub: "24:00の消灯まで、あと3枚", shortLabel: "消灯まで", target: midnight, lensLocked: false, night: false)
+            return .init(title: "今日のフィルム", sub: "24:00まで、あと3枚", shortLabel: "24:00まで", target: midnight, lensLocked: false, night: false)
         }
         let n = min(3, shots)
         return .init(title: "今日のフィルム \(n)/3", sub: "あしたの9:00にひらく", shortLabel: "ひらくまで", target: tomorrowNine, lensLocked: n >= 3, night: false)
@@ -45,11 +45,11 @@ enum HomeV134Rules {
     static func yesterdayCard(opened: Int, total: Int, shots: Int, night: Bool) -> YesterdayCard {
         let button: CardButton = shots >= 3 ? .tomorrow : (night ? .from9 : .shoot)
         if total <= 0 {
-            return .init(line1: "はじめての1枚を撮ろう", line2: night ? "9:00に、あかりがついたら撮れる" : nil, button: button)
+            return .init(line1: "はじめての1枚を撮ろう", line2: night ? "9:00から撮れます" : nil, button: button)
         }
         if opened >= total { return .init(line1: "きのうは、ぜんぶひらいた", line2: nil, button: button) }
         if opened <= 0 {
-            return .init(line1: night ? "9:00に、あかりがついたら撮れる" : "今日を1枚撮ると、1枚ひらく", line2: nil, button: button)
+            return .init(line1: night ? "9:00から撮れます" : "今日を1枚撮ると、1枚ひらく", line2: nil, button: button)
         }
         return .init(line1: "\(opened)枚ひらいた", line2: "あと\(total - opened)枚は、撮るたびにひらく", button: button)
     }

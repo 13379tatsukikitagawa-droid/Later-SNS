@@ -466,7 +466,7 @@ struct V17FilmSection: View {
 
     private func label(_ frame: HomeV17Rules.FilmFrame) -> String {
         switch frame {
-        case .shot(let i, _): return "\(i + 1)こめ。9:00 に、仕上がります"
+        case .shot(let i, _): return "\(i + 1)こめ。9:00 に、見られます"
         case .next: return "撮る"
         case .later(let i): return "\(i + 1)こめ。あとで"
         case .rest(let i): return "\(i + 1)こめ。おやすみの時間"
@@ -481,7 +481,7 @@ struct V17FilmSection: View {
             actions.toast("動画は あしたの 9:00 に、ひらきます")
         case .shot:
             Haptics.play(.pop)
-            actions.toast("9:00 に、仕上がります\nいまは、ミルクの中")
+            actions.toast("9:00 に、見られます\nいまは、ミルクの中")
         case .next:
             Haptics.play(.click)
             if state.canShoot {

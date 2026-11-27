@@ -42,7 +42,7 @@ struct LiveFilmView: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text("消灯まで").font(WFont.mono(9)).tracking(1.4).foregroundStyle(.white.opacity(0.55))
+                    Text("24:00まで").font(WFont.mono(9)).tracking(1.4).foregroundStyle(.white.opacity(0.55))
                     Text(timerInterval: now...max(s.endsAt, now.addingTimeInterval(1)), pauseTime: nil, countsDown: true, showsHours: true)
                         .font(WFont.mono(34)).foregroundStyle(wStamp).shadow(color: wStamp.opacity(0.5), radius: 6).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
                 }
@@ -108,7 +108,7 @@ struct LiveLastCallView: View {
                 Text(timerInterval: now...max(s.endsAt, now.addingTimeInterval(1)), pauseTime: nil, countsDown: true, showsHours: false)
                     .font(WFont.inter(900, 64)).foregroundStyle(.black).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5).padding(.top, 6)
                 Spacer(minLength: 0)
-                Text("消灯まで あと \(max(1, Int(s.endsAt.timeIntervalSince(now) / 60)))分 ・ のこり \(max(0, 3 - s.shotsTaken))こま").font(WFont.inter(900, 13)).foregroundStyle(.black)
+                Text("24:00まで あと \(max(1, Int(s.endsAt.timeIntervalSince(now) / 60)))分 ・ のこり \(max(0, 3 - s.shotsTaken))こま").font(WFont.inter(900, 13)).foregroundStyle(.black)
             }.padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Button(intent: OpenCameraIntent()) {
                 VStack(spacing: 2) {
@@ -194,7 +194,7 @@ struct LiveWaitingView: View {
             HStack(spacing: 12) {
                 WLiveLens(size: 46)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(stale ? "あかりがつきました" : "あかりがつくまで").font(.system(size: 17, weight: .heavy)).foregroundStyle(.white)
+                    Text(stale ? "ひらきました" : "9:00まで").font(.system(size: 17, weight: .heavy)).foregroundStyle(.white)
                     if stale {
                         Text("今日の1枚を撮ると、きのうがひらく").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color(hex6: 0xA3A3AB))
                     } else {
@@ -254,7 +254,7 @@ struct LattagLiveWidget: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
-                        Text(s.phase == .waiting ? "あかりがつくまで" : (s.phase == .opening || s.phase == .opened ? "9:00 に ひらく" : "のこり \(max(0, 3 - s.shotsTaken))こま")).font(WFont.inter(800, 13)).foregroundStyle(.white)
+                        Text(s.phase == .waiting ? "9:00まで" : (s.phase == .opening || s.phase == .opened ? "9:00 に ひらく" : "のこり \(max(0, 3 - s.shotsTaken))こま")).font(WFont.inter(800, 13)).foregroundStyle(.white)
                         Spacer()
                         if s.phase != .opening && s.phase != .opened && s.phase != .waiting {
                             Button(intent: OpenCameraIntent()) { Text("撮る").font(WFont.inter(900, 14)).foregroundStyle(Color(hex6: 0x0B0B0C)).padding(.horizontal, 18).frame(height: 32).background(WColor.lime, in: Capsule()) }.buttonStyle(.plain)

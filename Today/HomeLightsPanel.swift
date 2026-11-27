@@ -28,7 +28,7 @@ enum LightsPanelLogic {
         return ("今日は、ここまで", "\(taken)こま、撮りました")
     }
 
-    static func heading(isNight: Bool) -> String { isNight ? "ひらくまで" : "消灯まで" }
+    static func heading(isNight: Bool) -> String { isNight ? "ひらくまで" : "24:00まで" }
 
     static func ruleText(isNight: Bool) -> String {
         isNight

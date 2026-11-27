@@ -48,13 +48,13 @@ enum LaterWidgetCopy {
         case .U: return "今日を撮る"
         case .R: return short ? "昨日をひらく" : "昨日が、ひらけます"
         case .D: return "現像中"
-        case .M: return "消灯しました"
+        case .M: return "24:00をすぎました"
         }
     }
 
     static func sub(_ state: LaterWidgetState) -> String {
         switch state.phase {
-        case .U: return "消灯まで"
+        case .U: return "24:00まで"
         case .R: return "今日の1枚 現像 \(state.developPercent)%"
         case .D: return "あしたの朝 9:00"
         case .M: return "あしたの朝 09:00"

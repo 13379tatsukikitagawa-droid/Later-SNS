@@ -59,7 +59,7 @@ struct LattagLockRectWidget: Widget {
         StaticConfiguration(kind: LattagShared.Kind.lockRect, provider: LattagProvider()) { e in
             LattagLockRectView(model: e.model).widgetURL(e.model.part == .day ? LattagShared.Link.yesterday() : LattagShared.Link.shoot).containerBackground(for: .widget) { Color.clear }
         }
-        .configurationDisplayName("Lattag").description("消灯まで ・ きのう")
+        .configurationDisplayName("Lattag").description("24:00まで ・ きのう")
         .supportedFamilies([.accessoryRectangular])
     }
 }
@@ -74,7 +74,7 @@ struct LattagLockRectView: View {
                 Text("9:00 に ひらいた" + (y.tag.map { " ・ #" + $0 } ?? "")).font(WFont.inter(700, 10)).opacity(0.8).lineLimit(1)
             } else {
                 HStack(spacing: 4) {
-                    Text("消灯まで").font(WFont.inter(900, 14))
+                    Text("24:00まで").font(WFont.inter(900, 14))
                     WTimer(from: model.now, to: model.part == .lightsOut ? model.opensAt : model.lightsOutAt).font(WFont.inter(900, 14)).frame(maxWidth: 70, alignment: .leading)
                 }
                 HStack(spacing: 5) { WBars(remaining: model.remaining, h: 9, w: 5, on: .white, off: .white.opacity(0.5)); Text("のこり \(model.remaining)こま").font(WFont.inter(700, 10)).opacity(0.85) }
@@ -97,6 +97,6 @@ struct LattagLockInlineWidget: Widget {
 struct LattagLockInlineView: View {
     let model: WidgetModel
     var body: some View {
-        (Text("# のこり \(model.remaining)こま ・ 消灯 ") + Text(timerInterval: model.now...max(model.lightsOutAt, model.now.addingTimeInterval(1)), pauseTime: nil, countsDown: true, showsHours: true))
+        (Text("# のこり \(model.remaining)こま ・ 24:00 ") + Text(timerInterval: model.now...max(model.lightsOutAt, model.now.addingTimeInterval(1)), pauseTime: nil, countsDown: true, showsHours: true))
     }
 }

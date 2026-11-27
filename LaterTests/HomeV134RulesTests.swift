@@ -8,14 +8,14 @@ struct HomeV134RulesTests {
 
     @Test func filmStatusByState() {
         let a = HomeV134Rules.filmStatus(shots: 0, now: date(12, 30), calendar: cal)
-        #expect(a.title == "今日のフィルム" && a.sub == "24:00の消灯まで、あと3枚" && !a.lensLocked)
+        #expect(a.title == "今日のフィルム" && a.sub == "24:00まで、あと3枚" && !a.lensLocked)
         #expect(a.target == date(0, 0, day: 27))
         let b = HomeV134Rules.filmStatus(shots: 1, now: date(12, 30), calendar: cal)
         #expect(b.title == "今日のフィルム 1/3" && b.sub == "あしたの9:00にひらく" && !b.lensLocked)
         #expect(b.target == date(9, 0, day: 27))
         #expect(HomeV134Rules.filmStatus(shots: 3, now: date(12, 30), calendar: cal).lensLocked)
         let n = HomeV134Rules.filmStatus(shots: 0, now: date(8, 46), calendar: cal)
-        #expect(n.title == "消灯中" && n.night && n.lensLocked && n.target == date(9, 0))
+        #expect(n.title == "いまは撮れません" && n.night && n.lensLocked && n.target == date(9, 0))
     }
 
     @Test func yesterdayCardTexts() {
@@ -26,7 +26,7 @@ struct HomeV134RulesTests {
         #expect(HomeV134Rules.yesterdayCard(opened: 3, total: 3, shots: 1, night: false).line1 == "きのうは、ぜんぶひらいた")
         #expect(HomeV134Rules.yesterdayCard(opened: 0, total: 3, shots: 3, night: false).button == .tomorrow)
         let n = HomeV134Rules.yesterdayCard(opened: 0, total: 3, shots: 0, night: true)
-        #expect(n.button == .from9 && n.line1 == "9:00に、あかりがついたら撮れる")
+        #expect(n.button == .from9 && n.line1 == "9:00から撮れます")
     }
 
     @Test func waitedAndLabels() {

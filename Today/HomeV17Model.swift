@@ -85,16 +85,16 @@ enum HomeV17Rules {
             case .open: return "9:00 ひらく"
             case .shoot: return "撮れる時間"
             case .evening: return "夜のいろ"
-            case .lightsOut: return "消灯"
+            case .lightsOut: return "24:00"
             }
         }
 
         var detail: String {
             switch self {
-            case .sleep: return "写真は ミルクの中で、ゆっくり仕上がり中。いまは撮れません。"
+            case .sleep: return "写真は ミルクの中で、ゆっくり現像中。いまは撮れません。"
             case .open: return "昨日がひらく時間。あたらしい3こまが届きます。"
             case .shoot: return "1日3こままで。1枚撮ると、みんなの昨日も見られます。"
-            case .evening: return "21:00 から、画面が夜のいろに。24:00 で消灯です。"
+            case .evening: return "21:00 から、画面が夜のいろに。24:00 でおわりです。"
             case .lightsOut: return "24:00。ひらかなかった昨日の写真は、ここで消えます。"
             }
         }

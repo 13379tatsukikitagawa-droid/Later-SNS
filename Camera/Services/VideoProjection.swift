@@ -75,7 +75,7 @@ struct VideoProjectionView: View {
                     .opacity(flicker ? 0.55 : 1)
                     .onTapGesture { if phase == .projecting { close() } }
                 if phase != .projecting {
-                    Text(developed ? "ひらきました ・ RETRO-8 に 仕上がりました" : "現像中 ・ ミルク色が とけて、レトロな 色に")
+                    Text(developed ? "ひらきました ・ RETRO-8 になりました" : "現像中 ・ ミルク色が とけて、レトロな 色に")
                         .font(.system(size: 11, design: .monospaced))
                         .tracking(0.12 * 11)
                         .foregroundStyle(.white.opacity(0.6))

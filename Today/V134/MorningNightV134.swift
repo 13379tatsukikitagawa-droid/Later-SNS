@@ -64,7 +64,7 @@ struct GoodMorningV134: View {
                     }
                 }
                 VStack(spacing: 6) {
-                    Text("きのうの\(max(1, times.count))枚が、仕上がりました。").font(LTFont.ui(18, weight: .heavy)).foregroundStyle(.white)
+                    Text("きのうの\(max(1, times.count))枚が、見られます。").font(LTFont.ui(18, weight: .heavy)).foregroundStyle(.white)
                     Text("今日を1枚撮るたびに、1枚ずつひらきます。").font(LTFont.ui(14)).foregroundStyle(LTColor.ink3)
                 }.frame(maxWidth: .infinity).padding(.top, 24)
                 VStack(spacing: 14) {
@@ -94,11 +94,11 @@ struct LightsOutV134: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("消灯中").font(LTFont.ui(14, weight: .heavy)).tracking(1).foregroundStyle(LTColor.ink3)
+            Text("いまは撮れません").font(LTFont.ui(14, weight: .heavy)).tracking(1).foregroundStyle(LTColor.ink3)
             Text(timerInterval: now...max(target, now.addingTimeInterval(1)), countsDown: true).font(LTFont.display(86)).monospacedDigit()
                 .foregroundStyle(LinearGradient(colors: [.white, LTColor.tagGray], startPoint: .top, endPoint: .bottom)).lineLimit(1).minimumScaleFactor(0.6)
                 .padding(.top, 6)
-            Text("9:00に、あかりがつく。\nきのうの3枚は、いま仕上げ中。").font(LTFont.ui(16, weight: .heavy)).foregroundStyle(LTColor.ink2)
+            Text("9:00にひらきます。\nきのうの3枚は、いま現像中。").font(LTFont.ui(16, weight: .heavy)).foregroundStyle(LTColor.ink2)
                 .multilineTextAlignment(.center).lineSpacing(5).padding(.top, 14)
             HStack(spacing: 12) {
                 ForEach(Array(times.prefix(3).enumerated()), id: \.offset) { _, t in MilkFilmV134(time: HomeV134Rules.clock(t), width: 62) }
@@ -108,6 +108,6 @@ struct LightsOutV134: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(RadialGradient(colors: [Color(hex6: 0x2A2118).opacity(0.5), .clear], center: .center, startRadius: 0, endRadius: 260).allowsHitTesting(false))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("消灯中。9:00に、あかりがつく。")
+        .accessibilityLabel("24:00から9:00までは撮れません。9:00にひらきます。")
     }
 }

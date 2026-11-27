@@ -185,10 +185,10 @@ struct HomeDevelopCard: View {
 
     var subtitle: String {
         switch content {
-        case .developing(_, let isNight): return isNight ? "9:00 に、仕上がります" : "あしたの朝、仕上がります"
+        case .developing(_, let isNight): return isNight ? "9:00 に、見られます" : "あしたの朝、見られます"
         case .developed: return "今日を撮ると、ひらきます"
         case .rest: return "昨日の光は、とじたまま"
-        case .first: return "撮ると、あしたの朝に仕上がります"
+        case .first: return "撮ると、あしたの朝に見られます"
         }
     }
 

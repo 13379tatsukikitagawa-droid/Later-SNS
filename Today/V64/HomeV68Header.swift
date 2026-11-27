@@ -190,7 +190,7 @@ struct HV68Clock {
         let sec = cal.component(.hour, from: now) * 3600 + cal.component(.minute, from: now) * 60 + cal.component(.second, from: now)
         let night = sec < 9 * 3600
         let remain = night ? 9 * 3600 - sec : 86400 - sec
-        label = night ? "ひらくまで" : "消灯まで"
+        label = night ? "ひらくまで" : "24:00まで"
         progress = night ? Double(sec) / Double(9 * 3600) : Double(sec - 9 * 3600) / Double(15 * 3600)
         hms = ("\(remain / 3600):\(String(format: "%02d", (remain % 3600) / 60))", ":\(String(format: "%02d", remain % 60))")
     }

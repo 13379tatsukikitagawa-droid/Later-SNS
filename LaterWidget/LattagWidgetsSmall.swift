@@ -74,7 +74,7 @@ struct LattagUntil9View: View {
                 }
             }
             Spacer(minLength: 4)
-            Text(night ? "消灯まで" : "ひらくまで").font(.system(size: 11, weight: .heavy)).foregroundStyle(Color(hex6: 0xA3A3AB))
+            Text(night ? "24:00まで" : "ひらくまで").font(.system(size: 11, weight: .heavy)).foregroundStyle(Color(hex6: 0xA3A3AB))
             WTimer(from: model.now, to: target)
                 .font(.custom("BarlowCondensed-ExtraBold", size: 40)).foregroundStyle(LinearGradient(colors: [.white, Color(hex6: 0x8C8C94)], startPoint: .top, endPoint: .bottom)).widgetAccentable()
             GeometryReader { g in

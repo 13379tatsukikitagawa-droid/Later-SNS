@@ -60,7 +60,7 @@ struct SettingsV87Sheet: View {
                     divider
                     toggleRow("Recap", "月曜 9:00 に できた 時", $recapOn) { v in Haptics.play(.click); RecapNotifier.setEnabled(v) }
                     divider
-                    toggleRow("ライブ アクティビティ ・ 夜", "23:00 から 消灯まで(のこりの こま)", $liveNightOn) { _ in Haptics.play(.click); LattagLive.sync(snapshot: WidgetSnapshot.load()) }
+                    toggleRow("ライブ アクティビティ ・ 夜", "23:00 から 24:00まで(のこりの こま)", $liveNightOn) { _ in Haptics.play(.click); LattagLive.sync(snapshot: WidgetSnapshot.load()) }
                     divider
                     toggleRow("ライブ アクティビティ ・ 朝", "8:30 から 9:00 まで", $liveMorningOn) { _ in Haptics.play(.click); LattagLive.sync(snapshot: WidgetSnapshot.load()) }
                 }

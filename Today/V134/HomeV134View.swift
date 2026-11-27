@@ -229,7 +229,7 @@ struct HomeV134View: View {
     // MARK: 下
 
     private func shoot() {
-        if status.lensLocked { LTHaptics.play(.warning); actions.toast(status.night ? "9:00に、あかりがつく" : "今日は、ここまで"); return }
+        if status.lensLocked { LTHaptics.play(.warning); actions.toast(status.night ? "9:00から撮れます" : "今日は、ここまで"); return }
         LTHaptics.play(.tap); actions.shoot()
     }
 

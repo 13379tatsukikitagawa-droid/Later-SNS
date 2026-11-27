@@ -23,7 +23,7 @@ enum PhotoDevelop {
     }
 
     /// まだ開けないものを押したときの、短い一言
-    static let lockedNote = "あしたの朝、仕上がります"
+    static let lockedNote = "あしたの朝、見られます"
 }
 
 /// 【B】前日の 自分の写真が ひらいているか(ただ1つの 判定)。

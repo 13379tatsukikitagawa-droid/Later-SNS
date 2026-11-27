@@ -131,7 +131,7 @@ struct DevelopSheet: View {
                 .padding(.top, 4)
 
             VStack(spacing: 6) {
-                Text(isDeveloped ? "今日を撮ると、ひらきます" : "9:00 に、仕上がります")
+                Text(isDeveloped ? "今日を撮ると、ひらきます" : "9:00 に、見られます")
                     .font(.system(size: 17, weight: .bold))
                     .tracking(-0.03 * 17)
                     .foregroundStyle(.white)
@@ -308,7 +308,7 @@ struct DevelopSheet: View {
                 HStack {
                     Text("\(Self.clock(capturedAt)) に預けた")
                     Spacer()
-                    Text("9:00 仕上がり")
+                    Text("9:00 にひらく")
                 }
                 .font(.system(size: 9, design: .monospaced))
                 .foregroundStyle(Color(hex: "6B6B70"))
@@ -365,7 +365,7 @@ struct DevelopSheet: View {
     private var accessibilityText: String {
         if isDeveloped { return "昨日の1枚、現像ずみ。今日を撮ると、ひらきます" }
         let minutes = max(0, Int(DevelopProgress.finishDate(capturedAt: capturedAt).timeIntervalSince(now) / 60))
-        return "今日の1枚、あと\(minutes / 60)時間\(minutes % 60)分で仕上がります"
+        return "今日の1枚、あと\(minutes / 60)時間\(minutes % 60)分で見られます"
     }
 
     private static func clock(_ date: Date) -> String {

@@ -1046,7 +1046,7 @@ private struct LayerFilmStrip: View {
         let date = HomeLayerRules.filmLabel(ago: day.ago)
         switch day.kind {
         case .photo: return "\(date)の1枚。あと\(HomeLayerRules.filmDaysLeft(ago: day.ago))日のこります"
-        case .developing: return "\(date)。現像中。あしたの朝に、仕上がります"
+        case .developing: return "\(date)。現像中。あしたの朝に、見られます"
         case .empty: return "\(date)。まだ撮っていません。押すと、撮ります"
         case .rest: return "\(date)。おやすみ"
         }
@@ -1240,7 +1240,7 @@ struct DevelopingFrame: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("現像中。あしたの朝に、仕上がります")
+        .accessibilityLabel("現像中。あしたの朝に、見られます")
     }
 }
 

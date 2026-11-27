@@ -130,7 +130,7 @@ struct LaterRectangularView: View {
                         .minimumScaleFactor(0.8)
                     Group {
                         if state.phase == .U {
-                            Text("消灯まで \(Text(timerInterval: state.now...state.lightsOut, countsDown: true, showsHours: true))")
+                            Text("24:00まで \(Text(timerInterval: state.now...state.lightsOut, countsDown: true, showsHours: true))")
                         } else {
                             Text(LaterWidgetCopy.sub(state))
                         }
@@ -170,7 +170,7 @@ struct LaterInlineView: View {
         switch state.phase {
         case .U:
             Label {
-                Text("消灯まで \(Text(timerInterval: state.now...state.lightsOut, countsDown: true, showsHours: true))")
+                Text("24:00まで \(Text(timerInterval: state.now...state.lightsOut, countsDown: true, showsHours: true))")
             } icon: {
                 Image(systemName: "moon.fill")
             }
@@ -179,7 +179,7 @@ struct LaterInlineView: View {
         case .D:
             Label("現像中 \(state.developPercent)%", systemImage: "circle.circle")
         case .M:
-            Label("消灯しました", systemImage: "moon.zzz")
+            Label("24:00をすぎました", systemImage: "moon.zzz")
         }
     }
 }
