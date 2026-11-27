@@ -16,6 +16,8 @@ enum LTHaptics {
         case posted     // のせた:トトン
         case warning    // できない:トン、トン
         case enter      // はじめる:ブイッ
+        case lensPress  // v136 レンズを 押した:ふにっ(soft)
+        case lensDone   // v136 レンズの 長押しが できた:パキッ(rigid)→ 0.08秒 あと success。`opened`(9:00 に ひらく)とは 別の 意味なので 別の case
     }
 
     static func play(_ m: Moment) {
@@ -28,6 +30,11 @@ enum LTHaptics {
         case .opened, .posted: UINotificationFeedbackGenerator().notificationOccurred(.success)
         case .warning: Haptics.play(.double)
         case .lightsOn: playPattern(lightsOnPattern)
+        case .lensPress:
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: LensChargeSpec.pressIntensity * CGFloat(AppHapticsSetting.scale))
+        case .lensDone:
+            UIImpactFeedbackGenerator(style: .rigid).impactOccurred(intensity: CGFloat(AppHapticsSetting.scale))
+            DispatchQueue.main.asyncAfter(deadline: .now() + LensChargeSpec.doneGap) { UINotificationFeedbackGenerator().notificationOccurred(.success) }
         case .enter:
             UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: CGFloat(AppHapticsSetting.scale))
             playPattern { try continuous(duration: 0.35, intensity: 1, sharpness: 0.2, at: 0.05) }

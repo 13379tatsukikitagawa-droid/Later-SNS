@@ -17,6 +17,7 @@ struct HomeV64Host: View {
     // v95-9:4つの ボタンは それぞれ 別の 画面
     @State private var showShare = false
     @State private var showFriendsSheet = false
+    @State private var showInviteCard = false
     @State private var showInvite = false
     @State private var showSelfQR = false
     @State private var showScan = false
@@ -63,6 +64,14 @@ struct HomeV64Host: View {
                            onCopy: { UIPasteboard.general.string = myShareText },
                            onQR: { showInvite = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { showSelfQR = true } },
                            onClose: { showInvite = false })
+        }
+        .sheet(isPresented: $showInviteCard) {
+            let me = UserProfile.current(from: profiles)
+            let first = src.layerData.yesterday.first
+            InviteCardSheetV136(name: me?.name ?? src.avatarName, handle: HandleRules.normalize(me?.username ?? ""), link: myLink, text: myShareText,
+                                photo: first.flatMap { c in V64Images.image(key: "invc\(c.id)", data: c.imageData ?? c.mosaicTiny, maxPixel: 480) },
+                                onChangePhoto: { showInviteCard = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { showInvite = true } })
+                .presentationDetents([.large]).presentationCornerRadius(LTRadius.sheet).presentationBackground(Color(hex6: 0x0B0B0D))
         }
         .sheet(isPresented: $showFriendsSheet) {
             FriendsSheetV134(input: makeYesterdayInput(now: Date()), actions: makeHomeActions()) { showFriendsSheet = false }
@@ -152,6 +161,7 @@ struct HomeV64Host: View {
         let groups = Dictionary(src.layerData.yesterday.map { ($0.id, $0.groupID) }, uniquingKeysWith: { f, _ in f })
         a.openPhoto = { id in if let g = groups[id] { src.layerActions.openYesterdayPhoto(g, id) } }
         a.addFriends = src.layerActions.openFriends; a.openFriends = src.layerActions.openFriends; a.openRequests = { showInbox = true }
+        a.openInviteCard = { showInviteCard = true }
         a.shoot = { makeActions().shoot() }
         a.openProfile = src.onOpenProfile
         a.scanQR = { showScan = true }

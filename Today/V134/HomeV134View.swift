@@ -52,7 +52,7 @@ struct HomeV134View: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showMorning = true }
             }
             #if DEBUG
-            switch UserDefaults.standard.string(forKey: "debugSheet") { case "film": showFilm = true; case "friends": showFriends = true; case "inbox": actions.openRequests(); case "story": if !input.posts.isEmpty { story = 0 }; case "storyp": if !input.posts.isEmpty { story = input.posts.firstIndex { !$0.published || $0.photos.isEmpty } ?? 0 }; default: break }
+            switch UserDefaults.standard.string(forKey: "debugSheet") { case "film": showFilm = true; case "friends": showFriends = true; case "inbox": actions.openRequests(); case "invitecard": actions.openInviteCard(); case "story": if !input.posts.isEmpty { story = 0 }; case "storyp": if !input.posts.isEmpty { story = input.posts.firstIndex { !$0.published || $0.photos.isEmpty } ?? 0 }; default: break }
             #endif
             if let y = input.debugScrollY { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { if tab == 0 { feedPos.scrollTo(y: y) } else { tripPos.scrollTo(y: y) } } }
         }

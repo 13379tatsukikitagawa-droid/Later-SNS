@@ -2,13 +2,15 @@ import SwiftUI
 
 // v136:ともだち 0人の Home。#レンズが 主役。
 // 上から:見出し → 1行 → レンズ → ヒント → 「QRを見せる」「IDでさがす」 → 小さな 注記。
-// レンズの 長押し(招待リンク)は 次の 段で つなぐ。いまは タップで 「長押ししてね」。
+// レンズを 長押し(1.4秒)→ 招待カード。タップだけ なら「長押ししてね」。
 struct EmptyFriendsV134: View {
     var screenHeight: CGFloat
     var actions: YesterdayV64Actions
     @State private var hint = Self.restHint
     @State private var hintTask: Task<Void, Never>?
     @State private var breathe = false
+    @State private var progress = 0.0
+    @State private var cooling = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let restHint = "長押しで招待リンクをつくる"
@@ -38,24 +40,38 @@ struct EmptyFriendsV134: View {
     }
 
     private var lens: some View {
-        Button {
-            LTHaptics.play(.tap)
-            hintTask?.cancel()
-            withAnimation(.easeOut(duration: 0.2)) { hint = Self.tapHint }
-            hintTask = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 1_800_000_000)
-                if !Task.isCancelled { withAnimation(.easeOut(duration: 0.2)) { hint = Self.restHint } }
-            }
-        } label: {
+        let ring = diameter + 16
+        return ZStack {
+            Circle().stroke(Color.white.opacity(0.10), lineWidth: 3).frame(width: ring, height: ring).opacity(progress > 0 ? 1 : 0)
+            Circle().trim(from: 0, to: progress).stroke(LTColor.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90)).frame(width: ring, height: ring)
             HashLensView(size: diameter, locked: false, glowing: true)
-                .scaleEffect(reduceMotion ? 1 : (breathe ? 1.03 : 0.985))
-                .frame(width: diameter + 24, height: diameter + 24)
-                .contentShape(Circle())
+                .scaleEffect((reduceMotion ? 1 : (breathe ? 1.03 : 0.985)) * (1 - 0.07 * progress))
         }
-        .buttonStyle(HVPress(scale: 0.96))
+        .frame(width: diameter + 28, height: diameter + 28)
+        .contentShape(Circle())
+        .onTapGesture { tapHint() }
+        .holdToConfirm(duration: LensChargeSpec.duration, progress: $progress, isEnabled: !cooling, haptics: .lens, maximumDistance: 40) {
+            LTHaptics.play(.lensDone)
+            cooling = true                    // シートが 出ている 間に もう一度 長押ししても 2枚目は 出ない
+            actions.openInviteCard()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { cooling = false; withAnimation(.easeOut(duration: 0.25)) { progress = 0 } }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isButton)
         .accessibilityLabel("招待リンクをつくる")
         .accessibilityHint("長押しでつくります")
-        .accessibilityAction(named: "招待リンクを送る") { actions.shareLink() }
+        .accessibilityAction(named: "招待リンクを送る") { actions.openInviteCard() }
+    }
+
+    private func tapHint() {
+        LTHaptics.play(.tap)
+        hintTask?.cancel()
+        withAnimation(.easeOut(duration: 0.2)) { hint = Self.tapHint }
+        hintTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_800_000_000)
+            if !Task.isCancelled { withAnimation(.easeOut(duration: 0.2)) { hint = Self.restHint } }
+        }
     }
 
     private func pill(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {

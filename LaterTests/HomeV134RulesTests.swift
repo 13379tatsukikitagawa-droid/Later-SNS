@@ -89,3 +89,41 @@ struct WaitedRulesTests {
         #expect(HomeV134Rules.lensDiameter(screenHeight: 480) == 100)     // 下限
     }
 }
+
+struct LensChargeSpecTests {
+    @Test func eightTicksWithShrinkingGaps() {
+        let t = LensChargeSpec.tickTimes()
+        #expect(t.count == 8)
+        #expect(abs(LensChargeSpec.gap(0) - 0.22) < 1e-9)
+        #expect(abs(LensChargeSpec.gap(6) - 0.10) < 1e-9)
+        for i in 1..<6 { #expect(LensChargeSpec.gap(i) < LensChargeSpec.gap(i - 1)) }
+        #expect(t.last! < LensChargeSpec.duration)          // 1.4 秒の 前に 全部 鳴りおわる
+    }
+    @Test func tickStrengthRisesAsSpec() {
+        #expect(LensChargeSpec.intensity(0) == 0.25)
+        #expect(abs(LensChargeSpec.intensity(7) - 0.85) < 1e-6)
+        #expect(LensChargeSpec.sharpness(0) == 0.4)
+        #expect(abs(LensChargeSpec.sharpness(7) - 0.8) < 1e-6)
+        for i in 1..<8 { #expect(LensChargeSpec.intensity(i) > LensChargeSpec.intensity(i - 1)) }
+    }
+    @Test func lensDoneIsItsOwnMomentNotOpened() {
+        // 9:00 に ひらく(opened)と 同じ 意味に ならないよう、別の case(コンパイルで 保証)
+        let a: LTHaptics.Moment = .lensDone, b: LTHaptics.Moment = .opened
+        #expect("\(a)" != "\(b)")
+    }
+}
+
+struct InviteCardRulesV136Tests {
+    @Test func lineURLEncodesText() {
+        let u = InviteCardRulesV136.lineURL(text: "Lattag で つながろう https://x/y?a=1")
+        #expect(u?.scheme == "line")
+        #expect(u?.absoluteString.contains(" ") == false)
+    }
+    @Test func displayLinkHidesScheme() {
+        #expect(InviteCardRulesV136.displayLink(URL(string: "https://lattag.app/u/abc")!) == "lattag.app/u/abc")
+    }
+    @Test func emptyNameFallsBack() {
+        #expect(InviteCardRulesV136.shownName("  ") == "ともだち")
+        #expect(InviteCardRulesV136.shownName("たつき") == "たつき")
+    }
+}

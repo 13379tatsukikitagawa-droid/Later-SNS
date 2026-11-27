@@ -94,6 +94,8 @@ struct YesterdayV64Actions {
     var shareLink: () -> Void = {}
     var searchByID: () -> Void = {}
     var toast: (String) -> Void = { _ in }
+    // v136
+    var openInviteCard: () -> Void = {}
 }
 
 struct YesterdayV64View: View {

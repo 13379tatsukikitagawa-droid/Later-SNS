@@ -4,10 +4,22 @@ import SwiftUI
 // 撮る = 1.5秒 ・ はじめる = 1.6秒。押している 間:丸が ちぢむ ・ 輪が 満ちる ・ 振動が だんだん 強くなる。
 // 途中で 離したら もとに もどる(振動は 止めるだけ。warning は 出さない)。
 
+/// 長押しの 触感の 差しかえ。ふだんは 今までの `HapticRamp`(撮る ・ ひらく ・ はじめる)。レンズは 専用(`LensCharge`)。
+struct HoldHaptics {
+    var begin: @MainActor () -> Void
+    var update: @MainActor (Double) -> Void
+    var end: @MainActor () -> Void
+    static let ramp = HoldHaptics(begin: { LTHaptics.beginHold() }, update: { LTHaptics.updateHold(progress: $0) }, end: { LTHaptics.endHold() })
+    static let lens = HoldHaptics(begin: { LensCharge.begin() }, update: { _ in }, end: { LensCharge.end() })
+}
+
 struct HoldToConfirm: ViewModifier {
     let duration: Double
     @Binding var progress: Double
     var isEnabled = true
+    var haptics: HoldHaptics = .ramp
+    /// 指が この 距離より ずれたら 止める
+    var maximumDistance: CGFloat = 60
     /// 無効の とき 押された 合図(warning)。使わない なら nil
     var onBlocked: (() -> Void)? = nil
     let onComplete: () -> Void
@@ -17,7 +29,7 @@ struct HoldToConfirm: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onLongPressGesture(minimumDuration: duration, maximumDistance: 60) {
+            .onLongPressGesture(minimumDuration: duration, maximumDistance: maximumDistance) {
                 guard isEnabled else { return }
                 complete()
             } onPressingChanged: { pressing in
@@ -27,18 +39,19 @@ struct HoldToConfirm: ViewModifier {
                 }
                 if pressing { begin() } else if !completed { cancel() }
             }
+            .onDisappear { if !completed, task != nil { cancel() } }   // 押している 途中で 画面が きえた(中断)
     }
 
     private func begin() {
         completed = false
-        LTHaptics.beginHold()
+        haptics.begin()
         let start = Date()
         task?.cancel()
         task = Task { @MainActor in
             while !Task.isCancelled {
                 let p = min(1, Date().timeIntervalSince(start) / duration)
                 progress = p
-                LTHaptics.updateHold(progress: p)
+                haptics.update(p)
                 if p >= 1 { break }
                 try? await Task.sleep(for: .milliseconds(16))
             }
@@ -48,7 +61,7 @@ struct HoldToConfirm: ViewModifier {
     private func complete() {
         completed = true
         task?.cancel()
-        LTHaptics.endHold()
+        haptics.end()
         progress = 1
         onComplete()            // 撮影なら ここで .shutter を 鳴らす
         // 次の 長押しの ために 少し 後に もどす
@@ -57,15 +70,15 @@ struct HoldToConfirm: ViewModifier {
 
     private func cancel() {
         task?.cancel()
-        LTHaptics.endHold()
+        haptics.end()
         withAnimation(LTMotion.spring) { progress = 0 }
     }
 }
 
 extension View {
-    func holdToConfirm(duration: Double, progress: Binding<Double>, isEnabled: Bool = true,
+    func holdToConfirm(duration: Double, progress: Binding<Double>, isEnabled: Bool = true, haptics: HoldHaptics = .ramp, maximumDistance: CGFloat = 60,
                        onBlocked: (() -> Void)? = nil, onComplete: @escaping () -> Void) -> some View {
-        modifier(HoldToConfirm(duration: duration, progress: progress, isEnabled: isEnabled, onBlocked: onBlocked, onComplete: onComplete))
+        modifier(HoldToConfirm(duration: duration, progress: progress, isEnabled: isEnabled, haptics: haptics, maximumDistance: maximumDistance, onBlocked: onBlocked, onComplete: onComplete))
     }
 }
 
